@@ -60,7 +60,8 @@ docs/          design + architecture + roadmap
 ## Testing expectations
 
 - Run `tools/validate.ps1` (headless import + `tests/run_tests.gd`) before every commit.
-  Godot is not on PATH; set `GODOT_BIN` or pass `-Godot <path>`. Known local binary:
+  Godot is not on PATH; the script auto-detects it (override with `GODOT_BIN` or `-Godot <path>`).
+  Known local binary:
   `C:\GrevCo\PokeArkova\Tools\Godot\Editor\Godot_v4.7.2-stable_mono_win64_console.exe`.
 - New systems get headless tests in `tests/`. Pure logic should be testable without scenes.
 - Clearly separate automated results from manual testing in reports. Never claim a test passed

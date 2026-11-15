@@ -56,9 +56,12 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 Automated (headless) validation — imports the project and runs `tests/run_tests.gd`:
 
 ```powershell
-$env:GODOT_BIN = "C:\path\to\Godot_v4.7.2-stable_win64_console.exe"
 powershell -ExecutionPolicy Bypass -File tools\validate.ps1
 ```
+
+The script finds Godot 4.7.2 automatically (PATH, known local installs, then a shallow search of
+`C:\GrevCo` and common install folders). To use a specific binary, pass
+`-Godot "C:\path\to\Godot_v4.7.2-stable_win64_console.exe"` or set `$env:GODOT_BIN`.
 
 Or directly:
 

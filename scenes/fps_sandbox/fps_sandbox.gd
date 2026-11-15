@@ -129,8 +129,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	var p := player.global_position
-	hud.set_debug_text("pos %.1f, %.1f, %.1f   speed %.2f m/s   %s%s   %d fps" % [
-		p.x, p.y, p.z, player.horizontal_speed(),
+	var speed := player.horizontal_speed()
+	hud.set_debug_text("pos %.1f, %.2f, %.1f   speed %.2f m/s (%.0f u/s)   %s%s   %d fps" % [
+		p.x, p.y, p.z, speed, PlayerMovement.to_units(speed),
 		"grounded" if player.is_on_floor() else "airborne",
 		" · crouched" if player.is_crouched() else "",
 		Engine.get_frames_per_second(),

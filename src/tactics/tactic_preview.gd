@@ -111,7 +111,8 @@ func _set_next_goal(index: int) -> void:
 		_block(index, "Waypoint %d is unreachable" % (next + 1))
 		return
 	bot.set_goal(goal)
-	_deadlines[index] = maxf(5.0, 4.0 + path_length / BotController.RUN_SPEED * 3.0)
+	var run_speed := bot.movement.max_speed(false, 0.0, bot.weapon_mobility())
+	_deadlines[index] = maxf(5.0, 4.0 + path_length / run_speed * 3.0)
 	_set_status(index, "Moving to %d / %d" % [next + 1, route.size()])
 
 

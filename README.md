@@ -196,6 +196,15 @@ Ports: career sync **24560**, match **24570** (UDP).
       Switching weapons cancels a reload and has a short draw delay; each weapon keeps its ammo.
 - [ ] Crouch lowers the view and slows you down. To check ceilings, place a block in the studio
       raised 1.3 m (PgUp) over open floor, playtest, crouch under it and release: you stay crouched.
+- [ ] Movement (debug line shows speed in m/s and u/s): with the rifle you top out at 215 u/s,
+      with the pistol/SMG 250 u/s; Shift-walk 130, crouch 85 (pistol). Releasing a key coasts to a
+      stop in about 0.4 s; tapping the opposite key (counter-strafe) stops you about three times
+      faster. Holding forward + strafe is no faster than one key.
+- [ ] Jumping: a fresh jump clears about 1.4 m; jumping again straight after landing is lower and
+      landing briefly slows you. Crouching mid-air (crouch-jump) clears a slightly taller ledge.
+      Holding jump does not bunny-hop.
+- [ ] Bots move the same way: in a bot practice match they accelerate, stop, crouch and slow down
+      when engaging (walk speed) like you do; none glides faster than you with the same weapon.
 - [ ] Jump off the arena (or fly off in a playtest map without walls): the ELIMINATED overlay
       counts down and you respawn at the spawn with full health and ammo.
 - [ ] Creation Studio: the **Training → Target dummy** piece can be placed, set to *strafe* in the

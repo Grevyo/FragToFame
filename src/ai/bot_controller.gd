@@ -1,5 +1,5 @@
 class_name BotController
-extends CharacterBody3D
+extends CombatantMovementBody
 ## An AI combatant. Navigates the baked navmesh toward a goal, spots enemies (vision cone, line of
 ## sight, close-range awareness), reacts with a human-like delay, aims through [AimModel] and
 ## fires through the same [WeaponController] the player uses. Takes cover while reloading under
@@ -12,10 +12,6 @@ signal died(info: DamageInfo)
 
 enum Mode { MOVE, ENGAGE, SEARCH }
 
-const RUN_SPEED: float = 5.0
-const COMBAT_SPEED: float = 2.4
-const ACCELERATION: float = 30.0
-const EYE_HEIGHT: float = 1.62
 const LOS_INTERVAL: float = 0.1
 const SEARCH_TIME: float = 4.0
 const REPATH_INTERVAL: float = 0.5
@@ -38,21 +34,19 @@ var has_watch_point: bool = false
 var frozen: bool = false
 ## Set by the owner while the bot plants/defuses: it stands still and holds interact.
 var interact_held: bool = false
+## Requests the same slow walk as the player's Shift input.
+var walk_requested: bool = false
 var rng := RandomNumberGenerator.new()
 
 var health: Health
-var weapons: WeaponController
-var head: Node3D
 var agent: NavigationAgent3D
-var hitboxes: Array[Hitbox] = []
 var mode: Mode = Mode.MOVE
 ## The enemy currently seen and engaged (null when none is visible).
 var target: Health = null
 var reaction_left: float = 0.0
 var aim: AimModel
 
-var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
-var _collision: CollisionShape3D
+var _jump_requested: bool = false
 var _los_timer: float = 0.0
 var _aim_head: bool = false
 var _last_known: Vector3 = Vector3.ZERO
@@ -79,12 +73,13 @@ func _ready() -> void:
 	collision_layer = Hitscan.LAYER_CHARACTERS
 	collision_mask = Hitscan.LAYER_WORLD | Hitscan.LAYER_CHARACTERS
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.35
-	capsule.height = 1.8
-	_collision = CollisionShape3D.new()
-	_collision.shape = capsule
-	_collision.position.y = 0.9
-	add_child(_collision)
+	capsule.radius = BODY_RADIUS
+	capsule.height = STAND_HEIGHT
+	collision = CollisionShape3D.new()
+	collision.shape = capsule
+	collision.position.y = STAND_HEIGHT / 2.0
+	add_child(collision)
+	_initialize_movement()
 
 	health = Health.new()
 	health.name = "Health"
@@ -96,7 +91,7 @@ func _ready() -> void:
 
 	head = Node3D.new()
 	head.name = "Head"
-	head.position.y = EYE_HEIGHT
+	head.position.y = STAND_EYE
 	add_child(head)
 
 	weapons = WeaponController.new()
@@ -151,6 +146,11 @@ func clear_goal() -> void:
 	has_goal = false
 
 
+## Queues one jump press for the next tick. The shared movement rules require solid ground.
+func request_jump() -> void:
+	_jump_requested = true
+
+
 func at_goal(radius: float = 1.5) -> bool:
 	if not has_goal:
 		return false
@@ -177,7 +177,9 @@ func respawn_at(feet_position: Vector3, yaw: float) -> void:
 	global_position = feet_position + Vector3(0, 0.05, 0)
 	rotation = Vector3(0, yaw, 0)
 	head.rotation = Vector3.ZERO
-	velocity = Vector3.ZERO
+	_reset_movement()
+	walk_requested = false
+	_jump_requested = false
 	collision_layer = Hitscan.LAYER_CHARACTERS
 	for hitbox: Hitbox in hitboxes:
 		hitbox.set_enabled(true)
@@ -204,12 +206,12 @@ func set_view(angles: Vector2) -> void:
 # --- Frame update ----------------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
-		velocity.y -= _gravity * delta
+	var jump_pressed := _jump_requested
+	_jump_requested = false
 	if health.is_dead:
 		velocity.x = 0.0
 		velocity.z = 0.0
-		move_and_slide()
+		_step_movement(Vector2.ZERO, false, false, delta)
 		return
 	_perceive(delta)
 	var move_dir := Vector3.ZERO
@@ -221,11 +223,11 @@ func _physics_process(delta: float) -> void:
 		move_dir = _engage_movement()
 	else:
 		move_dir = _navigate(delta)
-	weapons.trigger = want_fire and not frozen and not interact_held
-	_apply_movement(move_dir, delta)
-	move_and_slide()
-	weapons.motion.speed = Vector2(velocity.x, velocity.z).length()
-	weapons.motion.airborne = not is_on_floor()
+	var can_move := not frozen and not interact_held
+	weapons.trigger = want_fire and can_move
+	var direction := Vector2(move_dir.x, move_dir.z) if can_move else Vector2.ZERO
+	var walking := can_move and (walk_requested or target != null)
+	_step_movement(direction, walking, jump_pressed and can_move, delta)
 	_maybe_reload()
 
 
@@ -360,7 +362,7 @@ func _maybe_reload() -> void:
 ## Picks a nearby navmesh point that the threat cannot see.
 func _find_cover() -> void:
 	var map := get_world_3d().navigation_map
-	var threat := _last_known + Vector3(0, EYE_HEIGHT, 0)
+	var threat := _last_known + Vector3(0, STAND_EYE, 0)
 	var best_distance := INF
 	for i: int in 12:
 		var angle := rng.randf() * TAU
@@ -431,15 +433,6 @@ func _turn_toward(angles: Vector2, delta: float) -> void:
 	if diff.length() > max_step:
 		diff = diff.normalized() * max_step
 	set_view(current + diff)
-
-
-func _apply_movement(direction: Vector3, delta: float) -> void:
-	if frozen or interact_held:
-		direction = Vector3.ZERO
-	var speed := COMBAT_SPEED if target != null else RUN_SPEED
-	var horizontal := Vector2(velocity.x, velocity.z).move_toward(Vector2(direction.x, direction.z) * speed, ACCELERATION * delta)
-	velocity.x = horizontal.x
-	velocity.z = horizontal.y
 
 
 func _on_died(info: DamageInfo) -> void:

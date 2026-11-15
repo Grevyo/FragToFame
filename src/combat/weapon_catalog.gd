@@ -17,6 +17,8 @@ const DATA: Dictionary[StringName, Dictionary] = {
 	VANTA_RIFLE: {
 		"id": "wpn_vanta_rifle", "name": "VK-12 Vanta", "slot": 1, "category": "primary",
 		"automatic": true, "armour_penetration": 0.78,
+		# Measured reference: 215 u/s with a rifle against 250 u/s unencumbered.
+		"mobility": 0.86,
 		"damage": 34.0, "rpm": 600.0, "magazine": 30, "reserve": 90, "reload_time": 2.5,
 		"draw_time": 0.5, "range": 250.0, "falloff_per_10m": 0.97,
 		"base_spread": 0.18, "run_spread": 5.0, "air_spread": 9.0, "crouch_multiplier": 0.7,
@@ -33,6 +35,9 @@ const DATA: Dictionary[StringName, Dictionary] = {
 	KESTREL_PISTOL: {
 		"id": "wpn_kestrel_pistol", "name": "P-4 Kestrel", "slot": 2, "category": "secondary",
 		"automatic": false, "armour_penetration": 0.5,
+		# Estimate (owner's choice, 2026-11-15): light weapons run at the full 250 u/s; only
+		# the unencumbered and rifle speeds were measured.
+		"mobility": 1.0,
 		"damage": 30.0, "rpm": 380.0, "magazine": 12, "reserve": 36, "reload_time": 2.1,
 		"draw_time": 0.35, "range": 150.0, "falloff_per_10m": 0.88,
 		"base_spread": 0.25, "run_spread": 2.6, "air_spread": 6.0, "crouch_multiplier": 0.8,
@@ -44,6 +49,7 @@ const DATA: Dictionary[StringName, Dictionary] = {
 	WASP_SMG: {
 		"id": "wpn_wasp_smg", "name": "M-5 Wasp", "slot": 3, "category": "primary",
 		"automatic": true, "armour_penetration": 0.6,
+		"mobility": 1.0,  # Estimate, as for the pistol.
 		"damage": 25.0, "rpm": 800.0, "magazine": 25, "reserve": 100, "reload_time": 2.3,
 		"draw_time": 0.4, "range": 120.0, "falloff_per_10m": 0.82,
 		"base_spread": 0.3, "run_spread": 1.6, "air_spread": 5.0, "crouch_multiplier": 0.8,

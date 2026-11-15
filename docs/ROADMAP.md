@@ -121,6 +121,10 @@ Completion criteria:
       death overlay. Viewmodel, muzzle flash, tracers and impact marks.
 - [x] Automated tests: catalog, damage, cadence, reload, spread, recoil, health, hitscan maths,
       tally, and a scene test that shoots dummies, walls, crouches and respawns.
+- [x] Movement rework (2026-11-15): `PlayerMovement` model fitted to recorded reference runs
+      (acceleration, friction, counter-strafe stops, walk/crouch speeds, air control, jump arc,
+      landing stamina) and weapon mobility (rifle 0.86). Player and bots share it through
+      `CombatantMovementBody`; tests cover the curves and player/bot parity.
 - [ ] Manual feel test (README) by the project owner.
 
 Out of scope (later): armour, penetration, buying and economy (M5), sounds (no audio assets yet),
@@ -361,3 +365,4 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 | 2026-11-15 | M11 records career match telemetry, statistics and F2F ratings. Godot 4.7.2 validation passed 748 checks. Manual acceptance remains open. |
 | 2026-11-15 | M12 adds amateur ELO, match-driven career opinions and reputation, training and scouting. Godot 4.7.2 validation passed 764 checks. Manual acceptance remains open. |
 | 2026-11-15 | M13 publishes fixed-database league seasons and derives standings from accepted series results. Godot 4.7.2 validation passed 782 checks. Match and cup integration remain open. |
+| 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

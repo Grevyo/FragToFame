@@ -5,6 +5,13 @@ extends TestSuite
 const FPS_SANDBOX_SCENE: String = "res://scenes/fps_sandbox/fps_sandbox.tscn"
 
 
+class MovementTestBot extends BotController:
+	var direction: Vector3 = Vector3.ZERO
+
+	func _navigate(_delta: float) -> Vector3:
+		return direction
+
+
 func suite_name() -> String:
 	return "Bot AI (Milestone 6)"
 
@@ -12,6 +19,7 @@ func suite_name() -> String:
 func run() -> void:
 	_test_aim_model()
 	_test_skills()
+	await _test_movement_parity()
 	await _test_world()
 
 
@@ -55,6 +63,86 @@ func _test_skills() -> void:
 	check(maxed.reaction_time >= 0.15 and maxed.initial_error >= 1.5 and maxed.recoil_control <= 0.92,
 		"even perfect abilities keep human-like limits")
 	check(BotSkill.from_abilities({}).label.begins_with("Rated"), "missing abilities fall back to average")
+
+
+func _test_movement_parity() -> void:
+	section("Player and bot movement parity")
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	var player := sandbox.get_node("Player") as FirstPersonController
+	var bot := MovementTestBot.new()
+	bot.setup("bot_parity", "Movement parity", &"away", BotSkill.preset(&"hard"), Color.WHITE)
+	sandbox.add_child(bot)
+	var p_start := Vector3(-24, 0, 22)
+	var b_start := Vector3(-24, 0, 24)
+	player.input_enabled = false
+	player.set_spawn(p_start, 0.0)
+	player.respawn()
+	bot.respawn_at(b_start, 0.0)
+	player.weapons.set_loadout([WeaponCatalog.VANTA_RIFLE])
+	bot.weapons.set_loadout([WeaponCatalog.VANTA_RIFLE])
+	await wait_physics_frames(15)
+
+	player.scripted_move = Vector2.RIGHT
+	bot.direction = Vector3.RIGHT
+	await wait_physics_frames(12)
+	check(_same_movement(player, bot) and bot.horizontal_speed() > 0.0,
+		"identical rifle input gives the player and hard bot the same acceleration")
+	await wait_physics_frames(48)
+	check(_same_movement(player, bot) and is_equal_approx(bot.horizontal_speed(), player.current_max_speed())
+		and is_equal_approx(bot.weapons.motion.speed, ShooterMotion.REFERENCE_SPEED),
+		"rifle mobility and full-run accuracy speed match")
+	player.scripted_move = Vector2.LEFT
+	bot.direction = Vector3.LEFT
+	await wait_physics_frames(5)
+	check(_same_movement(player, bot) and player.velocity.x < player.current_max_speed(),
+		"opposing input slows both combatants at the same rate")
+
+	player.scripted_walk = true
+	bot.walk_requested = true
+	await wait_physics_frames(65)
+	check(_same_movement(player, bot) and is_equal_approx(bot.horizontal_speed(), player.current_max_speed()),
+		"the bot's walk request uses the same cap as Shift")
+	player.wants_crouch = true
+	bot.wants_crouch = true
+	await wait_physics_frames(30)
+	check(_same_movement(player, bot) and player.is_crouched() and bot.weapons.motion.crouched
+		and is_equal_approx(bot.current_height(), player.current_height())
+		and is_equal_approx(bot.head.position.y, player.head.position.y)
+		and is_equal_approx(bot.hitboxes[0].position.y, player.hitboxes[0].position.y)
+		and is_equal_approx(bot.weapons.current_spread(), player.weapons.current_spread()),
+		"crouch matches stance, hitbox height and weapon spread")
+
+	player.scripted_walk = false
+	player.scripted_move = Vector2.ZERO
+	player.respawn()
+	bot.direction = Vector3.ZERO
+	bot.respawn_at(b_start, 0.0)
+	await wait_physics_frames(15)
+	player.scripted_jump = true
+	bot.request_jump()
+	await wait_physics_frames(8)
+	check(_same_movement(player, bot) and bot.weapons.motion.airborne and bot.velocity.y > 0.0
+		and bot.movement != player.movement, "both jump with the same physics and independent stamina")
+	player.scripted_move = Vector2.RIGHT
+	bot.direction = Vector3.RIGHT
+	await wait_physics_frames(12)
+	check(_same_movement(player, bot) and bot.velocity.x > 0.0,
+		"air steering matches with the same input")
+	await wait_physics_frames(27)
+	check(_same_movement(player, bot) and bot.is_on_floor() and bot.movement.stamina > 0.0,
+		"landing and its stamina cost match")
+	bot.respawn_at(b_start, 0.0)
+	check(bot.movement.stamina == 0.0 and bot.velocity == Vector3.ZERO and not bot.is_crouched(),
+		"bot respawn clears locomotion state")
+	await despawn(sandbox)
+
+
+func _same_movement(player: FirstPersonController, bot: BotController) -> bool:
+	return (player.velocity.is_equal_approx(bot.velocity)
+		and absf(player.global_position.y - bot.global_position.y) < 0.001
+		and is_equal_approx(player.movement.stamina, bot.movement.stamina))
 
 
 func _test_world() -> void:

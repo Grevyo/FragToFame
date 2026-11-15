@@ -368,6 +368,10 @@ Cup brackets, promotion and relegation, and the F2F Universal Ladder remain plan
 - **Individual layer (`src/ai/`).** `BotController` only knows enemies (a Health list), a goal, a
   watch point and an interact flag. It shoots through the same `WeaponController` and hitboxes as
   the player, so bots obey every weapon rule (spread, recoil, armour, falloff).
+- **Shared movement.** The player and bots inherit `CombatantMovementBody` and use the same
+  `PlayerMovement` tuning. They share acceleration, friction, weapon and stance speed limits,
+  jumps, landings, stamina, capsule clearance and the speed passed to weapon spread. Bot
+  navigation and combat supply movement intent.
 - **Fair by construction.** Perception uses a view cone, view distance, awareness radius and
   world-only line of sight; aiming has a reaction delay, a capped turn rate and an acquisition
   error that decays. Skill presets change these numbers, never the rules.
@@ -455,4 +459,6 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Sniper role instead of a weapon-specific role name | Keeps role names original; the vision's "AWPer" maps to `sniper` |
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
+| 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |
+| 2026-11-15 | Run speed comes from the held weapon's `mobility`; weapon spread sees speed rescaled so a full run is always the reference speed | Retuning movement never silently changes weapon balance |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

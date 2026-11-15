@@ -43,6 +43,7 @@ src/career/    career-world data & logic (no Node dependencies beyond RefCounted
                db/ = the only SQLite code, generation/ = world generator; everything else uses CareerRepository
 src/world/     shared 3D building blocks
 src/maps/      map document format, builder, validator, storage, edit controller (no UI)
+src/movement/  shared player/bot movement model, its tuning and CombatantMovementBody (FPS runtime only)
 src/combat/    weapons, spread/recoil, damage, health, hitboxes, hitscan (FPS runtime only)
 src/rules/     competitive match rules, economy, shop (pure; driven by the FPS runtime)
 src/ai/        bot AI: navmesh baking, skills, aim model, BotController (FPS runtime only)

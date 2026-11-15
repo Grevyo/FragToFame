@@ -31,6 +31,9 @@ var range_m: float = 250.0
 var falloff_per_10m: float = 0.95
 ## Fraction of damage that reaches health through armour (1.0 = armour ignored).
 var armour_penetration: float = 0.7
+## Run speed with this weapon in hand, as a fraction of [member PlayerMovement.run_speed]
+## (the unencumbered 250 u/s reference). Walk, crouch and acceleration scale with it.
+var mobility: float = 1.0
 
 var base_spread: float = 0.2
 ## Extra spread at full running speed (scales with the square of the speed ratio).
@@ -59,6 +62,7 @@ static func from_dict(data: Dictionary) -> WeaponDefinition:
 	d.category = StringName(str(data.get("category", "primary")))
 	d.armour_penetration = float(data.get("armour_penetration", d.armour_penetration))
 	d.fire_mode = FireMode.AUTO if bool(data.get("automatic", true)) else FireMode.SEMI
+	d.mobility = float(data.get("mobility", d.mobility))
 	d.damage = float(data["damage"])
 	d.fire_interval = 60.0 / float(data["rpm"])
 	d.magazine_size = int(data["magazine"])

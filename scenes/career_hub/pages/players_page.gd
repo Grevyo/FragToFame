@@ -94,5 +94,34 @@ func refresh() -> void:
 
 func show_player(player_id: String) -> void:
 	for child: Node in detail.get_children():
+		detail.remove_child(child)
 		child.queue_free()
-	PlayerView.build(detail, career().repo, player_id, true)
+	var session := career()
+	var player := session.repo.get_player(player_id)
+	if player == null:
+		return
+	if not player.is_human and player.status == "active":
+		_build_scouting(session, player_id)
+	PlayerView.build(detail, session.repo, player_id, true)
+
+
+func _build_scouting(session: CareerSession, subject_id: String) -> void:
+	var card := UIFactory.card(detail, "Scouting report")
+	var report := session.repo.last_scout_report(session.human_player_id, subject_id)
+	if not report.is_empty():
+		card.add_child(UIFactory.label("Last report · %s · confidence +%d" % [
+			GameDate.format(int(report["day"])), int(report["change"])], &"MutedLabel", true))
+	if not session.repo.development_today(session.human_player_id, CareerDevelopment.SCOUTING).is_empty():
+		card.add_child(UIFactory.label("Today's scouting report is complete.", &"MutedLabel", true))
+		return
+	var scout := UIFactory.button("Scout player", &"AccentButton")
+	var status := UIFactory.label("", &"WarningLabel", true)
+	card.add_child(scout)
+	card.add_child(status)
+	scout.pressed.connect(func() -> void:
+		var problem := CareerDevelopment.scout(session.repo, session.human_player_id, subject_id)
+		if not problem.is_empty():
+			status.text = problem
+			return
+		refresh()
+		show_player(subject_id))

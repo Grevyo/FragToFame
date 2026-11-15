@@ -39,6 +39,12 @@ func build_page() -> void:
 		PackedStringArray(["Reputation", "%s (%d)" % [CareerCatalog.reputation_label(reputation), reputation]]),
 		PackedStringArray(["Difficulty", CareerCatalog.DIFFICULTY_NAMES.get(StringName(str(profile.get("difficulty", ""))), "—")]),
 	]
+	if me != null:
+		var elo := CareerDevelopment.current_elo(repo, me.id)
+		var saved := repo.amateur_rating(me.id)
+		var change := int(saved.get("last_change", 0))
+		var detail := "%d (%+d last match)" % [elo, change] if change != 0 else str(elo)
+		status_rows.append(PackedStringArray(["Amateur ELO", detail]))
 	UIFactory.key_value_grid(status_card, status_rows)
 
 	var world_card := UIFactory.card(row, "The world")

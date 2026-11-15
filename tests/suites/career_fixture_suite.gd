@@ -30,25 +30,15 @@ func run() -> void:
 
 func _run_fixture_flow() -> void:
 	section("Career schema and fixture scheduling")
-	var problem: String = _app.call("new_career", "Fixture test", PROFILE)
-	check(problem.is_empty(), "creates an isolated career from the shipped database")
-	if not problem.is_empty():
+	_save_id = "sav_v2"
+	var player_id := _create_legacy_career()
+	check(not player_id.is_empty(), "creates an isolated v2 career from the shipped database")
+	if player_id.is_empty():
 		return
+	var problem: String = _app.call("load_career", _save_id)
 	var session := _app.get("career") as CareerSession
-	_save_id = session.save_id
-	var player_id := session.human_player_id
-
-	# Restore the fixture-free M9 schema on the disposable database, then load normally.
-	check(session.repo.db.execute("DROP TABLE career_match_rating;")
-		and session.repo.db.execute("DROP TABLE career_match_stat;")
-		and session.repo.db.execute("DROP TABLE career_match_event;")
-		and session.repo.db.execute("DROP TABLE career_fixture;") and session.repo.db.set_user_version(2),
-		"prepares an existing v2 career")
-	var backups_before := _saves.backups(_save_id).size()
-	problem = _app.call("load_career", _save_id)
-	session = _app.get("career") as CareerSession
 	check(problem.is_empty() and session != null and session.repo.db.user_version() == CareerSchema.CURRENT_VERSION
-		and session.human_player_id == player_id and _saves.backups(_save_id).size() == backups_before + 1,
+		and session.human_player_id == player_id and _saves.backups(_save_id).size() == 1,
 		"opening v2 preserves the career and snapshots before adding fixtures")
 	if not problem.is_empty():
 		return
@@ -65,6 +55,8 @@ func _run_fixture_flow() -> void:
 	if fixture == null:
 		return
 	var id := fixture.setup.fixture_id
+	var prior_elo := CareerDevelopment.current_elo(session.repo, player_id)
+	var prior_reputation := session.repo.reputation(player_id)
 	check(fixture.scheduled_day == session.repo.current_day() and fixture.setup.max_rounds == 5,
 		"early fixtures are MR5 on the current career day")
 	check(fixture.setup.home_lineup.size() == 5 and fixture.setup.away_lineup.size() == 5
@@ -131,13 +123,15 @@ func _run_fixture_flow() -> void:
 	check(session.repo.db.execute("""CREATE TRIGGER fixture_test_block_date BEFORE UPDATE OF value ON meta
 		WHEN OLD.key = 'current_day' BEGIN SELECT RAISE(ABORT, 'test date write failure'); END;"""),
 		"injects a failure after the fixture result write")
-	_finish_for_home(director)
+	_finish_for_team(director, MatchState.HOME)
 	check(director.state.phase == MatchState.Phase.MATCH_END and bool(_app.call("has_unsaved_fixture_result")),
 		"finishing a real rules-driven FPS match retains its result when writing fails")
 	check(session.repo.pending_fixture(player_id) != null and session.repo.current_day() == fixture.scheduled_day,
 		"calendar write failure rolls back both the result and day")
 	check(int(session.repo.performance_totals(player_id).get("matches", -1)) == 0,
 		"failed result publication also rolls back telemetry and ratings")
+	check(session.repo.amateur_rating(player_id).is_empty() and session.repo.reputation(player_id) == prior_reputation,
+		"failed result publication rolls back career progression")
 	check(not director.hud.play_again_button.visible and director.hud.main_menu_button.text == "Return to Career Hub",
 		"career match completion offers return to the hub")
 	await wait_frames(2)
@@ -156,9 +150,15 @@ func _run_fixture_flow() -> void:
 		"retry saves the final score and advances the date once")
 	if completed == null or completed.result == null:
 		return
+	var winning_elo := CareerDevelopment.current_elo(session.repo, player_id)
+	var winning_reputation := session.repo.reputation(player_id)
+	check(winning_elo > prior_elo and winning_reputation > prior_reputation
+		and session.repo.abilities(player_id).is_empty(), "career wins raise amateur ELO and reputation")
 	check(CareerFixtures.record_result(session.repo, player_id, completed.result).is_empty()
-		and session.repo.current_day() == fixture.scheduled_day + 1,
-		"resubmission is idempotent")
+		and session.repo.current_day() == fixture.scheduled_day + 1
+		and CareerDevelopment.current_elo(session.repo, player_id) == winning_elo
+		and session.repo.reputation(player_id) == winning_reputation,
+		"resubmission advances neither the calendar nor career progression")
 	var conflict := MatchResult.create(id, 0, 6, MatchResult.SOURCE_FPS_RUNTIME)
 	conflict.map_id = completed.setup.map_id
 	check(not CareerFixtures.record_result(session.repo, player_id, conflict).is_empty()
@@ -204,10 +204,12 @@ func _run_fixture_flow() -> void:
 	if director == null:
 		check(false, "the next fixture starts in the FPS scene")
 		return
-	_finish_for_home(director)
+	_finish_for_team(director, MatchState.AWAY)
 	await wait_frames(2)
 	check(session.repo.fixture_by_id(next.setup.fixture_id).result != null and session.repo.current_day() == 2
 		and not bool(_app.call("has_unsaved_fixture_result")), "completing a fixture normally publishes immediately")
+	check(CareerDevelopment.current_elo(session.repo, player_id) < winning_elo,
+		"a subsequent loss lowers the persisted amateur ELO")
 	director.hud.main_menu_button.pressed.emit()
 	await wait_frames(3)
 	_app.call("start_practice_match")
@@ -216,18 +218,39 @@ func _run_fixture_flow() -> void:
 	if director == null:
 		check(false, "practice still starts")
 		return
-	_finish_for_home(director)
+	_finish_for_team(director, MatchState.HOME)
 	await wait_frames(2)
 	check(director.state.phase == MatchState.Phase.MATCH_END and session.repo.fixture_count(player_id) == 2
 		and session.repo.current_day() == 2, "ordinary practice results leave career fixtures and date alone")
 
 
-func _finish_for_home(director: MatchDirector) -> void:
+func _create_legacy_career() -> String:
+	var repo := CareerRepository.new()
+	DirAccess.make_dir_recursive_absolute(_saves.save_dir(_save_id))
+	if not repo.db.open(_saves.db_path(_save_id)):
+		return ""
+	var versions: Array[PackedStringArray] = [CareerSchema.MIGRATIONS[0], CareerSchema.MIGRATIONS[1]]
+	if not CareerDatabase.apply_migrations(repo.db, versions, "test v2").is_empty():
+		repo.close()
+		return ""
+	var world := _saves.databases.open_database(WorldDatabases.default_path())
+	var player_id := ""
+	if world != null:
+		var problem := CareerStart.populate(repo, world)
+		world.close()
+		if problem.is_empty() and repo.set_meta_value("format", CareerSchema.FORMAT):
+			player_id = HumanCareer.create(repo, PROFILE, 1)
+	repo.close()
+	return player_id
+
+
+func _finish_for_team(director: MatchDirector, winner: int) -> void:
 	var state := director.state
+	var killer := state.teams[winner].player_ids.front() as String
 	for round_index: int in state.setup.rounds_to_win():
 		state.tick(state.rules.freeze_time + 0.1)
-		for victim: String in state.teams[MatchState.AWAY].player_ids:
-			state.record_kill(victim, director.local_player_id, WeaponCatalog.VANTA_RIFLE, false)
+		for victim: String in state.teams[1 - winner].player_ids:
+			state.record_kill(victim, killer, WeaponCatalog.VANTA_RIFLE, false)
 		state.tick(state.rules.round_end_delay + 0.1)
 
 

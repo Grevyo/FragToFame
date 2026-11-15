@@ -248,6 +248,35 @@ func reputation(player_id: String) -> int:
 	return int(db.scalar("SELECT value FROM player_reputation WHERE player_id = ?;", [player_id], 0))
 
 
+# --- Career development -----------------------------------------------------------------------
+
+func amateur_rating(player_id: String) -> Dictionary:
+	return db.row("SELECT rating, last_change, updated_day FROM career_amateur_rating WHERE player_id = ?;", [player_id])
+
+
+func set_amateur_rating(player_id: String, value: int, change: int, day: int) -> bool:
+	return db.execute("""INSERT INTO career_amateur_rating VALUES (?, ?, ?, ?)
+		ON CONFLICT(player_id) DO UPDATE SET rating = excluded.rating, last_change = excluded.last_change,
+		updated_day = excluded.updated_day;""", [player_id, value, change, day])
+
+
+func development_today(player_id: String, kind: String) -> Dictionary:
+	return db.row("""SELECT day, subject_id, focus, change FROM career_development_activity
+		WHERE player_id = ? AND kind = ? AND day = ?;""", [player_id, kind, current_day()])
+
+
+func last_scout_report(player_id: String, subject_id: String) -> Dictionary:
+	return db.row("""SELECT day, change FROM career_development_activity
+		WHERE player_id = ? AND subject_id = ? AND kind = 'scouting' ORDER BY day DESC LIMIT 1;""",
+		[player_id, subject_id])
+
+
+func add_development_activity(player_id: String, kind: String, day: int, subject_id: String,
+		focus: String, change: int) -> bool:
+	return db.execute("INSERT INTO career_development_activity VALUES (?, ?, ?, ?, ?, ?);",
+		[player_id, day, kind, subject_id, focus, change])
+
+
 # --- Traits -----------------------------------------------------------------------------------
 
 ## Adds a trait unless it is unknown or conflicts with one the player already has.

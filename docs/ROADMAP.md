@@ -20,7 +20,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
 | 10 | Career fixtures and playable match integration | 5, 9 | 🔶 awaiting manual test |
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
-| 12 | Career development and scouting | 9, 11 | ⬜ |
+| 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
 | 13 | Competition and tournament systems | 9, 10 | ⬜ |
 | 14 | World progression, transfers, rookies, retirement | 12, 13 | ⬜ |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
@@ -314,6 +314,22 @@ production map rotation and multiplayer fixture hosting.
 Utility effects, detailed role and situation ratings, and simulated AI-only match telemetry
 depend on the corresponding gameplay and world simulation systems.
 
+## Milestone 12 — Career development and scouting 🔶
+
+- [x] Show amateur ELO in Career Home. Use a difficulty-based starting value and update it
+      from accepted amateur fixture outcomes.
+- [x] Use completed matches to update reputation, confidence and perceived aim, crosshair
+      placement and composure when enough relevant events were recorded.
+- [x] Offer one training focus per career day in Player Profile. Training changes the selected
+      perceived ability and is recorded in the save.
+- [x] Offer one scouting report per career day in Players. Reports refine estimates toward AI
+      ability and increase confidence while preserving underlying ability and hidden potential.
+- [x] Persist career development in schema v5 and test daily limits, save reload, successful,
+      duplicate and failed match publication, and the absence of human simulated abilities.
+- [ ] Manual training, scouting and match progression walkthrough.
+
+AI development, ageing, roster decisions and trait-driven team tactics are later work.
+
 ---
 
 ## Progress log
@@ -331,3 +347,4 @@ depend on the corresponding gameplay and world simulation systems.
 | 2026-11-15 | M8 implemented and the full Godot 4.7.2 validation passed with 700 checks, including 37 tactic checks. Manual acceptance remains open. |
 | 2026-11-15 | Owner deferred M7 pending representative maps and gameplay-relevant player traits. M10 implemented and validated on Godot 4.7.2 with 732 passing checks. Manual fixture walkthrough remains open. |
 | 2026-11-15 | M11 records career match telemetry, statistics and F2F ratings. Godot 4.7.2 validation passed 748 checks. Manual acceptance remains open. |
+| 2026-11-15 | M12 adds amateur ELO, match-driven career opinions and reputation, training and scouting. Godot 4.7.2 validation passed 764 checks. Manual acceptance remains open. |

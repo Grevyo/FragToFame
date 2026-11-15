@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 11 recorded match statistics. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 12 career development and scouting. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -313,6 +313,15 @@ from spawn, so rounds often start with a long-range fight.
       AI opponent in the Players browser and verify their profile also shows the recorded match.
 - [ ] Reopen the career and confirm the recorded match remains visible. A practice match from
       Teams leaves the statistics unchanged.
+
+### Manual test checklist (Milestone 12 — career development)
+
+- [ ] From **Career Hub → Player Profile**, pick a focus and choose **Train today**. Check that
+      the selected perceived attribute increases and training is marked complete for the day.
+- [ ] From **Players**, select an AI professional and choose **Scout player**. Verify that the
+      report updates confidence and the perceived attributes, and persists after reopening.
+- [ ] Complete an amateur fixture. Check the ELO change on Home and the recorded rating in
+      Statistics. Verify that training and scouting are available on the new career day.
 
 ## Project layout
 

@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–6, 8–11)
+## 2. Current implementation (Milestones 1–6, 8–12)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -317,6 +317,20 @@ The repository stores one versioned raw event stream per fixture, per-player cou
 per-player ratings calculated with an independently versioned formula. F2F rating v1 combines
 kills and damage per round with KAST and survival. Career totals combine counts across recorded
 matches before computing rates. Older score-only fixtures remain in Calendar.
+
+### Career development and scouting (Milestone 12)
+
+`CareerDevelopment` updates amateur ELO and the human player's reputation when a recorded
+amateur fixture completes. Recent match evidence can move perceived aim, crosshair placement
+and composure by up to two points. Progression writes are in the same transaction as the score,
+statistics and calendar advancement, so retries cannot award progression twice. Existing
+careers use their difficulty's starting amateur ELO until their first recorded result.
+
+Schema v5 also stores one training session and one scouting report per career day. Training
+adds one point to the selected human career opinion. Scouting moves reported AI estimates
+towards observed ability by up to four points and increases the report's confidence. Scouting
+does not disclose potential or change underlying simulated ability. Recorded match counts,
+versioned performance ratings, career opinions and reputation remain separate.
 
 ### Bot AI (Milestone 6)
 

@@ -12,7 +12,7 @@ extends RefCounted
 ##   career_match_rating stores independent, versioned performance ratings.
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 4
+const CURRENT_VERSION: int = 5
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -154,6 +154,25 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			PRIMARY KEY (fixture_id, player_id),
 			FOREIGN KEY (fixture_id, player_id) REFERENCES career_match_stat(fixture_id, player_id)
 		) WITHOUT ROWID;""",
+	],
+	# v5 — human amateur standing and the daily training/scouting history.
+	[
+		"""CREATE TABLE career_amateur_rating (
+			player_id TEXT PRIMARY KEY REFERENCES human_profile(player_id),
+			rating INTEGER NOT NULL CHECK (rating BETWEEN 100 AND 3500),
+			last_change INTEGER NOT NULL,
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE career_development_activity (
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			day INTEGER NOT NULL,
+			kind TEXT NOT NULL CHECK (kind IN ('training', 'scouting')),
+			subject_id TEXT NOT NULL REFERENCES player(id),
+			focus TEXT NOT NULL DEFAULT '',
+			change INTEGER NOT NULL,
+			PRIMARY KEY (player_id, kind, day)
+		) WITHOUT ROWID;""",
+		"CREATE INDEX career_development_subject ON career_development_activity(player_id, kind, subject_id, day DESC);",
 	],
 ]
 

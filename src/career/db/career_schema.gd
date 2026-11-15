@@ -12,7 +12,7 @@ extends RefCounted
 ##   career_match_rating stores independent, versioned performance ratings.
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 5
+const CURRENT_VERSION: int = 6
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -173,6 +173,43 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			PRIMARY KEY (player_id, kind, day)
 		) WITHOUT ROWID;""",
 		"CREATE INDEX career_development_subject ON career_development_activity(player_id, kind, subject_id, day DESC);",
+	],
+	# v6 — published league seasons, their locked entrants and organisation series.
+	[
+		"""CREATE TABLE league_season (
+			competition_id TEXT NOT NULL REFERENCES competition(id),
+			season_year INTEGER NOT NULL CHECK (season_year >= 1),
+			start_day INTEGER NOT NULL CHECK (start_day >= 0),
+			best_of INTEGER NOT NULL CHECK (best_of IN (1, 3, 5)),
+			PRIMARY KEY (competition_id, season_year)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE league_entrant (
+			competition_id TEXT NOT NULL,
+			season_year INTEGER NOT NULL,
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			PRIMARY KEY (competition_id, season_year, organisation_id),
+			FOREIGN KEY (competition_id, season_year) REFERENCES league_season(competition_id, season_year)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE league_fixture (
+			id INTEGER PRIMARY KEY,
+			competition_id TEXT NOT NULL,
+			season_year INTEGER NOT NULL,
+			round_number INTEGER NOT NULL CHECK (round_number >= 1),
+			scheduled_day INTEGER NOT NULL CHECK (scheduled_day >= 0),
+			home_id TEXT NOT NULL,
+			away_id TEXT NOT NULL,
+			home_maps INTEGER CHECK (home_maps BETWEEN 0 AND 3),
+			away_maps INTEGER CHECK (away_maps BETWEEN 0 AND 3),
+			CHECK (home_id <> away_id),
+			CHECK ((home_maps IS NULL) = (away_maps IS NULL)),
+			FOREIGN KEY (competition_id, season_year, home_id)
+				REFERENCES league_entrant(competition_id, season_year, organisation_id),
+			FOREIGN KEY (competition_id, season_year, away_id)
+				REFERENCES league_entrant(competition_id, season_year, organisation_id)
+		);""",
+		"CREATE INDEX league_fixture_round ON league_fixture(competition_id, season_year, round_number);",
+		"""CREATE UNIQUE INDEX league_fixture_pair ON league_fixture(competition_id, season_year,
+			MIN(home_id, away_id), MAX(home_id, away_id));""",
 	],
 ]
 

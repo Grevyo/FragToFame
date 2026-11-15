@@ -72,16 +72,6 @@ static func teams() -> Array[Dictionary]:
 	return list
 
 
-static func competitions() -> Array[Dictionary]:
-	var list: Array[Dictionary] = [
-		{"name": "F2F Universal Ladder — Season 1", "type": "Season-long ladder (open to all organisations)", "format": "BO1 · MR15", "status": "Registration open"},
-		{"name": "Amateur Matchmaking", "type": "Individual ELO ladder", "format": "BO1 · MR5 / MR10", "status": "Active"},
-		{"name": "Northern Regional League — Division 3", "type": "Round-robin league with promotion/relegation", "format": "BO3 · MR10", "status": "Starts 12 Jan Y1"},
-		{"name": "Ember Open Cup", "type": "Open qualifier → double-elimination bracket", "format": "BO3 · MR15, final BO5", "status": "Qualifiers 20 Jan Y1"},
-	]
-	return list
-
-
 static func calendar() -> Array[Dictionary]:
 	var list: Array[Dictionary] = [
 		{"date": "03 Jan Y1", "event": "Training day", "detail": "Aim routine & utility lineups"},

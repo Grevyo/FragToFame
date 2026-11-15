@@ -464,7 +464,7 @@ func recent_performance(player_id: String, limit: int = 20) -> Array[Dictionary]
 	return history
 
 
-# --- Competitions (definitions; scheduled and played from Milestone 13) ----------------------
+# --- Competition definitions and published league seasons -------------------------------------
 
 func insert_competition(competition: CompetitionRecord) -> bool:
 	return db.execute("""INSERT INTO competition (id, name, short_name, kind, region_id, tier, team_count, start_month)
@@ -481,6 +481,78 @@ func competitions() -> Array[CompetitionRecord]:
 			ORDER BY tier, region_id IS NOT NULL, region_id, name;"""):
 		list.append(CompetitionRecord.from_row(found))
 	return list
+
+
+
+## Organisations in the defined region and tier or higher, in invitation order.
+func eligible_organisations(competition: CompetitionRecord, start_day: int) -> Array[String]:
+	var ids: Array[String] = []
+	for found: Dictionary in db.rows("""SELECT o.id FROM organisation o
+			LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+		WHERE o.active = 1 AND o.founded_day <= ? AND o.tier <= ? AND (? = '' OR o.region_id = ?)
+		ORDER BY o.tier ASC, COALESCE(r.value, 0) DESC, o.id ASC;""",
+		[start_day, competition.tier, competition.region_id, competition.region_id]):
+		ids.append(str(found["id"]))
+	return ids
+
+
+func league_season(competition_id: String, year: int) -> Dictionary:
+	return db.row("SELECT * FROM league_season WHERE competition_id = ? AND season_year = ?;",
+		[competition_id, year])
+
+
+func league_years(competition_id: String) -> Array[int]:
+	var years: Array[int] = []
+	for found: Dictionary in db.rows(
+			"SELECT season_year FROM league_season WHERE competition_id = ? ORDER BY season_year DESC;",
+			[competition_id]):
+		years.append(int(found["season_year"]))
+	return years
+
+
+## Called inside the season publication transaction.
+func insert_league_season(competition_id: String, year: int, start_day: int, best_of: int,
+		entrants: Array[String], fixtures: Array[Dictionary]) -> bool:
+	if not db.execute("INSERT INTO league_season VALUES (?, ?, ?, ?);",
+			[competition_id, year, start_day, best_of]):
+		return false
+	for org_id: String in entrants:
+		if not db.execute("INSERT INTO league_entrant VALUES (?, ?, ?);", [competition_id, year, org_id]):
+			return false
+	for fixture: Dictionary in fixtures:
+		if not db.execute("""INSERT INTO league_fixture
+				(competition_id, season_year, round_number, scheduled_day, home_id, away_id)
+				VALUES (?, ?, ?, ?, ?, ?);""", [
+				competition_id, year, fixture["round_number"], fixture["scheduled_day"],
+				fixture["home_id"], fixture["away_id"]]):
+			return false
+	return true
+
+
+func league_entrants(competition_id: String, year: int) -> Array[Dictionary]:
+	return db.rows("""SELECT o.id AS organisation_id, o.name, o.short_name
+		FROM league_entrant e JOIN organisation o ON o.id = e.organisation_id
+		WHERE e.competition_id = ? AND e.season_year = ? ORDER BY o.name, o.id;""",
+		[competition_id, year])
+
+
+func league_fixtures(competition_id: String, year: int) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, h.short_name AS home_name, a.short_name AS away_name
+		FROM league_fixture f JOIN organisation h ON h.id = f.home_id
+		JOIN organisation a ON a.id = f.away_id
+		WHERE f.competition_id = ? AND f.season_year = ? ORDER BY f.round_number, f.id;""",
+		[competition_id, year])
+
+
+func league_fixture(fixture_id: int) -> Dictionary:
+	return db.row("""SELECT f.*, s.best_of FROM league_fixture f JOIN league_season s
+		ON s.competition_id = f.competition_id AND s.season_year = f.season_year WHERE f.id = ?;""",
+		[fixture_id])
+
+
+func store_league_score(fixture_id: int, home_maps: int, away_maps: int) -> bool:
+	return db.execute("UPDATE league_fixture SET home_maps = ?, away_maps = ? WHERE id = ?;",
+		[home_maps, away_maps, fixture_id])
 
 
 # --- Helpers ----------------------------------------------------------------------------------

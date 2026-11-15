@@ -21,7 +21,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 10 | Career fixtures and playable match integration | 5, 9 | 🔶 awaiting manual test |
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
-| 13 | Competition and tournament systems | 9, 10 | ⬜ |
+| 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
 | 14 | World progression, transfers, rookies, retirement | 12, 13 | ⬜ |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | ⬜ |
@@ -332,6 +332,18 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 
 ---
 
+## Milestone 13 — Competition and tournament systems 🔶
+
+- [x] Replace sample competitions with definitions from the active world database.
+- [x] Publish persistent round-robin editions with locked entrants and calendar dates. Surface
+      undersubscribed leagues. Resolve a valid series score once and derive standings from results.
+- [ ] Walk through the shipped league calendars and standings in the Career Hub.
+- [ ] Connect playable and simulated fixtures to series results. Handle calendar conflicts, map
+      selection and configurable BO1, BO3 and BO5 series, MR length and overtime.
+- [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
+
+---
+
 ## Progress log
 
 | Date | Entry |
@@ -348,3 +360,4 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 | 2026-11-15 | Owner deferred M7 pending representative maps and gameplay-relevant player traits. M10 implemented and validated on Godot 4.7.2 with 732 passing checks. Manual fixture walkthrough remains open. |
 | 2026-11-15 | M11 records career match telemetry, statistics and F2F ratings. Godot 4.7.2 validation passed 748 checks. Manual acceptance remains open. |
 | 2026-11-15 | M12 adds amateur ELO, match-driven career opinions and reputation, training and scouting. Godot 4.7.2 validation passed 764 checks. Manual acceptance remains open. |
+| 2026-11-15 | M13 publishes fixed-database league seasons and derives standings from accepted series results. Godot 4.7.2 validation passed 782 checks. Match and cup integration remain open. |

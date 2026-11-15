@@ -86,7 +86,7 @@ class ContractRecord extends RefCounted:
 
 
 ## A competition definition (league or cup). [member region_id] "" = international.
-## Definitions only until Milestone 13 schedules and plays them.
+## The fixed definition stays separate from the published league seasons.
 class CompetitionRecord extends RefCounted:
 	var id: String = ""
 	var name: String = ""

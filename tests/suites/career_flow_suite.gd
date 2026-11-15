@@ -74,6 +74,26 @@ func run() -> void:
 	await wait_frames(1)
 	check(players.result_count > 0, "free agent filter")
 
+	hub.call("show_page", &"competitions")
+	await wait_frames(1)
+	var competitions := hub.get("current_page") as CareerCompetitionsPage
+	var competition_text := _text_of(competitions)
+	check(competition_text.contains("Northstar Pro Series") and competition_text.contains("League calendar")
+		and competition_text.contains("Awaiting result"), "Competitions shows the published pro league and open fixtures")
+	var choice := competitions.get("_choice") as OptionButton
+	for idx: int in choice.item_count:
+		if choice.get_item_text(idx) == "Oceania Challenger League":
+			choice.select(idx)
+			choice.item_selected.emit(idx)
+			break
+	check(_text_of(competitions).contains("0 of 8 required organisations"), "an undersubscribed league shows its eligible field")
+	for idx: int in choice.item_count:
+		if choice.get_item_text(idx) == "Vanguard Masters":
+			choice.select(idx)
+			choice.item_selected.emit(idx)
+			break
+	check(_text_of(competitions).contains("Cup scheduling is pending."), "an authored cup appears with its current scheduling status")
+
 	section("Continue a saved career")
 	var save_id := session.save_id
 	var human_id := session.human_player_id

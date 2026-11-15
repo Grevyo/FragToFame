@@ -100,9 +100,8 @@ avoid per-node colour overrides.
 
 `career_hub.gd` holds a `PAGES` registry (id, title, script). Each page is a `CareerPage`
 (`VBoxContainer`) that builds itself in `build_page()`. Adding a section = add a script + a registry
-entry. Since M9, Home, Player Profile, Teams and Players read the open career through
-`App.career.repo`; Competitions, Calendar and Statistics still show labelled `DevSampleData` until
-their milestones. Pages render a "no career open" card when no career is loaded.
+entry. The career pages get their world data through `App.career.repo`. Pages render a
+"no career open" card when no career is loaded.
 
 ### Networking (Milestone 2 proof)
 
@@ -332,6 +331,24 @@ towards observed ability by up to four points and increases the report's confide
 does not disclose potential or change underlying simulated ability. Recorded match counts,
 versioned performance ratings, career opinions and reputation remain separate.
 
+### League seasons (Milestone 13)
+
+The fixed world database provides definitions with a region, tier, field size and starting month.
+Schema v6 stores published editions, locked organisations and their fixtures in the career save.
+`CareerCompetitions` plans the current in-game year's season on career creation, open and the
+amateur calendar's year boundary. A competition with too few eligible organisations stays
+unscheduled. The initial policy admits active organisations founded by opening day, from the
+specified region and the competition's tier or above. It orders invitations by tier, reputation
+and stable organisation ID.
+
+The first format is a single round-robin of BO3 series. Rounds start on the first of the authored
+month. Dates are weekly where possible and fit before the next anniversary. A team plays at most
+one series per round within each league. Conflicts between different competitions are a future
+calendar concern. The Hub derives the table from stored series scores, ordered by wins and map
+differential. The local career result writer checks the due date, the score and conflicting
+submissions. Official FPS matches and off-screen simulation can feed that writer once connected.
+Cup brackets, promotion and relegation, and the F2F Universal Ladder remain planned.
+
 ### Bot AI (Milestone 6)
 
 ```
@@ -375,7 +392,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Career world repository **(M9–11)** | Typed access to players, orgs, contracts, fixtures and recorded performance | SQLite via `godot-sqlite` behind `CareerRepository`. |
 | World progression & calendar **(partial, M10)** | Career fixture list and day advancement on a saved local result | World simulation and shared calendar coordination are planned. |
 | Identity & traits **(planned)** | Stable IDs, trait library, trait-conflict rules | Traits are data (resources/JSON) with effect hooks consumed by decision systems. |
-| Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
+| Competitions **(partial, M13)** | Persistent round-robin seasons, standings and series results | Brackets, the Universal Ladder and authored series rules are planned. |
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
 | Match orchestration **(local fixtures, M10)** | `MatchSetup` → FPS runtime → `MatchResult`, idempotent submission by fixture ID | The dev co-op proof uses `StubMatchRunner`. |
 | FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |

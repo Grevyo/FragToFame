@@ -64,6 +64,8 @@ func create_career(save_name: String, human_profile: Dictionary, database_path: 
 	if error.is_empty():
 		error = CareerStart.populate(repo, world)
 	world.close()
+	if error.is_empty() and not CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(repo.current_day())):
+		error = "Could not prepare the league calendar: %s" % repo.db.last_error
 	if error.is_empty():
 		repo.set_meta_value("save_name", save_name.strip_edges())
 		repo.set_meta_value("world_id", Ids.generate("wld"))
@@ -156,6 +158,8 @@ func open_career(save_id: String) -> CareerSession:
 		return session
 	session.save_id = save_id
 	session.repo = repo
+	if not CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(repo.current_day())):
+		session.warning = "The league calendar could not be prepared."
 	var humans := repo.human_players()
 	session.human_player_id = humans[0].id if not humans.is_empty() else ""
 	return session

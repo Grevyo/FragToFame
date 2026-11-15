@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 12 career development and scouting. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 13 league seasons in progress. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -322,6 +322,16 @@ from spawn, so rounds often start with a long-range fight.
       report updates confidence and the perceived attributes, and persists after reopening.
 - [ ] Complete an amateur fixture. Check the ELO change on Home and the recorded rating in
       Statistics. Verify that training and scouting are available on the new career day.
+
+### Manual test checklist (Milestone 13 — league schedules)
+
+- [ ] In a career created from the shipped database, open **Career Hub → Competitions**.
+      Check that **Northstar Pro Series** opens on 1 February, shows 16 entrants and has 15 rounds.
+- [ ] Switch rounds and check that dates and pairings update. Reopen the career and verify the
+      same schedule. League results await a match or simulation provider.
+- [ ] Choose **Europe West Challenger League**, then **Oceania Challenger League**. Check that
+      the first has an eight-team table and the second shows its eligible field.
+- [ ] Select an authored cup and check that its competition details and scheduling status appear.
 
 ## Project layout
 

@@ -70,7 +70,7 @@ func _on_career_pressed() -> void:
 
 
 func _on_sandbox_pressed() -> void:
-	App.go_to(App.SCENE_FPS_SANDBOX)
+	App.go_to(App.SCENE_MAP_SELECT)
 
 
 func _on_studio_pressed() -> void:

@@ -384,6 +384,9 @@ Editor (Creation Studio, start from **Open → Sandbox Arena** or a blank map):
 
 Kilnmarket (official map):
 
+- [ ] **Main menu → FPS Sandbox** opens the map select screen. Pick **Kilnmarket** and walk it;
+      go back and pick the Sandbox Arena and one of your saved maps.
+
 - [ ] **Creation Studio → Open → Kilnmarket**. Fly through it and use the top view. Check the
       layout reads as three lanes and that nothing floats, overlaps oddly or z-fights badly.
 - [ ] Playtest from an attacker spawn. Run the Salt Road to the Kiln Gate, Potter's Passage up

@@ -14,6 +14,7 @@ const SCENE_CAREER_HUB: StringName = &"career_hub"
 const SCENE_FPS_SANDBOX: StringName = &"fps_sandbox"
 const SCENE_CREATION_STUDIO: StringName = &"creation_studio"
 const SCENE_CAREER_SELECT: StringName = &"career_select"
+const SCENE_MAP_SELECT: StringName = &"map_select"
 
 const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_MAIN_MENU: "res://scenes/main_menu/main_menu.tscn",
@@ -21,6 +22,7 @@ const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_FPS_SANDBOX: "res://scenes/fps_sandbox/fps_sandbox.tscn",
 	SCENE_CREATION_STUDIO: "res://scenes/creation_studio/creation_studio.tscn",
 	SCENE_CAREER_SELECT: "res://scenes/career_select/career_select.tscn",
+	SCENE_MAP_SELECT: "res://scenes/map_select/map_select.tscn",
 }
 
 ## Emitted after the open career moves to a later day.
@@ -29,6 +31,9 @@ signal career_day_changed()
 var current_scene_id: StringName = SCENE_MAIN_MENU
 ## Map to load in the FPS runtime instead of the default sandbox arena (set by the editor).
 var playtest_map: MapDocument = null
+## Map chosen on the map select screen for the next FPS Sandbox load (consumed by the runtime;
+## null = the development arena).
+var sandbox_map: MapDocument = null
 ## Editor state preserved across a playtest so unsaved work is not lost. Consumed by the studio.
 var editor_session: Dictionary = {}
 ## Playtest choices from the editor: {"team": "attack" | "defence", "spawn": index}.
@@ -208,6 +213,15 @@ func start_playtest(doc: MapDocument, session: Dictionary, options: Dictionary =
 	playtest_map = doc
 	playtest_options = options
 	editor_session = session
+	return go_to(SCENE_FPS_SANDBOX)
+
+
+## Opens the FPS Sandbox on [param doc] (free roam; chosen on the map select screen).
+func start_sandbox(doc: MapDocument) -> Error:
+	_active_fixture_id = ""
+	_active_fixture_save_id = ""
+	playtest_map = null
+	sandbox_map = doc
 	return go_to(SCENE_FPS_SANDBOX)
 
 

@@ -234,6 +234,8 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and
   tactics as shipped; saving creates the player's copy under a new ID. `App.map_by_id` resolves
   official maps, the dev arena and saved maps for practice and career fixtures.
+- **Map select.** The main menu's FPS Sandbox entry opens `scenes/map_select` (official maps, the
+  dev arena, saved maps). `App.start_sandbox(doc)` hands the choice to the runtime once.
 
 ### Tactical Play Creator (Milestone 8)
 

@@ -49,7 +49,9 @@ func _load_level() -> void:
 		_start_match()
 		return
 	var playtest := App.is_playtesting()
-	var doc := App.playtest_map if playtest else MapTemplates.sandbox_arena()
+	var chosen := App.sandbox_map
+	App.sandbox_map = null
+	var doc := App.playtest_map if playtest else (chosen if chosen != null else MapTemplates.sandbox_arena())
 	level.load_map(doc)
 	MapLighting.apply(doc.lighting, sun, world_environment.environment)
 	# The editor can playtest as either team from any spawn.

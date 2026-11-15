@@ -23,6 +23,7 @@ func run() -> void:
 	await _test_bots_reach_sites(doc)
 	await _test_bot_round(doc)
 	await _test_tactic_preview()
+	await _test_map_select()
 	var dir := DirAccess.open(TEST_DIR)
 	if dir != null:
 		for file_name: String in dir.get_files():
@@ -271,3 +272,47 @@ func _test_tactic_preview() -> void:
 	var reopened := editor.store.load_path(path, doc)
 	check(reopened["tactic"] != null and (reopened["warnings"] as Array).is_empty(), "the saved tactic is current for the shipped map")
 	await despawn(studio)
+
+
+func _test_map_select() -> void:
+	section("FPS Sandbox map select")
+	App.go_to(App.SCENE_MAIN_MENU)
+	await wait_frames(3)
+	(tree.current_scene.get("sandbox_button") as Button).pressed.emit()
+	await wait_frames(3)
+	var select := tree.current_scene
+	check(App.current_scene_id == App.SCENE_MAP_SELECT and select.get("map_buttons") != null,
+		"FPS Sandbox on the main menu opens the map select screen")
+	var buttons: Dictionary = select.get("map_buttons")
+	check(buttons.has(OfficialMaps.DEFAULT_ID) and buttons.has(MapTemplates.SANDBOX_ARENA_ID),
+		"it lists Kilnmarket and the Sandbox Arena")
+	var storage := MapStorage.new(TEST_DIR)
+	var mine := MapTemplates.blank()
+	mine.name = "My test map"
+	storage.save(mine)
+	select.set("storage", storage)
+	select.call("refresh")
+	buttons = select.get("map_buttons")
+	check(buttons.has(mine.map_id) and (buttons[mine.map_id] as Button).text.contains("My test map"), "it lists maps saved in the Creation Studio")
+	check(not bool(select.call("play", "map_missing")) and App.current_scene_id == App.SCENE_MAP_SELECT, "an unreadable map stays on the screen")
+	(buttons[OfficialMaps.DEFAULT_ID] as Button).pressed.emit()
+	await wait_frames(3)
+	var runtime := tree.current_scene
+	var level := runtime.get_node("Level") as SandboxLevel
+	check(App.current_scene_id == App.SCENE_FPS_SANDBOX and level.document.map_id == OfficialMaps.DEFAULT_ID
+		and runtime.get("match_director") == null, "choosing Kilnmarket loads it in the FPS Sandbox for free roam")
+	var player := runtime.get_node("Player") as FirstPersonController
+	check(MapZones.is_in_buy_zone(level.document, "attack", player.global_position), "the player starts at an attacker spawn")
+	App.go_to(App.SCENE_MAP_SELECT)
+	await wait_frames(3)
+	tree.current_scene.set("storage", storage)
+	check(bool(tree.current_scene.call("play", mine.map_id)), "a saved map can be chosen")
+	await wait_frames(3)
+	check((tree.current_scene.get_node("Level") as SandboxLevel).document.map_id == mine.map_id, "the saved map loads")
+	App.go_to(App.SCENE_FPS_SANDBOX)
+	await wait_frames(3)
+	check((tree.current_scene.get_node("Level") as SandboxLevel).document.map_id == MapTemplates.SANDBOX_ARENA_ID,
+		"the choice is used once; the runtime falls back to the Sandbox Arena")
+	App.go_to(App.SCENE_MAIN_MENU)
+	await wait_frames(3)
+	storage.delete_map(mine.map_id)

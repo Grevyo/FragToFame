@@ -27,8 +27,10 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | ⬜ |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
+| 19 | Database and Competition Editor | 9, 13 | ⬜ |
 
-**Execution order (updated 2026-11-15):** 1 → 6 → 9 → 8 → **10 onward**.
+**Execution order (updated 2026-11-15):** 1 → 6 → 9 → 8 → **10 → 13 → 14 → 15 → 16 → 19 → 17 → 18**.
+M19 comes before M17 because community databases are made with the editor.
 M7 is deferred while representative maps and gameplay-relevant player traits are developed.
 Those foundations give the team AI real layouts, roles and behaviours to work with when M7 is
 revisited. Milestone numbers stay stable for reference.
@@ -346,6 +348,29 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
       selection and configurable BO1, BO3 and BO5 series, MR length and overtime.
 - [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
 
+## Milestone 19 — Database and Competition Editor ⬜
+
+**Goal:** Every world database, including the shipped default, can be created and curated in the
+game. This meets the rule that official content is made with the shipped editors.
+
+Planned scope:
+
+- [ ] Creation Studio section that opens, creates and saves `.f2fdb` world databases (never a
+      live career save).
+- [ ] Edit organisations (name, short name, region, tier, colour, reputation range) and their
+      starting rosters (role, substitute, salary, contract dates).
+- [ ] Edit professionals: identity, nation, age, preferred role, a min–max range for every
+      ability and for potential, reputation range and traits (conflicts blocked).
+- [ ] Edit competition definitions (league or cup, region or international, tier, team count,
+      start month) using the M13 formats.
+- [ ] Live validation using `WorldDatabase.validate()`; a database with problems cannot be
+      published or chosen for a new career.
+- [ ] Database metadata (name, author, description, version) and export for sharing; import
+      already exists (M9).
+- [ ] Curate the shipped default database in the editor and mark it official, replacing the
+      generated draft.
+- [ ] Automated tests for every edit operation, validation and round-trip save/load.
+
 ---
 
 ## Progress log
@@ -365,4 +390,5 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 | 2026-11-15 | M11 records career match telemetry, statistics and F2F ratings. Godot 4.7.2 validation passed 748 checks. Manual acceptance remains open. |
 | 2026-11-15 | M12 adds amateur ELO, match-driven career opinions and reputation, training and scouting. Godot 4.7.2 validation passed 764 checks. Manual acceptance remains open. |
 | 2026-11-15 | M13 publishes fixed-database league seasons and derives standings from accepted series results. Godot 4.7.2 validation passed 782 checks. Match and cup integration remain open. |
+| 2026-11-15 | Owner approved a Database and Competition Editor milestone (M19), placed before M17. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

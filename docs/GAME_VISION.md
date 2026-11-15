@@ -134,7 +134,9 @@ engine-authored maps that ordinary users cannot reproduce.**
 The Creation Studio runs on the local player's computer, not on the career database host.
 
 **Database and Competition Editors** — eventually support creating teams, players, organisations,
-competitions and entire custom career worlds through the game's interface.
+competitions and entire custom career worlds through the game's interface. Careers start from a
+world database (the shipped default or an imported one) whose player values are ranges, rolled
+for each new career. The shipped default database is curated in this editor (Milestone 19).
 
 **Community Content** — official careers use official content. Custom single-player and custom
 co-op careers may import compatible community maps, organisations, databases, leagues and other

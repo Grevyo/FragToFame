@@ -56,6 +56,7 @@ func _start_match() -> void:
 	var setup := match_data[0] as MatchSetup
 	var rules := match_data[1] as MatchRules
 	var doc := match_data[2] as MapDocument
+	var options := match_data[3] as Dictionary
 	level.load_map(doc, false)
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
@@ -64,7 +65,7 @@ func _start_match() -> void:
 	match_director = MatchDirector.new()
 	match_director.name = "MatchDirector"
 	add_child(match_director)
-	match_director.begin(setup, rules, doc, player, level, hud)
+	match_director.begin(setup, rules, doc, player, level, hud, options)
 	match_director.hud.main_menu_requested.connect(_on_main_menu_requested)
 	match_director.hud.play_again_requested.connect(_on_practice_match_requested)
 
@@ -154,7 +155,7 @@ func _on_shot_fired(_origin: Vector3, _end: Vector3, _result: Hitscan.Result) ->
 func _on_target_hit(info: DamageInfo, _target: Health, killed: bool) -> void:
 	tally.record_hit(info, killed)
 	hud.show_hit_marker(info.is_headshot(), killed)
-	if killed:
+	if killed and match_director == null:
 		var weapon := WeaponCatalog.get_definition(info.weapon_id)
 		hud.push_feed("You  [%s%s]  Target dummy  · %.0f m" % [
 			weapon.display_name if weapon != null else "?", " · HEADSHOT" if info.is_headshot() else "", info.distance])

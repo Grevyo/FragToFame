@@ -46,6 +46,8 @@ var frozen: bool = false
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var _spawn_transform: Transform3D
 var _capsule: CapsuleShape3D
+## The player's own hitboxes (so bots can hit them); they follow the crouch height.
+var hitboxes: Array[Hitbox] = []
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera
@@ -61,9 +63,14 @@ func _ready() -> void:
 	# Packed-scene sub-resources are shared between instances; crouching resizes ours.
 	_capsule = (collision.shape as CapsuleShape3D).duplicate() as CapsuleShape3D
 	collision.shape = _capsule
+	hitboxes = HumanoidRig.build(self, health, false).hitboxes
+	health.owner_id = weapons.shooter_id
 	weapons.eye = head
 	weapons.punch_target = camera
-	weapons.exclude = [get_rid()]
+	var own: Array[RID] = [get_rid()]
+	for hitbox: Hitbox in hitboxes:
+		own.append(hitbox.get_rid())
+	weapons.exclude = own
 	health.died.connect(_on_died)
 
 
@@ -139,6 +146,12 @@ func _physics_process(delta: float) -> void:
 		health.kill(DamageInfo.world(health.current))
 
 
+## Sets the team key used for friendly fire and bot targeting.
+func set_team(team_key: StringName) -> void:
+	health.team = team_key
+	weapons.team = team_key
+
+
 func current_max_speed() -> float:
 	if is_crouched():
 		return crouch_move_speed
@@ -176,6 +189,7 @@ func _apply_crouch_shape() -> void:
 	_capsule.height = height
 	collision.position.y = height / 2.0
 	head.position.y = lerpf(STAND_EYE, CROUCH_EYE, crouch_amount)
+	HumanoidRig.apply_height_ratio(hitboxes, height / STAND_HEIGHT)
 
 
 ## Moves the player to a spawn point (feet position, facing yaw) and remembers it for respawns.

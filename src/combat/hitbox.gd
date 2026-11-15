@@ -12,6 +12,8 @@ static func create(zone_id: StringName, shape: Shape3D, local_position: Vector3,
 	box.name = "Hitbox_%s" % zone_id
 	box.zone = zone_id
 	box.health = owner_health
+	if owner_health != null:
+		owner_health.hitboxes.append(box)
 	box.collision_layer = Hitscan.LAYER_HITBOXES
 	box.collision_mask = 0
 	box.position = local_position

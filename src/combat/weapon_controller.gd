@@ -23,6 +23,9 @@ var motion := ShooterMotion.new()
 var trigger: bool = false
 ## Stable ID recorded on damage events.
 var shooter_id: String = "player_local"
+## Team key of the shooter; hits on the same team deal no damage unless [member friendly_fire].
+var team: StringName = &""
+var friendly_fire: bool = false
 var rng := RandomNumberGenerator.new()
 
 var weapons: Array[WeaponState] = []
@@ -156,7 +159,8 @@ func _resolve_shot(state: WeaponState, offset: Vector2) -> void:
 	var direction := Hitscan.offset_direction(eye.global_basis, offset)
 	var space := eye.get_world_3d().direct_space_state
 	var result := Hitscan.trace(space, origin, direction, definition.range_m, exclude)
-	if result.hitbox != null and result.hitbox.health != null and not result.hitbox.health.is_dead:
+	if result.hitbox != null and result.hitbox.health != null and not result.hitbox.health.is_dead \
+			and (friendly_fire or result.hitbox.health.is_enemy_of(team)):
 		var info := DamageInfo.new()
 		info.amount = DamageModel.damage_for(definition, result.hitbox.zone, result.distance)
 		info.armour_penetration = definition.armour_penetration

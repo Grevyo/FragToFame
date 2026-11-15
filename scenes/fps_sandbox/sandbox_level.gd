@@ -9,6 +9,8 @@ var document: MapDocument
 var map_root: Node3D
 var targets_root: Node3D
 var dummies: Array[TargetDummy] = []
+## Created on demand by [method build_navigation] (bots need it; the plain sandbox does not).
+var navigation_region: NavigationRegion3D
 
 
 ## Builds [param doc]. Training dummies are only spawned when [param spawn_training] is true
@@ -36,6 +38,16 @@ func load_map(doc: MapDocument, spawn_training: bool = true) -> void:
 		dummy.rotation_degrees.y = float(piece["rotation_y"])
 		targets_root.add_child(dummy)
 		dummies.append(dummy)
+
+
+## Bakes a navigation mesh from the current map's world colliders (for bots).
+func build_navigation() -> NavigationRegion3D:
+	if navigation_region == null:
+		navigation_region = NavigationRegion3D.new()
+		navigation_region.name = "Navigation"
+		add_child(navigation_region)
+	NavigationBuilder.bake(navigation_region, map_root)
+	return navigation_region
 
 
 ## All spawn points for [param team] as [position, yaw] pairs (falls back like [method spawn_point]).

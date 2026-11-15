@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–5)
+## 2. Current implementation (Milestones 1–6)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -223,6 +223,36 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Zones.** `MapZones` answers "inside which bombsite / buy zone?" from the map document, so the
   editor's zones are the single source of truth.
 
+### Bot AI (Milestone 6)
+
+```
+ map document ─► MapBuilder ─► world colliders ─► NavigationBuilder.bake ─► NavigationRegion3D
+                                                                                  │
+ BotSkill (data) ─► AimModel (pure)                                              ▼
+                        │            BotController (CharacterBody3D, src/ai/)
+                        └──────────►  perceive → engage / move / search
+                                       │ trigger, view          ▲ goals, watch points, interact
+                                       ▼                         │
+                               WeaponController (shared)    BotSquad (scenes/fps_sandbox/)
+                                                              ▲ buy, spawn, objectives
+                                                              │
+                                                     MatchDirector ◄─► MatchState
+```
+
+- **Individual layer (`src/ai/`).** `BotController` only knows enemies (a Health list), a goal, a
+  watch point and an interact flag. It shoots through the same `WeaponController` and hitboxes as
+  the player, so bots obey every weapon rule (spread, recoil, armour, falloff).
+- **Fair by construction.** Perception uses a view cone, view distance, awareness radius and
+  world-only line of sight; aiming has a reaction delay, a capped turn rate and an acquisition
+  error that decays. Skill presets change these numbers, never the rules.
+- **Objective layer (`BotSquad`).** A deliberately simple placeholder that buys, places bots and
+  sets goals (one attack site per round, carrier plants, defenders split, retake and defuse).
+  Milestone 7 replaces it with the team-tactics layer + IGL; `BotController`'s API stays.
+- **Navigation.** Baked at runtime from static colliders on the world layer, so any editor map
+  works. Paths are re-requested when a query came back empty (e.g. before the map synced).
+- **No career coupling.** Bots receive a `BotSkill`; later the career will map professionals'
+  simulated abilities to skills when building a `MatchSetup` — the FPS runtime never reads them.
+
 ### Input
 
 `InputActions.register_defaults()` adds actions only if they don't already exist, so future
@@ -239,8 +269,8 @@ keycodes so WASD works on non-QWERTY layouts.
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
 | Match orchestration **(contracts + stub)** | `MatchSetup` → runtime → `MatchResult`, idempotent submission by fixture ID | Contracts in `src/orchestration/`; only `StubMatchRunner` exists so far. |
-| FPS runtime **(partial: movement, weapons, health, match rules)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
-| Bot AI / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | One team-tactics layer shared by AI and human IGLs. |
+| FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
+| Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
 | Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
 | Tactical Play Creator **(planned)** | Routes, roles, utility, triggers, playbooks | Produces tactic documents consumed by Tactical AI. |
@@ -286,3 +316,9 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | `MatchSetup` MR value overrides the rule preset | The fixture contract decides the format; rules supply timings/economy |
 | 2026-11-15 | Practice match runs inside the existing FPS runtime via `MatchDirector` | One runtime for sandbox, playtest and matches; no duplicate player/HUD code |
 | 2026-11-15 | Passive combatants until M6, labelled on screen | Exercises the full rules loop honestly without pretending AI exists |
+| 2026-11-15 | Runtime navmesh baking with native `NavigationServer3D` (no plugin) | Every editor map is bot-ready with no authoring step; no dependency |
+| 2026-11-15 | One `HumanoidRig` hitbox layout for player, dummies and bots | Identical damage rules for everyone; bots can hit the player |
+| 2026-11-15 | Bot aim = pure `AimModel` + `BotSkill` data | Testable; difficulty through human-like limits, never perfect aim |
+| 2026-11-15 | Navmesh max climb = one cell | Bodies have no step-up; routing over ledges stranded bots |
+| 2026-11-15 | Objective play in a thin `BotSquad`, replaced in M7 | Bot matches are playable now without pre-empting the team-tactics design |
+| 2026-11-15 | Practice defaults to bots; passive targets stay as an option | Rules tests remain deterministic; players get real opponents |

@@ -4,14 +4,18 @@ extends Node3D
 ##
 ## Input: a [MatchSetup] + [MatchRules] (from orchestration) and the loaded map. Output:
 ## [signal match_finished] with a [MatchResult]. Owns the [MatchState] and translates between it
-## and the 3D world: places players and passive combatants every round, handles buying, the bomb
-## (carry, drop, pick up, plant, defuse) and drives the [MatchHud]. Never touches career data.
+## and the 3D world: places players every round, handles buying, the bomb (carry, drop, pick up,
+## plant, defuse) and drives the [MatchHud]. Opponents are either AI bots ([BotSquad], the default
+## for practice) or passive target dummies (option "opponents": "passive", used by rules tests).
+## Never touches career data.
 
 signal match_finished(result: MatchResult)
 
 const HUMAN_ID: String = "player_local"
 const BOMB_PICKUP_RADIUS: float = 1.2
 const DEFUSE_RADIUS: float = 1.6
+const OPPONENTS_BOTS: StringName = &"bots"
+const OPPONENTS_PASSIVE: StringName = &"passive"
 
 var state: MatchState
 var document: MapDocument
@@ -21,7 +25,11 @@ var sandbox_hud: SandboxHud
 var hud: MatchHud
 ## The dropped or planted bomb in the world (null while someone carries it).
 var bomb: BombDevice
+## Passive-mode target dummies by player ID (empty in bots mode).
 var combatants: Dictionary[String, TargetDummy] = {}
+## Bots mode: the AI players (null in passive mode).
+var squad: BotSquad = null
+var opponents: StringName = OPPONENTS_PASSIVE
 ## True while plant/defuse is requested. Read from the interact key while player input is
 ## enabled; scripts and tests may set it directly while input is disabled.
 var interact_held: bool = false
@@ -35,7 +43,8 @@ var _last_safe_position: Vector3 = Vector3.ZERO
 
 
 func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: FirstPersonController,
-		level_node: SandboxLevel, hud_node: SandboxHud) -> void:
+		level_node: SandboxLevel, hud_node: SandboxHud, options: Dictionary = {}) -> void:
+	opponents = StringName(str(options.get("opponents", OPPONENTS_PASSIVE)))
 	document = doc
 	player = player_node
 	level = level_node
@@ -47,8 +56,21 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	hud.buy_menu_closed.connect(close_buy_menu)
 	state = MatchState.new(setup, rules)
 	state.add_player(HUMAN_ID, "You", MatchState.HOME, true)
-	for i: int in rules.team_size:
-		state.add_player("target_%d" % (i + 1), "Target %d" % (i + 1), MatchState.AWAY)
+	if opponents == OPPONENTS_BOTS:
+		var skill := StringName(str(options.get("skill", "normal")))
+		squad = BotSquad.new(self, skill)
+		add_child(squad)
+		squad.add_players(MatchState.HOME, rules.team_size - 1)
+		squad.add_players(MatchState.AWAY, rules.team_size)
+		player.set_team(BotSquad.TEAM_KEYS[MatchState.HOME])
+		level.build_navigation()
+		squad.spawn_bots()
+		hud.set_notice("PRACTICE · %dv%d with bots (%s) · team tactics arrive in M7" % [
+			rules.team_size, rules.team_size, skill])
+	else:
+		for i: int in rules.team_size:
+			state.add_player("target_%d" % (i + 1), "Target %d" % (i + 1), MatchState.AWAY)
+		hud.set_notice("PRACTICE · opponents are passive targets")
 	state.round_started.connect(_on_round_started)
 	state.round_ended.connect(_on_round_ended)
 	state.sides_switched.connect(func() -> void: hud.show_banner("SIDES SWITCHED", 3.0))
@@ -56,6 +78,7 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	state.bomb_dropped.connect(_on_bomb_dropped)
 	state.bomb_picked_up.connect(_on_bomb_picked_up)
 	state.match_ended.connect(_on_match_ended)
+	state.player_killed.connect(_on_player_killed)
 	player.health.died.connect(_on_player_died)
 	state.start()
 
@@ -78,6 +101,8 @@ func _physics_process(delta: float) -> void:
 	if player.input_enabled:
 		interact_held = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_pressed(InputActions.INTERACT)
 	state.tick(delta)
+	if squad != null:
+		squad.physics_update(delta)
 	if player.is_on_floor():
 		_last_safe_position = player.global_position
 	_update_plant(delta)
@@ -260,7 +285,10 @@ func _on_round_started(round_number: int) -> void:
 	plant_progress = 0.0
 	defuse_progress = 0.0
 	last_buy_message = ""
-	_place_combatants()
+	if squad != null:
+		squad.on_round_started()
+	else:
+		_place_combatants()
 	_place_human()
 	sandbox_hud.set_death_state(-1.0)
 	var side_text := "ATTACK" if human_side() == MatchRules.SIDE_ATTACK else "DEFEND"
@@ -306,6 +334,26 @@ func _on_combatant_died(info: DamageInfo, dummy: TargetDummy) -> void:
 	state.record_kill(dummy.combatant_id, info.source_id, info.weapon_id, info.is_headshot(), dummy.global_position)
 
 
+## Kill feed for every elimination in the match (the human's, bots', and passive targets').
+func _on_player_killed(victim_id: String, killer_id: String) -> void:
+	var event: Dictionary = {}
+	for i: int in range(state.events.size() - 1, -1, -1):
+		if state.events[i].get("type") == "kill" and state.events[i].get("victim") == victim_id:
+			event = state.events[i]
+			break
+	var weapon := WeaponCatalog.get_definition(StringName(str(event.get("weapon", ""))))
+	var killer := _feed_name(killer_id) if not killer_id.is_empty() else "World"
+	sandbox_hud.push_feed("%s  [%s%s]  %s" % [killer, weapon.display_name if weapon != null else "—",
+		" · HEADSHOT" if bool(event.get("headshot", false)) else "", _feed_name(victim_id)])
+
+
+func _feed_name(player_id: String) -> String:
+	if player_id == HUMAN_ID:
+		return "You"
+	var player_state := state.get_player(player_id)
+	return player_state.display_name if player_state != null else player_id
+
+
 func _on_player_died(info: DamageInfo) -> void:
 	if state.phase == MatchState.Phase.MATCH_END:
 		return
@@ -322,6 +370,8 @@ func _on_round_ended(winner: int, reason: StringName) -> void:
 		var dummy := combatants[id]
 		if is_instance_valid(dummy) and not dummy.health.is_dead:
 			state.set_player_armour(id, dummy.health.armour, dummy.health.has_helmet)
+	if squad != null:
+		squad.on_round_ended()
 	var side := state.teams[winner].side
 	var reason_text: String = {
 		MatchRules.REASON_ELIMINATION: "Enemy team eliminated",
@@ -335,6 +385,8 @@ func _on_round_ended(winner: int, reason: StringName) -> void:
 
 func _on_match_ended(result: MatchResult) -> void:
 	close_buy_menu()
+	if squad != null:
+		squad.freeze_all()
 	player.input_enabled = false
 	player.frozen = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

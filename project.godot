@@ -40,6 +40,11 @@ window/stretch/aspect="expand"
 3d_physics/layer_2="characters"
 3d_physics/layer_3="hitboxes"
 
+[navigation]
+
+3d/default_cell_size=0.2
+3d/default_cell_height=0.1
+
 [physics]
 
 common/physics_ticks_per_second=60

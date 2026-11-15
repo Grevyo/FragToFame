@@ -41,6 +41,9 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | 1 / 2 / 3 · mouse wheel | VK-12 Vanta rifle / P-4 Kestrel pistol / M-5 Wasp SMG · cycle |
 | B | Buy menu (practice match, in your buy zone during the buy window) |
 | E (hold) | Plant the bomb on a bombsite / defuse a planted bomb (practice match) |
+
+Practice matches are 5v5: you + 4 bot teammates (orange) vs 5 bots (teal), normal skill.
+
 | Esc | Pause menu / release mouse (Esc again resumes; closes the buy menu first) |
 
 Weapons, numbers and names are original development values and will be tuned.
@@ -179,8 +182,9 @@ Ports: career sync **24560**, match **24570** (UDP).
 
 ### Manual test checklist (Milestone 5 — competitive match rules)
 
-Start from **FPS Sandbox → Esc → Start practice match** (MR3, first to 4; opponents are passive
-targets until combat AI arrives in Milestone 6).
+Start from **FPS Sandbox → Esc → Start practice match** (MR3, first to 4). Since Milestone 6 the
+practice match uses bots, so the opposing team now fights back and the scoreboard shows
+"Practice Bots".
 
 - [ ] Round 1 opens in freeze time: scoreboard `You [ATT] 0 · BUY 0:05 · 0 [DEF] Training Targets`,
       you cannot move or shoot but can look around; "Press B to buy" shows at spawn.
@@ -199,6 +203,27 @@ targets until combat AI arrives in Milestone 6).
       **Play again** restarts, **Return to Main Menu** leaves.
 - [ ] Esc during a match pauses the clock; Resume continues.
 
+### Manual test checklist (Milestone 6 — combat and navigation AI)
+
+Start from **FPS Sandbox → Esc → Start practice match (MR3 · 5v5 with bots)**.
+
+- [ ] The notice reads "PRACTICE · 5v5 with bots (normal) · team tactics arrive in M7"; four
+      teammates stand beside you and five opponents at the far spawn.
+- [ ] During freeze time nobody moves; when the round goes live bots run to bombsites using the
+      ramp and stairs, not through walls or off ledges.
+- [ ] Bots spot you only when you are in front of them or close, after a short reaction delay;
+      they miss sometimes; hiding behind walls breaks line of sight.
+- [ ] Bots reload behind cover when possible and search where they last saw you.
+- [ ] Teammate bots never shoot you; kills appear in the kill feed with weapon and headshot tag.
+- [ ] As attacker, die with the bomb: a teammate bot picks it up and plants on a site.
+- [ ] On defence, after a plant, bots go to the bomb and defuse when they see no enemy.
+- [ ] Bots buy rifles/SMGs and armour when they can afford them (watch round 2+).
+- [ ] The match finishes with VICTORY / DEFEAT as before.
+
+Known limits: bots do not coordinate as a team yet (M7), there is no audio so bots cannot hear
+you, and there are no grenades/utility. On the open sandbox arena both teams can see each other
+from spawn, so rounds often start with a long-range fight.
+
 ## Project layout
 
 ```
@@ -209,6 +234,7 @@ src/world     Shared 3D building blocks
 src/maps      Map document format, builder, validator, storage, edit controller
 src/combat    Weapons, spread/recoil, damage, health, armour, hitboxes, hitscan, shooting tally
 src/rules     Competitive rules: MatchRules (format/economy data), ShopCatalog, MatchState
+src/ai        Bot AI: navmesh baking, skills, aim model, BotController (individual combat)
 src/orchestration  MatchSetup / MatchResult contracts
 src/net       career_sync (career host) and match (in-match netcode), kept separate
 scenes/       main_menu, career_hub (+pages), fps_sandbox, creation_studio

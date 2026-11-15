@@ -14,9 +14,9 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 3 | Basic runtime map editing | 1 | 🔶 awaiting manual test |
 | 4 | Basic FPS mechanics | 1 | 🔶 awaiting manual test |
 | 5 | Competitive match rules | 4 | 🔶 awaiting manual test |
-| 6 | Individual combat and navigation AI | 3, 4 | ⬜ |
-| 7 | Tactical team AI and IGL | 5, 6 | ⬜ |
-| 8 | Tactical Play Creator | 3, 7 | ⬜ |
+| 6 | Individual combat and navigation AI | 3, 4 | 🔶 awaiting manual test |
+| 7 | Tactical team AI and IGL | 5, 6, 8, 9 | ⬜ |
+| 8 | Tactical Play Creator | 3, 6 | ⬜ |
 | 9 | Persistent player/team database | 1 | ⬜ |
 | 10 | Career fixtures and playable match integration | 5, 9 | ⬜ |
 | 11 | Detailed statistics | 5, 10 | ⬜ |
@@ -27,6 +27,11 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | ⬜ |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
+
+**Execution order (changed 2026-11-15, owner agreed):** 1 → 6, then **9 → 8 → 7**, then 10 onward.
+Deep team AI (M7) is built after the player/team database (M9) and the tactic document format
+and editor (M8), so the IGL plays authored tactics with real player attributes instead of
+throw-away logic. Numbers stay stable for reference.
 
 ---
 
@@ -153,13 +158,65 @@ Out of scope (later): opponents that fight back (M6 AI), teammates, networked ma
 on the match host later), dropping/picking up weapons, grenades/utility, spectating dead players,
 career submission of practice results (M10).
 
-## Milestone 6 — Individual combat and navigation AI
+## Milestone 6 — Individual combat and navigation AI 🔶
 
-Bots that move around a map (navigation from the map document), spot, aim with human-like
-reaction and error, fire through the same `WeaponController`, use cover basically, and play
-practice matches as opponents (and teammates) under the M5 rules.
+**Goal:** Bots that move around any editor-made map, spot, aim and shoot like (imperfect) humans
+through the same weapon code as the player, and play practice matches as teammates and opponents
+under the M5 rules.
 
-*(Later milestones are elaborated when they become next-up.)*
+Completion criteria:
+
+- [x] Runtime navmesh: `NavigationBuilder` bakes from the built map's world colliders with
+      Godot's `NavigationServer3D` — every map made in the Creation Studio is walkable for bots,
+      no separate authoring step. Climb height is one cell (bodies do not auto-step; stairs use
+      their walk slope).
+- [x] Shared `HumanoidRig`: the player, dummies and bots use the same hitbox layout (head, chest,
+      stomach, arms, legs); the player now has hitboxes, follows crouch, and can be shot.
+- [x] `BotSkill` presets (easy / normal / hard): reaction time, turn speed, aim gain, acquisition
+      error and its decay, recoil control, fire tolerance, view cone/distance, awareness radius,
+      burst distance. No impossible accuracy: errors, reaction and turn caps apply at every level.
+- [x] `AimModel` (pure maths): capped, lagging turns plus decaying acquisition error.
+- [x] `BotController`: perception (view cone, awareness radius, line of sight through world
+      geometry only), reaction delay, recoil compensation, bursts at range, semi-auto tapping,
+      reload behind basic cover, search the last known position, navigation to goals, watch points.
+- [x] Bots never target teammates; damage still respects `friendly_fire`.
+- [x] `BotSquad` in practice matches: default practice is 5v5 (you + 4 bot teammates vs 5 bots).
+      Bots buy (rifle/SMG + armour, kits on defence), spawn per side, attack one site per round,
+      the carrier plants, a dropped bomb is recovered, defenders hold both sites, retake and defuse.
+      Passive targets remain available as an option (used by the rules tests).
+- [x] Kill feed for every match elimination; bot kills feed the same `MatchState` event log.
+- [x] Automated tests: aim model, skills, navmesh (paths, unreachable areas), navigation incl.
+      the platform, perception and line of sight, combat vs dummies and the player, teams, and a
+      bot match (roster, buying, bomb pick-up → plant → defuse, a fought round, respawns).
+- [ ] Manual 5v5 practice-match walkthrough (README) by the project owner.
+
+Out of scope (later): coordinated team play, roles, IGL calls and team economy (M7),
+utility/grenades, sound-based perception (no audio yet), bot skill from career attributes (M12),
+networked bots.
+
+## Milestone 7 — Tactical team AI and IGL
+
+*Scheduled after Milestones 9 and 8 (see execution order).*
+
+**Goal:** Teams of bots play rounds as a team, driven by one team-tactics layer that an AI IGL —
+and later a human IGL — uses to make calls.
+
+Planned scope:
+
+- Team-tactics model (pure, no nodes): a round plan with per-player roles (entry, support, lurk,
+  anchor, rotator), positions and phases (default → execute / hold → post-plant / retake).
+- Map tactical data derived from the map document: sites, callouts, entrances computed from the
+  navmesh, so every editor map works.
+- AI IGL: chooses defaults, executes, fakes, rushes, stacks and saves from economy, score, map and
+  information (spotted enemies, kills, bomb state); mid-round adaptations (rotate, retake, save).
+- Team economy: full buy / force / eco / save decisions shared by the team.
+- Coordination: trading (follow the entry), grouping before an execute, holding angles, retake
+  gathering; information shared only through team communication (no hidden information).
+- Human IGL commands (execute A/B, hold, rotate, save, regroup) issuing the same calls; AI
+  teammates respond.
+- Intelligence scaling by team tier; difficulty never via impossible aim.
+- Tests: plan selection, role assignment, economy decisions, calls → bot goals, a scene match
+  where an execute happens as a group.
 
 ---
 
@@ -172,3 +229,4 @@ practice matches as opponents (and teammates) under the M5 rules.
 | 2026-11-15 | Owner asked for continuous milestone work. Milestone 3 implemented; 234 automated checks passing; awaiting manual editor walkthrough. |
 | 2026-11-15 | Milestone 4 implemented; 340 automated checks passing; awaiting manual feel test. |
 | 2026-11-15 | Milestone 5 implemented; 468 automated checks passing; awaiting manual practice-match walkthrough. |
+| 2026-11-15 | Milestone 6 implemented; 514 automated checks passing; awaiting manual 5v5 bot practice match. Order changed: M9 → M8 → M7 next. |

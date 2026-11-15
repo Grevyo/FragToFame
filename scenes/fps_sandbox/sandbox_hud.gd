@@ -87,7 +87,7 @@ func set_paused(paused: bool) -> void:
 func set_mode(title: String, playtest: bool, in_match: bool = false) -> void:
 	_title_label.text = title
 	editor_button.visible = playtest
-	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 vs passive targets)"
+	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 · 5v5 with bots)"
 
 
 func set_debug_text(text: String) -> void:
@@ -342,7 +342,7 @@ func _build_pause_overlay() -> void:
 	editor_button.pressed.connect(return_to_editor_requested.emit)
 	editor_button.visible = false
 	column.add_child(editor_button)
-	practice_button = UIFactory.button("Start practice match (MR3 vs passive targets)")
+	practice_button = UIFactory.button("Start practice match (MR3 · 5v5 with bots)")
 	practice_button.pressed.connect(practice_match_requested.emit)
 	column.add_child(practice_button)
 	main_menu_button = UIFactory.button("Return to Main Menu")

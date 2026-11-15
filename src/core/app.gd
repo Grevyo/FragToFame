@@ -7,7 +7,7 @@ extends Node
 signal scene_changed(scene_id: StringName)
 
 const VERSION: String = "0.1.0"
-const MILESTONE: String = "Milestone 5 — Competitive Match Rules"
+const MILESTONE: String = "Milestone 6 — Combat & Navigation AI"
 
 const SCENE_MAIN_MENU: StringName = &"main_menu"
 const SCENE_CAREER_HUB: StringName = &"career_hub"
@@ -30,6 +30,8 @@ var editor_session: Dictionary = {}
 var pending_match_setup: MatchSetup = null
 var pending_match_rules: MatchRules = null
 var pending_match_map: MapDocument = null
+## Runtime options for the pending match, e.g. {"opponents": "bots", "skill": "normal"}.
+var pending_match_options: Dictionary = {}
 ## The most recent match outcome produced by the FPS runtime (not yet submitted anywhere).
 var last_match_result: MatchResult = null
 
@@ -74,23 +76,24 @@ func end_playtest() -> Error:
 	return go_to(SCENE_CREATION_STUDIO)
 
 
-## Starts a local practice match (MR3, passive opponents) on [param doc], or the sandbox arena.
-func start_practice_match(doc: MapDocument = null) -> Error:
+## Starts a local practice match (MR3, 5v5 with bot teammates and opponents) on [param doc], or the sandbox arena.
+func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal") -> Error:
 	var map := doc if doc != null else MapTemplates.sandbox_arena()
 	var setup := MatchSetup.new()
 	setup.fixture_id = Ids.generate("practice")
 	setup.competition = "Practice"
 	setup.home_team_id = "team_practice_player"
 	setup.home_team_name = "You"
-	setup.away_team_id = "team_practice_targets"
-	setup.away_team_name = "Training Targets"
+	setup.away_team_id = "team_practice_bots"
+	setup.away_team_name = "Practice Bots"
 	setup.max_rounds = 3
 	setup.map_id = map.map_id
-	return start_match(setup, MatchRules.practice(setup.max_rounds), map)
+	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots", "skill": String(skill)})
 
 
 ## Opens the FPS runtime to play [param setup] under [param rules] on [param map].
-func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument) -> Error:
+func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument, options: Dictionary = {}) -> Error:
+	pending_match_options = options
 	pending_match_setup = setup
 	pending_match_rules = rules
 	pending_match_map = map
@@ -102,12 +105,13 @@ func has_pending_match() -> bool:
 	return pending_match_setup != null
 
 
-## Hands the pending match to the runtime exactly once: [setup, rules, map].
+## Hands the pending match to the runtime exactly once: [setup, rules, map, options].
 func consume_pending_match() -> Array:
-	var match_data: Array = [pending_match_setup, pending_match_rules, pending_match_map]
+	var match_data: Array = [pending_match_setup, pending_match_rules, pending_match_map, pending_match_options]
 	pending_match_setup = null
 	pending_match_rules = null
 	pending_match_map = null
+	pending_match_options = {}
 	return match_data
 
 

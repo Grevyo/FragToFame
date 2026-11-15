@@ -54,14 +54,9 @@ func _build_body() -> void:
 	_blocker.add_child(blocker_shape)
 	body_root.add_child(_blocker)
 
-	var skin := Color("c9b48a")
-	var suit := Color("3c4a5c")
-	_add_part(DamageModel.ZONE_HEAD, _sphere(0.14), Vector3(0, 1.6, 0), skin)
-	_add_part(DamageModel.ZONE_CHEST, _box(Vector3(0.46, 0.36, 0.26)), Vector3(0, 1.29, 0), suit)
-	_add_part(DamageModel.ZONE_STOMACH, _box(Vector3(0.4, 0.3, 0.24)), Vector3(0, 0.96, 0), suit.lightened(0.1))
-	_add_part(DamageModel.ZONE_LEGS, _box(Vector3(0.36, 0.8, 0.22)), Vector3(0, 0.4, 0), suit.darkened(0.25))
-	_add_part(DamageModel.ZONE_ARMS, _box(Vector3(0.11, 0.6, 0.12)), Vector3(-0.3, 1.18, 0), suit.darkened(0.1))
-	_add_part(DamageModel.ZONE_ARMS, _box(Vector3(0.11, 0.6, 0.12)), Vector3(0.3, 1.18, 0), suit.darkened(0.1))
+	var built := HumanoidRig.build(body_root, health, true)
+	hitboxes = built.hitboxes
+	_materials = built.materials
 	# Visor marks the front (-Z).
 	var visor := MeshInstance3D.new()
 	var visor_mesh := BoxMesh.new()
@@ -72,40 +67,6 @@ func _build_body() -> void:
 	visor.material_override = visor_material
 	visor.position = Vector3(0, 1.63, -0.13)
 	body_root.add_child(visor)
-
-
-func _add_part(zone: StringName, shape: Shape3D, at: Vector3, color: Color) -> void:
-	var hitbox := Hitbox.create(zone, shape, at, health)
-	body_root.add_child(hitbox)
-	hitboxes.append(hitbox)
-	var mesh_instance := MeshInstance3D.new()
-	if shape is SphereShape3D:
-		var sphere := SphereMesh.new()
-		sphere.radius = (shape as SphereShape3D).radius
-		sphere.height = sphere.radius * 2.0
-		mesh_instance.mesh = sphere
-	else:
-		var box := BoxMesh.new()
-		box.size = (shape as BoxShape3D).size
-		mesh_instance.mesh = box
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.8
-	mesh_instance.material_override = material
-	_materials.append(material)
-	hitbox.add_child(mesh_instance)
-
-
-static func _sphere(radius: float) -> SphereShape3D:
-	var shape := SphereShape3D.new()
-	shape.radius = radius
-	return shape
-
-
-static func _box(size: Vector3) -> BoxShape3D:
-	var shape := BoxShape3D.new()
-	shape.size = size
-	return shape
 
 
 ## Global position of a hitbox centre for [param zone] (useful for aiming in tests and bots).

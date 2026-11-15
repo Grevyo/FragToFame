@@ -24,6 +24,7 @@ var _progress_box: Control
 var _progress_label: Label
 var _progress_bar: ProgressBar
 var _hint_label: Label
+var _notice: Label
 var _buy_list: VBoxContainer
 var _buy_money: Label
 var _buy_message: Label
@@ -79,6 +80,14 @@ func set_progress(label_text: String, fraction: float) -> void:
 	_progress_box.visible = fraction >= 0.0
 	_progress_label.text = label_text
 	_progress_bar.value = clampf(fraction, 0.0, 1.0)
+
+
+func set_notice(text: String) -> void:
+	_notice.text = text
+
+
+func notice_text() -> String:
+	return _notice.text
 
 
 func set_hint(text: String) -> void:
@@ -165,7 +174,8 @@ func _build_scoreboard() -> void:
 	_round_label = UIFactory.label("", &"MutedLabel")
 	_round_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_round_label)
-	var notice := UIFactory.label("PRACTICE · opponents are passive targets until combat AI (M6)", &"WarningLabel")
+	_notice = UIFactory.label("PRACTICE", &"WarningLabel")
+	var notice := _notice
 	notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(notice)
 	panel.add_child(column)

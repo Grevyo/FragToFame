@@ -11,7 +11,7 @@ extends RefCounted
 ##   (recorded match statistics and calculated ratings arrive with Milestone 11)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 1
+const CURRENT_VERSION: int = 2
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -103,24 +103,24 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			created_day INTEGER NOT NULL
 		);""",
 	],
+	# v2 — competitions copied from the world database the career started from.
+	[
+		"""CREATE TABLE competition (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			short_name TEXT NOT NULL,
+			kind TEXT NOT NULL CHECK (kind IN ('league', 'cup')),
+			region_id TEXT REFERENCES region(id),
+			tier INTEGER NOT NULL CHECK (tier BETWEEN 1 AND 4),
+			team_count INTEGER NOT NULL CHECK (team_count BETWEEN 2 AND 64),
+			start_month INTEGER NOT NULL CHECK (start_month BETWEEN 1 AND 12),
+			active INTEGER NOT NULL DEFAULT 1
+		);""",
+	],
 ]
 
 
 ## Brings [param db] up to [constant CURRENT_VERSION]. Returns "" on success or an error.
 ## Refuses databases written by a newer build (never downgrade a save).
 static func migrate(db: CareerDatabase) -> String:
-	var version := db.user_version()
-	if version > CURRENT_VERSION:
-		return "this save was made by a newer version of Frag to Fame (schema %d > %d)" % [version, CURRENT_VERSION]
-	while version < CURRENT_VERSION:
-		var statements: PackedStringArray = MIGRATIONS[version]
-		var target := version + 1
-		var ok := db.transaction(func() -> bool:
-			for sql: String in statements:
-				if not db.execute(sql):
-					return false
-			return db.set_user_version(target))
-		if not ok:
-			return "migration to schema %d failed: %s" % [target, db.last_error]
-		version = target
-	return ""
+	return CareerDatabase.apply_migrations(db, MIGRATIONS, "save")

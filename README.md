@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 1 (application foundation). See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 9 career templates and local bot practice. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -129,7 +129,10 @@ Career sync (Career Hub → **Co-op (Dev)**):
 - [ ] On B, **Resend** that fixture: log shows `DUPLICATE`; nothing changes.
 - [ ] On A, **Conflict test** on the same fixture: log shows `CONFLICT`; the original score stays.
 - [ ] Visit FPS Sandbox and come back: the career connection is still READY (it persists).
-- [ ] Close A: B shows *connection to host lost*.
+- [ ] Disconnect B and rejoin A without restarting A. The same world and fixtures return.
+- [ ] Join a different career host with a new dev world. Its own fixtures and revision appear.
+      Return to A and confirm its original results are still present.
+- [ ] Close A and confirm B's connection and fixture view clear.
 
 Match netcode (FPS Sandbox → Esc → *Local match network*):
 
@@ -210,8 +213,8 @@ Start from **Main menu → Career Hub** (opens the career screen when no career 
 
 - [ ] With no careers, the left card says "No careers yet". Fill in the new career form (try
       leaving the nickname empty first: a clear error appears and nothing is created).
-- [ ] **Create career** generates a world in about a second and opens the hub; the top bar shows
-      the career name and `01 Jan Y1`.
+- [ ] Select the default world template. **Create career** opens the hub with the career name and
+      the date `01 Jan Y1` in the top bar.
 - [ ] **Home** greets your nickname, shows you as a free agent with a reputation matching the
       difficulty, world counts (40 organisations, ~296 professionals) and the top organisations.
 - [ ] **Player Profile** shows your professional with perceived attributes only.
@@ -224,7 +227,18 @@ Start from **Main menu → Career Hub** (opens the career screen when no career 
       amateur side.
 - [ ] Back to the main menu, quit the game, relaunch: **Career Hub → Continue** reopens the same
       world with the same players.
-- [ ] Two careers with different seeds produce different worlds; the same seed produces the same.
+- [ ] Enter the same seed for two careers using the same template. Home shows the actual seed. The
+      starting organisations and professionals are the same, with repeatable AI ability rolls.
+      Use a different seed to vary the rolls. Leaving the field blank uses a random seed.
+- [ ] In a live practice round with bots, press Esc. The clock, bots and combat stop. Resume and
+      verify they continue. **Play again** and **Restart practice match** retain the opponent and
+      its roster, with a fresh score.
+- [ ] From Career Select, use **Import world template** on a valid standalone `.f2fdb`. Select
+      it for a new career. Re-importing that ID asks before replacing it and keeps the previous
+      file as `.bak`. A rejected import leaves it available.
+- [ ] With a disposable career only, test restoring from a known-good snapshot through Career
+      Select. Reopen the career and verify the original database is retained under a
+      `career.db.damaged-…` filename. Close other game instances before restoring.
 
 Saves live in `%APPDATA%\Godot\app_userdata\Frag to Fame\careers\<save>\career.db` with
 snapshots in `backups\`.

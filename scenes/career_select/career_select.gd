@@ -1,6 +1,5 @@
 extends Control
-## Career select: continue a saved career or create a new one (your professional + a freshly
-## generated world). Talks to the career layer only through App (session) and CareerSaves.
+## Continues a saved career or creates one from a template and an optional seed.
 
 signal career_opened(save_id: String)
 
@@ -20,6 +19,12 @@ var create_button: Button
 var back_button: Button
 
 var _nation_ids: Array[String] = []
+var _database_option: OptionButton
+var _database_paths: Array[String] = []
+var _import_dialog: FileDialog
+var _replace_dialog: ConfirmationDialog
+var _replacement_source: String
+var _restore_button: Button
 
 
 func _ready() -> void:
@@ -40,6 +45,8 @@ func refresh_saves() -> void:
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.add_child(UIFactory.label(str(summary["name"]), &"CardTitleLabel"))
 		var detail := "%s · %s" % [str(summary["human"]), GameDate.format(int(summary["current_day"]))]
+		if not str(summary["error"]).is_empty():
+			detail = str(summary["error"])
 		if int(summary["schema"]) > CareerSchema.CURRENT_VERSION:
 			detail = "Made by a newer version of the game"
 		info.add_child(UIFactory.label(detail, &"MutedLabel"))
@@ -65,9 +72,16 @@ func continue_career(save_id: String) -> String:
 func create_career() -> String:
 	var profile := form_profile()
 	var seed_text := seed_edit.text.strip_edges()
-	var world_seed := int(seed_text) if seed_text.is_valid_int() else int(Time.get_unix_time_from_system()) ^ randi()
-	status_label.text = "Generating the world…"
-	var error := App.new_career(career_name_edit.text, world_seed, profile)
+	var career_seed := -1
+	if not seed_text.is_empty():
+		if not seed_text.is_valid_int() or seed_text.length() > 10 or int(seed_text) < 0 or int(seed_text) > 2147483647:
+			var problem := "Enter a whole-number seed from 0 to 2147483647, or leave it blank."
+			_show_error(problem)
+			return problem
+		career_seed = int(seed_text)
+	status_label.text = "Starting the career…"
+	var database_path := _database_paths[_database_option.selected] if _database_option.selected >= 0 else ""
+	var error := App.new_career(career_name_edit.text, profile, database_path, career_seed)
 	if not error.is_empty():
 		_show_error(error)
 		return error
@@ -90,13 +104,18 @@ func form_profile() -> Dictionary:
 
 func _show_error(text: String, save_id: String = "") -> void:
 	status_label.text = text
-	if not save_id.is_empty() and text.contains("damaged"):
-		var restore := UIFactory.button("Restore the latest backup")
-		restore.pressed.connect(func() -> void:
+	if is_instance_valid(_restore_button):
+		_restore_button.queue_free()
+		_restore_button = null
+	if not save_id.is_empty() and not App.career_saves.backups(save_id).is_empty():
+		_restore_button = UIFactory.button("Restore the latest backup")
+		_restore_button.pressed.connect(func() -> void:
 			var problem := App.career_saves.restore_latest_backup(save_id)
-			status_label.text = "Backup restored — press Continue again." if problem.is_empty() else problem
-			restore.queue_free())
-		status_label.get_parent().add_child(restore)
+			_show_error("Backup restored — press Continue again." if problem.is_empty() else problem,
+				"" if problem.is_empty() else save_id)
+			if problem.is_empty():
+				refresh_saves())
+		status_label.get_parent().add_child(_restore_button)
 
 
 func _build() -> void:
@@ -129,9 +148,9 @@ func _build() -> void:
 	saves_card.add_child(saves_box)
 
 	var form := UIFactory.card(row, "New career")
-	form.add_child(UIFactory.label("Create your fictional professional. A new esports world of original "
-		+ "organisations and players is generated for every career. Your career attributes are what the "
-		+ "world believes about you — they never change your aim, recoil or movement.", &"MutedLabel", true))
+	form.add_child(UIFactory.label("Create your professional from a world template. The seed rolls AI "
+		+ "abilities within the template's ranges. Your own FPS mechanics are independent of career attributes.",
+		&"MutedLabel", true))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override(&"h_separation", 16)
@@ -162,11 +181,55 @@ func _build() -> void:
 	age_spin.max_value = 30
 	age_spin.value = 18
 	grid.add_child(age_spin)
-	seed_edit = _line(grid, "World seed (optional)", "")
-	seed_edit.placeholder_text = "random"
+	_database_option = _option(grid, "World template")
+	seed_edit = _line(grid, "Career seed (optional)", "")
+	seed_edit.placeholder_text = "Random if blank"
+	var import_button := UIFactory.button("Import world template")
+	form.add_child(import_button)
+	_import_dialog = FileDialog.new()
+	_import_dialog.title = "Import a world template"
+	_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_import_dialog.filters = PackedStringArray(["*.f2fdb ; Frag to Fame world templates"])
+	add_child(_import_dialog)
+	import_button.pressed.connect(func() -> void: _import_dialog.popup_centered_ratio())
+	_import_dialog.file_selected.connect(func(path: String) -> void: _import_world(path))
+	_replace_dialog = ConfirmationDialog.new()
+	_replace_dialog.title = "Replace imported world template?"
+	_replace_dialog.confirmed.connect(func() -> void: _import_world(_replacement_source, true))
+	add_child(_replace_dialog)
+	_refresh_databases()
 	create_button = UIFactory.button("Create career", &"AccentButton")
 	create_button.pressed.connect(func() -> void: create_career())
 	form.add_child(create_button)
+
+
+func _refresh_databases(selected_path: String = "") -> void:
+	_database_option.clear()
+	_database_paths.clear()
+	for entry: Dictionary in App.career_saves.databases.list():
+		if not str(entry["error"]).is_empty():
+			continue
+		_database_paths.append(str(entry["path"]))
+		_database_option.add_item(str(entry["name"]))
+	var selected := _database_paths.find(selected_path)
+	if selected < 0:
+		selected = _database_paths.find(WorldDatabases.default_path())
+	if selected >= 0:
+		_database_option.select(selected)
+
+
+func _import_world(path: String, confirmed: bool = false) -> void:
+	var result := App.career_saves.databases.import_database(path, confirmed)
+	if bool(result["requires_confirmation"]):
+		_replacement_source = path
+		_replace_dialog.dialog_text = "Replace '%s' for future careers? The previous file is kept as a backup." % result["name"]
+		_replace_dialog.popup_centered()
+	elif not str(result["error"]).is_empty():
+		_show_error(str(result["error"]))
+	else:
+		_refresh_databases(str(result["path"]))
+		_show_error("Imported %s." % result["name"])
 
 
 func _line(grid: GridContainer, caption: String, value: String) -> LineEdit:

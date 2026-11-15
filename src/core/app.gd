@@ -86,12 +86,14 @@ func load_career(save_id: String) -> String:
 	return ""
 
 
-## Generates a new career world and makes it current. Returns "" or an error message.
-func new_career(save_name: String, world_seed: int, human_profile: Dictionary) -> String:
-	close_career()
-	var session := career_saves.create_career(save_name, world_seed, human_profile)
+## Starts a new career from a world database ("" = the shipped default) and makes it current.
+## Returns "" or an error message.
+func new_career(save_name: String, human_profile: Dictionary, database_path: String = "",
+		career_seed: int = -1) -> String:
+	var session := career_saves.create_career(save_name, human_profile, database_path, career_seed)
 	if not session.is_ok():
 		return session.error
+	close_career()
 	career = session
 	return ""
 
@@ -146,6 +148,7 @@ func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal"
 
 ## Opens the FPS runtime to play [param setup] under [param rules] on [param map].
 func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument, options: Dictionary = {}) -> Error:
+	last_match_result = null
 	pending_match_options = options
 	pending_match_setup = setup
 	pending_match_rules = rules

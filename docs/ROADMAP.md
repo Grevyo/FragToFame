@@ -228,16 +228,17 @@ Completion criteria:
 - [x] `godot-sqlite` GDExtension (MIT) installed; `CareerDatabase` is the only class that touches
       SQLite (WAL, foreign keys, nested transactions with rollback, `VACUUM INTO` snapshots,
       integrity check).
-- [x] `CareerSchema` v1 with migrations via `user_version`; newer saves are refused, older ones are
-      snapshotted then upgraded in one transaction.
+- [x] `CareerSchema` v2 with migrations via `user_version`. A v1 upgrade requires a verified snapshot
+      before its schema transaction begins.
 - [x] Schema: meta, regions, nations, organisations, players, true abilities (AI only), perceived
       abilities with scouting confidence, player and organisation reputation, traits, contracts
       (one active contract per player enforced), human profiles.
 - [x] `CareerRepository`: typed records and queries (organisations, rosters, lineups, player
       search/filter/sort, stat layers, traits, contracts with history). No SQL elsewhere.
-- [x] `WorldGenerator`: deterministic per seed; 40 organisations over 4 tiers and 8 regions, 296
-      professionals with original nicknames and organisation names, role-shaped abilities,
-      hidden potential, noisy perceived values, reputation, compatible traits, contracts.
+- [x] A shipped starting template with 40 organisations across eight regions, 296 AI professionals
+      and 19 competition definitions. New careers retain authored identities, traits and rosters,
+      and roll AI abilities from the stored career seed. Import checked standalone templates in
+      Career Select.
 - [x] `TraitLibrary`: 24 data-driven traits in 6 categories with conflict rules (stored and shown;
       consumed by decision systems from M7 onward).
 - [x] Human creation (`HumanCareer`): perceived values + reputation from career difficulty, never
@@ -273,3 +274,4 @@ saves from the UI.
 | 2026-11-15 | Milestone 5 implemented; 468 automated checks passing; awaiting manual practice-match walkthrough. |
 | 2026-11-15 | Milestone 6 implemented; 514 automated checks passing; awaiting manual 5v5 bot practice match. Order changed: M9 → M8 → M7 next. |
 | 2026-11-15 | Career database = SQLite (owner). Milestone 9 implemented; 614 automated checks passing; awaiting manual career walkthrough. |
+| 2026-11-15 | M9 stabilisation verified on Godot 4.7.2 with 663 automated checks. World-template creation, backup and restore failures, reconnect isolation, practice pause and replay, and content replacement covered. Manual acceptance remains open. |

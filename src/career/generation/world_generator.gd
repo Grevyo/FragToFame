@@ -1,22 +1,24 @@
 class_name WorldGenerator
 extends RefCounted
-## Generates a new career world into an empty [CareerRepository]: organisations across regions
-## and tiers, their rosters, free agents, abilities, perceived values, reputation, traits and
-## contracts. Deterministic: the same seed and options produce the same world.
+## Drafts a world database ([WorldDatabase]): organisations across regions and tiers, their
+## rosters, free agents, ability/potential **ranges**, reputation ranges, traits and competitions.
+## It is a content tool — the default database is drafted with it and then curated in the
+## Database Editor; careers start from a database, never from the generator.
+## Deterministic: the same seed and options produce the same database.
 
-const GENERATOR_VERSION: int = 1
+const GENERATOR_VERSION: int = 2
 
 ## Organisations per tier (1 = top) for the default world.
 const DEFAULT_TIER_COUNTS: Dictionary[int, int] = {1: 6, 2: 10, 3: 12, 4: 12}
 const DEFAULT_FREE_AGENTS: int = 80
 
-## [ability mean, scouting confidence, reputation min, reputation max, salary min, salary max]
+## [ability mean, reputation min, reputation max, salary min, salary max]
 const TIER_PROFILE: Dictionary[int, Array] = {
-	1: [78, 82, 66, 92, 9000, 22000],
-	2: [70, 66, 46, 70, 3500, 9000],
-	3: [61, 46, 24, 48, 900, 3500],
-	4: [52, 30, 8, 28, 0, 600],
-	0: [46, 22, 2, 20, 0, 0],  # free agents
+	1: [78, 66, 92, 9000, 22000],
+	2: [70, 46, 70, 3500, 9000],
+	3: [61, 24, 48, 900, 3500],
+	4: [52, 8, 28, 0, 600],
+	0: [46, 2, 20, 0, 0],  # free agents
 }
 ## Probability of an organisation being based in each region.
 const REGION_WEIGHTS: Dictionary[String, float] = {
@@ -32,8 +34,10 @@ const ROLE_TRAITS: Dictionary[StringName, Array] = {
 	&"sniper": [&"tr_passive", &"tr_calm", &"tr_clutch_player"],
 	&"rifler": [&"tr_spray_master", &"tr_steady", &"tr_adaptable"],
 }
+## International events: [tier, kind, team count, start month].
+const INTERNATIONAL_EVENTS: Array[Array] = [[1, "cup", 16, 3], [1, "cup", 8, 11], [2, "league", 16, 2]]
 
-var repo: CareerRepository
+var world: WorldDatabase
 var rng := RandomNumberGenerator.new()
 var tier_counts: Dictionary[int, int] = DEFAULT_TIER_COUNTS.duplicate()
 var free_agents: int = DEFAULT_FREE_AGENTS
@@ -42,10 +46,11 @@ var today: int = 0
 var _used_nicknames: Dictionary[String, bool] = {}
 var _used_org_names: Dictionary[String, bool] = {}
 var _nations_by_region: Dictionary[String, Array] = {}
+var _regions_used: Dictionary[String, bool] = {}
 
 
-func _init(repository: CareerRepository, world_seed: int) -> void:
-	repo = repository
+func _init(world_database: WorldDatabase, world_seed: int) -> void:
+	world = world_database
 	rng.seed = world_seed
 	for nation_id: String in CareerCatalog.NATIONS:
 		var region := CareerCatalog.nation_region(nation_id)
@@ -54,11 +59,24 @@ func _init(repository: CareerRepository, world_seed: int) -> void:
 		_nations_by_region[region].append(nation_id)
 
 
-## Fills the repository. Returns "" on success or an error (nothing is written on failure).
+## Creates a world database file at [param path] and fills it. Returns "" or an error.
+static func build(path: String, world_seed: int, database_id: String, name: String, description: String,
+		organisations_per_tier: Dictionary[int, int] = DEFAULT_TIER_COUNTS, free_agent_count: int = DEFAULT_FREE_AGENTS) -> String:
+	var world_database := WorldDatabase.new()
+	var error := world_database.create(path, database_id, name, "Frag to Fame world generator", description)
+	if error.is_empty():
+		var generator := WorldGenerator.new(world_database, world_seed)
+		generator.tier_counts = organisations_per_tier.duplicate()
+		generator.free_agents = free_agent_count
+		error = generator.generate()
+	world_database.close()
+	return error
+
+
+## Fills the (empty, open) world database. Returns "" on success or an error (nothing is
+## written on failure).
 func generate() -> String:
-	var ok := repo.transaction(func() -> bool:
-		if not repo.seed_reference_data():
-			return false
+	var ok := world.transaction(func() -> bool:
 		for tier: int in [1, 2, 3, 4]:
 			for i: int in int(tier_counts.get(tier, 0)):
 				if not _generate_organisation(tier):
@@ -67,10 +85,10 @@ func generate() -> String:
 			var region := _pick_region()
 			if _generate_player(0, _random_role(), region).is_empty():
 				return false
-		repo.set_meta_value("generator_version", GENERATOR_VERSION)
-		repo.set_meta_value("current_day", today)
-		return true)
-	return "" if ok else "world generation failed: %s" % repo.db.last_error
+		if not _generate_competitions():
+			return false
+		return world.set_meta_value("generator_version", GENERATOR_VERSION))
+	return "" if ok else "world generation failed: %s" % world.db.last_error
 
 
 func _generate_organisation(tier: int) -> bool:
@@ -79,13 +97,13 @@ func _generate_organisation(tier: int) -> bool:
 	org.name = _unique_org_name()
 	org.short_name = _short_name(org.name)
 	org.region_id = _pick_region()
+	_regions_used[org.region_id] = true
 	org.tier = tier
 	org.founded_day = today - rng.randi_range(200, 3000)
 	org.colour = Color.from_hsv(rng.randf(), rng.randf_range(0.45, 0.8), rng.randf_range(0.55, 0.9)).to_html(false)
-	if not repo.insert_organisation(org):
-		return false
 	var profile: Array = TIER_PROFILE[tier]
-	repo.set_organisation_reputation(org.id, rng.randi_range(int(profile[2]), int(profile[3])), today)
+	if not world.insert_organisation(org, _reputation_range(profile)):
+		return false
 	var roles := ROSTER_ROLES.duplicate()
 	if rng.randf() < 0.35:
 		roles[3] = &"lurker"
@@ -96,15 +114,14 @@ func _generate_organisation(tier: int) -> bool:
 		if player_id.is_empty():
 			return false
 		var contract := CareerRecords.ContractRecord.new()
-		contract.id = Ids.seeded("con", rng)
 		contract.player_id = player_id
 		contract.organisation_id = org.id
 		contract.role = role
 		contract.is_substitute = i >= 5
-		contract.monthly_salary = rng.randi_range(int(profile[4]), int(profile[5]))
+		contract.monthly_salary = rng.randi_range(int(profile[3]), int(profile[4]))
 		contract.start_day = today - rng.randi_range(20, 700)
 		contract.end_day = today + rng.randi_range(90, 900)
-		if not repo.sign_contract(contract):
+		if not world.add_to_roster(contract):
 			return false
 	return true
 
@@ -122,24 +139,76 @@ func _generate_player(tier: int, role: StringName, region: String) -> String:
 	var age := rng.randi_range(16, 31)
 	player.birth_day = today - age * GameDate.DAYS_PER_YEAR - rng.randi_range(0, GameDate.DAYS_PER_YEAR - 1)
 	player.preferred_role = role
-	player.created_day = today
-	if not repo.insert_player(player):
-		return ""
-
 	var profile: Array = TIER_PROFILE[tier]
-	var true_values := _abilities(float(profile[0]), role, age)
-	var potential := clampi(_average(true_values) + rng.randi_range(0, 26 if age <= 21 else 10), 1, 100)
-	var stored: Dictionary = true_values.duplicate()
-	stored[CareerCatalog.POTENTIAL] = potential
-	if not repo.set_abilities(player.id, stored):
+	var centre := _abilities(float(profile[0]), role, age)
+	if not world.insert_player(player, _ranges(centre, age), _reputation_range(profile)):
 		return ""
-	var confidence := clampi(int(profile[1]) + rng.randi_range(-8, 8), 5, 95)
-	if not repo.set_perceived(player.id, _perceive(true_values, confidence), confidence, today):
-		return ""
-	var reputation := rng.randi_range(int(profile[2]), int(profile[3]))
-	repo.set_reputation(player.id, reputation, today)
 	_add_traits(player.id, role)
 	return player.id
+
+
+## Turns centre values into ranges. Young players are less known (wider ranges) and have more
+## room to grow (higher, wider potential).
+func _ranges(centre: Dictionary, age: int) -> Dictionary[StringName, Vector2i]:
+	var result: Dictionary[StringName, Vector2i] = {}
+	var extra := 2 if age <= 20 else 0
+	for ability: Variant in centre:
+		var value := int(centre[ability])
+		var half := rng.randi_range(2, 5) + extra
+		result[StringName(str(ability))] = Vector2i(clampi(value - half, 1, 99), clampi(value + half, 1, 99))
+	var average := _average(centre)
+	var low := average
+	var high := average
+	if age <= 21:
+		low += rng.randi_range(0, 6)
+		high += rng.randi_range(12, 28)
+	elif age <= 26:
+		high += rng.randi_range(4, 12)
+	else:
+		low -= 2
+		high += rng.randi_range(1, 5)
+	result[CareerCatalog.POTENTIAL] = Vector2i(clampi(low, 1, 99), clampi(maxi(high, low), 1, 100))
+	return result
+
+
+func _reputation_range(profile: Array) -> Vector2i:
+	var centre := rng.randi_range(int(profile[1]), int(profile[2]))
+	var half := rng.randi_range(3, 8)
+	return Vector2i(clampi(centre - half, 0, 100), clampi(centre + half, 0, 100))
+
+
+## Competition definitions: international events for the top tiers, a league and an open cup
+## for every region that has organisations. Scheduling and play arrive with Milestone 13.
+func _generate_competitions() -> bool:
+	var words: Array[String] = NamePools.COMPETITION_WORDS.duplicate()
+	for event: Array in INTERNATIONAL_EVENTS:
+		var word: String = words.pop_at(rng.randi() % words.size())
+		var kind := str(event[1])
+		var suffix := "Pro Series" if kind == "league" else _pick(NamePools.EVENT_SUFFIXES)
+		if not _add_competition("%s %s" % [word, suffix], kind, "", int(event[0]), int(event[2]), int(event[3])):
+			return false
+	for region_id: String in CareerCatalog.REGIONS:
+		if not _regions_used.has(region_id):
+			continue
+		var region_name := CareerCatalog.region_name(region_id)
+		if not _add_competition("%s Challenger League" % region_name, "league", region_id, 3, 8, 1):
+			return false
+		if not _add_competition("%s Open" % region_name, "cup", region_id, 4, 16, 6):
+			return false
+	return true
+
+
+func _add_competition(name: String, kind: String, region_id: String, tier: int, teams: int, month: int) -> bool:
+	var competition := CareerRecords.CompetitionRecord.new()
+	competition.id = Ids.seeded("cmp", rng)
+	competition.name = name
+	competition.short_name = _short_name(name)
+	competition.kind = kind
+	competition.region_id = region_id
+	competition.tier = tier
+	competition.team_count = teams
+	competition.start_month = month
+	return world.insert_competition(competition)
 
 
 func _abilities(mean: float, role: StringName, age: int) -> Dictionary:
@@ -157,25 +226,16 @@ func _abilities(mean: float, role: StringName, age: int) -> Dictionary:
 	return values
 
 
-## Perceived values: the truth seen through scouting noise (less confident → noisier).
-func _perceive(true_values: Dictionary, confidence: int) -> Dictionary:
-	var spread := (100.0 - confidence) / 8.0
-	var seen: Dictionary = {}
-	for ability: Variant in true_values:
-		seen[ability] = clampi(roundi(float(true_values[ability]) + rng.randfn(0.0, spread)), 1, 99)
-	return seen
-
-
 func _add_traits(player_id: String, role: StringName) -> void:
 	var count := rng.randi_range(2, 4)
 	var leaning: Array = ROLE_TRAITS.get(role, [])
 	var all := TraitLibrary.ids()
 	var attempts := 0
-	while repo.traits(player_id).size() < count and attempts < 20:
+	while world.traits(player_id).size() < count and attempts < 20:
 		attempts += 1
 		var candidate: StringName = leaning[rng.randi() % leaning.size()] if rng.randf() < 0.45 and not leaning.is_empty() \
 			else all[rng.randi() % all.size()]
-		repo.add_trait(player_id, candidate, rng.randi_range(1, 3))
+		world.add_trait(player_id, candidate, rng.randi_range(1, 3))
 
 
 func _unique_nickname() -> String:

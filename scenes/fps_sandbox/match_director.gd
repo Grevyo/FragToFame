@@ -121,7 +121,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if state == null or state.phase == MatchState.Phase.MATCH_END:
+	if state == null or paused or state.phase == MatchState.Phase.MATCH_END:
 		return
 	if event.is_action_pressed(InputActions.BUY_MENU):
 		if is_buy_menu_open():

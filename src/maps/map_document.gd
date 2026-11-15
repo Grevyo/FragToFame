@@ -169,7 +169,7 @@ static func from_dict(data: Dictionary) -> MapDocument:
 		return null
 	var doc := MapDocument.new()
 	doc.map_id = str(data.get("map_id", ""))
-	if doc.map_id.is_empty():
+	if not Ids.is_file_id(doc.map_id):
 		return null
 	doc.name = str(data.get("name", "Untitled map"))
 	doc.author = str(data.get("author", ""))
@@ -179,12 +179,17 @@ static func from_dict(data: Dictionary) -> MapDocument:
 	var raw_pieces: Variant = data.get("pieces", [])
 	if not raw_pieces is Array:
 		return null
+	var seen: Dictionary[String, bool] = {}
 	for raw: Variant in raw_pieces as Array:
 		if not raw is Dictionary:
 			return null
 		var piece := _piece_from_raw(raw as Dictionary)
 		if piece.is_empty():
 			return null
+		var id := str(piece["id"])
+		if seen.has(id):
+			return null
+		seen[id] = true
 		doc.add_piece(piece)
 	return doc
 
@@ -221,7 +226,11 @@ static func _vec3(value: Variant) -> Variant:
 		return value
 	if value is Array and (value as Array).size() == 3:
 		var a := value as Array
-		return Vector3(float(a[0]), float(a[1]), float(a[2]))
+		for component: Variant in a:
+			if not (component is int or component is float):
+				return null
+		var vector := Vector3(float(a[0]), float(a[1]), float(a[2]))
+		return vector if vector.is_finite() else null
 	return null
 
 

@@ -7,7 +7,7 @@ extends CareerPage
 const LOG_LIMIT: int = 12
 
 static var _log: Array[String] = []
-## fixture_id -> last result dict this client submitted (for the duplicate test).
+## world ID + fixture ID -> last result dict this client submitted (for the duplicate test).
 static var _last_submitted: Dictionary[String, Dictionary] = {}
 
 var _status_box: VBoxContainer
@@ -152,6 +152,8 @@ func _refresh_fixtures() -> void:
 func _fixture_row(fixture: Dictionary) -> Control:
 	var row := UIFactory.hbox(12)
 	var id := str(fixture["id"])
+	var world_id := CareerSync.client.world_id
+	var submission_key := "%s/%s" % [world_id, id]
 	var date := UIFactory.label(str(fixture.get("date", "")), &"AccentLabel")
 	date.custom_minimum_size.x = 90
 	row.add_child(date)
@@ -165,7 +167,7 @@ func _fixture_row(fixture: Dictionary) -> Control:
 	if result.is_empty():
 		var play := UIFactory.button("Play stub match")
 		play.tooltip_text = "Generates a random valid result with the placeholder match runner and submits it."
-		play.pressed.connect(_play_stub.bind(fixture))
+		play.pressed.connect(_play_stub.bind(fixture, world_id))
 		row.add_child(play)
 	else:
 		var score := UIFactory.label("%d – %d" % [int(result["home_score"]), int(result["away_score"])], &"CardTitleLabel")
@@ -175,32 +177,32 @@ func _fixture_row(fixture: Dictionary) -> Control:
 		row.add_child(UIFactory.label("by %s" % result.get("submitted_by", "?"), &"MutedLabel"))
 		var resend := UIFactory.button("Resend")
 		resend.tooltip_text = "Resends this client's last submission unchanged. Expected: DUPLICATE (ignored safely)."
-		resend.disabled = not _last_submitted.has(id)
+		resend.disabled = not _last_submitted.has(submission_key)
 		resend.pressed.connect(func() -> void:
-			CareerSync.client.resend_submission(_last_submitted[id])
+			CareerSync.client.resend_submission(_last_submitted[submission_key], world_id)
 			_add_log("Resent submission for %s" % id))
 		row.add_child(resend)
 		var conflict := UIFactory.button("Conflict test")
 		conflict.tooltip_text = "Submits a new, different result for this fixture. Expected: CONFLICT (rejected)."
-		conflict.pressed.connect(_submit_conflict.bind(fixture))
+		conflict.pressed.connect(_submit_conflict.bind(fixture, world_id))
 		row.add_child(conflict)
 	return row
 
 
-func _play_stub(fixture: Dictionary) -> void:
+func _play_stub(fixture: Dictionary, world_id: String) -> void:
 	var setup := MatchSetup.from_fixture(fixture)
 	var result := StubMatchRunner.run(setup)
-	CareerSync.client.submit_result(result)
-	_last_submitted[setup.fixture_id] = result.to_dict()
+	CareerSync.client.submit_result(result, world_id)
+	_last_submitted["%s/%s" % [world_id, setup.fixture_id]] = result.to_dict()
 	_add_log("Played stub match %s: %d–%d, submitting" % [setup.fixture_id, result.home_score, result.away_score])
 
 
-func _submit_conflict(fixture: Dictionary) -> void:
+func _submit_conflict(fixture: Dictionary, world_id: String) -> void:
 	var existing: Dictionary = fixture.get("result", {})
 	var setup := MatchSetup.from_fixture(fixture)
 	# Flip the winner so the scoreline is guaranteed to differ.
 	var result := MatchResult.create(setup.fixture_id, int(existing["away_score"]), int(existing["home_score"]), MatchResult.SOURCE_STUB)
-	CareerSync.client.submit_result(result)
+	CareerSync.client.submit_result(result, world_id)
 	_add_log("Submitted conflicting result for %s: %d–%d" % [setup.fixture_id, result.home_score, result.away_score])
 
 

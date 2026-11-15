@@ -9,6 +9,7 @@ extends RefCounted
 const PlayerRecord := CareerRecords.PlayerRecord
 const OrganisationRecord := CareerRecords.OrganisationRecord
 const ContractRecord := CareerRecords.ContractRecord
+const CompetitionRecord := CareerRecords.CompetitionRecord
 
 var db := CareerDatabase.new()
 
@@ -342,6 +343,25 @@ func lineup(org_id: String, size: int = 5) -> Array[Dictionary]:
 					ability_values[String(key)] = values[key]
 		list.append({"player_id": player.id, "name": player.nickname, "role": String(contract.role),
 			"is_human": player.is_human, "abilities": ability_values})
+	return list
+
+
+# --- Competitions (definitions; scheduled and played from Milestone 13) ----------------------
+
+func insert_competition(competition: CompetitionRecord) -> bool:
+	return db.execute("""INSERT INTO competition (id, name, short_name, kind, region_id, tier, team_count, start_month)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?);""",
+		[competition.id, competition.name, competition.short_name, competition.kind,
+			null if competition.region_id.is_empty() else competition.region_id, competition.tier,
+			competition.team_count, competition.start_month])
+
+
+## Active competitions, top tier first, international before regional.
+func competitions() -> Array[CompetitionRecord]:
+	var list: Array[CompetitionRecord] = []
+	for found: Dictionary in db.rows("""SELECT * FROM competition WHERE active = 1
+			ORDER BY tier, region_id IS NOT NULL, region_id, name;"""):
+		list.append(CompetitionRecord.from_row(found))
 	return list
 
 

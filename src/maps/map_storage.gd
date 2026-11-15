@@ -2,8 +2,7 @@ class_name MapStorage
 extends RefCounted
 ## Saves and loads map documents as JSON files in a folder (default user://maps).
 ##
-## Writes are atomic: the document is written to "<file>.tmp" and then renamed over the target,
-## so a crash mid-save never leaves a half-written map. The previous version is kept as "<file>.bak".
+## Stage and verify the document before publishing it. The previous version is kept as ".bak".
 
 const DEFAULT_DIR: String = "user://maps"
 const EXTENSION: String = ".f2fmap.json"
@@ -16,31 +15,33 @@ func _init(dir: String = DEFAULT_DIR) -> void:
 
 
 func path_for(map_id: String) -> String:
-	return directory.path_join(map_id + EXTENSION)
+	return directory.path_join(map_id + EXTENSION) if Ids.is_file_id(map_id) else ""
 
 
 ## Saves [param doc], incrementing its revision. Returns OK or an error code.
 func save(doc: MapDocument) -> Error:
-	var err := DirAccess.make_dir_recursive_absolute(directory)
-	if err != OK and err != ERR_ALREADY_EXISTS:
-		return err
-	doc.revision += 1
 	var target := path_for(doc.map_id)
-	var temp := target + ".tmp"
+	if target.is_empty():
+		return ERR_INVALID_PARAMETER
+	var err := DirAccess.make_dir_recursive_absolute(directory)
+	if err != OK and not DirAccess.dir_exists_absolute(directory):
+		return err
+	var next := doc.to_dict()
+	next["revision"] = doc.revision + 1
+	var temp := target + "." + Ids.generate("stage")
 	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
-		doc.revision -= 1
 		return FileAccess.get_open_error()
-	file.store_string(doc.to_json())
+	var written := file.store_string(JSON.stringify(next, "\t"))
 	file.close()
-	if FileAccess.file_exists(target):
-		var backup := target + ".bak"
-		if FileAccess.file_exists(backup):
-			DirAccess.remove_absolute(backup)
-		DirAccess.rename_absolute(target, backup)
-	err = DirAccess.rename_absolute(temp, target)
-	if err != OK:
-		doc.revision -= 1
+	if not written or load_path(temp) == null:
+		DirAccess.remove_absolute(temp)
+		return ERR_FILE_CANT_WRITE
+	err = FileReplacement.install(temp, target, target + ".bak")
+	if err == OK:
+		doc.revision += 1
+	else:
+		DirAccess.remove_absolute(temp)
 	return err
 
 
@@ -53,7 +54,11 @@ func load_path(path: String) -> MapDocument:
 
 
 func load_map(map_id: String) -> MapDocument:
-	return load_path(path_for(map_id))
+	var path := path_for(map_id)
+	if path.is_empty():
+		return null
+	var doc := load_path(path)
+	return doc if doc != null and doc.map_id == map_id else null
 
 
 func delete_map(map_id: String) -> Error:
@@ -74,7 +79,7 @@ func list_maps() -> Array[Dictionary]:
 			continue
 		var path := directory.path_join(file_name)
 		var doc := load_path(path)
-		if doc == null:
+		if doc == null or path_for(doc.map_id) != path:
 			continue
 		list.append({
 			"map_id": doc.map_id,

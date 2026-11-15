@@ -2,9 +2,8 @@ class_name CareerSyncClient
 extends Node
 ## Career client: connects to a career host, mirrors its fixture list and submits results.
 ##
-## Submissions stay in [member pending_submissions] until the host acknowledges them, and are
-## resent automatically after a reconnect. Because the host deduplicates by submission_id,
-## resending is always safe.
+## Unacknowledged submissions are kept by their originating world and replayed only after a
+## handshake for that world. The connection's fixtures and revision are cleared on disconnect.
 
 signal connected_to_host(peer_id: int)
 signal rejected(reason: String)
@@ -23,13 +22,15 @@ var world_id: String = ""
 var world_is_dev_sample: bool = false
 var revision: int = -1
 var fixtures: Array[Dictionary] = []
-## submission_id -> MatchResult dict, awaiting a RESULT_ACK.
-var pending_submissions: Dictionary[String, Dictionary] = {}
+## Submissions awaiting an acknowledgement from the currently connected world.
+var pending_submissions: Dictionary:
+	get: return _pending_by_world.get(world_id, {})
 var last_ack: Dictionary = {}
 ## Protocol version announced in HELLO. Only overridden by tests (version-mismatch check).
 var protocol_version: int = CareerProtocol.PROTOCOL_VERSION
 
 var _peer: ENetMultiplayerPeer
+var _pending_by_world: Dictionary[String, Dictionary] = {}
 
 
 func is_ready() -> bool:
@@ -57,28 +58,35 @@ func disconnect_from_host(reason: String = "left") -> void:
 	_peer.close()
 	_peer = null
 	var was_online := state != State.OFFLINE
-	state = State.OFFLINE
-	peer_id = 0
+	_clear_connection_state()
 	if was_online:
 		disconnected.emit(reason)
 
 
-## Queues a result for the host. Returns its submission_id. Safe to call while offline:
-## the submission is sent as soon as the connection is ready.
-func submit_result(result: MatchResult) -> String:
+## Queues the result against the world that supplied the fixture, even if disconnected.
+func submit_result(result: MatchResult, originating_world_id: String) -> String:
+	if originating_world_id.is_empty() or result == null:
+		return ""
 	if result.submitted_by.is_empty():
 		result.submitted_by = player_name
+	if not _pending_by_world.has(originating_world_id):
+		_pending_by_world[originating_world_id] = {}
 	var data := result.to_dict()
-	pending_submissions[result.submission_id] = data
-	if is_ready():
-		_send(CareerProtocol.make(CareerProtocol.SUBMIT_RESULT, {"result": data}))
+	_pending_by_world[originating_world_id][result.submission_id] = data
+	resend_submission(data, originating_world_id)
 	return result.submission_id
 
 
-## Re-sends an already submitted result unchanged (used to demonstrate idempotency).
-func resend_submission(result_dict: Dictionary) -> void:
-	if is_ready():
-		_send(CareerProtocol.make(CareerProtocol.SUBMIT_RESULT, {"result": result_dict}))
+func pending_count(originating_world_id: String) -> int:
+	var pending: Dictionary = _pending_by_world.get(originating_world_id, {})
+	return pending.size()
+
+
+## Resends an already submitted result unchanged (used to demonstrate idempotency).
+func resend_submission(result_dict: Dictionary, originating_world_id: String) -> void:
+	if is_ready() and world_id == originating_world_id:
+		_send(CareerProtocol.make(CareerProtocol.SUBMIT_RESULT, {
+			"world_id": originating_world_id, "result": result_dict}))
 
 
 func request_snapshot() -> void:
@@ -103,8 +111,7 @@ func _process(_delta: float) -> void:
 	if status == MultiplayerPeer.CONNECTION_DISCONNECTED:
 		var reason := "could not reach host" if state == State.CONNECTING else "connection to host lost"
 		_peer = null
-		state = State.OFFLINE
-		peer_id = 0
+		_clear_connection_state()
 		disconnected.emit(reason)
 		return
 	if status == MultiplayerPeer.CONNECTION_CONNECTED and state == State.CONNECTING:
@@ -122,25 +129,46 @@ func _exit_tree() -> void:
 	disconnect_from_host("shutting down")
 
 
+func _clear_connection_state() -> void:
+	state = State.OFFLINE
+	peer_id = 0
+	world_id = ""
+	world_is_dev_sample = false
+	revision = -1
+	fixtures.clear()
+	last_ack.clear()
+
+
 func _handle(message: Dictionary) -> void:
-	match str(message["type"]):
-		CareerProtocol.WELCOME:
-			peer_id = int(message["peer_id"])
-			world_id = str(message["world_id"])
-			world_is_dev_sample = bool(message.get("is_dev_sample", false))
-			state = State.READY
-			_apply_snapshot(message)
-			connected_to_host.emit(peer_id)
-			_resend_pending()
-		CareerProtocol.REJECT:
-			var reason := str(message.get("reason", "rejected"))
-			rejected.emit(reason)
-			disconnect_from_host("rejected: " + reason)
+	var type := str(message["type"])
+	if type == CareerProtocol.REJECT and state == State.HANDSHAKING:
+		var reason := str(message.get("reason", "rejected"))
+		rejected.emit(reason)
+		disconnect_from_host("rejected: " + reason)
+		return
+	if int(message["v"]) != CareerProtocol.PROTOCOL_VERSION:
+		return
+	var message_world := str(message.get("world_id", ""))
+	if type == CareerProtocol.WELCOME and state == State.HANDSHAKING and not message_world.is_empty():
+		world_id = message_world
+		peer_id = int(message["peer_id"])
+		world_is_dev_sample = bool(message.get("is_dev_sample", false))
+		state = State.READY
+		_apply_snapshot(message)
+		connected_to_host.emit(peer_id)
+		_resend_pending()
+		return
+	if not is_ready() or message_world != world_id:
+		return
+	match type:
 		CareerProtocol.SNAPSHOT, CareerProtocol.WORLD_UPDATED:
 			_apply_snapshot(message)
 		CareerProtocol.RESULT_ACK:
 			last_ack = message.duplicate()
-			pending_submissions.erase(str(message.get("submission_id", "")))
+			var pending := pending_submissions
+			pending.erase(str(message.get("submission_id", "")))
+			if pending.is_empty():
+				_pending_by_world.erase(world_id)
 			result_acknowledged.emit(last_ack)
 			if int(message.get("revision", -1)) > revision:
 				request_snapshot()
@@ -161,8 +189,8 @@ func _apply_snapshot(message: Dictionary) -> void:
 
 
 func _resend_pending() -> void:
-	for submission_id: String in pending_submissions:
-		_send(CareerProtocol.make(CareerProtocol.SUBMIT_RESULT, {"result": pending_submissions[submission_id]}))
+	for data: Dictionary in pending_submissions.values():
+		resend_submission(data, world_id)
 
 
 func _send(message: Dictionary) -> void:

@@ -71,14 +71,15 @@ func run() -> void:
 	var moved := await wait_until(func() -> bool:
 		var a := host_session.avatar_for(client_id)
 		var b := client_session.avatar_for(1)
-		return a.target_position.is_equal_approx(Vector3(7, 1, -4)) and is_equal_approx(a.target_yaw, 1.25) \
+		return a != null and b != null and a.target_position.is_equal_approx(Vector3(7, 1, -4)) and is_equal_approx(a.target_yaw, 1.25) \
 			and b.target_position.is_equal_approx(Vector3(-2, 0, -9)), 3.0)
 	check(moved, "movement and facing propagate in both directions")
 	check(host_session.player_count() == 2 and client_session.player_count() == 2, "both report 2 players")
 
 	var career_ready := await wait_until(func() -> bool: return career_client.is_ready(), 3.0)
 	check(career_ready, "career sync session works while a match is running")
-	career_client.submit_result(StubMatchRunner.run(MatchSetup.from_fixture(career_client.fixtures[0])))
+	if career_ready and not career_client.fixtures.is_empty():
+		career_client.submit_result(StubMatchRunner.run(MatchSetup.from_fixture(career_client.fixtures[0])), career_client.world_id)
 	var accepted := await wait_until(func() -> bool: return career_host.world.unresolved_fixture_ids().size() == 4, 3.0)
 	check(accepted, "career result submission works while a match is running")
 

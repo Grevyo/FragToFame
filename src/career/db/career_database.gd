@@ -12,14 +12,18 @@ var last_error: String = ""
 ## Number of statements executed (diagnostics / tests).
 var statement_count: int = 0
 
+static var _open_writers: Dictionary[String, Array] = {}
+
 var _db: SQLite = null
+var _writer_path: String = ""
 var _transaction_depth: int = 0
 var _transaction_failed: bool = false
 
 
 ## Opens (creating if needed) the database file at [param db_path]. [param read_only] opens an
-## existing file without write access (used to read save metadata cheaply).
-func open(db_path: String, read_only: bool = false) -> bool:
+## existing file without write access. [param wal] selects WAL journalling (live saves); world
+## databases use a classic rollback journal so they stay one self-contained, shareable file.
+func open(db_path: String, read_only: bool = false, wal: bool = true) -> bool:
 	close()
 	path = db_path
 	_db = SQLite.new()
@@ -30,11 +34,36 @@ func open(db_path: String, read_only: bool = false) -> bool:
 		last_error = "could not open %s: %s" % [db_path, _db.error_message]
 		_db = null
 		return false
-	execute("PRAGMA foreign_keys = ON;")
+	if not execute("PRAGMA foreign_keys = ON;") or (not read_only and (
+			not execute("PRAGMA journal_mode = WAL;" if wal else "PRAGMA journal_mode = DELETE;")
+			or not execute("PRAGMA synchronous = NORMAL;"))):
+		close()
+		return false
 	if not read_only:
-		execute("PRAGMA journal_mode = WAL;")
-		execute("PRAGMA synchronous = NORMAL;")
+		_writer_path = _path_key(db_path)
+		has_open_writer(_writer_path) # Discard expired references before adding this writer.
+		if not _open_writers.has(_writer_path):
+			_open_writers[_writer_path] = []
+		_open_writers[_writer_path].append(get_instance_id())
 	return true
+
+
+static func has_open_writer(db_path: String) -> bool:
+	var key := _path_key(db_path)
+	if not _open_writers.has(key):
+		return false
+	var writers: Array = _open_writers[key]
+	var active := writers.filter(func(id: int) -> bool: return is_instance_id_valid(id))
+	if active.is_empty():
+		_open_writers.erase(key)
+		return false
+	_open_writers[key] = active
+	return true
+
+
+static func _path_key(db_path: String) -> String:
+	var absolute := ProjectSettings.globalize_path(db_path).simplify_path()
+	return absolute.to_lower() if OS.get_name() == "Windows" else absolute
 
 
 func is_open() -> bool:
@@ -45,6 +74,12 @@ func close() -> void:
 	if _db != null:
 		_db.close_db()
 		_db = null
+	if not _writer_path.is_empty():
+		var writers: Array = _open_writers[_writer_path]
+		writers.erase(get_instance_id())
+		if writers.is_empty():
+			_open_writers.erase(_writer_path)
+		_writer_path = ""
 	_transaction_depth = 0
 
 
@@ -130,10 +165,38 @@ func set_user_version(version: int) -> bool:
 func backup_to(target_path: String) -> bool:
 	var absolute := ProjectSettings.globalize_path(target_path)
 	if FileAccess.file_exists(target_path):
-		DirAccess.remove_absolute(absolute)
+		last_error = "backup destination already exists"
+		return false
 	return execute("VACUUM INTO ?;", [absolute])
 
 
 ## SQLite's own structural check. Returns "ok" when the file is healthy.
 func integrity_check() -> String:
 	return str(scalar("PRAGMA integrity_check;", [], "unreadable"))
+
+
+func foreign_keys_are_valid() -> bool:
+	var violations := rows("PRAGMA foreign_key_check;")
+	return last_error.is_empty() and violations.is_empty()
+
+
+## Brings [param db] from its `user_version` up to `migrations.size()`: entry N upgrades N → N+1
+## inside one transaction, so a file is never half-migrated. Refuses files from a newer build.
+## [param kind] names the file type in errors ("save", "world database").
+static func apply_migrations(db: CareerDatabase, migrations: Array[PackedStringArray], kind: String) -> String:
+	var current := migrations.size()
+	var version := db.user_version()
+	if version > current:
+		return "this %s was made by a newer version of Frag to Fame (schema %d > %d)" % [kind, version, current]
+	while version < current:
+		var statements: PackedStringArray = migrations[version]
+		var target := version + 1
+		var ok := db.transaction(func() -> bool:
+			for sql: String in statements:
+				if not db.execute(sql):
+					return false
+			return db.set_user_version(target))
+		if not ok:
+			return "%s migration to schema %d failed: %s" % [kind, target, db.last_error]
+		version = target
+	return ""

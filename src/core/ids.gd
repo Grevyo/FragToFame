@@ -21,3 +21,19 @@ static func seeded(prefix: String, rng: RandomNumberGenerator) -> String:
 
 static func has_prefix(id: String, prefix: String) -> bool:
 	return id.begins_with(prefix + "_") and id.length() > prefix.length() + 1
+
+
+## Stable content IDs can be used as a single file-name component on Windows and Linux.
+static func is_file_id(id: String) -> bool:
+	if id.is_empty() or id.length() > 96:
+		return false
+	for code: int in id.to_ascii_buffer():
+		if not ((code >= 48 and code <= 57) or (code >= 65 and code <= 90)
+				or (code >= 97 and code <= 122) or code == 45 or code == 95):
+			return false
+	# Device names are reserved even with an extension.
+	var upper := id.to_upper()
+	if upper in ["CON", "PRN", "AUX", "NUL"]:
+		return false
+	return not (upper.length() == 4 and upper.right(1).is_valid_int()
+		and (upper.begins_with("COM") or upper.begins_with("LPT")))

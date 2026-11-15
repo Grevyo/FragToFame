@@ -4,6 +4,17 @@ extends TestSuite
 ## generation, human creation, saves, backups, damage detection and restore.
 
 const TEST_ROOT: String = "user://tests/careers"
+const PROFILE: Dictionary = {"first_name": "Rowan", "last_name": "Hartley", "nickname": "Sable",
+	"nation_id": "gb", "preferred_role": &"rifler", "difficulty": &"standard", "age": 19}
+
+
+class FailingRestoreSaves extends CareerSaves:
+	var blocked_target: String = ""
+
+	func _move_file(source: String, target: String) -> Error:
+		if target == blocked_target and source.contains(".restore_"):
+			return ERR_CANT_CREATE
+		return super._move_file(source, target)
 
 
 func suite_name() -> String:
@@ -18,6 +29,9 @@ func run() -> void:
 	_test_repository()
 	_test_generator()
 	_test_saves()
+	_test_template()
+	_test_migration_failures()
+	_test_import()
 	_clean(TEST_ROOT)
 
 
@@ -123,12 +137,17 @@ func _test_repository() -> void:
 
 func _test_generator() -> void:
 	section("World generation")
+	var path := TEST_ROOT + "/world_a.f2fdb"
+	var world := WorldDatabase.new()
+	var started := Time.get_ticks_msec()
+	var error := WorldGenerator.build(path, 1234, "world_test", "Test world", "")
+	check(error.is_empty() and world.open(path).is_empty() and world.validate().is_empty(),
+		"generator produces a usable draft template (%d ms)" % (Time.get_ticks_msec() - started))
+	if not world.is_open():
+		return
 	var repo := CareerRepository.new()
 	repo.open(TEST_ROOT + "/world_a.db")
-	var started := Time.get_ticks_msec()
-	var error := WorldGenerator.new(repo, 1234).generate()
-	var elapsed := Time.get_ticks_msec() - started
-	check(error.is_empty(), "default world generates (%d ms) %s" % [elapsed, error])
+	check(CareerStart.populate(repo, world, 1234).is_empty(), "draft instantiates a career database")
 	var orgs := repo.organisation_count()
 	var players := repo.player_count()
 	check(orgs == 40, "40 organisations across four tiers (%d)" % orgs)
@@ -159,25 +178,27 @@ func _test_generator() -> void:
 			conflicts += 1
 	check(conflicts == 0, "no player has conflicting traits")
 	check(repo.db.integrity_check() == "ok", "generated database passes the integrity check")
-	var first_ids := repo.db.rows("SELECT id, nickname FROM player ORDER BY id LIMIT 5;")
+	var fingerprint := world.fingerprint()
+	world.close()
 	repo.close()
 
-	var again := CareerRepository.new()
-	again.open(TEST_ROOT + "/world_b.db")
-	WorldGenerator.new(again, 1234).generate()
-	check(again.db.rows("SELECT id, nickname FROM player ORDER BY id LIMIT 5;") == first_ids, "same seed → same world")
+	var other := TEST_ROOT + "/world_b.f2fdb"
+	var again := WorldDatabase.new()
+	check(WorldGenerator.build(other, 1234, "world_test", "Test world", "").is_empty() and again.open(other).is_empty(),
+		"generator produces a second template")
+	check(again.is_open() and again.fingerprint() == fingerprint, "same draft-generation seed produces the same content")
 	again.close()
 
 
 func _test_saves() -> void:
 	section("Career saves")
 	var saves := CareerSaves.new(TEST_ROOT + "/slots")
-	var bad := saves.create_career("Broken", 1, {"first_name": ""})
+	var bad := saves.create_career("Broken", {"first_name": ""}, "", 1)
 	check(not bad.is_ok() and bad.error.contains("required"), "invalid profiles are rejected before anything is written")
-	var profile := {"first_name": "Rowan", "last_name": "Hartley", "nickname": "Sable", "nation_id": "gb",
-		"preferred_role": &"rifler", "difficulty": &"standard", "age": 19}
-	var small := {"tier_counts": {1: 2, 2: 2, 3: 2, 4: 2}, "free_agents": 10}
-	var session := saves.create_career("Test career", 99, profile, small)
+	var small := TEST_ROOT + "/small.f2fdb"
+	check(WorldGenerator.build(small, 99, "small_test", "Small world", "", {1: 2, 2: 2, 3: 2, 4: 2}, 10).is_empty(),
+		"test career uses a small standalone world")
+	var session := saves.create_career("Test career", PROFILE, small, 99)
 	check(session.is_ok(), "career created (%s)" % session.error)
 	if not session.is_ok():
 		return
@@ -192,6 +213,7 @@ func _test_saves() -> void:
 		saves.backup(session, "test")
 	check(saves.backups(session.save_id).size() == CareerSaves.MAX_BACKUPS, "backups rotate (keep %d)" % CareerSaves.MAX_BACKUPS)
 	var save_id := session.save_id
+	check(saves.restore_latest_backup(save_id).contains("close the career"), "restore refuses an open career")
 	session.close()
 
 	var listed := saves.list_saves()
@@ -202,7 +224,29 @@ func _test_saves() -> void:
 		"a career reopens with its data")
 	reopened.close()
 
-	# Corrupt the live file: integrity check catches it, restore brings back the latest backup.
+	var failure := FailingRestoreSaves.new(saves.root)
+	failure.blocked_target = saves.db_path(save_id)
+	var live_path := saves.db_path(save_id)
+	var original_hash := FileAccess.get_sha256(live_path)
+	for suffix: String in ["-wal", "-shm"]:
+		var sidecar := FileAccess.open(live_path + suffix, FileAccess.WRITE)
+		sidecar.store_string("simulated sidecar " + suffix)
+		sidecar.close()
+	check(not failure.restore_latest_backup(save_id).is_empty() and FileAccess.get_sha256(live_path) == original_hash
+		and FileAccess.get_file_as_string(live_path + "-wal") == "simulated sidecar -wal"
+		and FileAccess.get_file_as_string(live_path + "-shm") == "simulated sidecar -shm",
+		"failed publication rolls back the original database and both sidecars")
+	for suffix: String in ["-wal", "-shm"]:
+		DirAccess.remove_absolute(live_path + suffix)
+	var corrupt_backup := saves.save_dir(save_id) + "/backups/99999999-broken.db"
+	var bad_file := FileAccess.open(corrupt_backup, FileAccess.WRITE)
+	bad_file.store_string("not SQLite")
+	bad_file.close()
+	check(not saves.restore_latest_backup(save_id).is_empty() and FileAccess.get_sha256(live_path) == original_hash,
+		"corrupt backup is refused before the live DB moves")
+	DirAccess.remove_absolute(corrupt_backup)
+
+	# Corrupt the disposable live file, then restore the latest verified snapshot.
 	var live := FileAccess.open(saves.db_path(save_id), FileAccess.READ_WRITE)
 	live.seek(4096)
 	var junk := PackedByteArray()
@@ -218,6 +262,157 @@ func _test_saves() -> void:
 	restored.close()
 	var kept := DirAccess.get_files_at(ProjectSettings.globalize_path(saves.save_dir(save_id)))
 	check(Array(kept).any(func(f: String) -> bool: return f.contains(".damaged-")), "the damaged file is kept aside, not deleted")
+
+
+func _test_template() -> void:
+	section("Shipped world template and independent careers")
+	var library := WorldDatabases.new(TEST_ROOT + "/imported")
+	var world := library.open_database(WorldDatabases.default_path())
+	check(world != null and world.validate().is_empty(), "default world opens and passes validation")
+	if world == null:
+		return
+	var orgs := world.organisation_rows()
+	var players := world.player_rows()
+	var rosters := world.roster_rows()
+	var starter_counts: Dictionary[String, int] = {}
+	var regions: Dictionary[String, bool] = {}
+	for org: Dictionary in orgs:
+		regions[str(org["region_id"])] = true
+	for row: Dictionary in rosters:
+		if int(row["is_substitute"]) == 0:
+			var org_id := str(row["organisation_id"])
+			starter_counts[org_id] = starter_counts.get(org_id, 0) + 1
+	check(orgs.size() == 40 and regions.size() == 8, "40 organisations across eight regions")
+	check(players.size() == 296 and rosters.size() == 216, "296 AI professionals, 216 signed and 80 free agents")
+	check(starter_counts.size() == 40 and starter_counts.values().all(func(n: int) -> bool: return n == 5),
+		"every organisation has five starters and 16 players are substitutes")
+	check(world.competition_count() == 19 and world.range_rows().size() == 296 * 14,
+		"19 competition definitions and 14 ranges per AI player")
+
+	var saves := CareerSaves.new(TEST_ROOT + "/independent", library)
+	var a := saves.create_career("One", PROFILE, "", 120)
+	var b := saves.create_career("Two", PROFILE, "", 120)
+	var c := saves.create_career("Three", PROFILE, "", 121)
+	check(a.is_ok() and b.is_ok() and c.is_ok(), "three independent careers start from the default template")
+	if not (a.is_ok() and b.is_ok() and c.is_ok()):
+		world.close()
+		return
+	var identities := "SELECT id, nickname FROM player WHERE is_human = 0 ORDER BY id;"
+	var abilities := "SELECT player_id, ability, value FROM player_ability ORDER BY player_id, ability;"
+	check(a.repo.db.rows(identities) == b.repo.db.rows(identities)
+		and a.repo.db.rows(identities) == c.repo.db.rows(identities)
+		and a.repo.competitions().size() == 19 and a.repo.organisation_count() == 40,
+		"career seeds preserve authored identities and copy competitions")
+	check(a.repo.db.rows(abilities) == b.repo.db.rows(abilities) and a.repo.db.rows(abilities) != c.repo.db.rows(abilities),
+		"same seed repeats AI rolls and a different seed changes them")
+	var in_range := true
+	for found: Dictionary in world.range_rows():
+		var value := int(a.repo.db.scalar("SELECT value FROM player_ability WHERE player_id = ? AND ability = ?;",
+			[found["player_id"], found["ability"]], 0))
+		if value < int(found["min_value"]) or value > int(found["max_value"]):
+			in_range = false
+			break
+	check(in_range, "all AI abilities and potential stay within their authored ranges")
+	var starters_match := true
+	for org: Dictionary in orgs:
+		var expected: Array = rosters.filter(func(r: Dictionary) -> bool:
+			return r["organisation_id"] == org["id"] and int(r["is_substitute"]) == 0)
+		var ids: Array = expected.map(func(r: Dictionary) -> String: return str(r["player_id"]))
+		var lineup := a.repo.lineup(str(org["id"]))
+		if lineup.size() != 5 or not lineup.all(func(r: Dictionary) -> bool: return ids.has(r["player_id"])):
+			starters_match = false
+			break
+	check(starters_match, "every career lineup contains the authored starting five")
+	a.repo.set_current_day(42)
+	check(b.repo.current_day() == 0 and a.repo.meta_value("career_seed") == "120"
+		and a.repo.abilities(a.human_player_id).is_empty(), "the seed is recorded and careers evolve independently")
+	a.close()
+	b.close()
+	c.close()
+	world.close()
+
+
+func _test_migration_failures() -> void:
+	section("Real v1 career and migration failure")
+	var saves := CareerSaves.new(TEST_ROOT + "/migration")
+	var save_id := "sav_v1"
+	DirAccess.make_dir_recursive_absolute(saves.save_dir(save_id))
+	var path := saves.db_path(save_id)
+	var db := CareerDatabase.new()
+	db.open(path)
+	var v1: Array[PackedStringArray] = [CareerSchema.MIGRATIONS[0]]
+	check(CareerDatabase.apply_migrations(db, v1, "test save").is_empty(), "creates a v1 career fixture")
+	db.close()
+	var legacy := CareerRepository.new()
+	legacy.db.open(path)
+	legacy.set_meta_value("format", CareerSchema.FORMAT)
+	legacy.seed_reference_data()
+	var human := HumanCareer.create(legacy, PROFILE, 1, 42)
+	legacy.set_current_day(19)
+	legacy.close()
+
+	var blocking := FileAccess.open(saves.save_dir(save_id) + "/backups", FileAccess.WRITE)
+	blocking.store_string("block backup directory creation")
+	blocking.close()
+	var aborted := saves.open_career(save_id)
+	check(not aborted.is_ok() and aborted.error.contains("pre-migration backup"), "failed backup aborts migration")
+	db.open(path)
+	check(db.user_version() == 1 and db.integrity_check() == "ok", "the original remains a valid v1 database")
+	check(db.execute("CREATE TABLE competition (test INTEGER);"), "creates a conflict for the v2 migration")
+	db.close()
+	DirAccess.remove_absolute(saves.save_dir(save_id) + "/backups")
+	var failed_migration := saves.open_career(save_id)
+	check(not failed_migration.is_ok() and failed_migration.error.contains("migration"), "migration errors reach the caller")
+	db.open(path)
+	check(db.user_version() == 1 and db.integrity_check() == "ok" and saves.backups(save_id).size() == 1,
+		"failed migration keeps the v1 file and a verified backup")
+	db.execute("DROP TABLE competition;")
+	db.close()
+
+	var migrated := saves.open_career(save_id)
+	check(migrated.is_ok() and migrated.repo.db.user_version() == 2
+		and migrated.human_player_id == human and migrated.repo.current_day() == 19,
+		"legacy v1 data is preserved after a successful v2 migration")
+	migrated.close()
+
+
+func _test_import() -> void:
+	section("World template imports")
+	var library := WorldDatabases.new(TEST_ROOT + "/world_library")
+	var source := TEST_ROOT + "/community.f2fdb"
+	check(WorldGenerator.build(source, 13, "community_test", "Community", "", {1: 2}, 0).is_empty(),
+		"creates an independent community template")
+	var imported := library.import_database(source)
+	var target := str(imported["path"])
+	check(not target.is_empty() and FileAccess.file_exists(target), "valid community template is imported")
+	if target.is_empty():
+		return
+	var hash := FileAccess.get_sha256(target)
+	check(bool(library.import_database(source)["requires_confirmation"]), "replacement must be confirmed")
+	DirAccess.make_dir_absolute(target + ".bak")
+	var blocked := library.import_database(source, true)
+	check(not str(blocked["error"]).is_empty() and FileAccess.get_sha256(target) == hash,
+		"failed template replacement preserves the previous installed file")
+	DirAccess.remove_absolute(target + ".bak")
+
+	var db := CareerDatabase.new()
+	db.open(source, false, false)
+	db.execute("UPDATE meta SET value = 'Updated Community' WHERE key = 'name';")
+	db.close()
+	var updated := library.import_database(source, true)
+	check(bool(updated["replaced"]) and FileAccess.get_sha256(target + ".bak") == hash
+		and FileAccess.get_sha256(target) != hash, "confirmed replacement publishes new data and retains the original")
+
+	db.open(source, false, false)
+	db.execute("PRAGMA foreign_keys = OFF;")
+	db.execute("INSERT INTO roster VALUES ('ply_ghost', 'org_ghost', 'rifler', 0, 0, 0, 365);")
+	db.close()
+	check(str(library.import_database(source, true)["error"]).contains("foreign keys"), "template import rejects orphaned records")
+	db.open(source, false, false)
+	db.execute("DELETE FROM roster WHERE player_id = 'ply_ghost';")
+	db.execute("UPDATE meta SET value = 'bad/id' WHERE key = 'database_id';")
+	db.close()
+	check(str(library.import_database(source, true)["error"]).contains("invalid ID"), "template import rejects unsafe IDs")
 
 
 func _player(id: String, nickname: String, human: bool) -> CareerRecords.PlayerRecord:

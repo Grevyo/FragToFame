@@ -125,7 +125,8 @@ then connects a local `CareerSyncClient` over loopback, so there is one code pat
 `CareerWorld.submit_result` returns ACCEPTED / DUPLICATE / CONFLICT / UNKNOWN_FIXTURE / INVALID.
 The same submission, or an identical scoreline, is a harmless DUPLICATE; a different scoreline for
 an already-resolved fixture is a CONFLICT and the original stands. Clients keep submissions
-pending until acknowledged and resend them after reconnecting — safe because of deduplication.
+pending by originating world ID. Protocol v2 tags snapshots, acknowledgements and submissions
+with the world ID. Only a handshake for the same world resumes its pending submissions.
 Every accepted change bumps `revision`; clients never apply an older snapshot over a newer one.
 
 **Match authority (proof only).** Clients are authoritative for their own position; the host
@@ -244,15 +245,22 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Stat layers are separate tables:** `player_ability` (true, AI only — the repository refuses
   humans), `player_perceived` (+ confidence), `player_reputation`; recorded statistics and
   calculated ratings will be their own tables (M11).
-- **Content vs save data.** Catalogues (abilities, roles, regions, nations, traits) live in code;
-  saves store their stable IDs, so definitions can be extended without migrations.
-- **Safety.** Snapshots via `VACUUM INTO` after creation, before migrations and on demand (8 kept).
-  `open_career` runs `PRAGMA integrity_check`; restore moves the damaged file aside and copies the
-  newest snapshot in. Nothing is ever deleted except rotated old snapshots.
+- **Content vs save data.** Catalogue IDs live in code. The shipped `data/databases/default.f2fdb`
+  and imported standalone world databases are templates. `CareerStart` copies their stable
+  identities, rosters and competition definitions into each new save. Template imports verify
+  schema, allowed IDs, SQLite integrity and foreign keys. Replacement requires confirmation and
+  keeps the previous template. Existing careers retain their own copies.
+- **Safety.** Verified `VACUUM INTO` snapshots are kept after creation, before migrations and on
+  demand (eight per save). Failed pre-migration snapshots stop the upgrade. Restore stages and
+  checks a standalone snapshot before archiving the live database and journal files together.
+  An unsuccessful installation attempts to put the original files back and reports any retained
+  archive path. Restore requires the career to be closed.
 - **Match boundary.** `CareerMatches` turns career data into a `MatchSetup` (lineups with AI
   abilities). The FPS runtime maps abilities to bot mechanics (`BotSkill.from_abilities`) and
   never opens the database. Human entries carry no abilities.
-- **Determinism.** `WorldGenerator` uses one seeded RNG and seeded IDs: same seed, same world.
+- **Determinism.** The draft generator creates content templates. Career creation keeps those
+  identities fixed and rolls initial AI abilities within template ranges using the career seed.
+  The save records the seed and shows it in Career Hub → Home.
 
 ### Bot AI (Milestone 6)
 
@@ -308,7 +316,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |
 | Co-op career sync **(proof)** | Career host authority, client requests, calendar sync | Raw ENet message protocol; see Networking above. Calendar sync not yet. |
 | Match netcode **(proof)** | Listen server on a player's PC, player state sync | `MatchSession`; position + facing only. |
-| Persistence & backup **(career: M9)** | Atomic saves, rotating backups, migrations | Career: SQLite transactions, `VACUUM INTO` snapshots, migrations, integrity check + restore. Maps: temp-then-rename with `.bak`. |
+| Persistence & backup **(career: M9)** | Staged file replacement, rotating backups, migrations | Career: SQLite transactions, verified snapshots, migrations and recovery. Maps and templates retain the previous file during publication. |
 
 ## 4. Data and identity rules
 

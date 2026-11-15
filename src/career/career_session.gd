@@ -7,6 +7,7 @@ var repo: CareerRepository = null
 var human_player_id: String = ""
 ## Non-empty when opening/creating failed.
 var error: String = ""
+var warning: String = ""
 ## True when the save failed its integrity check (offer a backup restore).
 var damaged: bool = false
 

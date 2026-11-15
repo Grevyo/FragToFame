@@ -6,14 +6,14 @@ extends RefCounted
 ## version "v" and a "type", serialised with var_to_bytes (objects are never allowed).
 ## This protocol is completely separate from in-match netcode (see MatchSession).
 
-const PROTOCOL_VERSION: int = 1
+const PROTOCOL_VERSION: int = 2
 const DEFAULT_PORT: int = 24560
 const MAX_CLIENTS: int = 16
 
 # client -> host
 const HELLO: String = "hello"                    # {player_name}
 const REQUEST_SNAPSHOT: String = "request_snapshot"
-const SUBMIT_RESULT: String = "submit_result"    # {result: MatchResult dict}
+const SUBMIT_RESULT: String = "submit_result"    # {world_id, result: MatchResult dict}
 # host -> client
 const WELCOME: String = "welcome"                # {peer_id, world_id, is_dev_sample, revision, fixtures}
 const REJECT: String = "reject"                  # {reason}

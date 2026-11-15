@@ -116,3 +116,10 @@ const ORG_NOUNS: Array[String] = [
 	"Lancers", "Gulls", "Stags", "Embers",
 ]
 const ORG_STYLES: Array[String] = ["%s", "%s", "%s", "%s Esports", "%s Gaming", "Team %s"]
+
+## Competition name words (original). International events: "<word> <EVENT_SUFFIX>".
+const COMPETITION_WORDS: Array[String] = [
+	"Apex", "Summit", "Meridian", "Zenith", "Solstice", "Equinox", "Horizon", "Vanguard", "Paragon",
+	"Crown", "Keystone", "Pinnacle", "Aurora", "Northstar", "Tidewater", "Ironclad",
+]
+const EVENT_SUFFIXES: Array[String] = ["Masters", "Invitational", "Classic", "Championship"]

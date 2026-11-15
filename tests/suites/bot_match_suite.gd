@@ -84,6 +84,30 @@ func run() -> void:
 	check(live, "round goes live")
 	await wait_physics_frames(2)
 	check(not away_bot.frozen and away_bot.has_goal and home_bot.has_goal, "bots head for objectives once the round is live")
+	var positions: Dictionary[String, Vector3] = {}
+	var health_before: Dictionary[String, int] = {}
+	var ammo_before: Dictionary[String, int] = {}
+	for id: String in squad.bots:
+		var bot := squad.bots[id]
+		positions[id] = bot.global_position
+		health_before[id] = bot.health.current
+		ammo_before[id] = bot.weapons.current().ammo
+		bot.weapons.trigger = true
+	var time_before := state.phase_time_left
+	var events_before := state.events.size()
+	sandbox.call("pause")
+	await wait_physics_frames(12)
+	var bots_still := true
+	for id: String in squad.bots:
+		var bot := squad.bots[id]
+		bots_still = bots_still and bot.global_position == positions[id] and bot.health.current == health_before[id] \
+			and bot.weapons.current().ammo == ammo_before[id]
+	check(bots_still and state.phase_time_left == time_before and state.events.size() == events_before,
+		"offline pause stops bot movement, shooting, damage, objective events and the live clock")
+	sandbox.call("resume")
+	player.input_enabled = false
+	await wait_physics_frames(2)
+	check(state.phase_time_left < time_before and home_bot.can_process(), "resume restarts the clock and bot processing")
 	player.health.kill()
 	await wait_physics_frames(1)
 	check(state.is_bomb_dropped, "the human's death drops the bomb")

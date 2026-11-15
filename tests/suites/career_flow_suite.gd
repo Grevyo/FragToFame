@@ -32,6 +32,8 @@ func run() -> void:
 	(select.get("first_name_edit") as LineEdit).text = "Rowan"
 	(select.get("last_name_edit") as LineEdit).text = "Hartley"
 	(select.get("nickname_edit") as LineEdit).text = "Sable"
+	(select.get("seed_edit") as LineEdit).text = "3.5"
+	check(not str(select.call("create_career")).is_empty(), "the career form rejects invalid seeds")
 	(select.get("seed_edit") as LineEdit).text = "2026"
 	var error: String = select.call("create_career")
 	check(error.is_empty() and bool(app.call("has_career")), "creating a career opens it (%s)" % error)
@@ -43,6 +45,8 @@ func run() -> void:
 		_restore(app, original_saves)
 		return
 	var session := app.get("career") as CareerSession
+
+	check(session.repo.meta_value("career_seed") == "2026", "the career uses the seed entered in the form")
 
 	section("Hub pages show the career database")
 	hub.call("show_page", &"home")
@@ -98,6 +102,29 @@ func run() -> void:
 		check(director.squad.skills[first_bot].label.begins_with("Rated"), "their bot skill comes from career abilities")
 		check(director.state.teams[MatchState.AWAY].display_name == top_org.name, "scoreboard names the organisation")
 		check(director.hud.notice_text().contains(top_org.name), "the notice explains the practice")
+		var previous_id := director.state.setup.fixture_id
+		director.state.teams[MatchState.HOME].score = 2
+		director.hud.play_again_requested.emit()
+		await wait_frames(4)
+		var replay := tree.current_scene.get("match_director") as MatchDirector
+		check(replay != null and replay.state.setup.away_team_id == top_org.id
+			and replay.state.setup.away_lineup == lineup and replay.squad.bots.has(first_bot),
+			"Play Again loads the same professional opponent and roster")
+		check(replay != null and replay.state.setup.fixture_id != previous_id and replay.state.rounds_played() == 0,
+			"professional replay starts a new score and fixture")
+	app.call("start_practice_match", null, &"hard")
+	await wait_frames(4)
+	var generic := tree.current_scene.get("match_director") as MatchDirector
+	if generic != null:
+		var generic_id := generic.state.setup.fixture_id
+		tree.current_scene.call("_on_practice_match_requested")
+		await wait_frames(4)
+		generic = tree.current_scene.get("match_director") as MatchDirector
+		check(generic != null and generic.state.setup.away_team_id == "team_practice_bots"
+			and generic.squad.skill_name == &"hard" and generic.state.setup.fixture_id != generic_id,
+			"generic practice restart preserves its skill and creates a fresh match")
+	else:
+		check(false, "generic practice starts")
 	app.call("go_to", &"main_menu")
 	await wait_frames(3)
 	_restore(app, original_saves)

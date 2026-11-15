@@ -19,6 +19,7 @@ var tally := CombatTally.new()
 var _respawn_left: float = -1.0
 var _death_cause: String = ""
 var _last_network_message: String = ""
+var _match_options: Dictionary = {}
 
 
 func _ready() -> void:
@@ -56,7 +57,7 @@ func _start_match() -> void:
 	var setup := match_data[0] as MatchSetup
 	var rules := match_data[1] as MatchRules
 	var doc := match_data[2] as MapDocument
-	var options := match_data[3] as Dictionary
+	_match_options = (match_data[3] as Dictionary).duplicate(true)
 	level.load_map(doc, false)
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
@@ -65,7 +66,7 @@ func _start_match() -> void:
 	match_director = MatchDirector.new()
 	match_director.name = "MatchDirector"
 	add_child(match_director)
-	match_director.begin(setup, rules, doc, player, level, hud, options)
+	match_director.begin(setup, rules, doc, player, level, hud, _match_options)
 	match_director.hud.main_menu_requested.connect(_on_main_menu_requested)
 	match_director.hud.play_again_requested.connect(_on_practice_match_requested)
 
@@ -78,7 +79,13 @@ func _match_owns_mouse() -> bool:
 
 func _on_practice_match_requested() -> void:
 	match_session.leave("starting practice match")
-	App.start_practice_match(level.document)
+	if match_director == null:
+		App.start_practice_match(level.document)
+		return
+	var prior := match_director.state
+	var setup := MatchSetup.from_fixture(prior.setup.to_dict())
+	setup.fixture_id = Ids.generate("practice")
+	App.start_match(setup, prior.rules, level.document, _match_options.duplicate(true))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -173,6 +180,9 @@ func pause() -> void:
 	if match_director != null:
 		match_director.close_buy_menu()
 		match_director.paused = true
+		# Pause only the local practice simulation. The menu and career networking stay active.
+		level.process_mode = Node.PROCESS_MODE_DISABLED
+		player.process_mode = Node.PROCESS_MODE_DISABLED
 	is_paused = true
 	player.input_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -182,6 +192,8 @@ func pause() -> void:
 func resume() -> void:
 	if match_director != null:
 		match_director.paused = false
+		level.process_mode = Node.PROCESS_MODE_INHERIT
+		player.process_mode = Node.PROCESS_MODE_INHERIT
 		if match_director.state.phase == MatchState.Phase.MATCH_END:
 			is_paused = false
 			hud.set_paused(false)

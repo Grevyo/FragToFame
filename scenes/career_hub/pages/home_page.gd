@@ -20,6 +20,9 @@ func build_page() -> void:
 		+ "this save's database. Fixtures, the advancing calendar and match statistics arrive in the next "
 		+ "milestones.", &"MutedLabel", true))
 
+	if not session.warning.is_empty():
+		welcome.add_child(UIFactory.label(session.warning, &"WarningLabel", true))
+
 	var row := add_row()
 	var status_card := UIFactory.card(row, "Career status")
 	var contract := repo.active_contract(me.id) if me != null else null
@@ -39,6 +42,8 @@ func build_page() -> void:
 
 	var world_card := UIFactory.card(row, "The world")
 	var world_rows: Array[PackedStringArray] = [
+		PackedStringArray(["Template", repo.meta_value("database_name", "Legacy world")]),
+		PackedStringArray(["Career seed", repo.meta_value("career_seed", repo.meta_value("world_seed", "—"))]),
 		PackedStringArray(["Organisations", str(repo.organisation_count())]),
 		PackedStringArray(["Active professionals", str(repo.player_count(false))]),
 		PackedStringArray(["Free agents", str(repo.search_players({"free_agents": true, "limit": 100000}).size())]),

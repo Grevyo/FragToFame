@@ -83,3 +83,31 @@ class ContractRecord extends RefCounted:
 		c.end_day = int(row["end_day"])
 		c.status = str(row["status"])
 		return c
+
+
+## A competition definition (league or cup). [member region_id] "" = international.
+## Definitions only until Milestone 13 schedules and plays them.
+class CompetitionRecord extends RefCounted:
+	var id: String = ""
+	var name: String = ""
+	var short_name: String = ""
+	var kind: String = "league"
+	var region_id: String = ""
+	var tier: int = 1
+	var team_count: int = 8
+	var start_month: int = 1
+
+	func is_international() -> bool:
+		return region_id.is_empty()
+
+	static func from_row(row: Dictionary) -> CompetitionRecord:
+		var c := CompetitionRecord.new()
+		c.id = str(row["id"])
+		c.name = str(row["name"])
+		c.short_name = str(row["short_name"])
+		c.kind = str(row["kind"])
+		c.region_id = str(row["region_id"]) if row["region_id"] != null else ""
+		c.tier = int(row["tier"])
+		c.team_count = int(row["team_count"])
+		c.start_month = int(row["start_month"])
+		return c

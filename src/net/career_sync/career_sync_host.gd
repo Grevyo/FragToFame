@@ -26,6 +26,8 @@ func is_running() -> bool:
 func start(host_world: CareerWorld, listen_port: int = CareerProtocol.DEFAULT_PORT,
 		bind_address: String = "*") -> Error:
 	stop()
+	if host_world == null or host_world.world_id.is_empty():
+		return ERR_INVALID_PARAMETER
 	var peer := ENetMultiplayerPeer.new()
 	peer.set_bind_ip(bind_address)
 	var err := peer.create_server(listen_port, CareerProtocol.MAX_CLIENTS)
@@ -86,7 +88,7 @@ func _handle(sender: int, message: Dictionary) -> void:
 	if type == CareerProtocol.HELLO:
 		_handle_hello(sender, message)
 		return
-	if not clients.has(sender) or not clients[sender]["authenticated"]:
+	if int(message["v"]) != CareerProtocol.PROTOCOL_VERSION 			or not clients.has(sender) or not clients[sender]["authenticated"]:
 		return  # Ignore everything until the handshake succeeds.
 	match type:
 		CareerProtocol.REQUEST_SNAPSHOT:
@@ -116,10 +118,13 @@ func _handle_hello(sender: int, message: Dictionary) -> void:
 func _handle_submit(sender: int, message: Dictionary) -> void:
 	var raw: Variant = message.get("result", {})
 	var result: MatchResult = MatchResult.from_dict(raw as Dictionary) if raw is Dictionary else null
-	var outcome := world.submit_result(result)
+	var outcome := {"status": CareerWorld.SubmitStatus.INVALID, "message": "wrong career world"}
+	if message.get("world_id", "") == world.world_id:
+		outcome = world.submit_result(result)
 	var status: CareerWorld.SubmitStatus = outcome["status"]
 	var fixture_id := result.fixture_id if result != null else ""
 	_send(sender, CareerProtocol.make(CareerProtocol.RESULT_ACK, {
+		"world_id": world.world_id,
 		"submission_id": result.submission_id if result != null else "",
 		"fixture_id": fixture_id,
 		"status": CareerWorld.status_name(status),
@@ -134,7 +139,7 @@ func _handle_submit(sender: int, message: Dictionary) -> void:
 
 
 func _snapshot_payload() -> Dictionary:
-	return {"revision": world.revision, "fixtures": world.fixtures_snapshot()}
+	return {"world_id": world.world_id, "revision": world.revision, "fixtures": world.fixtures_snapshot()}
 
 
 func _send(peer_id: int, message: Dictionary) -> void:

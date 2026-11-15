@@ -81,6 +81,19 @@ func _test_storage() -> void:
 	check(storage.load_path(TEST_DIR.path_join("broken" + MapStorage.EXTENSION)) == null, "corrupt file loads as null")
 	check(storage.list_maps().size() == 1, "corrupt files are skipped in listings")
 	check(storage.delete_map(doc.map_id) == OK and storage.load_map(doc.map_id) == null, "delete removes the map")
+	DirAccess.remove_absolute(path + ".bak")
+	check(storage.save(doc) == OK, "map can be saved again")
+	var installed_hash := FileAccess.get_sha256(path)
+	var revision := doc.revision
+	DirAccess.make_dir_absolute(path + ".bak")
+	doc.name = "Unpublished edit"
+	check(storage.save(doc) != OK and doc.revision == revision and FileAccess.get_sha256(path) == installed_hash,
+		"failed map replacement preserves the installed document and revision")
+	DirAccess.remove_absolute(path + ".bak")
+	var invalid := doc.to_dict()
+	invalid["map_id"] = "../another_map"
+	check(MapDocument.from_dict(invalid) == null and storage.path_for("../another_map").is_empty(),
+		"maps reject identifiers that are unsafe for storage")
 	_wipe_dir(TEST_DIR)
 
 

@@ -15,6 +15,7 @@ const SCENE_FPS_SANDBOX: StringName = &"fps_sandbox"
 const SCENE_CREATION_STUDIO: StringName = &"creation_studio"
 const SCENE_CAREER_SELECT: StringName = &"career_select"
 const SCENE_MAP_SELECT: StringName = &"map_select"
+const SCENE_CONTROLS: StringName = &"controls"
 
 const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_MAIN_MENU: "res://scenes/main_menu/main_menu.tscn",
@@ -23,6 +24,7 @@ const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_CREATION_STUDIO: "res://scenes/creation_studio/creation_studio.tscn",
 	SCENE_CAREER_SELECT: "res://scenes/career_select/career_select.tscn",
 	SCENE_MAP_SELECT: "res://scenes/map_select/map_select.tscn",
+	SCENE_CONTROLS: "res://scenes/settings/controls_screen.tscn",
 }
 
 ## Emitted after the open career moves to a later day.
@@ -58,6 +60,7 @@ var _unsaved_fixture_results: Dictionary[String, MatchResult] = {}
 
 func _ready() -> void:
 	InputActions.register_defaults()
+	InputBindings.load_file()  # The player's saved key bindings replace the defaults.
 	var theme := F2FTheme.build()
 	get_tree().root.theme = theme
 	# Controls under a CanvasLayer do not inherit the Window theme; they fall back to the default

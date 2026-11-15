@@ -469,9 +469,24 @@ Cup brackets, promotion and relegation, and the F2F Universal Ladder remain plan
 
 ### Input
 
-`InputActions.register_defaults()` adds actions only if they don't already exist, so future
-user-rebinding (saved to `user://`) can be loaded first and win. Movement uses **physical**
+`InputActions.DEFINITIONS` lists every action with its label, Controls-screen group, context
+and default bindings. `register_defaults()` adds missing actions at boot, then
+`InputBindings.load_file()` applies the player's saved bindings from
+`user://input_bindings.json` (`f2f.input_bindings` v1). Everything else reads input by action
+name, so rebinding needs no changes in gameplay code. Movement defaults use **physical**
 keycodes so WASD works on non-QWERTY layouts.
+
+- **Bindings.** A binding is `key:<physical keycode>` or `mouse:<button>`. An action holds up to
+  four. Assigning an input removes it from other actions of the same context (`game` or
+  `editor`; the two are never active together, so E can be Interact and editor Up). The pause
+  key is locked to Esc and Esc cannot be bound elsewhere.
+- **Controls screen.** `scenes/settings/controls_screen` is a top-level scene from the main menu
+  and an overlay in the FPS pause menu. Changes apply and save at once.
+- **Not remappable yet.** The Creation Studio's editing shortcuts (Ctrl+Z, G/T/X, Tab and so on)
+  are fixed keys handled in `creation_studio.gd`; only its camera actions are remappable.
+- **Noclip.** `FirstPersonController.set_noclip` disables the body's collision and flies along
+  the view (jump up, crouch down, walk key faster). The runtime sets `noclip_allowed` only in
+  free roam (sandbox and editor playtest); matches never allow it.
 
 ## 3. Planned modules
 
@@ -558,4 +573,6 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Palette textures generated in code | Original content, no asset pipeline, reviewable in a diff |
 | 2026-11-15 | Official maps are saved map files in `res://data/maps/official`; saving one makes a copy | Official content uses the community path and cannot be shadowed by a player file |
 | 2026-11-15 | Kilnmarket authored by a session script that drives the Creation Studio scene (`tools/author_kilnmarket.gd`) | A headless agent cannot click; this uses only editor operations and leaves a rebuildable record. To be replaced by hand edits in the editor as the map is iterated |
+| 2026-11-15 | User bindings stored as strings per action and applied to `InputMap`; conflicts scoped by context | Gameplay code keeps using action names; game and editor can reuse keys |
+| 2026-11-15 | Esc is locked to the pause menu | A player can never bind themselves out of the menus |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

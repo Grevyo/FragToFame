@@ -33,6 +33,15 @@ var scripted_walk: bool = false
 var scripted_jump: bool = false
 ## When true the player can look around but not move, jump or fire (freeze time, planting).
 var frozen: bool = false
+## Noclip may only be toggled where the runtime allows it (sandbox and playtest, never matches).
+var noclip_allowed: bool = false
+## Flying through geometry: no gravity, no collision. Changed with [method set_noclip].
+var noclip: bool = false
+## Scripted climb while noclipping (-1 down … 1 up), see [member scripted_move].
+var scripted_climb: float = 0.0
+
+const NOCLIP_SPEED: float = 10.0
+const NOCLIP_FAST_MULTIPLIER: float = 3.0
 
 var _spawn_transform: Transform3D
 
@@ -66,7 +75,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if motion != null:
 		look(motion.relative)
 		return
-	if event.is_action_pressed(InputActions.RELOAD):
+	if event.is_action_pressed(InputActions.NOCLIP):
+		set_noclip(not noclip)
+	elif event.is_action_pressed(InputActions.RELOAD):
 		weapons.request_reload()
 	elif event.is_action_pressed(InputActions.WEAPON_1):
 		weapons.select_slot(1)
@@ -87,6 +98,32 @@ func look(relative: Vector2) -> void:
 	head.rotation.x = clampf(head.rotation.x - relative.y * mouse_sensitivity, -max_pitch, max_pitch)
 
 
+## Turns noclip on or off. Ignored (returns false) where it is not allowed or while dead.
+func set_noclip(enabled: bool) -> bool:
+	if enabled == noclip:
+		return true
+	if enabled and (not noclip_allowed or health.is_dead):
+		return false
+	noclip = enabled
+	collision.disabled = enabled
+	velocity = Vector3.ZERO
+	_airborne = false
+	_fall_speed = 0.0
+	return true
+
+
+## One tick of noclip flight: along the view direction, plus straight up and down.
+func _fly(input_dir: Vector2, climb: float, fast: bool, delta: float) -> void:
+	var direction := head.global_transform.basis * Vector3(input_dir.x, 0.0, input_dir.y) + Vector3.UP * climb
+	if direction.length_squared() > 1.0:
+		direction = direction.normalized()
+	velocity = direction * NOCLIP_SPEED * (NOCLIP_FAST_MULTIPLIER if fast else 1.0)
+	global_position += velocity * delta
+	weapons.motion.speed = 0.0
+	weapons.motion.airborne = false
+	weapons.motion.crouched = false
+
+
 ## Turns the body and head so the view looks straight at [param world_point].
 func face_point(world_point: Vector3) -> void:
 	var to_target := world_point - head.global_position
@@ -99,6 +136,26 @@ func _physics_process(delta: float) -> void:
 	var input_dir := Vector2.ZERO
 	var jump_pressed := false
 	var walking := false
+	if noclip and (not alive or not noclip_allowed):
+		set_noclip(false)
+	if noclip:
+		# Jump climbs, crouch descends and the walk key flies faster.
+		var climb := scripted_climb
+		if input_enabled:
+			var flying := _accepts_input()
+			weapons.trigger = flying and Input.is_action_pressed(InputActions.FIRE)
+			if flying:
+				input_dir = Input.get_vector(InputActions.MOVE_LEFT, InputActions.MOVE_RIGHT,
+					InputActions.MOVE_FORWARD, InputActions.MOVE_BACK)
+				climb = Input.get_axis(InputActions.CROUCH, InputActions.JUMP)
+				walking = Input.is_action_pressed(InputActions.WALK)
+			else:
+				climb = 0.0
+		else:
+			input_dir = scripted_move
+			walking = scripted_walk
+		_fly(input_dir, climb, walking, delta)
+		return
 	if input_enabled:
 		var active := _accepts_input() and alive
 		wants_crouch = active and Input.is_action_pressed(InputActions.CROUCH)
@@ -139,6 +196,7 @@ func set_spawn(feet_position: Vector3, yaw: float) -> void:
 func respawn() -> void:
 	global_transform = _spawn_transform
 	head.rotation = Vector3.ZERO
+	set_noclip(false)
 	_reset_movement()
 	weapons.refill_all()
 	health.revive()

@@ -16,6 +16,9 @@ var resume_button: Button
 var main_menu_button: Button
 var editor_button: Button
 var practice_button: Button
+var controls_button: Button
+## The Controls screen while it is open over the pause menu (null otherwise).
+var controls_screen: ControlsScreen = null
 ## Map choice for a new practice match: the loaded map, an official map or the dev arena.
 var map_option: OptionButton
 var host_button: Button
@@ -84,6 +87,8 @@ func _ready() -> void:
 
 func set_paused(paused: bool) -> void:
 	pause_overlay.visible = paused
+	if not paused:
+		close_controls()
 	_hint_panel.visible = not paused
 	if paused:
 		resume_button.grab_focus.call_deferred()
@@ -99,6 +104,24 @@ func set_mode(title: String, playtest: bool, in_match: bool = false, career_fixt
 	if career_fixture:
 		practice_button.text = "Restart fixture"
 		main_menu_button.text = "Return to Career Hub"
+
+
+## Opens the Controls screen over the pause menu.
+func open_controls() -> void:
+	if controls_screen != null:
+		return
+	controls_screen = ControlsScreen.new()
+	controls_screen.embedded = true
+	controls_screen.closed.connect(close_controls)
+	add_child(controls_screen)
+
+
+func close_controls() -> void:
+	if controls_screen == null:
+		return
+	controls_screen.queue_free()
+	controls_screen = null
+	resume_button.grab_focus.call_deferred()
 
 
 func set_pause_message(text: String) -> void:
@@ -396,6 +419,9 @@ func _build_pause_overlay() -> void:
 	practice_button = UIFactory.button("Start practice match (MR3 · 5v5 with bots)")
 	practice_button.pressed.connect(practice_match_requested.emit)
 	column.add_child(practice_button)
+	controls_button = UIFactory.button("Controls")
+	controls_button.pressed.connect(open_controls)
+	column.add_child(controls_button)
 	main_menu_button = UIFactory.button("Return to Main Menu")
 	main_menu_button.pressed.connect(main_menu_requested.emit)
 	column.add_child(main_menu_button)

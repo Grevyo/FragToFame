@@ -4,6 +4,7 @@ extends Control
 var career_button: Button
 var sandbox_button: Button
 var studio_button: Button
+var controls_button: Button
 var quit_button: Button
 
 
@@ -47,6 +48,7 @@ func _build() -> void:
 	career_button = _menu_button(column, "Career Hub", _on_career_pressed)
 	sandbox_button = _menu_button(column, "FPS Sandbox", _on_sandbox_pressed)
 	studio_button = _menu_button(column, "Creation Studio", _on_studio_pressed)
+	controls_button = _menu_button(column, "Controls", func() -> void: App.go_to(App.SCENE_CONTROLS))
 	quit_button = _menu_button(column, "Quit", _on_quit_pressed)
 
 	var footer := UIFactory.label("v%s  ·  %s  ·  Pre-alpha development build" % [App.VERSION, App.MILESTONE], &"MutedLabel")

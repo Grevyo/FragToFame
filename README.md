@@ -401,6 +401,19 @@ Kilnmarket (official map):
       match. Bots should reach both sites, plant, hold and retake.
 - [ ] **Career Hub → Home**: schedule an amateur match with Kilnmarket selected and play it.
 
+### Manual test checklist (Controls and noclip)
+
+- [ ] **Main menu → Controls**. Click an empty slot next to an action and press a key: both
+      keys now work in game. Fill all four slots for one action.
+- [ ] Bind a key another action uses: the message says which action lost it.
+- [ ] While a slot says "press…", Esc cancels and Backspace clears it. **Default** resets a row,
+      **Reset all to defaults** resets everything.
+- [ ] Quit and relaunch: your bindings are still there.
+- [ ] In the FPS Sandbox press Esc → **Controls**, change a key, go back and use it without
+      leaving the map.
+- [ ] In the FPS Sandbox press **V**: fly through walls with WASD, Space up, Ctrl down, Shift
+      faster. Press V again to drop. In a practice match V does nothing.
+
 ## Project layout
 
 ```

@@ -33,7 +33,7 @@ func _test_app_autoload() -> void:
 	if app == null:
 		return
 	var paths: Dictionary = app.get("SCENE_PATHS")
-	check(paths.size() == 6, "App registers 6 top-level scenes")
+	check(paths.size() == 7, "App registers 7 top-level scenes")
 	for scene_id: StringName in paths:
 		check(ResourceLoader.exists(paths[scene_id] as String), "scene path exists for '%s'" % scene_id)
 	check(tree.root.theme != null, "root window theme is assigned")
@@ -206,7 +206,7 @@ func _test_scene_routing() -> void:
 		check(false, "App autoload required for routing test")
 		return
 	var paths: Dictionary = app.get("SCENE_PATHS")
-	for scene_id: StringName in [&"career_select", &"career_hub", &"fps_sandbox", &"creation_studio", &"map_select", &"main_menu"]:
+	for scene_id: StringName in [&"career_select", &"career_hub", &"fps_sandbox", &"creation_studio", &"map_select", &"controls", &"main_menu"]:
 		var err: Error = app.call("go_to", scene_id)
 		await wait_frames(3)
 		check(err == OK and tree.current_scene != null and tree.current_scene.scene_file_path == paths[scene_id],

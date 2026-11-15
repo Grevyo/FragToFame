@@ -60,6 +60,7 @@ func _load_level() -> void:
 	var spawns := level.spawn_points(team)
 	var spawn := spawns[clampi(int(options.get("spawn", 0)), 0, spawns.size() - 1)]
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
+	player.noclip_allowed = true  # Free roam only; a match never allows it.
 	hud.set_mode("PLAYTEST · %s · %s spawn %d" % [doc.name, team, spawns.find(spawn) + 1] if playtest
 		else "FPS SANDBOX · %s" % doc.name, playtest)
 
@@ -147,7 +148,7 @@ func _process(delta: float) -> void:
 	var speed := player.horizontal_speed()
 	hud.set_debug_text("pos %.1f, %.2f, %.1f   speed %.2f m/s (%.0f u/s)   %s%s   %d fps" % [
 		p.x, p.y, p.z, speed, PlayerMovement.to_units(speed),
-		"grounded" if player.is_on_floor() else "airborne",
+		"NOCLIP" if player.noclip else ("grounded" if player.is_on_floor() else "airborne"),
 		" · crouched" if player.is_crouched() else "",
 		Engine.get_frames_per_second(),
 	])

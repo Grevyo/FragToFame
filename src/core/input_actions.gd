@@ -1,9 +1,10 @@
 class_name InputActions
 extends RefCounted
-## Input action names and their default bindings.
+## Input action names, how they are shown on the Controls screen, and their default bindings.
 ##
-## Actions are registered at startup only if missing, so user rebinds (future feature, loaded
-## before this runs) take precedence. Keys use physical keycodes so WASD is layout-independent.
+## Actions are registered at startup only if missing; saved user bindings (InputBindings) are
+## then applied on top. Keys use physical keycodes so WASD is layout-independent.
+## A binding is a string: "key:<physical keycode>" or "mouse:<button index>".
 
 const MOVE_FORWARD: StringName = &"move_forward"
 const MOVE_BACK: StringName = &"move_back"
@@ -27,66 +28,106 @@ const WEAPON_NEXT: StringName = &"weapon_next"
 const WEAPON_PREVIOUS: StringName = &"weapon_previous"
 const INTERACT: StringName = &"interact"
 const BUY_MENU: StringName = &"buy_menu"
+const NOCLIP: StringName = &"noclip"
+
+const GROUP_ORDER: Array[String] = ["Movement", "Combat", "Match", "Sandbox", "Editor camera", "System"]
+
+## One entry per action. "context" decides which actions may not share a binding ("game" and
+## "editor" are never active together, so E can be both Interact and editor Up). "locked"
+## actions are shown but cannot be rebound (Esc must always reach the pause menu).
+const DEFINITIONS: Array[Dictionary] = [
+	{"id": MOVE_FORWARD, "label": "Move forward", "group": "Movement", "context": "game", "defaults": ["key:87"]},
+	{"id": MOVE_BACK, "label": "Move back", "group": "Movement", "context": "game", "defaults": ["key:83"]},
+	{"id": MOVE_LEFT, "label": "Strafe left", "group": "Movement", "context": "game", "defaults": ["key:65"]},
+	{"id": MOVE_RIGHT, "label": "Strafe right", "group": "Movement", "context": "game", "defaults": ["key:68"]},
+	{"id": JUMP, "label": "Jump", "group": "Movement", "context": "game", "defaults": ["key:32"]},
+	{"id": WALK, "label": "Walk (hold)", "group": "Movement", "context": "game", "defaults": ["key:4194325"]},
+	{"id": CROUCH, "label": "Crouch (hold)", "group": "Movement", "context": "game", "defaults": ["key:4194326", "key:67"]},
+	{"id": FIRE, "label": "Fire", "group": "Combat", "context": "game", "defaults": ["mouse:1"]},
+	{"id": RELOAD, "label": "Reload", "group": "Combat", "context": "game", "defaults": ["key:82"]},
+	{"id": WEAPON_1, "label": "Primary weapon", "group": "Combat", "context": "game", "defaults": ["key:49"]},
+	{"id": WEAPON_2, "label": "Secondary weapon", "group": "Combat", "context": "game", "defaults": ["key:50"]},
+	{"id": WEAPON_3, "label": "Third weapon slot", "group": "Combat", "context": "game", "defaults": ["key:51"]},
+	{"id": WEAPON_NEXT, "label": "Next weapon", "group": "Combat", "context": "game", "defaults": ["mouse:5"]},
+	{"id": WEAPON_PREVIOUS, "label": "Previous weapon", "group": "Combat", "context": "game", "defaults": ["mouse:4"]},
+	{"id": INTERACT, "label": "Plant / defuse / use", "group": "Match", "context": "game", "defaults": ["key:69"]},
+	{"id": BUY_MENU, "label": "Buy menu", "group": "Match", "context": "game", "defaults": ["key:66"]},
+	{"id": NOCLIP, "label": "Noclip (sandbox only)", "group": "Sandbox", "context": "game", "defaults": ["key:86"]},
+	{"id": EDITOR_LOOK, "label": "Look / fly (hold)", "group": "Editor camera", "context": "editor", "defaults": ["mouse:2"]},
+	{"id": EDITOR_UP, "label": "Fly up", "group": "Editor camera", "context": "editor", "defaults": ["key:69"]},
+	{"id": EDITOR_DOWN, "label": "Fly down", "group": "Editor camera", "context": "editor", "defaults": ["key:81"]},
+	{"id": EDITOR_FAST, "label": "Fly faster (hold)", "group": "Editor camera", "context": "editor", "defaults": ["key:4194325"]},
+	{"id": EDITOR_RESET_VIEW, "label": "Reset view", "group": "Editor camera", "context": "editor", "defaults": ["key:70"]},
+	{"id": PAUSE_MENU, "label": "Pause menu / back", "group": "System", "context": "system", "defaults": ["key:4194305"], "locked": true},
+]
 
 
+## Adds every missing action; an action that has no events yet gets its defaults.
 static func register_defaults() -> void:
-	_add_key(MOVE_FORWARD, KEY_W)
-	_add_key(MOVE_BACK, KEY_S)
-	_add_key(MOVE_LEFT, KEY_A)
-	_add_key(MOVE_RIGHT, KEY_D)
-	_add_key(JUMP, KEY_SPACE)
-	_add_key(WALK, KEY_SHIFT)
-	_add_key(PAUSE_MENU, KEY_ESCAPE)
-	_add_mouse_button(EDITOR_LOOK, MOUSE_BUTTON_RIGHT)
-	_add_key(EDITOR_UP, KEY_E)
-	_add_key(EDITOR_DOWN, KEY_Q)
-	_add_key(EDITOR_FAST, KEY_SHIFT)
-	_add_key(EDITOR_RESET_VIEW, KEY_F)
-	_add_mouse_button(FIRE, MOUSE_BUTTON_LEFT)
-	_add_key(RELOAD, KEY_R)
-	_add_keys(CROUCH, [KEY_CTRL, KEY_C])
-	_add_key(WEAPON_1, KEY_1)
-	_add_key(WEAPON_2, KEY_2)
-	_add_key(WEAPON_3, KEY_3)
-	_add_mouse_button(WEAPON_NEXT, MOUSE_BUTTON_WHEEL_DOWN)
-	_add_mouse_button(WEAPON_PREVIOUS, MOUSE_BUTTON_WHEEL_UP)
-	_add_key(INTERACT, KEY_E)
-	_add_key(BUY_MENU, KEY_B)
+	for definition: Dictionary in DEFINITIONS:
+		var action: StringName = definition["id"]
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		if InputMap.action_get_events(action).is_empty():
+			for binding: String in definition["defaults"]:
+				InputMap.action_add_event(action, binding_to_event(binding))
 
 
 static func all_actions() -> Array[StringName]:
-	return [MOVE_FORWARD, MOVE_BACK, MOVE_LEFT, MOVE_RIGHT, JUMP, WALK, PAUSE_MENU,
-		EDITOR_LOOK, EDITOR_UP, EDITOR_DOWN, EDITOR_FAST, EDITOR_RESET_VIEW,
-		FIRE, RELOAD, CROUCH, WEAPON_1, WEAPON_2, WEAPON_3, WEAPON_NEXT, WEAPON_PREVIOUS,
-		INTERACT, BUY_MENU]
+	var list: Array[StringName] = []
+	for definition: Dictionary in DEFINITIONS:
+		list.append(definition["id"])
+	return list
 
 
-static func _ensure_action(action: StringName) -> bool:
-	if not InputMap.has_action(action):
-		InputMap.add_action(action)
-	return InputMap.action_get_events(action).is_empty()
+static func definition(action: StringName) -> Dictionary:
+	for entry: Dictionary in DEFINITIONS:
+		if entry["id"] == action:
+			return entry
+	return {}
 
 
-static func _add_key(action: StringName, keycode: Key) -> void:
-	if not _ensure_action(action):
-		return
-	var event := InputEventKey.new()
-	event.physical_keycode = keycode
-	InputMap.action_add_event(action, event)
+static func defaults(action: StringName) -> Array[String]:
+	var list: Array[String] = []
+	list.assign(definition(action).get("defaults", []))
+	return list
 
 
-static func _add_keys(action: StringName, keycodes: Array[Key]) -> void:
-	if not _ensure_action(action):
-		return
-	for keycode: Key in keycodes:
-		var event := InputEventKey.new()
-		event.physical_keycode = keycode
-		InputMap.action_add_event(action, event)
+static func is_locked(action: StringName) -> bool:
+	return bool(definition(action).get("locked", false))
 
 
-static func _add_mouse_button(action: StringName, button: MouseButton) -> void:
-	if not _ensure_action(action):
-		return
-	var event := InputEventMouseButton.new()
-	event.button_index = button
-	InputMap.action_add_event(action, event)
+static func actions_in_group(group: String) -> Array[StringName]:
+	var list: Array[StringName] = []
+	for entry: Dictionary in DEFINITIONS:
+		if entry["group"] == group:
+			list.append(entry["id"])
+	return list
+
+
+## The input event for a binding string, or null when the string is not a valid binding.
+static func binding_to_event(binding: String) -> InputEvent:
+	var parts := binding.split(":")
+	if parts.size() != 2 or not parts[1].is_valid_int() or int(parts[1]) <= 0:
+		return null
+	if parts[0] == "key":
+		var key := InputEventKey.new()
+		key.physical_keycode = int(parts[1]) as Key
+		return key
+	if parts[0] == "mouse" and int(parts[1]) <= MOUSE_BUTTON_XBUTTON2:
+		var button := InputEventMouseButton.new()
+		button.button_index = int(parts[1]) as MouseButton
+		return button
+	return null
+
+
+## The binding string for a key or mouse-button event ("" for anything else).
+static func event_to_binding(event: InputEvent) -> String:
+	var key := event as InputEventKey
+	if key != null:
+		var code := key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
+		return "key:%d" % code if code != KEY_NONE else ""
+	var button := event as InputEventMouseButton
+	if button != null and button.button_index != MOUSE_BUTTON_NONE:
+		return "mouse:%d" % button.button_index
+	return ""

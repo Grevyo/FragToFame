@@ -25,6 +25,7 @@ const SUITES: Array[String] = [
 	"res://tests/suites/tactic_editor_suite.gd",
 	"res://tests/suites/map_creator_suite.gd",
 	"res://tests/suites/official_map_suite.gd",
+	"res://tests/suites/controls_suite.gd",
 	"res://tests/suites/career_fixture_suite.gd",
 	"res://tests/suites/match_statistics_suite.gd",
 	"res://tests/suites/career_development_suite.gd",

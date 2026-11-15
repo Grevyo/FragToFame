@@ -36,6 +36,7 @@ Godot 4.7.2 game. These rules persist across sessions.
 ## Project structure
 
 ```
+addons/godot-sqlite/  SQLite GDExtension (vendor; trimmed to Windows/Linux x86_64; only src/career uses it)
 src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
 src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource)

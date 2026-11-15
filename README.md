@@ -228,6 +228,7 @@ from spawn, so rounds often start with a long-range fight.
 ## Project layout
 
 ```
+addons/godot-sqlite  SQLite GDExtension (Windows + Linux x86_64 binaries only)
 src/core      App autoload (scene routing), input actions
 src/ui        Theme builder, UI helpers
 src/career    Career-world data (currently dev sample data only)
@@ -248,3 +249,11 @@ docs/         Vision, architecture, roadmap
 
 All rights reserved. This is a proprietary commercial project; no open-source licence is granted.
 All game content is original. Frag to Fame is not affiliated with Valve, Counter-Strike or LIGA.
+
+Third-party components (must be credited in the shipped game):
+
+| Component | Licence | Location |
+|---|---|---|
+| Godot Engine 4.7.2 | MIT | engine |
+| godot-sqlite 4.9 (Piet Bronders & Jeroen De Geeter) | MIT | `addons/godot-sqlite/LICENSE.md` |
+| SQLite 3.51 | Public domain | bundled in godot-sqlite |

@@ -5,7 +5,7 @@ dependencies demand it. The owner asked (2026-11-15) for milestones to be worked
 continuously: each one is validated, committed and pushed, and manual checks are collected in the
 README for the owner to run.
 
-Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
+Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started · ⏸ deferred
 
 | # | Milestone | Depends on | Status |
 |---|---|---|---|
@@ -15,10 +15,10 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 4 | Basic FPS mechanics | 1 | 🔶 awaiting manual test |
 | 5 | Competitive match rules | 4 | 🔶 awaiting manual test |
 | 6 | Individual combat and navigation AI | 3, 4 | 🔶 awaiting manual test |
-| 7 | Tactical team AI and IGL | 5, 6, 8, 9 | ⬜ |
+| 7 | Tactical team AI and IGL | 5, 6, 8, 9, representative maps and gameplay-relevant player traits | ⏸ deferred |
 | 8 | Tactical Play Creator | 3, 6 | 🔶 awaiting manual test |
 | 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
-| 10 | Career fixtures and playable match integration | 5, 9 | ⬜ |
+| 10 | Career fixtures and playable match integration | 5, 9 | 🔶 awaiting manual test |
 | 11 | Detailed statistics | 5, 10 | ⬜ |
 | 12 | Career development and scouting | 9, 11 | ⬜ |
 | 13 | Competition and tournament systems | 9, 10 | ⬜ |
@@ -28,10 +28,10 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
 
-**Execution order (changed 2026-11-15, owner agreed):** 1 → 6, then **9 → 8 → 7**, then 10 onward.
-Deep team AI (M7) is built after the player/team database (M9) and the tactic document format
-and editor (M8), so the IGL plays authored tactics with real player attributes instead of
-throw-away logic. Numbers stay stable for reference.
+**Execution order (updated 2026-11-15):** 1 → 6 → 9 → 8 → **10 onward**.
+M7 is deferred while representative maps and gameplay-relevant player traits are developed.
+Those foundations give the team AI real layouts, roles and behaviours to work with when M7 is
+revisited. Milestone numbers stay stable for reference.
 
 ---
 
@@ -156,7 +156,7 @@ Completion criteria:
 
 Out of scope (later): opponents that fight back (M6 AI), teammates, networked matches (rules run
 on the match host later), dropping/picking up weapons, grenades/utility, spectating dead players,
-career submission of practice results (M10).
+career fixtures and their result submission (M10).
 
 ## Milestone 6 — Individual combat and navigation AI 🔶
 
@@ -196,7 +196,7 @@ networked bots.
 
 ## Milestone 7 — Tactical team AI and IGL
 
-*Scheduled after Milestones 9 and 8 (see execution order).*
+*Deferred until representative maps and gameplay-relevant player traits are available.*
 
 **Goal:** Teams of bots play rounds as a team, driven by one team-tactics layer that an AI IGL —
 and later a human IGL — uses to make calls.
@@ -273,9 +273,29 @@ Completion criteria:
 - [ ] Manual career walkthrough (README) by the project owner.
 
 Out of scope (later): fixtures and results in the database (M10), recorded match statistics and
-ratings (M11), scouting that updates perceived values (M12), competitions (M13), calendar
-advancement, transfers, ageing and rookies (M14), co-op sync of the database (M15), deleting
+ratings (M11), scouting that updates perceived values (M12), competitions (M13), world
+progression, transfers, ageing and rookies (M14), co-op sync of the database (M15), deleting
 saves from the UI.
+
+## Milestone 10 — Career fixtures and playable match integration 🔶
+
+- [x] Schedule one pending local 5v5 amateur fixture from Career Home on the existing development
+      arena. Use an MR5 match, five AI opponents from a career organisation, and AI teammates
+      from the career where available.
+- [x] Persist the fixture, scheduled day and lineup snapshot in SQLite. Existing v2 careers
+      acquire the new table through the backed-up v3 migration.
+- [x] Play through the existing FPS scene with the career player's ID. Return to the Hub after
+      completing or leaving the fixture. Unfinished fixtures remain available on the same day.
+- [x] Save the final score and advance one career day in the same transaction. Identical
+      submissions are idempotent. Invalid or conflicting submissions leave the career unchanged.
+- [x] Display scheduled fixtures and completed scores in Calendar. Offer a retry on a failed
+      result save while the app still holds it.
+- [x] Automated checks cover the v2 migration, scheduling, restart, persistence, result rollback,
+      retry, duplicate and conflicting results, and calendar display.
+- [ ] Manual walkthrough of a complete fixture using the README checklist.
+
+Later milestones cover detailed ratings, league schedules and standings, AI-only world
+simulation, production map rotation and multiplayer fixture hosting.
 
 ---
 
@@ -292,3 +312,4 @@ saves from the UI.
 | 2026-11-15 | Career database = SQLite (owner). Milestone 9 implemented; 614 automated checks passing; awaiting manual career walkthrough. |
 | 2026-11-15 | M9 stabilisation verified on Godot 4.7.2 with 663 automated checks. World-template creation, backup and restore failures, reconnect isolation, practice pause and replay, and content replacement covered. Manual acceptance remains open. |
 | 2026-11-15 | M8 implemented and the full Godot 4.7.2 validation passed with 700 checks, including 37 tactic checks. Manual acceptance remains open. |
+| 2026-11-15 | Owner deferred M7 pending representative maps and gameplay-relevant player traits. M10 implemented and validated on Godot 4.7.2 with 732 passing checks. Manual fixture walkthrough remains open. |

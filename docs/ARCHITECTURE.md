@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–6, 8, 9)
+## 2. Current implementation (Milestones 1–6, 8–10)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -280,6 +280,25 @@ reported per slot. The same route data can be consumed by future M7 play executi
   identities, rosters and competitions into independent saves, with initial AI values sampled
   from the database's authored ranges.
 
+### Playable career fixtures (Milestone 10)
+
+Career Home schedules one pending amateur fixture for the local career player. `CareerFixtures`
+selects a lowest-tier eligible organisation and snapshots both lineups in a versioned
+`MatchSetup`. The career starts the current development arena through `App`. `MatchDirector`
+registers the human's career ID with the rules and weapons, then emits the same `MatchResult`
+used by other FPS modes. The runtime receives no SQLite connection or career repository.
+
+Schema v3 stores the fixture ID, player, scheduled day, setup and optional outcome. The
+repository enforces one pending fixture per player and unique submission IDs. Result handling
+checks the player, map and MR score, then saves the score and advances the career day in the
+same transaction. Identical results can be resubmitted without advancing again. An interrupted
+match can be started again from the original fixture. A failed database write leaves it pending
+and the in-memory result can be retried from Career Home.
+
+These fixtures use local 5v5 play and the existing individual bots. Career sync, world
+simulation and competition scheduling will build on later milestones. M7 remains deferred
+until representative maps and gameplay-relevant player traits are ready.
+
 ### Bot AI (Milestone 6)
 
 ```
@@ -320,12 +339,12 @@ keycodes so WASD works on non-QWERTY layouts.
 
 | Module | Responsibility | Notes |
 |---|---|---|
-| Career world repository **(M9: players, orgs, contracts, opinions)** | Typed access to players, orgs, contracts, fixtures, stats | SQLite via `godot-sqlite` behind `CareerRepository` (no SQL outside `src/career/`); fixtures (M10) and statistics (M11) to come. |
-| World progression & calendar **(planned)** | Day-by-day advancement, blocking on unresolved fixtures | Pure logic, deterministic given seed + inputs. |
+| Career world repository **(M9–10)** | Typed access to players, orgs, contracts and local fixtures | SQLite via `godot-sqlite` behind `CareerRepository`. Detailed statistics arrive in M11. |
+| World progression & calendar **(partial, M10)** | Career fixture list and day advancement on a saved local result | World simulation and shared calendar coordination are planned. |
 | Identity & traits **(planned)** | Stable IDs, trait library, trait-conflict rules | Traits are data (resources/JSON) with effect hooks consumed by decision systems. |
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
-| Match orchestration **(contracts + stub)** | `MatchSetup` → runtime → `MatchResult`, idempotent submission by fixture ID | Contracts in `src/orchestration/`; only `StubMatchRunner` exists so far. |
+| Match orchestration **(local fixtures, M10)** | `MatchSetup` → FPS runtime → `MatchResult`, idempotent submission by fixture ID | The dev co-op proof uses `StubMatchRunner`. |
 | FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
 | Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |

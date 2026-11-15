@@ -370,9 +370,9 @@ func _test_migration_failures() -> void:
 	db.close()
 
 	var migrated := saves.open_career(save_id)
-	check(migrated.is_ok() and migrated.repo.db.user_version() == 2
+	check(migrated.is_ok() and migrated.repo.db.user_version() == CareerSchema.CURRENT_VERSION
 		and migrated.human_player_id == human and migrated.repo.current_day() == 19,
-		"legacy v1 data is preserved after a successful v2 migration")
+		"legacy v1 data is preserved after migration to the current schema")
 	migrated.close()
 
 

@@ -1,6 +1,9 @@
 class_name CareerHomePage
 extends CareerPage
 
+var _fixture_card: VBoxContainer
+var _fixture_status: Label
+
 
 func get_page_title() -> String:
 	return "Home"
@@ -15,10 +18,8 @@ func build_page() -> void:
 	var today := repo.current_day()
 
 	var welcome := UIFactory.card(self, "Welcome, %s" % (me.nickname if me != null else "professional"))
-	welcome.add_child(UIFactory.label(
-		"Your career world is live: every organisation, player, contract and opinion below comes from "
-		+ "this save's database. Fixtures, the advancing calendar and match statistics arrive in the next "
-		+ "milestones.", &"MutedLabel", true))
+	_fixture_card = UIFactory.card(self, "Amateur Matchmaking")
+	_refresh_fixture_card()
 
 	if not session.warning.is_empty():
 		welcome.add_child(UIFactory.label(session.warning, &"WarningLabel", true))
@@ -46,7 +47,6 @@ func build_page() -> void:
 		PackedStringArray(["Organisations", str(repo.organisation_count())]),
 		PackedStringArray(["Active professionals", str(repo.player_count(false))]),
 		PackedStringArray(["Free agents", str(repo.search_players({"free_agents": true, "limit": 100000}).size())]),
-		PackedStringArray(["Next fixture", "None yet — career fixtures arrive in Milestone 10"]),
 	]
 	UIFactory.key_value_grid(world_card, world_rows)
 
@@ -57,3 +57,46 @@ func build_page() -> void:
 		rows.append(PackedStringArray([org.name, CareerCatalog.region_name(org.region_id),
 			CareerCatalog.tier_name(org.tier), str(entry["reputation"])]))
 	UIFactory.table(top, PackedStringArray(["Organisation", "Region", "Tier", "Reputation"]), rows)
+
+
+func _refresh_fixture_card() -> void:
+	for child: Node in _fixture_card.get_children().slice(2):
+		_fixture_card.remove_child(child)
+		child.queue_free()
+	var session := career()
+	if session == null:
+		return
+	_fixture_status = UIFactory.label("", &"WarningLabel", true)
+	var fixture := session.repo.pending_fixture(session.human_player_id)
+	if App.has_unsaved_fixture_result():
+		_fixture_card.add_child(UIFactory.label("Your finished match is waiting to be saved.", &"MutedLabel"))
+		var retry := UIFactory.button("Retry saving result", &"AccentButton")
+		retry.pressed.connect(func() -> void:
+			var problem := App.retry_career_result()
+			if problem.is_empty():
+				App.open_career_hub()
+			else:
+				_fixture_status.text = problem)
+		_fixture_card.add_child(retry)
+	elif fixture == null:
+		_fixture_card.add_child(UIFactory.label(
+			"Schedule a 5v5 career match. The calendar advances after its final score is saved.",
+			&"MutedLabel", true))
+		var schedule := UIFactory.button("Schedule amateur match", &"AccentButton")
+		schedule.pressed.connect(func() -> void:
+			var problem := App.schedule_career_fixture()
+			if problem.is_empty():
+				_refresh_fixture_card()
+			else:
+				_fixture_status.text = problem)
+		_fixture_card.add_child(schedule)
+	else:
+		var setup := fixture.setup
+		_fixture_card.add_child(UIFactory.label("%s vs %s" % [setup.home_team_name, setup.away_team_name],
+			&"CardTitleLabel", true))
+		_fixture_card.add_child(UIFactory.label("%s · MR%d · Sandbox Arena (development map)" % [
+			GameDate.format(fixture.scheduled_day), setup.max_rounds], &"MutedLabel", true))
+		var play := UIFactory.button("Play fixture", &"AccentButton")
+		play.pressed.connect(func() -> void: _fixture_status.text = App.start_career_fixture(setup.fixture_id))
+		_fixture_card.add_child(play)
+	_fixture_card.add_child(_fixture_status)

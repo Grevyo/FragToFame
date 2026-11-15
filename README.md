@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 8 Tactical Play Creator, career templates and local bot practice. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 10 playable career fixtures. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -263,7 +263,7 @@ snapshots in `backups\`.
 
 Start from **FPS Sandbox → Esc → Start practice match (MR3 · 5v5 with bots)**.
 
-- [ ] The notice reads "PRACTICE · 5v5 with bots (normal) · team tactics arrive in M7"; four
+- [ ] The notice reads "PRACTICE · 5v5 with bots (normal)"; four
       teammates stand beside you and five opponents at the far spawn.
 - [ ] During freeze time nobody moves; when the round goes live bots run to bombsites using the
       ramp and stairs, not through walls or off ledges.
@@ -293,6 +293,17 @@ from spawn, so rounds often start with a long-range fight.
       reports the mismatch and the tactic file is preserved.
 - [ ] Return to Map Creator and use normal map selection, save/open and FPS playtest. Try leaving
       Tactical Play Creator with unsaved edits and verify the discard prompt.
+
+### Manual test checklist (Milestone 10 — playable career fixtures)
+
+- [ ] Continue an existing career or create one. From **Career Hub → Home**, choose **Schedule
+      amateur match**. Check the opponent, date and MR5 format, then check Calendar for the entry.
+- [ ] Choose **Play fixture**. Confirm it opens five versus five against the scheduled roster.
+      Pause and return to the Career Hub mid-match. The same fixture and date remain available.
+- [ ] Play again and complete the match. Check the final score and saved-result message. Return
+      to the Hub and confirm the career advances one day and Calendar records the score.
+- [ ] Quit and reopen the career. The score and date persist. Scheduling another match creates
+      a new fixture on the new date. Ordinary practice from Teams stays off the career calendar.
 
 ## Project layout
 

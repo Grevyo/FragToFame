@@ -169,6 +169,8 @@ func search_players(filter: Dictionary = {}) -> Array[Dictionary]:
 		where.append("c.id IS NULL")
 	if bool(filter.get("humans", false)):
 		where.append("p.is_human = 1")
+	elif bool(filter.get("ai_only", false)):
+		where.append("p.is_human = 0")
 	var sort_ability := str(filter.get("sort_ability", ""))
 	var rating_sql := "(SELECT AVG(value) FROM player_perceived pp WHERE pp.player_id = p.id)"
 	if not sort_ability.is_empty():
@@ -187,7 +189,7 @@ func search_players(filter: Dictionary = {}) -> Array[Dictionary]:
 		LEFT JOIN organisation o ON o.id = c.organisation_id
 		LEFT JOIN player_reputation r ON r.player_id = p.id
 		WHERE %s
-		ORDER BY rating DESC, p.nickname ASC
+		ORDER BY rating DESC, p.nickname ASC, p.id ASC
 		LIMIT ? OFFSET ?;""" % [rating_sql, " AND ".join(where)]
 	return db.rows(sql, bindings)
 
@@ -309,7 +311,7 @@ func roster(org_id: String) -> Array[Dictionary]:
 			ROUND(COALESCE((SELECT AVG(value) FROM player_perceived pp WHERE pp.player_id = p.id), 0)) AS rating
 		FROM contract c JOIN player p ON p.id = c.player_id
 		WHERE c.organisation_id = ? AND c.status = 'active'
-		ORDER BY c.is_substitute ASC, rating DESC;""", [org_id]):
+		ORDER BY c.is_substitute ASC, rating DESC, p.id ASC;""", [org_id]):
 		var contract := ContractRecord.new()
 		contract.id = str(found["c_id"])
 		contract.player_id = str(found["id"])
@@ -335,15 +337,57 @@ func lineup(org_id: String, size: int = 5) -> Array[Dictionary]:
 		var contract := entry["contract"] as ContractRecord
 		if contract.is_substitute:
 			continue
-		var ability_values: Dictionary = {}
-		if not player.is_human:
-			var values := abilities(player.id)
-			for key: StringName in values:
-				if key != CareerCatalog.POTENTIAL:
-					ability_values[String(key)] = values[key]
-		list.append({"player_id": player.id, "name": player.nickname, "role": String(contract.role),
-			"is_human": player.is_human, "abilities": ability_values})
+		list.append(match_player(player.id, player.nickname, contract.role, player.is_human))
 	return list
+
+
+## Snapshot only the abilities the runtime may use. Keep human and hidden potential values out.
+func match_player(id: String, nickname: String, role: StringName, is_human: bool) -> Dictionary:
+	var ability_values: Dictionary = {}
+	if not is_human:
+		var values := abilities(id)
+		for key: StringName in values:
+			if key != CareerCatalog.POTENTIAL:
+				ability_values[String(key)] = values[key]
+	return {"player_id": id, "name": nickname, "role": String(role),
+		"is_human": is_human, "abilities": ability_values}
+
+
+# --- Career fixtures --------------------------------------------------------------------------
+
+func pending_fixture(player_id: String) -> CareerFixture:
+	return CareerFixture.from_row(db.row("""SELECT * FROM career_fixture
+		WHERE player_id = ? AND submission_id IS NULL;""", [player_id]))
+
+
+func fixture_by_id(id: String) -> CareerFixture:
+	return CareerFixture.from_row(db.row("SELECT * FROM career_fixture WHERE id = ?;", [id]))
+
+
+func fixture_count(player_id: String) -> int:
+	return int(db.scalar("SELECT COUNT(*) FROM career_fixture WHERE player_id = ?;", [player_id], 0))
+
+
+func fixtures(player_id: String, limit: int = 30) -> Array[CareerFixture]:
+	var list: Array[CareerFixture] = []
+	for row: Dictionary in db.rows("""SELECT * FROM career_fixture WHERE player_id = ?
+			ORDER BY scheduled_day DESC, id DESC LIMIT ?;""", [player_id, limit]):
+		var fixture := CareerFixture.from_row(row)
+		if fixture != null:
+			list.append(fixture)
+	return list
+
+
+func insert_fixture(fixture: CareerFixture) -> bool:
+	return db.execute("""INSERT INTO career_fixture(id, player_id, scheduled_day, setup_json)
+		VALUES (?, ?, ?, ?);""", [fixture.setup.fixture_id, fixture.player_id, fixture.scheduled_day,
+		JSON.stringify(fixture.setup.to_dict())])
+
+
+func store_fixture_result(result: MatchResult) -> bool:
+	return db.execute("""UPDATE career_fixture SET submission_id = ?, result_json = ?
+		WHERE id = ? AND submission_id IS NULL;""",
+		[result.submission_id, JSON.stringify(result.to_dict()), result.fixture_id])
 
 
 # --- Competitions (definitions; scheduled and played from Milestone 13) ----------------------

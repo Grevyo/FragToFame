@@ -32,7 +32,7 @@ func rounds_to_win() -> int:
 
 static func from_fixture(fixture: Dictionary) -> MatchSetup:
 	var setup := MatchSetup.new()
-	setup.fixture_id = str(fixture.get("id", ""))
+	setup.fixture_id = str(fixture.get("fixture_id", fixture.get("id", "")))
 	setup.competition = str(fixture.get("competition", ""))
 	setup.home_team_id = str(fixture.get("home_team_id", ""))
 	setup.home_team_name = str(fixture.get("home_team_name", ""))
@@ -43,6 +43,12 @@ static func from_fixture(fixture: Dictionary) -> MatchSetup:
 	setup.home_lineup = _lineup_from(fixture.get("home_lineup", []))
 	setup.away_lineup = _lineup_from(fixture.get("away_lineup", []))
 	return setup
+
+
+static func from_dict(data: Dictionary) -> MatchSetup:
+	if data.get("format") != FORMAT or data.get("format_version") != FORMAT_VERSION:
+		return null
+	return from_fixture(data)
 
 
 func lineup(team_index: int) -> Array[Dictionary]:

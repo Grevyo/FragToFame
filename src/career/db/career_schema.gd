@@ -11,7 +11,7 @@ extends RefCounted
 ##   (recorded match statistics and calculated ratings arrive with Milestone 11)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 2
+const CURRENT_VERSION: int = 3
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -116,6 +116,20 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			start_month INTEGER NOT NULL CHECK (start_month BETWEEN 1 AND 12),
 			active INTEGER NOT NULL DEFAULT 1
 		);""",
+	],
+	# v3 — immutable match setups and submitted outcomes for career fixtures.
+	[
+		"""CREATE TABLE career_fixture (
+			id TEXT PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			scheduled_day INTEGER NOT NULL CHECK (scheduled_day >= 0),
+			setup_json TEXT NOT NULL,
+			submission_id TEXT UNIQUE,
+			result_json TEXT,
+			CHECK ((submission_id IS NULL) = (result_json IS NULL))
+		);""",
+		"CREATE UNIQUE INDEX career_fixture_one_pending ON career_fixture(player_id) WHERE submission_id IS NULL;",
+		"CREATE INDEX career_fixture_calendar ON career_fixture(player_id, scheduled_day DESC, id DESC);",
 	],
 ]
 

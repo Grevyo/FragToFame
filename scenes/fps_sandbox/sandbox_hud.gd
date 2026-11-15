@@ -25,6 +25,8 @@ var port_edit: LineEdit
 var _debug_label: Label
 var _hint_panel: PanelContainer
 var _title_label: Label
+var _pause_message: Label
+var _network_section: VBoxContainer
 var _network_status: Label
 var _network_badge: Label
 var _crosshair: Crosshair
@@ -84,10 +86,18 @@ func set_paused(paused: bool) -> void:
 
 
 ## Shows the map title; in playtest mode also offers the return-to-editor button.
-func set_mode(title: String, playtest: bool, in_match: bool = false) -> void:
+func set_mode(title: String, playtest: bool, in_match: bool = false, career_fixture: bool = false) -> void:
 	_title_label.text = title
 	editor_button.visible = playtest
 	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 · 5v5 with bots)"
+	_network_section.visible = not career_fixture
+	if career_fixture:
+		practice_button.text = "Restart fixture"
+		main_menu_button.text = "Return to Career Hub"
+
+
+func set_pause_message(text: String) -> void:
+	_pause_message.text = text
 
 
 func set_debug_text(text: String) -> void:
@@ -334,7 +344,8 @@ func _build_pause_overlay() -> void:
 	column.custom_minimum_size.x = 360
 	panel.add_child(column)
 	column.add_child(UIFactory.label("PAUSED", &"HeaderLabel"))
-	column.add_child(UIFactory.label("The mouse is released.", &"MutedLabel"))
+	_pause_message = UIFactory.label("", &"WarningLabel", true)
+	column.add_child(_pause_message)
 	resume_button = UIFactory.button("Resume", &"AccentButton")
 	resume_button.pressed.connect(resume_requested.emit)
 	column.add_child(resume_button)
@@ -348,7 +359,9 @@ func _build_pause_overlay() -> void:
 	main_menu_button = UIFactory.button("Return to Main Menu")
 	main_menu_button.pressed.connect(main_menu_requested.emit)
 	column.add_child(main_menu_button)
-	_build_network_section(column)
+	_network_section = UIFactory.vbox(12)
+	column.add_child(_network_section)
+	_build_network_section(_network_section)
 
 
 func _build_network_section(column: VBoxContainer) -> void:

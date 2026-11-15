@@ -21,6 +21,7 @@ const SUITES: Array[String] = [
 	"res://tests/suites/career_db_suite.gd",
 	"res://tests/suites/career_flow_suite.gd",
 	"res://tests/suites/tactic_editor_suite.gd",
+	"res://tests/suites/career_fixture_suite.gd",
 ]
 
 

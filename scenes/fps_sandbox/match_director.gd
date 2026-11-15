@@ -30,6 +30,7 @@ var combatants: Dictionary[String, TargetDummy] = {}
 ## Bots mode: the AI players (null in passive mode).
 var squad: BotSquad = null
 var opponents: StringName = OPPONENTS_PASSIVE
+var local_player_id: String = HUMAN_ID
 ## True while plant/defuse is requested. Read from the interact key while player input is
 ## enabled; scripts and tests may set it directly while input is disabled.
 var interact_held: bool = false
@@ -55,7 +56,13 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	hud.item_chosen.connect(func(id: StringName) -> void: try_buy(id))
 	hud.buy_menu_closed.connect(close_buy_menu)
 	state = MatchState.new(setup, rules)
-	state.add_player(HUMAN_ID, "You", MatchState.HOME, true)
+	for member: Dictionary in setup.home_lineup:
+		if bool(member.get("is_human", false)):
+			local_player_id = str(member["player_id"])
+			break
+	player.weapons.shooter_id = local_player_id
+	player.health.owner_id = local_player_id
+	state.add_player(local_player_id, "You", MatchState.HOME, true)
 	if opponents == OPPONENTS_BOTS:
 		var skill := StringName(str(options.get("skill", "normal")))
 		squad = BotSquad.new(self, skill)
@@ -65,11 +72,12 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 		player.set_team(BotSquad.TEAM_KEYS[MatchState.HOME])
 		level.build_navigation()
 		squad.spawn_bots()
-		if not setup.away_lineup.is_empty():
-			hud.set_notice("PRACTICE · vs %s · bots play from their career abilities · team tactics in M7"
-				% setup.away_team_name)
+		if bool(options.get("career_fixture", false)):
+			hud.set_notice("%s · MR%d · vs %s" % [setup.competition, setup.max_rounds, setup.away_team_name])
+		elif not setup.away_lineup.is_empty():
+			hud.set_notice("PRACTICE · vs %s · bots play from their career abilities" % setup.away_team_name)
 		else:
-			hud.set_notice("PRACTICE · %dv%d with bots (%s) · team tactics arrive in M7" % [
+			hud.set_notice("PRACTICE · %dv%d with bots (%s)" % [
 				rules.team_size, rules.team_size, skill])
 	else:
 		for i: int in rules.team_size:
@@ -88,11 +96,11 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 
 
 func human() -> MatchState.PlayerState:
-	return state.get_player(HUMAN_ID)
+	return state.get_player(local_player_id)
 
 
 func human_side() -> StringName:
-	return state.side_of(HUMAN_ID)
+	return state.side_of(local_player_id)
 
 
 func feet_position() -> Vector3:
@@ -142,7 +150,7 @@ func handle_escape() -> bool:
 # --- Buying ----------------------------------------------------------------------------------
 
 func can_open_buy_menu() -> bool:
-	return state.can_buy(HUMAN_ID) and MapZones.is_in_buy_zone(document, String(human_side()), feet_position())
+	return state.can_buy(local_player_id) and MapZones.is_in_buy_zone(document, String(human_side()), feet_position())
 
 
 func is_buy_menu_open() -> bool:
@@ -171,7 +179,7 @@ func try_buy(item_id: StringName) -> String:
 	if not MapZones.is_in_buy_zone(document, String(human_side()), feet_position()):
 		error = "you are not in your buy zone"
 	else:
-		error = state.buy(HUMAN_ID, item_id)
+		error = state.buy(local_player_id, item_id)
 	if error.is_empty():
 		_apply_purchase(item_id)
 		last_buy_message = "Bought %s" % ShopCatalog.display_name(item_id)
@@ -220,7 +228,7 @@ func _refresh_buy_menu() -> void:
 func _update_plant(delta: float) -> void:
 	var site := MapZones.bombsite_at(document, feet_position())
 	var can_plant := state.phase == MatchState.Phase.LIVE and not state.is_bomb_planted \
-		and state.bomb_carrier_id == HUMAN_ID and not player.health.is_dead \
+		and state.bomb_carrier_id == local_player_id and not player.health.is_dead \
 		and not site.is_empty() and player.is_on_floor()
 	if not (can_plant and interact_held):
 		plant_progress = 0.0
@@ -228,7 +236,7 @@ func _update_plant(delta: float) -> void:
 	plant_progress += delta
 	if plant_progress >= state.rules.plant_time:
 		plant_progress = 0.0
-		state.plant_bomb(HUMAN_ID, feet_position())
+		state.plant_bomb(local_player_id, feet_position())
 
 
 func _update_defuse(delta: float) -> void:
@@ -239,16 +247,16 @@ func _update_defuse(delta: float) -> void:
 		defuse_progress = 0.0
 		return
 	defuse_progress += delta
-	if defuse_progress >= state.defuse_duration(HUMAN_ID):
+	if defuse_progress >= state.defuse_duration(local_player_id):
 		defuse_progress = 0.0
-		state.defuse_bomb(HUMAN_ID)
+		state.defuse_bomb(local_player_id)
 
 
 func _update_bomb_pickup() -> void:
 	if not state.is_bomb_dropped or player.health.is_dead or human_side() != MatchRules.SIDE_ATTACK:
 		return
 	if feet_position().distance_to(state.bomb_position) <= BOMB_PICKUP_RADIUS:
-		state.pick_up_bomb(HUMAN_ID)
+		state.pick_up_bomb(local_player_id)
 
 
 func _spawn_bomb(at: Vector3) -> void:
@@ -268,7 +276,7 @@ func _clear_bomb() -> void:
 func _on_bomb_planted(player_id: String) -> void:
 	_spawn_bomb(state.bomb_position)
 	bomb.set_planted(state.bomb_time_left, state.rules.bomb_timer)
-	var who := "You" if player_id == HUMAN_ID else state.get_player(player_id).display_name
+	var who := "You" if player_id == local_player_id else state.get_player(player_id).display_name
 	hud.show_banner("BOMB PLANTED · %s" % who, 3.0)
 
 
@@ -278,7 +286,7 @@ func _on_bomb_dropped(at: Vector3) -> void:
 
 func _on_bomb_picked_up(player_id: String) -> void:
 	_clear_bomb()
-	if player_id == HUMAN_ID:
+	if player_id == local_player_id:
 		hud.show_banner("You picked up the bomb", 2.0)
 
 
@@ -296,7 +304,7 @@ func _on_round_started(round_number: int) -> void:
 	_place_human()
 	sandbox_hud.set_death_state(-1.0)
 	var side_text := "ATTACK" if human_side() == MatchRules.SIDE_ATTACK else "DEFEND"
-	var extra := " · you carry the bomb" if state.bomb_carrier_id == HUMAN_ID else ""
+	var extra := " · you carry the bomb" if state.bomb_carrier_id == local_player_id else ""
 	hud.show_banner("ROUND %d · %s%s" % [round_number, side_text, extra], 3.0)
 
 
@@ -352,7 +360,7 @@ func _on_player_killed(victim_id: String, killer_id: String) -> void:
 
 
 func _feed_name(player_id: String) -> String:
-	if player_id == HUMAN_ID:
+	if player_id == local_player_id:
 		return "You"
 	var player_state := state.get_player(player_id)
 	return player_state.display_name if player_state != null else player_id
@@ -361,7 +369,7 @@ func _feed_name(player_id: String) -> String:
 func _on_player_died(info: DamageInfo) -> void:
 	if state.phase == MatchState.Phase.MATCH_END:
 		return
-	state.record_kill(HUMAN_ID, info.source_id, info.weapon_id, info.is_headshot(), _last_safe_position)
+	state.record_kill(local_player_id, info.source_id, info.weapon_id, info.is_headshot(), _last_safe_position)
 	plant_progress = 0.0
 	defuse_progress = 0.0
 	sandbox_hud.show_death_message("You will respawn next round")
@@ -369,7 +377,7 @@ func _on_player_died(info: DamageInfo) -> void:
 
 func _on_round_ended(winner: int, reason: StringName) -> void:
 	if not player.health.is_dead:
-		state.set_player_armour(HUMAN_ID, player.health.armour, player.health.has_helmet)
+		state.set_player_armour(local_player_id, player.health.armour, player.health.has_helmet)
 	for id: String in combatants:
 		var dummy := combatants[id]
 		if is_instance_valid(dummy) and not dummy.health.is_dead:
@@ -394,13 +402,11 @@ func _on_match_ended(result: MatchResult) -> void:
 	player.input_enabled = false
 	player.frozen = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	App.last_match_result = result
 	var won := result.winner_side() == "home"
 	hud.show_match_end("VICTORY" if won else "DEFEAT",
-		"Final score %d – %d (%d rounds)\n%s vs %s\nResult %s recorded locally for fixture %s.\nCareer submission arrives with career fixtures (Milestone 10)." % [
+		"Final score %d – %d (%d rounds)\n%s vs %s" % [
 			result.home_score, result.away_score, result.rounds_played,
-			state.teams[MatchState.HOME].display_name, state.teams[MatchState.AWAY].display_name,
-			result.submission_id, result.fixture_id])
+			state.teams[MatchState.HOME].display_name, state.teams[MatchState.AWAY].display_name])
 	match_finished.emit(result)
 
 
@@ -429,7 +435,7 @@ func _update_hud() -> void:
 	if plant_progress > 0.0:
 		hud.set_progress("Planting…", plant_progress / state.rules.plant_time)
 	elif defuse_progress > 0.0:
-		hud.set_progress("Defusing…", defuse_progress / state.defuse_duration(HUMAN_ID))
+		hud.set_progress("Defusing…", defuse_progress / state.defuse_duration(local_player_id))
 	else:
 		hud.set_progress("", -1.0)
 	hud.set_hint(_context_hint())
@@ -441,7 +447,7 @@ func _context_hint() -> String:
 	if plant_progress > 0.0 or defuse_progress > 0.0:
 		return ""
 	var site := MapZones.bombsite_at(document, feet_position())
-	if state.phase == MatchState.Phase.LIVE and state.bomb_carrier_id == HUMAN_ID and not site.is_empty():
+	if state.phase == MatchState.Phase.LIVE and state.bomb_carrier_id == local_player_id and not site.is_empty():
 		return "Hold E to plant the bomb (site %s)" % site
 	if state.phase == MatchState.Phase.LIVE and state.is_bomb_planted and human_side() == MatchRules.SIDE_DEFENCE \
 			and feet_position().distance_to(state.bomb_position) <= DEFUSE_RADIUS:

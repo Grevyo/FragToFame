@@ -142,7 +142,19 @@ func show_match_end(title: String, detail: String) -> void:
 	_end_detail.text = detail
 	end_panel.visible = true
 	buy_panel.visible = false
-	play_again_button.grab_focus.call_deferred()
+	var focused := play_again_button if play_again_button.visible else main_menu_button
+	focused.grab_focus.call_deferred()
+
+
+func set_career_fixture(active: bool) -> void:
+	play_again_button.visible = not active
+	if active:
+		main_menu_button.text = "Return to Career Hub"
+
+
+func set_result_message(message: String) -> void:
+	if not message.is_empty():
+		_end_detail.text += "\n" + message
 
 
 static func _side_tag(side: StringName) -> String:

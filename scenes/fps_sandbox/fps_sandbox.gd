@@ -62,13 +62,28 @@ func _start_match() -> void:
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
 	player.weapons.set_loadout([WeaponCatalog.DEFAULT_SECONDARY])
-	hud.set_mode("PRACTICE MATCH · %s" % doc.name, false, true)
+	var career_fixture := _is_career_fixture()
+	var heading := "CAREER FIXTURE" if career_fixture else "PRACTICE MATCH"
+	hud.set_mode("%s · %s" % [heading, doc.name], false, true, career_fixture)
 	match_director = MatchDirector.new()
 	match_director.name = "MatchDirector"
 	add_child(match_director)
 	match_director.begin(setup, rules, doc, player, level, hud, _match_options)
 	match_director.hud.main_menu_requested.connect(_on_main_menu_requested)
 	match_director.hud.play_again_requested.connect(_on_practice_match_requested)
+	match_director.hud.set_career_fixture(career_fixture)
+	match_director.match_finished.connect(_on_match_finished)
+
+
+func _is_career_fixture() -> bool:
+	return bool(_match_options.get("career_fixture", false))
+
+
+func _on_match_finished(result: MatchResult) -> void:
+	var message := App.report_match_finished(result)
+	if _is_career_fixture():
+		hud.practice_button.disabled = true
+		match_director.hud.set_result_message(message)
 
 
 ## True while the match UI (buy menu, final screen) needs a free mouse cursor.
@@ -83,6 +98,11 @@ func _on_practice_match_requested() -> void:
 		App.start_practice_match(level.document)
 		return
 	var prior := match_director.state
+	if _is_career_fixture():
+		var problem := App.start_career_fixture(prior.setup.fixture_id)
+		if not problem.is_empty():
+			hud.set_pause_message(problem)
+		return
 	var setup := MatchSetup.from_fixture(prior.setup.to_dict())
 	setup.fixture_id = Ids.generate("practice")
 	App.start_match(setup, prior.rules, level.document, _match_options.duplicate(true))
@@ -207,7 +227,10 @@ func resume() -> void:
 func _on_main_menu_requested() -> void:
 	match_session.leave("returned to main menu")
 	App.playtest_map = null
-	App.go_to(App.SCENE_MAIN_MENU)
+	if _is_career_fixture():
+		App.open_career_hub()
+	else:
+		App.go_to(App.SCENE_MAIN_MENU)
 
 
 func _on_return_to_editor() -> void:

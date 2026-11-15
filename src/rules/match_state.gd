@@ -348,14 +348,8 @@ func result() -> MatchResult:
 func match_winner() -> int:
 	var home := teams[HOME].score
 	var away := teams[AWAY].score
-	var mr := rules.max_rounds
-	if maxi(home, away) >= mr + 1 and mini(home, away) < mr:
+	if maxi(home, away) >= rules.winning_score(mini(home, away)):
 		return HOME if home > away else AWAY
-	if mini(home, away) >= mr:
-		var block := floori(float(mini(home, away) - mr) / rules.overtime_max_rounds)
-		var base := mr + block * rules.overtime_max_rounds
-		if maxi(home, away) >= base + rules.overtime_max_rounds + 1:
-			return HOME if home > away else AWAY
 	return -1
 
 

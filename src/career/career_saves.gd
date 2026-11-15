@@ -261,7 +261,8 @@ func _snapshot(db: CareerDatabase, save_id: String, reason: String) -> String:
 		return ""
 	var stamp := Time.get_datetime_string_from_system(true).replace(":", "").replace("-", "")
 	var path := "%s/%s_%s_%s.db" % [folder, stamp, Ids.generate("snapshot"), reason.validate_filename()]
-	var staged := path + ".tmp"
+	# VACUUM INTO may need room for a journal suffix on Windows.
+	var staged := "%s/%s.tmp" % [folder, Ids.generate("snap").right(16)]
 	if not db.backup_to(staged):
 		push_warning("CareerSaves: backup failed: %s" % db.last_error)
 		return ""

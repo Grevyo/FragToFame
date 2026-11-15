@@ -7,7 +7,7 @@ extends Node
 signal scene_changed(scene_id: StringName)
 
 const VERSION: String = "0.1.0"
-const MILESTONE: String = "Milestone 9 — Player & Team Database"
+const MILESTONE: String = "Milestone 10 — Playable Career Fixtures"
 
 const SCENE_MAIN_MENU: StringName = &"main_menu"
 const SCENE_CAREER_HUB: StringName = &"career_hub"
@@ -34,11 +34,16 @@ var pending_match_rules: MatchRules = null
 var pending_match_map: MapDocument = null
 ## Runtime options for the pending match, e.g. {"opponents": "bots", "skill": "normal"}.
 var pending_match_options: Dictionary = {}
-## The most recent match outcome produced by the FPS runtime (not yet submitted anywhere).
+## The most recent match outcome produced by the FPS runtime.
 var last_match_result: MatchResult = null
 ## The open career (null when none is loaded). Career data stays inside its repository.
 var career: CareerSession = null
 var career_saves := CareerSaves.new()
+
+var _active_fixture_id: String = ""
+var _active_fixture_save_id: String = ""
+## Holds a result in memory if SQLite could not publish it on the first attempt.
+var _unsaved_fixture_results: Dictionary[String, MatchResult] = {}
 
 
 func _ready() -> void:
@@ -61,6 +66,9 @@ func go_to(scene_id: StringName) -> Error:
 		push_error("App.go_to: failed to load '%s' (error %d)" % [SCENE_PATHS[scene_id], err])
 		return err
 	current_scene_id = scene_id
+	if scene_id != SCENE_FPS_SANDBOX:
+		_active_fixture_id = ""
+		_active_fixture_save_id = ""
 	scene_changed.emit(scene_id)
 	return OK
 
@@ -114,8 +122,63 @@ func start_practice_against(org_id: String) -> Error:
 	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots"})
 
 
+func schedule_career_fixture() -> String:
+	if not has_career():
+		return "Open a career first."
+	return CareerFixtures.schedule(career.repo, career.human_player_id, MapTemplates.SANDBOX_ARENA_ID)
+
+
+func start_career_fixture(fixture_id: String) -> String:
+	if not has_career():
+		return "Open a career first."
+	if has_unsaved_fixture_result():
+		return "Save the completed match result before playing another fixture."
+	var fixture := career.repo.fixture_by_id(fixture_id)
+	if fixture == null or fixture.player_id != career.human_player_id or fixture.result != null:
+		return "This fixture is unavailable or already completed."
+	var setup := fixture.setup
+	var map := MapTemplates.sandbox_arena()
+	if setup.map_id != map.map_id:
+		return "The required fixture map is unavailable."
+	var err := start_match(setup, MatchRules.competitive(setup.max_rounds), map,
+		{"opponents": "bots", "career_fixture": true})
+	if err != OK:
+		return "Could not open the FPS runtime: %s." % error_string(err)
+	_active_fixture_id = fixture_id
+	_active_fixture_save_id = career.save_id
+	return ""
+
+
+func has_unsaved_fixture_result() -> bool:
+	return has_career() and _unsaved_fixture_results.has(career.save_id)
+
+
+func retry_career_result() -> String:
+	if not has_unsaved_fixture_result():
+		return "There is no match result waiting to be saved."
+	var result := _unsaved_fixture_results[career.save_id]
+	var error := CareerFixtures.record_result(career.repo, career.human_player_id, result)
+	if error.is_empty():
+		_unsaved_fixture_results.erase(career.save_id)
+	return error
+
+
+## Receives the same result signal from every FPS match. Only an active career fixture may write.
+func report_match_finished(result: MatchResult) -> String:
+	last_match_result = result
+	if _active_fixture_id.is_empty():
+		return ""
+	if not has_career() or career.save_id != _active_fixture_save_id or result.fixture_id != _active_fixture_id:
+		return "The finished match does not match the active career fixture."
+	_unsaved_fixture_results[career.save_id] = result
+	var error := retry_career_result()
+	return "Result saved to your career." if error.is_empty() else error
+
+
 ## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.
 func start_playtest(doc: MapDocument, session: Dictionary) -> Error:
+	_active_fixture_id = ""
+	_active_fixture_save_id = ""
 	playtest_map = doc
 	editor_session = session
 	return go_to(SCENE_FPS_SANDBOX)
@@ -147,13 +210,18 @@ func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal"
 
 ## Opens the FPS runtime to play [param setup] under [param rules] on [param map].
 func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument, options: Dictionary = {}) -> Error:
+	_active_fixture_id = ""
+	_active_fixture_save_id = ""
 	last_match_result = null
 	pending_match_options = options
 	pending_match_setup = setup
 	pending_match_rules = rules
 	pending_match_map = map
 	playtest_map = null
-	return go_to(SCENE_FPS_SANDBOX)
+	var error := go_to(SCENE_FPS_SANDBOX)
+	if error != OK:
+		consume_pending_match()
+	return error
 
 
 func has_pending_match() -> bool:

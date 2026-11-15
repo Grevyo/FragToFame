@@ -62,7 +62,7 @@ func show_organisation(org_id: String) -> void:
 	practice_button = UIFactory.button("Practice match vs %s (MR3, bots)" % org.short_name, &"AccentButton")
 	practice_button.pressed.connect(func() -> void: App.start_practice_against(org_id))
 	info.add_child(practice_button)
-	info.add_child(UIFactory.label("Practice results are not recorded in the career (fixtures arrive in M10).",
+	info.add_child(UIFactory.label("Career fixtures are played from Home.",
 		&"MutedLabel", true))
 
 	var roster_card := UIFactory.card(detail, "Roster")

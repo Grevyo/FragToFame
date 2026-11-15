@@ -5,8 +5,8 @@ extends RefCounted
 
 
 ## A local practice match: the human (plus their organisation's teammates when signed, else
-## generic practice partners) against [param opponent_org_id]'s starting five. Not a fixture:
-## the result is not submitted to the career (competitive fixtures arrive in Milestone 10).
+## generic practice partners) against [param opponent_org_id]'s starting five.
+## Practice scores stay separate from the career calendar.
 static func practice_setup(repo: CareerRepository, human_id: String, opponent_org_id: String,
 		map_id: String, max_rounds: int = 3) -> MatchSetup:
 	var opponent := repo.get_organisation(opponent_org_id)

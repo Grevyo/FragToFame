@@ -75,6 +75,15 @@ func regulation_rounds() -> int:
 	return max_rounds * 2
 
 
+## Score of the first legal win for a given losing score. This applies to both the live
+## rules and validation of completed career results.
+func winning_score(loser_score: int) -> int:
+	if loser_score < max_rounds:
+		return max_rounds + 1
+	var block := floori(float(loser_score - max_rounds) / overtime_max_rounds)
+	return max_rounds + (block + 1) * overtime_max_rounds + 1
+
+
 func to_dict() -> Dictionary:
 	return {
 		"max_rounds": max_rounds, "overtime_max_rounds": overtime_max_rounds, "team_size": team_size,

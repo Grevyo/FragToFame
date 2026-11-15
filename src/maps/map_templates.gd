@@ -3,6 +3,8 @@ extends RefCounted
 ## Starting documents for the editor. These are ordinary MapDocuments built only from catalog
 ## pieces, so anything here can be reproduced (and edited) in the Creation Studio.
 
+const SANDBOX_ARENA_ID: String = "map_dev_sandbox_arena"
+
 
 static func blank() -> MapDocument:
 	var doc := MapDocument.create("Untitled map")
@@ -14,7 +16,7 @@ static func blank() -> MapDocument:
 ## The FPS Sandbox test arena (development map): floor, walls, cover, ramp, stairs, platform.
 static func sandbox_arena() -> MapDocument:
 	var doc := MapDocument.create("Sandbox Arena (dev)")
-	doc.map_id = "map_dev_sandbox_arena"
+	doc.map_id = SANDBOX_ARENA_ID
 	doc.author = "F2F development"
 	doc.description = "Movement and shooting test arena used by the FPS Sandbox."
 	var s := 30.0

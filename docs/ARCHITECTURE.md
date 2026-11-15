@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–4)
+## 2. Current implementation (Milestones 1–5)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -65,12 +65,14 @@ src/core/input_actions.gd       InputActions: action names + default bindings, r
   combat/                     COMBAT: WeaponDefinition/Catalog, WeaponState, ShooterMotion,
                               DamageModel, DamageInfo, Health, Hitbox, Hitscan,
                               WeaponController, CombatTally
+  rules/                      COMPETITIVE RULES: MatchRules, ShopCatalog, MatchState (pure)
 scenes/
   main_menu/                  Main menu (Career Hub / FPS Sandbox / Creation Studio / Quit)
   career_hub/career_hub.*     Sidebar + page host
   career_hub/pages/*.gd       One CareerPage subclass per section
   fps_sandbox/                Map-driven level, first-person controller (crouch, health, weapons),
-                              target dummies, weapon effects/viewmodel, HUD + pause overlay
+                              target dummies, weapon effects/viewmodel, HUD + pause overlay,
+                              MatchDirector + MatchHud + BombDevice (competitive matches)
   creation_studio/            Map editor: scene controller, MapEditorView, StudioUI, fly camera, grid
 tests/run_tests.gd            Headless test runner (SceneTree script) over tests/suites/*
 tests/test_suite.gd           TestSuite base: check(), wait_until(), scene helpers
@@ -190,6 +192,37 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   `target_dummy` pieces; the maps module stays unaware of combat.
 - **Not yet:** armour, penetration, networked/authoritative damage, player hitboxes, audio.
 
+### Competitive rules (Milestone 5)
+
+```
+ App.start_match(MatchSetup, MatchRules, MapDocument) ──► FPS runtime (fps_sandbox.tscn)
+                                                            │
+                                MatchDirector (scene) ◄─────┘   reports kills, plants, defuses,
+                                 │   ▲                          pickups, purchases; places players
+                       tick/events│   │signals                  and combatants each round
+                                 ▼   │
+                         MatchState (pure rules) ──► MatchResult ──► App.last_match_result
+                                 │
+                                 └─► events[] (round-stamped log → statistics later)
+```
+
+- **Pure rules.** `MatchState` has no nodes. The runtime tells it what happened; it decides round
+  winners, money, sides and the result. The same class will run on the match host for networked
+  matches and drive bot matches.
+- **Win conditions.** Defence wins on attacker elimination before a plant, time running out
+  without a plant, or a defuse. Attack wins on defender elimination (even after planting) or
+  detonation. After a plant, eliminating the attackers does not end the round.
+- **Economy.** Win rewards per reason, a loss-bonus ladder (winners' streak drops by one), kill
+  rewards per weapon, a plant bonus for the whole attacking team, money cap. Survivors keep
+  weapons/armour; the dead respawn with the default pistol. Money and gear reset at half time and
+  at each overtime half.
+- **Overtime.** Starts on the sides regulation ended on; sides switch every overtime-MR rounds; a
+  block is won with overtime-MR + 1 rounds, otherwise another block starts.
+- **Runtime contract.** The FPS runtime still never touches career data: it consumes a
+  `MatchSetup` and produces a `MatchResult`. Practice matches are local and are not submitted.
+- **Zones.** `MapZones` answers "inside which bombsite / buy zone?" from the map document, so the
+  editor's zones are the single source of truth.
+
 ### Input
 
 `InputActions.register_defaults()` adds actions only if they don't already exist, so future
@@ -206,7 +239,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
 | Match orchestration **(contracts + stub)** | `MatchSetup` → runtime → `MatchResult`, idempotent submission by fixture ID | Contracts in `src/orchestration/`; only `StubMatchRunner` exists so far. |
-| FPS runtime **(partial: movement, weapons, health)** | Rounds, economy, weapons, utility, bombsite | `src/combat/` + `scenes/fps_sandbox/`; rules and economy next (M5). Server-authoritative on match host later. |
+| FPS runtime **(partial: movement, weapons, health, match rules)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
 | Bot AI / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | One team-tactics layer shared by AI and human IGLs. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
 | Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
@@ -249,3 +282,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Fixed recoil patterns, bullets follow full offset, camera shows a fraction | Learnable, skill-based spray control; matches the vision of mechanics belonging to the player |
 | 2026-11-15 | Separate hitbox physics layer, shots ignore movement bodies | Precise zone damage; capsules stay simple for movement |
 | 2026-11-15 | `WeaponController` is input-agnostic | One shooting path for humans and bots |
+| 2026-11-15 | Competitive rules as a pure `MatchState` driven by reported events | Testable without scenes; reusable by the match host, bots and simulation |
+| 2026-11-15 | `MatchSetup` MR value overrides the rule preset | The fixture contract decides the format; rules supply timings/economy |
+| 2026-11-15 | Practice match runs inside the existing FPS runtime via `MatchDirector` | One runtime for sandbox, playtest and matches; no duplicate player/HUD code |
+| 2026-11-15 | Passive combatants until M6, labelled on screen | Exercises the full rules loop honestly without pretending AI exists |

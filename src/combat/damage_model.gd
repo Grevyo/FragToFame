@@ -2,7 +2,9 @@ class_name DamageModel
 extends RefCounted
 ## How much damage a hit does: weapon base damage × hit-zone multiplier × range falloff.
 ##
-## Armour and penetration are not modelled yet (they arrive with the economy in Milestone 5).
+## Armour: a vest protects every zone except the legs; the head needs a helmet. Protected hits
+## pass only the weapon's armour penetration fraction to health and cost armour points.
+## Wall penetration is not modelled yet.
 
 const ZONE_HEAD: StringName = &"head"
 const ZONE_CHEST: StringName = &"chest"
@@ -25,6 +27,25 @@ static func zone_multiplier(zone: StringName) -> float:
 
 static func falloff(weapon: WeaponDefinition, distance: float) -> float:
 	return pow(weapon.falloff_per_10m, maxf(distance, 0.0) / 10.0)
+
+
+## Fraction of the absorbed damage that is taken from armour points.
+const ARMOUR_WEAR: float = 0.5
+
+
+static func is_protected(zone: StringName, armour: int, helmet: bool) -> bool:
+	if armour <= 0 or zone == ZONE_LEGS:
+		return false
+	return zone != ZONE_HEAD or helmet
+
+
+## Splits [param amount] into [health damage, armour damage] given the target's armour.
+static func armour_split(amount: int, penetration: float, zone: StringName, armour: int, helmet: bool) -> Array[int]:
+	if penetration >= 1.0 or not is_protected(zone, armour, helmet):
+		return [amount, 0]
+	var to_health := roundi(amount * penetration)
+	var to_armour := mini(roundi((amount - to_health) * ARMOUR_WEAR), armour)
+	return [to_health, to_armour]
 
 
 ## Whole-number damage for a hit on [param zone] at [param distance] metres (at least 1).

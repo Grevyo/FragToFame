@@ -25,6 +25,8 @@ const WEAPON_2: StringName = &"weapon_2"
 const WEAPON_3: StringName = &"weapon_3"
 const WEAPON_NEXT: StringName = &"weapon_next"
 const WEAPON_PREVIOUS: StringName = &"weapon_previous"
+const INTERACT: StringName = &"interact"
+const BUY_MENU: StringName = &"buy_menu"
 
 
 static func register_defaults() -> void:
@@ -48,12 +50,15 @@ static func register_defaults() -> void:
 	_add_key(WEAPON_3, KEY_3)
 	_add_mouse_button(WEAPON_NEXT, MOUSE_BUTTON_WHEEL_DOWN)
 	_add_mouse_button(WEAPON_PREVIOUS, MOUSE_BUTTON_WHEEL_UP)
+	_add_key(INTERACT, KEY_E)
+	_add_key(BUY_MENU, KEY_B)
 
 
 static func all_actions() -> Array[StringName]:
 	return [MOVE_FORWARD, MOVE_BACK, MOVE_LEFT, MOVE_RIGHT, JUMP, WALK, PAUSE_MENU,
 		EDITOR_LOOK, EDITOR_UP, EDITOR_DOWN, EDITOR_FAST, EDITOR_RESET_VIEW,
-		FIRE, RELOAD, CROUCH, WEAPON_1, WEAPON_2, WEAPON_3, WEAPON_NEXT, WEAPON_PREVIOUS]
+		FIRE, RELOAD, CROUCH, WEAPON_1, WEAPON_2, WEAPON_3, WEAPON_NEXT, WEAPON_PREVIOUS,
+		INTERACT, BUY_MENU]
 
 
 static func _ensure_action(action: StringName) -> bool:

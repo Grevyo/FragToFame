@@ -7,7 +7,7 @@ extends Node
 signal scene_changed(scene_id: StringName)
 
 const VERSION: String = "0.1.0"
-const MILESTONE: String = "Milestone 4 — Basic FPS Mechanics"
+const MILESTONE: String = "Milestone 5 — Competitive Match Rules"
 
 const SCENE_MAIN_MENU: StringName = &"main_menu"
 const SCENE_CAREER_HUB: StringName = &"career_hub"
@@ -26,6 +26,12 @@ var current_scene_id: StringName = SCENE_MAIN_MENU
 var playtest_map: MapDocument = null
 ## Editor state preserved across a playtest so unsaved work is not lost. Consumed by the studio.
 var editor_session: Dictionary = {}
+## Match the FPS runtime should run when it next loads (consumed by the runtime).
+var pending_match_setup: MatchSetup = null
+var pending_match_rules: MatchRules = null
+var pending_match_map: MapDocument = null
+## The most recent match outcome produced by the FPS runtime (not yet submitted anywhere).
+var last_match_result: MatchResult = null
 
 
 func _ready() -> void:
@@ -66,6 +72,43 @@ func is_playtesting() -> bool:
 func end_playtest() -> Error:
 	playtest_map = null
 	return go_to(SCENE_CREATION_STUDIO)
+
+
+## Starts a local practice match (MR3, passive opponents) on [param doc], or the sandbox arena.
+func start_practice_match(doc: MapDocument = null) -> Error:
+	var map := doc if doc != null else MapTemplates.sandbox_arena()
+	var setup := MatchSetup.new()
+	setup.fixture_id = Ids.generate("practice")
+	setup.competition = "Practice"
+	setup.home_team_id = "team_practice_player"
+	setup.home_team_name = "You"
+	setup.away_team_id = "team_practice_targets"
+	setup.away_team_name = "Training Targets"
+	setup.max_rounds = 3
+	setup.map_id = map.map_id
+	return start_match(setup, MatchRules.practice(setup.max_rounds), map)
+
+
+## Opens the FPS runtime to play [param setup] under [param rules] on [param map].
+func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument) -> Error:
+	pending_match_setup = setup
+	pending_match_rules = rules
+	pending_match_map = map
+	playtest_map = null
+	return go_to(SCENE_FPS_SANDBOX)
+
+
+func has_pending_match() -> bool:
+	return pending_match_setup != null
+
+
+## Hands the pending match to the runtime exactly once: [setup, rules, map].
+func consume_pending_match() -> Array:
+	var match_data: Array = [pending_match_setup, pending_match_rules, pending_match_map]
+	pending_match_setup = null
+	pending_match_rules = null
+	pending_match_map = null
+	return match_data
 
 
 func quit_game() -> void:

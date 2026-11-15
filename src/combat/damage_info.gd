@@ -8,6 +8,10 @@ const CAUSE_WORLD: StringName = &"world"
 var amount: int = 0
 ## Damage actually removed from health (≤ amount); filled in by [Health].
 var applied: int = 0
+## Armour points removed by this hit; filled in by [Health].
+var armour_damage: int = 0
+## Fraction of [member amount] that passes through armour (1.0 = ignores armour).
+var armour_penetration: float = 1.0
 var cause: StringName = CAUSE_WEAPON
 var zone: StringName = &""
 var weapon_id: StringName = &""

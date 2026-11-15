@@ -40,6 +40,8 @@ var input_enabled: bool = true:
 var wants_crouch: bool = false
 ## 0 = standing, 1 = fully crouched.
 var crouch_amount: float = 0.0
+## When true the player can look around but not move, jump or fire (freeze time, planting).
+var frozen: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var _spawn_transform: Transform3D
@@ -109,8 +111,8 @@ func _physics_process(delta: float) -> void:
 	if input_enabled:
 		var active := _accepts_input() and alive
 		wants_crouch = active and Input.is_action_pressed(InputActions.CROUCH)
-		weapons.trigger = active and Input.is_action_pressed(InputActions.FIRE)
-	if _accepts_input() and alive:
+		weapons.trigger = active and not frozen and Input.is_action_pressed(InputActions.FIRE)
+	if _accepts_input() and alive and not frozen:
 		input_dir = Input.get_vector(InputActions.MOVE_LEFT, InputActions.MOVE_RIGHT,
 			InputActions.MOVE_FORWARD, InputActions.MOVE_BACK)
 		if Input.is_action_just_pressed(InputActions.JUMP) and is_on_floor():

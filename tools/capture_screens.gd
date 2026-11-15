@@ -53,6 +53,17 @@ func _run() -> void:
 		await physics_frame
 	player.face_point(level.dummies[1].zone_position(DamageModel.ZONE_HEAD))
 	await _shot("08_fps_crouched_far_target")
+
+	app.call("start_practice_match")
+	await _frames(10)
+	# Untyped on purpose: MatchDirector depends on the App autoload, which this SceneTree
+	# script cannot reference at compile time.
+	var director: Node = current_scene.get("match_director")
+	await _shot("09_practice_match_freeze")
+	director.call("open_buy_menu")
+	director.call("try_buy", &"armour_vest")
+	await _shot("10_practice_match_buy")
+	director.call("close_buy_menu")
 	quit(0)
 
 

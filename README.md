@@ -39,7 +39,9 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | Left click | Fire (or recapture the mouse if it was released) |
 | R | Reload |
 | 1 / 2 / 3 · mouse wheel | VK-12 Vanta rifle / P-4 Kestrel pistol / M-5 Wasp SMG · cycle |
-| Esc | Pause menu / release mouse (Esc again resumes) |
+| B | Buy menu (practice match, in your buy zone during the buy window) |
+| E (hold) | Plant the bomb on a bombsite / defuse a planted bomb (practice match) |
+| Esc | Pause menu / release mouse (Esc again resumes; closes the buy menu first) |
 
 Weapons, numbers and names are original development values and will be tuned.
 
@@ -175,6 +177,28 @@ Ports: career sync **24560**, match **24570** (UDP).
 - [ ] Creation Studio: the **Training → Target dummy** piece can be placed, set to *strafe* in the
       inspector and shot at in Playtest.
 
+### Manual test checklist (Milestone 5 — competitive match rules)
+
+Start from **FPS Sandbox → Esc → Start practice match** (MR3, first to 4; opponents are passive
+targets until combat AI arrives in Milestone 6).
+
+- [ ] Round 1 opens in freeze time: scoreboard `You [ATT] 0 · BUY 0:05 · 0 [DEF] Training Targets`,
+      you cannot move or shoot but can look around; "Press B to buy" shows at spawn.
+- [ ] **B** opens the buy menu: $900; buy a vest ($650) → money $250, rifle disabled (too
+      expensive), defuse kit marked *defence only*. B / Esc closes it. The menu closes by itself
+      when the buy window ends or you walk out of the buy zone.
+- [ ] Kill all five targets: "ATTACKERS WIN · Enemy team eliminated", money rises by kill rewards
+      plus the win reward, next round starts after a few seconds with your vest kept.
+- [ ] Walk to bombsite B (far-left corner) or A (top of the platform): "Hold E to plant"; holding
+      E freezes you, shows a progress bar, then "BOMB PLANTED"; the clock turns red and the bomb
+      blinks faster until it detonates → attackers win.
+- [ ] After round 3 the sides switch: you defend from the north spawn with money reset to $900.
+      Letting the clock run out wins the round for defence.
+- [ ] Falling off the map in a match shows "You will respawn next round" (no instant respawn).
+- [ ] Reaching 4 rounds shows VICTORY / DEFEAT with the final score and the recorded result ID;
+      **Play again** restarts, **Return to Main Menu** leaves.
+- [ ] Esc during a match pauses the clock; Resume continues.
+
 ## Project layout
 
 ```
@@ -183,7 +207,8 @@ src/ui        Theme builder, UI helpers
 src/career    Career-world data (currently dev sample data only)
 src/world     Shared 3D building blocks
 src/maps      Map document format, builder, validator, storage, edit controller
-src/combat    Weapons, spread/recoil, damage, health, hitboxes, hitscan, shooting tally
+src/combat    Weapons, spread/recoil, damage, health, armour, hitboxes, hitscan, shooting tally
+src/rules     Competitive rules: MatchRules (format/economy data), ShopCatalog, MatchState
 src/orchestration  MatchSetup / MatchResult contracts
 src/net       career_sync (career host) and match (in-match netcode), kept separate
 scenes/       main_menu, career_hub (+pages), fps_sandbox, creation_studio

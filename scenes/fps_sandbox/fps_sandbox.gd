@@ -10,6 +10,8 @@ extends Node3D
 @onready var effects: WeaponEffects = $Effects
 
 var is_paused: bool = false
+## Present only while a competitive match is running in this runtime.
+var match_director: MatchDirector = null
 ## Seconds between the player's death and respawn.
 var respawn_delay: float = 3.0
 ## Recorded shooting numbers for this session (shown in the HUD; not persisted yet).
@@ -26,6 +28,7 @@ func _ready() -> void:
 	hud.host_match_requested.connect(_on_host_match_requested)
 	hud.join_match_requested.connect(_on_join_match_requested)
 	hud.leave_match_requested.connect(func() -> void: match_session.leave("left"))
+	hud.practice_match_requested.connect(_on_practice_match_requested)
 	match_session.local_body = player
 	match_session.session_ended.connect(_on_session_ended)
 	effects.bind(player.weapons, player.camera)
@@ -37,6 +40,9 @@ func _ready() -> void:
 
 
 func _load_level() -> void:
+	if App.has_pending_match():
+		_start_match()
+		return
 	var playtest := App.is_playtesting()
 	var doc := App.playtest_map if playtest else MapTemplates.sandbox_arena()
 	level.load_map(doc)
@@ -45,7 +51,39 @@ func _load_level() -> void:
 	hud.set_mode("PLAYTEST · %s" % doc.name if playtest else "FPS SANDBOX · %s" % doc.name, playtest)
 
 
+func _start_match() -> void:
+	var match_data := App.consume_pending_match()
+	var setup := match_data[0] as MatchSetup
+	var rules := match_data[1] as MatchRules
+	var doc := match_data[2] as MapDocument
+	level.load_map(doc, false)
+	var spawn := level.spawn_point("attack")
+	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
+	player.weapons.set_loadout([WeaponCatalog.DEFAULT_SECONDARY])
+	hud.set_mode("PRACTICE MATCH · %s" % doc.name, false, true)
+	match_director = MatchDirector.new()
+	match_director.name = "MatchDirector"
+	add_child(match_director)
+	match_director.begin(setup, rules, doc, player, level, hud)
+	match_director.hud.main_menu_requested.connect(_on_main_menu_requested)
+	match_director.hud.play_again_requested.connect(_on_practice_match_requested)
+
+
+## True while the match UI (buy menu, final screen) needs a free mouse cursor.
+func _match_owns_mouse() -> bool:
+	return match_director != null and (match_director.is_buy_menu_open()
+		or match_director.state.phase == MatchState.Phase.MATCH_END)
+
+
+func _on_practice_match_requested() -> void:
+	match_session.leave("starting practice match")
+	App.start_practice_match(level.document)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(InputActions.PAUSE_MENU) and match_director != null and match_director.handle_escape():
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed(InputActions.PAUSE_MENU):
 		if is_paused:
 			resume()
@@ -55,7 +93,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	# Recapture after the mouse was freed without pausing (e.g. window focus loss).
 	var click := event as InputEventMouseButton
-	if click != null and click.pressed and not is_paused \
+	if click != null and click.pressed and not is_paused and not _match_owns_mouse() \
 			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
@@ -123,12 +161,17 @@ func _on_target_hit(info: DamageInfo, _target: Health, killed: bool) -> void:
 
 
 func _on_player_died(info: DamageInfo) -> void:
+	if match_director != null:
+		return
 	_death_cause = "Fell out of the world" if info.cause == DamageInfo.CAUSE_WORLD else "Killed"
 	_respawn_left = respawn_delay
 	hud.set_death_state(_respawn_left, _death_cause)
 
 
 func pause() -> void:
+	if match_director != null:
+		match_director.close_buy_menu()
+		match_director.paused = true
 	is_paused = true
 	player.input_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -136,6 +179,12 @@ func pause() -> void:
 
 
 func resume() -> void:
+	if match_director != null:
+		match_director.paused = false
+		if match_director.state.phase == MatchState.Phase.MATCH_END:
+			is_paused = false
+			hud.set_paused(false)
+			return
 	is_paused = false
 	player.input_enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

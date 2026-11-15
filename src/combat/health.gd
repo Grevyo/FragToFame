@@ -9,6 +9,9 @@ signal revived
 @export var max_health: int = 100
 
 var current: int = 100
+## Armour points (0–100) and helmet; see [method DamageModel.armour_split].
+var armour: int = 0
+var has_helmet: bool = false
 var is_dead: bool = false
 ## The damage event that caused the most recent death (null while alive).
 var last_death: DamageInfo = null
@@ -22,7 +25,10 @@ func _ready() -> void:
 func apply_damage(info: DamageInfo) -> int:
 	if is_dead or info.amount <= 0:
 		return 0
-	info.applied = mini(info.amount, current)
+	var split := DamageModel.armour_split(info.amount, info.armour_penetration, info.zone, armour, has_helmet)
+	info.armour_damage = split[1]
+	armour -= split[1]
+	info.applied = mini(split[0], current)
 	current -= info.applied
 	damaged.emit(info)
 	if current <= 0:

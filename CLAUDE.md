@@ -42,6 +42,7 @@ src/career/    career-world data & logic (no Node dependencies beyond RefCounted
 src/world/     shared 3D building blocks
 src/maps/      map document format, builder, validator, storage, edit controller (no UI)
 src/combat/    weapons, spread/recoil, damage, health, hitboxes, hitscan (FPS runtime only)
+src/rules/     competitive match rules, economy, shop (pure; driven by the FPS runtime)
 src/orchestration/    MatchSetup / MatchResult contracts and match runners
 src/net/career_sync/  career-host networking (raw ENet messages) — never uses net/match
 src/net/match/        in-match netcode (SceneMultiplayer branch) — never uses net/career_sync

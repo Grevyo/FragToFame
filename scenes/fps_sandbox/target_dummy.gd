@@ -12,7 +12,10 @@ const STRAFE_HALF_WIDTH: float = 2.0
 const STRAFE_SPEED: float = 2.6
 
 @export var motion: StringName = MOTION_STATIC
+## Seconds before standing back up; negative = stay down (match combatants).
 @export var respawn_delay: float = 2.5
+## Match player ID when used as a passive match combatant, empty for training targets.
+var combatant_id: String = ""
 
 var health: Health
 var hitboxes: Array[Hitbox] = []
@@ -115,6 +118,8 @@ func zone_position(zone: StringName) -> Vector3:
 
 func _physics_process(delta: float) -> void:
 	if health.is_dead:
+		if respawn_delay < 0.0:
+			return
 		_respawn_left -= delta
 		if _respawn_left <= 0.0:
 			_stand_up()

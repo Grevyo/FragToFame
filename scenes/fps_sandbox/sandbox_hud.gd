@@ -9,11 +9,13 @@ signal return_to_editor_requested
 signal host_match_requested(port: int)
 signal join_match_requested(address: String, port: int)
 signal leave_match_requested
+signal practice_match_requested
 
 var pause_overlay: Control
 var resume_button: Button
 var main_menu_button: Button
 var editor_button: Button
+var practice_button: Button
 var host_button: Button
 var join_button: Button
 var leave_button: Button
@@ -82,9 +84,10 @@ func set_paused(paused: bool) -> void:
 
 
 ## Shows the map title; in playtest mode also offers the return-to-editor button.
-func set_mode(title: String, playtest: bool) -> void:
+func set_mode(title: String, playtest: bool, in_match: bool = false) -> void:
 	_title_label.text = title
 	editor_button.visible = playtest
+	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 vs passive targets)"
 
 
 func set_debug_text(text: String) -> void:
@@ -146,6 +149,12 @@ func _expire_feed_line(line_id: int) -> void:
 		line.queue_free()
 
 
+## Death overlay with a fixed message (e.g. match mode: respawn next round).
+func show_death_message(text: String) -> void:
+	death_overlay.visible = true
+	_death_label.text = text
+
+
 ## Death overlay with the respawn countdown; [param seconds_left] < 0 hides it.
 func set_death_state(seconds_left: float, cause: String = "") -> void:
 	death_overlay.visible = seconds_left >= 0.0
@@ -188,6 +197,7 @@ func _build_hint() -> void:
 	column.add_child(_title_label)
 	column.add_child(UIFactory.label("WASD move · Mouse look · Space jump · Shift walk · Ctrl/C crouch", &"MutedLabel"))
 	column.add_child(UIFactory.label("LMB fire · R reload · 1 rifle · 2 pistol · 3 SMG · wheel switch", &"MutedLabel"))
+	column.add_child(UIFactory.label("Matches: B buy · hold E plant / defuse", &"MutedLabel"))
 	column.add_child(UIFactory.label("Esc pause / release mouse · Click to recapture", &"MutedLabel"))
 	_hint_panel.add_child(column)
 	add_child(_hint_panel)
@@ -332,6 +342,9 @@ func _build_pause_overlay() -> void:
 	editor_button.pressed.connect(return_to_editor_requested.emit)
 	editor_button.visible = false
 	column.add_child(editor_button)
+	practice_button = UIFactory.button("Start practice match (MR3 vs passive targets)")
+	practice_button.pressed.connect(practice_match_requested.emit)
+	column.add_child(practice_button)
 	main_menu_button = UIFactory.button("Return to Main Menu")
 	main_menu_button.pressed.connect(main_menu_requested.emit)
 	column.add_child(main_menu_button)

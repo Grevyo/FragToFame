@@ -13,7 +13,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 2 | Early networking architecture proof | 1 | 🔶 awaiting manual test |
 | 3 | Basic runtime map editing | 1 | 🔶 awaiting manual test |
 | 4 | Basic FPS mechanics | 1 | 🔶 awaiting manual test |
-| 5 | Competitive match rules | 4 | ⬜ |
+| 5 | Competitive match rules | 4 | 🔶 awaiting manual test |
 | 6 | Individual combat and navigation AI | 3, 4 | ⬜ |
 | 7 | Tactical team AI and IGL | 5, 6 | ⬜ |
 | 8 | Tactical Play Creator | 3, 7 | ⬜ |
@@ -122,10 +122,42 @@ Out of scope (later): armour, penetration, buying and economy (M5), sounds (no a
 networked damage / server-authoritative hits (with match rules), player hitboxes for bots (M6),
 grenades and utility, scoped weapons, fall damage.
 
-## Milestone 5 — Competitive match rules
+## Milestone 5 — Competitive match rules 🔶
 
-Rounds, teams, economy (money, buying, armour), bomb plant/defuse on bombsites, round win
-conditions, half-time switch, overtime, match end producing a `MatchResult`.
+Completion criteria:
+
+- [x] `MatchRules`: data-driven format (MR n, overtime MR), timings (freeze, buy window, round,
+      bomb, plant, defuse with/without kit) and economy (start/overtime/max money, win rewards per
+      reason, loss-bonus ladder, plant bonus); competitive and practice presets.
+- [x] `ShopCatalog`: original prices for weapons, vest, vest + helmet (helmet upgrade), defuse kit;
+      kill rewards by weapon.
+- [x] Armour in damage: vests protect all but legs, helmets the head; weapon armour penetration.
+- [x] `MatchState`: pure state machine — freeze/live/round-end/match-end, elimination, time,
+      detonation and defuse win conditions (attack still loses only if the bomb is defused after
+      a plant), bomb carrier/drop/pickup, money, gear kept by survivors and lost on death,
+      half-time switch with money reset, overtime blocks with side switches, final
+      `MatchResult`, and an event log for future statistics.
+- [x] Runtime: `MatchDirector` in the FPS runtime takes a `MatchSetup` + rules, places players and
+      combatants per round, freezes players in freeze time, buy menu restricted to own buy zone
+      and buy window, bomb plant (hold E on a bombsite) and defuse (hold E near the bomb), bomb
+      model, match HUD (scoreboard, clock, money, banners, progress, hints, match-end screen).
+- [x] `MapZones` point-in-zone queries; arena template now has 5 spawns per team and a buy zone
+      per side.
+- [x] Practice match entry (FPS Sandbox pause menu): MR3 vs passive targets, clearly labelled.
+- [x] Automated tests: rules suite (armour, loadout, round flow, economy, bomb, halves, overtime,
+      event log) and a full scene match (buy, eliminate, plant + detonate, half time, death,
+      defuse, match end with a valid `MatchResult`).
+- [ ] Manual practice-match walkthrough (README) by the project owner.
+
+Out of scope (later): opponents that fight back (M6 AI), teammates, networked matches (rules run
+on the match host later), dropping/picking up weapons, grenades/utility, spectating dead players,
+career submission of practice results (M10).
+
+## Milestone 6 — Individual combat and navigation AI
+
+Bots that move around a map (navigation from the map document), spot, aim with human-like
+reaction and error, fire through the same `WeaponController`, use cover basically, and play
+practice matches as opponents (and teammates) under the M5 rules.
 
 *(Later milestones are elaborated when they become next-up.)*
 
@@ -139,3 +171,4 @@ conditions, half-time switch, overtime, match end producing a `MatchResult`.
 | 2026-11-15 | Milestone 1 accepted. Milestone 2 implemented; automated checks passing; awaiting manual two-instance test. |
 | 2026-11-15 | Owner asked for continuous milestone work. Milestone 3 implemented; 234 automated checks passing; awaiting manual editor walkthrough. |
 | 2026-11-15 | Milestone 4 implemented; 340 automated checks passing; awaiting manual feel test. |
+| 2026-11-15 | Milestone 5 implemented; 468 automated checks passing; awaiting manual practice-match walkthrough. |

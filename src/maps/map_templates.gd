@@ -40,12 +40,15 @@ static func sandbox_arena() -> MapDocument:
 	for x: float in [-18.0, -12.0, -6.0]:
 		_add(doc, "pillar", Vector3(x, 0, 14), 0, Vector3(0.8, 3.2, 0.8))
 
-	_add(doc, "spawn_attack", Vector3(0, 0, 12))
-	_add(doc, "spawn_defence", Vector3(0, 0, -20), 180)
+	# Five spawns per team (competitive requirement).
+	for x: float in [0.0, -1.5, 1.5, -3.0, 3.0]:
+		_add(doc, "spawn_attack", Vector3(x, 0, 12))
+		_add(doc, "spawn_defence", Vector3(x, 0, -20), 180)
 	_add(doc, "bombsite", Vector3(14, 3, -5), 0, Vector3(8, 3, 6), {"site": "A"})
 	_add(doc, "bombsite", Vector3(-18, 0, -18), 0, Vector3(8, 3, 8), {"site": "B"})
 	_add(doc, "callout", Vector3(0, 0, 0), 0, Vector3(10, 3, 10), {"name": "Mid"})
-	_add(doc, "buy_zone", Vector3(0, 0, 22), 0, Vector3(12, 3, 10), {"team": "attack"})
+	_add(doc, "buy_zone", Vector3(0, 0, 14), 0, Vector3(14, 3, 10), {"team": "attack"})
+	_add(doc, "buy_zone", Vector3(0, 0, -22), 0, Vector3(14, 3, 10), {"team": "defence"})
 
 	# Training targets facing the attacker spawn: close, far (half behind low cover), strafing.
 	_add(doc, "target_dummy", Vector3(-6, 0, 4), 180)

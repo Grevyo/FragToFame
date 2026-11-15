@@ -11,7 +11,9 @@ var targets_root: Node3D
 var dummies: Array[TargetDummy] = []
 
 
-func load_map(doc: MapDocument) -> void:
+## Builds [param doc]. Training dummies are only spawned when [param spawn_training] is true
+## (matches spawn their own combatants).
+func load_map(doc: MapDocument, spawn_training: bool = true) -> void:
 	for node: Node3D in [map_root, targets_root]:
 		if node != null:
 			remove_child(node)
@@ -23,6 +25,8 @@ func load_map(doc: MapDocument) -> void:
 	targets_root = Node3D.new()
 	targets_root.name = "Targets"
 	add_child(targets_root)
+	if not spawn_training:
+		return
 	for piece: Dictionary in doc.pieces_of_type("target_dummy"):
 		var dummy := TargetDummy.new()
 		dummy.name = "Dummy_%s" % piece["id"]
@@ -32,6 +36,16 @@ func load_map(doc: MapDocument) -> void:
 		dummy.rotation_degrees.y = float(piece["rotation_y"])
 		targets_root.add_child(dummy)
 		dummies.append(dummy)
+
+
+## All spawn points for [param team] as [position, yaw] pairs (falls back like [method spawn_point]).
+func spawn_points(team: String) -> Array[Array]:
+	var spawns := MapBuilder.spawn_points(document, team)
+	if spawns.is_empty():
+		spawns = MapBuilder.spawn_points(document, "defence" if team == "attack" else "attack")
+	if spawns.is_empty():
+		spawns.append([Vector3(0, 1, 0), 0.0])
+	return spawns
 
 
 ## First spawn for [param team], falling back to the other team, then to the origin.

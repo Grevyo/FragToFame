@@ -8,10 +8,15 @@ extends RefCounted
 
 enum FireMode { SEMI, AUTO }
 
+const CATEGORY_PRIMARY: StringName = &"primary"
+const CATEGORY_SECONDARY: StringName = &"secondary"
+
 var id: StringName = &""
 var display_name: String = ""
 ## Loadout slot (1 = primary, 2 = secondary, 3 = alternative primary in the sandbox).
 var slot: int = 1
+## Loadout category: a player carries at most one primary and one secondary in matches.
+var category: StringName = CATEGORY_PRIMARY
 var fire_mode: FireMode = FireMode.AUTO
 var damage: float = 30.0
 ## Seconds between shots (60 / rounds per minute).
@@ -24,6 +29,8 @@ var draw_time: float = 0.45
 var range_m: float = 250.0
 ## Damage multiplier applied per 10 m of distance (1.0 = no falloff).
 var falloff_per_10m: float = 0.95
+## Fraction of damage that reaches health through armour (1.0 = armour ignored).
+var armour_penetration: float = 0.7
 
 var base_spread: float = 0.2
 ## Extra spread at full running speed (scales with the square of the speed ratio).
@@ -49,6 +56,8 @@ static func from_dict(data: Dictionary) -> WeaponDefinition:
 	d.id = StringName(str(data["id"]))
 	d.display_name = str(data["name"])
 	d.slot = int(data.get("slot", 1))
+	d.category = StringName(str(data.get("category", "primary")))
+	d.armour_penetration = float(data.get("armour_penetration", d.armour_penetration))
 	d.fire_mode = FireMode.AUTO if bool(data.get("automatic", true)) else FireMode.SEMI
 	d.damage = float(data["damage"])
 	d.fire_interval = 60.0 / float(data["rpm"])

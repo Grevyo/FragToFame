@@ -44,6 +44,41 @@ func set_loadout(weapon_ids: Array[StringName]) -> void:
 	draw_remaining = 0.0
 
 
+## Weapon IDs currently carried, in loadout order.
+func loadout_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for state: WeaponState in weapons:
+		ids.append(state.definition.id)
+	return ids
+
+
+func has_weapon(id: StringName) -> bool:
+	return loadout_ids().has(id)
+
+
+## Adds weapon [param id], replacing any carried weapon of the same category (primary or
+## secondary), and switches to it. Returns false for unknown IDs.
+func give_weapon(id: StringName) -> bool:
+	var definition := WeaponCatalog.get_definition(id)
+	if definition == null:
+		return false
+	if current() != null:
+		current().cancel_reload()
+	for i: int in range(weapons.size() - 1, -1, -1):
+		if weapons[i].definition.category == definition.category:
+			weapons.remove_at(i)
+	var state := WeaponState.new(definition)
+	if definition.category == WeaponDefinition.CATEGORY_PRIMARY:
+		weapons.insert(0, state)
+	else:
+		weapons.append(state)
+	current_index = weapons.find(state)
+	draw_remaining = definition.draw_time
+	_apply_punch()
+	weapon_switched.emit(state)
+	return true
+
+
 func current() -> WeaponState:
 	if weapons.is_empty():
 		return null
@@ -124,6 +159,7 @@ func _resolve_shot(state: WeaponState, offset: Vector2) -> void:
 	if result.hitbox != null and result.hitbox.health != null and not result.hitbox.health.is_dead:
 		var info := DamageInfo.new()
 		info.amount = DamageModel.damage_for(definition, result.hitbox.zone, result.distance)
+		info.armour_penetration = definition.armour_penetration
 		info.zone = result.hitbox.zone
 		info.weapon_id = definition.id
 		info.source_id = shooter_id

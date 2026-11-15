@@ -2,8 +2,7 @@ class_name WeaponCatalog
 extends RefCounted
 ## The weapons available in the FPS runtime. All names and numbers are original to F2F.
 ##
-## Milestone 4 ships three sandbox weapons; prices, armour penetration and buy rules arrive with
-## the economy in Milestone 5.
+## Prices and kill rewards live in [ShopCatalog]; armour handling in [DamageModel].
 
 const VANTA_RIFLE: StringName = &"wpn_vanta_rifle"
 const KESTREL_PISTOL: StringName = &"wpn_kestrel_pistol"
@@ -11,10 +10,13 @@ const WASP_SMG: StringName = &"wpn_wasp_smg"
 
 ## Sandbox loadout order: slot keys 1, 2, 3.
 const SANDBOX_LOADOUT: Array[StringName] = [VANTA_RIFLE, KESTREL_PISTOL, WASP_SMG]
+## Everyone spawns with this sidearm in matches.
+const DEFAULT_SECONDARY: StringName = KESTREL_PISTOL
 
 const DATA: Dictionary[StringName, Dictionary] = {
 	VANTA_RIFLE: {
-		"id": "wpn_vanta_rifle", "name": "VK-12 Vanta", "slot": 1, "automatic": true,
+		"id": "wpn_vanta_rifle", "name": "VK-12 Vanta", "slot": 1, "category": "primary",
+		"automatic": true, "armour_penetration": 0.78,
 		"damage": 34.0, "rpm": 600.0, "magazine": 30, "reserve": 90, "reload_time": 2.5,
 		"draw_time": 0.5, "range": 250.0, "falloff_per_10m": 0.97,
 		"base_spread": 0.18, "run_spread": 5.0, "air_spread": 9.0, "crouch_multiplier": 0.7,
@@ -29,7 +31,8 @@ const DATA: Dictionary[StringName, Dictionary] = {
 			0.1, -0.2, -0.4, -0.45, -0.4, -0.3, 0.1, 0.3, 0.35, 0.3],
 	},
 	KESTREL_PISTOL: {
-		"id": "wpn_kestrel_pistol", "name": "P-4 Kestrel", "slot": 2, "automatic": false,
+		"id": "wpn_kestrel_pistol", "name": "P-4 Kestrel", "slot": 2, "category": "secondary",
+		"automatic": false, "armour_penetration": 0.5,
 		"damage": 30.0, "rpm": 380.0, "magazine": 12, "reserve": 36, "reload_time": 2.1,
 		"draw_time": 0.35, "range": 150.0, "falloff_per_10m": 0.88,
 		"base_spread": 0.25, "run_spread": 2.6, "air_spread": 6.0, "crouch_multiplier": 0.8,
@@ -39,7 +42,8 @@ const DATA: Dictionary[StringName, Dictionary] = {
 		"recoil_yaw": [0.0, 0.1, -0.15, 0.2, -0.2],
 	},
 	WASP_SMG: {
-		"id": "wpn_wasp_smg", "name": "M-5 Wasp", "slot": 3, "automatic": true,
+		"id": "wpn_wasp_smg", "name": "M-5 Wasp", "slot": 3, "category": "primary",
+		"automatic": true, "armour_penetration": 0.6,
 		"damage": 25.0, "rpm": 800.0, "magazine": 25, "reserve": 100, "reload_time": 2.3,
 		"draw_time": 0.4, "range": 120.0, "falloff_per_10m": 0.82,
 		"base_spread": 0.3, "run_spread": 1.6, "air_spread": 5.0, "crouch_multiplier": 0.8,

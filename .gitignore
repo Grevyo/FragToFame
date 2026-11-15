@@ -1,0 +1,38 @@
+# Godot 4 generated / cache
+.godot/
+.import/
+*.translation
+export_presets.cfg
+export_credentials.cfg
+
+# Godot .NET (mono editor may create these even for GDScript-only projects)
+.mono/
+data_*/
+mono_crash.*.json
+*.csproj
+*.sln
+
+# Builds and temporary output
+build/
+builds/
+export/
+exports/
+*.tmp
+*.log
+
+# Local personal data, saves and settings
+user_data/
+saves/
+*.local.cfg
+.env
+.env.*
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

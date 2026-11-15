@@ -7,8 +7,8 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 
 | # | Milestone | Depends on | Status |
 |---|---|---|---|
-| 1 | Runnable application foundation | — | 🔶 awaiting manual test |
-| 2 | Early networking architecture proof | 1 | ⬜ |
+| 1 | Runnable application foundation | — | ✅ |
+| 2 | Early networking architecture proof | 1 | 🔶 awaiting manual test |
 | 3 | Basic runtime map editing | 1 | ⬜ |
 | 4 | Basic FPS mechanics | 1 | ⬜ |
 | 5 | Competitive match rules | 4 | ⬜ |
@@ -28,7 +28,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 
 ---
 
-## Milestone 1 — Runnable application foundation 🔶
+## Milestone 1 — Runnable application foundation ✅
 
 **Goal:** A Godot 4.7.2 project that launches into a working main menu and can enter three
 functional shells.
@@ -45,19 +45,28 @@ Completion criteria:
 - [x] Creation Studio shell: free-fly camera, visible grid, camera controls, editing UI shell,
       return to main menu.
 - [x] Headless import + automated smoke tests pass.
-- [ ] Manual test checklist (README) completed by the project owner.
+- [x] Validated on the owner's machine (`tools/validate.ps1`); owner moved on to Milestone 2.
 
-## Milestone 2 — Early networking architecture proof (proposed next)
+## Milestone 2 — Early networking architecture proof 🔶
 
-Prove the two-network split before gameplay hardens around single-player assumptions:
+Prove the two-network split before gameplay hardens around single-player assumptions.
 
-- Minimal **career host** process/mode exposing a tiny authoritative world (e.g. a fixture list)
-  and accepting idempotent result submissions keyed by fixture ID.
-- Two clients connect, see the same fixture list, each "plays" a stub match locally, submits a
-  result; duplicates are rejected.
-- Separately, a **match host** listen-server in the FPS Sandbox with 2 players moving
-  (position sync only), independent of the career connection.
-- Automated test: in-process host + client over loopback.
+Completion criteria:
+
+- [x] Career host mode owning a tiny authoritative world (dev-sample fixture list, in memory).
+- [x] Versioned career-sync protocol with handshake and protocol-version rejection.
+- [x] Clients see the same fixture list, "play" a stub match (`MatchSetup` → `StubMatchRunner` →
+      `MatchResult`) and submit; the host answers ACCEPTED / DUPLICATE / CONFLICT /
+      UNKNOWN_FIXTURE / INVALID and broadcasts world updates with a revision number.
+- [x] Pending submissions survive a disconnect and are resent safely after reconnecting.
+- [x] Match host listen server in the FPS Sandbox; players see each other move (position + facing).
+- [x] Career and match networks run simultaneously and independently (separate transports,
+      ports and lifetimes).
+- [x] Automated loopback tests: career host + 2 clients; match host + client; both at once.
+- [ ] Manual two-instance test (README) completed by the project owner.
+
+Out of scope (later): saving the world, calendar advancement, the career host choosing the match
+host, spectating, server-authoritative movement.
 
 ## Milestone 3 — Basic runtime map editing
 
@@ -78,3 +87,4 @@ crouch, simple target dummies.
 | Date | Entry |
 |---|---|
 | 2026-11-15 | Milestone 1 implemented; automated checks passing; awaiting manual acceptance. |
+| 2026-11-15 | Milestone 1 accepted. Milestone 2 implemented; automated checks passing; awaiting manual two-instance test. |

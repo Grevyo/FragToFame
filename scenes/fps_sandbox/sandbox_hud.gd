@@ -4,13 +4,23 @@ extends CanvasLayer
 
 signal resume_requested
 signal main_menu_requested
+signal host_match_requested(port: int)
+signal join_match_requested(address: String, port: int)
+signal leave_match_requested
 
 var pause_overlay: Control
 var resume_button: Button
 var main_menu_button: Button
+var host_button: Button
+var join_button: Button
+var leave_button: Button
+var address_edit: LineEdit
+var port_edit: LineEdit
 
 var _debug_label: Label
 var _hint_panel: PanelContainer
+var _network_status: Label
+var _network_badge: Label
 
 
 func _ready() -> void:
@@ -30,6 +40,23 @@ func set_paused(paused: bool) -> void:
 
 func set_debug_text(text: String) -> void:
 	_debug_label.text = text
+
+
+## Updates the pause-menu network section and the always-visible network badge.
+func set_network_state(active: bool, status_text: String, badge_text: String) -> void:
+	_network_status.text = status_text
+	_network_badge.text = badge_text
+	_network_badge.visible = not badge_text.is_empty()
+	host_button.disabled = active
+	join_button.disabled = active
+	leave_button.disabled = not active
+	address_edit.editable = not active
+	port_edit.editable = not active
+
+
+func _port_value() -> int:
+	var value := port_edit.text.strip_edges()
+	return int(value) if value.is_valid_int() else MatchSession.DEFAULT_PORT
 
 
 func _build_crosshair() -> void:
@@ -80,8 +107,14 @@ func _build_debug() -> void:
 	panel.offset_top = -56
 	panel.offset_bottom = -16
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var column := UIFactory.vbox(2)
+	_network_badge = UIFactory.label("", &"AccentLabel")
+	_network_badge.visible = false
+	column.add_child(_network_badge)
 	_debug_label = UIFactory.label("", &"MutedLabel")
-	panel.add_child(_debug_label)
+	column.add_child(_debug_label)
+	panel.add_child(column)
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(panel)
 
 
@@ -109,3 +142,39 @@ func _build_pause_overlay() -> void:
 	main_menu_button = UIFactory.button("Return to Main Menu")
 	main_menu_button.pressed.connect(main_menu_requested.emit)
 	column.add_child(main_menu_button)
+	_build_network_section(column)
+
+
+func _build_network_section(column: VBoxContainer) -> void:
+	column.add_child(HSeparator.new())
+	column.add_child(UIFactory.label("LOCAL MATCH NETWORK (DEV PROOF)", &"SectionLabel"))
+	column.add_child(UIFactory.label("Position sync only. Independent of the career connection.", &"MutedLabel", true))
+
+	var address_row := UIFactory.hbox(8)
+	address_edit = LineEdit.new()
+	address_edit.text = "127.0.0.1"
+	address_edit.placeholder_text = "Host address"
+	address_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	address_row.add_child(address_edit)
+	port_edit = LineEdit.new()
+	port_edit.text = str(MatchSession.DEFAULT_PORT)
+	port_edit.custom_minimum_size.x = 80
+	address_row.add_child(port_edit)
+	column.add_child(address_row)
+
+	var buttons := UIFactory.hbox(8)
+	host_button = UIFactory.button("Host match")
+	host_button.pressed.connect(func() -> void: host_match_requested.emit(_port_value()))
+	buttons.add_child(host_button)
+	join_button = UIFactory.button("Join")
+	join_button.pressed.connect(func() -> void:
+		join_match_requested.emit(address_edit.text.strip_edges(), _port_value()))
+	buttons.add_child(join_button)
+	leave_button = UIFactory.button("Leave")
+	leave_button.pressed.connect(leave_match_requested.emit)
+	buttons.add_child(leave_button)
+	column.add_child(buttons)
+
+	_network_status = UIFactory.label("Offline", &"MutedLabel", true)
+	column.add_child(_network_status)
+	column.custom_minimum_size.x = 420

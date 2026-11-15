@@ -88,6 +88,35 @@ Exit code 0 means all tests passed. Two `ERROR:` lines in the output (`unknown p
 - [ ] **Quit** closes the game.
 - [ ] Window resizing keeps layouts usable.
 
+### Manual test checklist (Milestone 2 — networking proof)
+
+Run two game instances. In the Godot editor: **Debug → Customize Run Instances…**, enable
+*Enable Multiple Instances*, set the count to **2**, then press F5. (Or export and run the
+build twice.) Windows may show a firewall prompt the first time you host — allow it for
+private networks if you want LAN friends to join; local two-instance testing works either way.
+
+Career sync (Career Hub → **Co-op (Dev)**):
+
+- [ ] Instance A: **Host career**. Status shows Role HOST, Connection READY, five fixtures.
+- [ ] Instance B: **Join career** (127.0.0.1). Status shows Role CLIENT, same World ID and revision.
+- [ ] On B, **Play stub match** on a fixture: the log shows `ACCEPTED`; the score appears on
+      **both** instances and the revision increases on both.
+- [ ] On B, **Resend** that fixture: log shows `DUPLICATE`; nothing changes.
+- [ ] On A, **Conflict test** on the same fixture: log shows `CONFLICT`; the original score stays.
+- [ ] Visit FPS Sandbox and come back: the career connection is still READY (it persists).
+- [ ] Close A: B shows *connection to host lost*.
+
+Match netcode (FPS Sandbox → Esc → *Local match network*):
+
+- [ ] Instance A: **Host match**. Badge shows `NET HOST · peer 1 · 1 player(s)`.
+- [ ] Instance B: **Join** 127.0.0.1. Both badges show 2 players.
+- [ ] Each instance sees a coloured capsule for the other player that follows its movement and
+      faces the way it looks (the dark visor marks the front).
+- [ ] **Leave** on B: the capsule disappears on A. Re-join works.
+- [ ] Hosting a match does not disconnect the career session, and vice versa.
+
+Ports: career sync **24560**, match **24570** (UDP).
+
 ## Project layout
 
 ```

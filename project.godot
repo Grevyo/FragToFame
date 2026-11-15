@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 App="*res://src/core/app.gd"
+CareerSync="*res://src/net/career_sync/career_sync_service.gd"
 
 [debug]
 

@@ -12,6 +12,7 @@ const PAGES: Array[Dictionary] = [
 	{"id": &"competitions", "label": "Competitions", "script": preload("res://scenes/career_hub/pages/competitions_page.gd")},
 	{"id": &"calendar", "label": "Calendar", "script": preload("res://scenes/career_hub/pages/calendar_page.gd")},
 	{"id": &"statistics", "label": "Statistics", "script": preload("res://scenes/career_hub/pages/statistics_page.gd")},
+	{"id": &"coop", "label": "Co-op (Dev)", "script": preload("res://scenes/career_hub/pages/coop_page.gd")},
 ]
 
 const DEFAULT_PAGE: StringName = &"home"

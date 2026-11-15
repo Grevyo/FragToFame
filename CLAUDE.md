@@ -38,6 +38,9 @@ src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
 src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource)
 src/world/     shared 3D building blocks
+src/orchestration/    MatchSetup / MatchResult contracts and match runners
+src/net/career_sync/  career-host networking (raw ENet messages) — never uses net/match
+src/net/match/        in-match netcode (SceneMultiplayer branch) — never uses net/career_sync
 scenes/<area>/ scene roots and their scripts, grouped by environment
 tests/         headless tests (SceneTree scripts)
 tools/         developer scripts (validation)
@@ -63,7 +66,9 @@ docs/          design + architecture + roadmap
   Godot is not on PATH; the script auto-detects it (override with `GODOT_BIN` or `-Godot <path>`).
   Known local binary:
   `C:\GrevCo\PokeArkova\Tools\Godot\Editor\Godot_v4.7.2-stable_mono_win64_console.exe`.
-- New systems get headless tests in `tests/`. Pure logic should be testable without scenes.
+- New systems get headless tests as a `TestSuite` in `tests/suites/`, registered in
+  `tests/run_tests.gd`. Pure logic should be testable without scenes. Network tests use loopback
+  (`127.0.0.1` bind) on test-only ports (246xx) so they never clash with a running game.
 - Clearly separate automated results from manual testing in reports. Never claim a test passed
   without running it.
 

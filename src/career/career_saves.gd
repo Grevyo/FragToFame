@@ -5,8 +5,7 @@ extends RefCounted
 ##   user://careers/<save_id>/career.db          the live SQLite world (WAL mode)
 ##   user://careers/<save_id>/backups/*.db       rotating consistent snapshots (VACUUM INTO)
 ##
-## A new career starts from a world database ([WorldDatabases]): it is copied in once and every
-## ranged player value is rolled with the career's own random seed ([CareerStart]).
+## [CareerStart] initialises each new save from a fixed world database ([WorldDatabases]).
 ##
 ## Safety: a snapshot is taken after creation, before every schema migration and on demand;
 ## a damaged database is never deleted — restoring moves it aside and copies the newest backup in.
@@ -35,10 +34,8 @@ func db_path(save_id: String) -> String:
 
 
 ## Creates a new career from the world database at [param database_path] ("" = the shipped
-## default), creates the human professional and snapshots it. [param career_seed] < 0 picks a
-## random seed. The actual seed is stored in the save. Returns a [CareerSession].
-func create_career(save_name: String, human_profile: Dictionary, database_path: String = "",
-		career_seed: int = -1) -> CareerSession:
+## default), creates the human professional and snapshots the new save.
+func create_career(save_name: String, human_profile: Dictionary, database_path: String = "") -> CareerSession:
 	var session := CareerSession.new()
 	var problems := HumanCareer.validate(human_profile)
 	if save_name.strip_edges().is_empty():
@@ -56,7 +53,6 @@ func create_career(save_name: String, human_profile: Dictionary, database_path: 
 		world.close()
 		session.error = "Invalid world database: %s" % "; ".join(problems_with_world)
 		return session
-	var seed_value := career_seed if career_seed >= 0 else _random_seed()
 	var save_id := Ids.generate("sav")
 	var created := DirAccess.make_dir_recursive_absolute(save_dir(save_id))
 	if created != OK:
@@ -66,13 +62,13 @@ func create_career(save_name: String, human_profile: Dictionary, database_path: 
 	var repo := CareerRepository.new()
 	var error := repo.open(db_path(save_id))
 	if error.is_empty():
-		error = CareerStart.populate(repo, world, seed_value)
+		error = CareerStart.populate(repo, world)
 	world.close()
 	if error.is_empty():
 		repo.set_meta_value("save_name", save_name.strip_edges())
 		repo.set_meta_value("world_id", Ids.generate("wld"))
 		repo.set_meta_value("created_unix", int(Time.get_unix_time_from_system()))
-		var human_id := HumanCareer.create(repo, human_profile, 1, seed_value ^ 0x5eed, errors)
+		var human_id := HumanCareer.create(repo, human_profile, 1, errors)
 		if human_id.is_empty():
 			error = "; ".join(errors)
 		else:
@@ -285,9 +281,3 @@ func _rotate(save_id: String) -> void:
 	var existing := backups(save_id)
 	for i: int in range(MAX_BACKUPS, existing.size()):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(existing[i]))
-
-
-static func _random_seed() -> int:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	return rng.randi() & 0x7fffffff

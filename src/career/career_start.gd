@@ -1,12 +1,8 @@
 class_name CareerStart
 extends RefCounted
-## Starts a career world from a world database: copies its organisations, professionals, rosters
-## and competitions into an empty save and **rolls** every ranged value with the career's own
-## seed — true abilities and potential inside each player's ranges, reputation inside its range,
-## and the world's (noisy) perception of each player from those rolled truths.
-##
-## Same database → same organisations, rosters and competitions on day one; different careers →
-## different player quality and development. From then on the save evolves on its own.
+## Copies the fixed world database's organisations, professionals, rosters and competitions into
+## an independent career save. Where the database specifies ranges, sample initial values within
+## those authored bounds and derive starting scouting opinions.
 
 ## Scouting confidence the world starts with, by organisation tier (0 = free agent).
 const TIER_CONFIDENCE: Dictionary[int, int] = {1: 82, 2: 66, 3: 46, 4: 30, 0: 22}
@@ -14,9 +10,9 @@ const TIER_CONFIDENCE: Dictionary[int, int] = {1: 82, 2: 66, 3: 46, 4: 30, 0: 22
 
 ## Fills [param repo] (open, empty, migrated) from [param world]. Returns "" or an error; nothing
 ## is written on failure.
-static func populate(repo: CareerRepository, world: WorldDatabase, career_seed: int) -> String:
+static func populate(repo: CareerRepository, world: WorldDatabase) -> String:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = career_seed
+	rng.randomize()
 	var today := repo.current_day()
 	var ranges_by_player: Dictionary[String, Dictionary] = {}
 	for found: Dictionary in world.range_rows():
@@ -70,8 +66,7 @@ static func populate(repo: CareerRepository, world: WorldDatabase, career_seed: 
 			if not repo.insert_competition(CareerRecords.CompetitionRecord.from_row(found)):
 				return false
 		return repo.set_meta_value("database_id", world.database_id()) \
-			and repo.set_meta_value("database_name", world.display_name()) \
-			and repo.set_meta_value("career_seed", career_seed))
+			and repo.set_meta_value("database_name", world.display_name()))
 	return "" if ok else "could not start the career from '%s': %s" % [world.display_name(), repo.db.last_error]
 
 

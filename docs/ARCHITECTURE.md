@@ -276,9 +276,9 @@ reported per slot. The same route data can be consumed by future M7 play executi
 - **Match boundary.** `CareerMatches` turns career data into a `MatchSetup` (lineups with AI
   abilities). The FPS runtime maps abilities to bot mechanics (`BotSkill.from_abilities`) and
   never opens the database. Human entries carry no abilities.
-- **Determinism.** The draft generator creates content templates. Career creation keeps those
-  identities fixed and rolls initial AI abilities within template ranges using the career seed.
-  The save records the seed and shows it in Career Hub → Home.
+- **Career creation.** The selected database supplies the starting world. Careers copy its
+  identities, rosters and competitions into independent saves, with initial AI values sampled
+  from the database's authored ranges.
 
 ### Bot AI (Milestone 6)
 

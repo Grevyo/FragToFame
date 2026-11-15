@@ -30,7 +30,6 @@ func _run() -> void:
 	(select.get("last_name_edit") as LineEdit).text = "Hartley"
 	(select.get("nickname_edit") as LineEdit).text = "Sable"
 	await _shot("11_career_select")
-	(select.get("seed_edit") as LineEdit).text = "77"
 	select.call("create_career")
 	await _frames(4)
 	await _shot("12_career_home")

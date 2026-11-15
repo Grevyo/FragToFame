@@ -43,7 +43,6 @@ func build_page() -> void:
 	var world_card := UIFactory.card(row, "The world")
 	var world_rows: Array[PackedStringArray] = [
 		PackedStringArray(["Template", repo.meta_value("database_name", "Legacy world")]),
-		PackedStringArray(["Career seed", repo.meta_value("career_seed", repo.meta_value("world_seed", "—"))]),
 		PackedStringArray(["Organisations", str(repo.organisation_count())]),
 		PackedStringArray(["Active professionals", str(repo.player_count(false))]),
 		PackedStringArray(["Free agents", str(repo.search_players({"free_agents": true, "limit": 100000}).size())]),

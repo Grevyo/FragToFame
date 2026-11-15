@@ -253,7 +253,7 @@ Completion criteria:
       search/filter/sort, stat layers, traits, contracts with history). No SQL elsewhere.
 - [x] A shipped starting template with 40 organisations across eight regions, 296 AI professionals
       and 19 competition definitions. New careers retain authored identities, traits and rosters,
-      and roll AI abilities from the stored career seed. Import checked standalone templates in
+      and initialise AI abilities within authored ranges. Import checked standalone databases in
       Career Select.
 - [x] `TraitLibrary`: 24 data-driven traits in 6 categories with conflict rules (stored and shown;
       consumed by decision systems from M7 onward).

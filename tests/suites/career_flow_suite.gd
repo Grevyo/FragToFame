@@ -32,9 +32,9 @@ func run() -> void:
 	(select.get("first_name_edit") as LineEdit).text = "Rowan"
 	(select.get("last_name_edit") as LineEdit).text = "Hartley"
 	(select.get("nickname_edit") as LineEdit).text = "Sable"
-	(select.get("seed_edit") as LineEdit).text = "3.5"
-	check(not str(select.call("create_career")).is_empty(), "the career form rejects invalid seeds")
-	(select.get("seed_edit") as LineEdit).text = "2026"
+	var form_text := _text_of(select)
+	check(form_text.contains("World database") and not form_text.to_lower().contains("seed"),
+		"the career form offers a world database without a seed field")
 	var error: String = select.call("create_career")
 	check(error.is_empty() and bool(app.call("has_career")), "creating a career opens it (%s)" % error)
 	await despawn(select)
@@ -46,7 +46,7 @@ func run() -> void:
 		return
 	var session := app.get("career") as CareerSession
 
-	check(session.repo.meta_value("career_seed") == "2026", "the career uses the seed entered in the form")
+	check(session.repo.meta_value("database_id") == "f2f_default", "the default selection uses the shipped database")
 
 	section("Hub pages show the career database")
 	hub.call("show_page", &"home")

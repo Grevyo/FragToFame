@@ -244,9 +244,8 @@ Start from **Main menu → Career Hub** (opens the career screen when no career 
       amateur side.
 - [ ] Back to the main menu, quit the game, relaunch: **Career Hub → Continue** reopens the same
       world with the same players.
-- [ ] Enter the same seed for two careers using the same template. Home shows the actual seed. The
-      starting organisations and professionals are the same, with repeatable AI ability rolls.
-      Use a different seed to vary the rolls. Leaving the field blank uses a random seed.
+- [ ] Create two careers from the same world database. Confirm they start with the same
+      organisations, professionals, rosters and competitions, and appear as separate saves.
 - [ ] In a live practice round with bots, press Esc. The clock, bots and combat stop. Resume and
       verify they continue. **Play again** and **Restart practice match** retain the opponent and
       its roster, with a fresh score.

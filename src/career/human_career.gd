@@ -8,13 +8,13 @@ extends RefCounted
 
 ## [param profile]: first_name, last_name, nickname, nation_id, preferred_role (StringName),
 ## difficulty (StringName), age (int, 16–30). Returns the new player ID or "" (see [param errors]).
-static func create(repo: CareerRepository, profile: Dictionary, slot: int, seed_value: int,
+static func create(repo: CareerRepository, profile: Dictionary, slot: int,
 		errors: Array[String] = []) -> String:
 	errors.append_array(validate(profile))
 	if not errors.is_empty():
 		return ""
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
+	rng.randomize()
 	var today := repo.current_day()
 	var difficulty := StringName(str(profile["difficulty"]))
 	var tuning: Array = CareerCatalog.DIFFICULTIES[difficulty]

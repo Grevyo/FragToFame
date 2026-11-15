@@ -1,5 +1,5 @@
 extends Control
-## Continues a saved career or creates one from a template and an optional seed.
+## Continues a saved career or starts one from a world database.
 
 signal career_opened(save_id: String)
 
@@ -14,7 +14,6 @@ var nation_option: OptionButton
 var role_option: OptionButton
 var difficulty_option: OptionButton
 var age_spin: SpinBox
-var seed_edit: LineEdit
 var create_button: Button
 var back_button: Button
 
@@ -71,17 +70,9 @@ func continue_career(save_id: String) -> String:
 ## Creates a career from the form. Returns "" or the error shown.
 func create_career() -> String:
 	var profile := form_profile()
-	var seed_text := seed_edit.text.strip_edges()
-	var career_seed := -1
-	if not seed_text.is_empty():
-		if not seed_text.is_valid_int() or seed_text.length() > 10 or int(seed_text) < 0 or int(seed_text) > 2147483647:
-			var problem := "Enter a whole-number seed from 0 to 2147483647, or leave it blank."
-			_show_error(problem)
-			return problem
-		career_seed = int(seed_text)
 	status_label.text = "Starting the career…"
 	var database_path := _database_paths[_database_option.selected] if _database_option.selected >= 0 else ""
-	var error := App.new_career(career_name_edit.text, profile, database_path, career_seed)
+	var error := App.new_career(career_name_edit.text, profile, database_path)
 	if not error.is_empty():
 		_show_error(error)
 		return error
@@ -148,9 +139,8 @@ func _build() -> void:
 	saves_card.add_child(saves_box)
 
 	var form := UIFactory.card(row, "New career")
-	form.add_child(UIFactory.label("Create your professional from a world template. The seed rolls AI "
-		+ "abilities within the template's ranges. Your own FPS mechanics are independent of career attributes.",
-		&"MutedLabel", true))
+	form.add_child(UIFactory.label("Create your professional in the selected world database. Each career "
+		+ "has its own save for players, teams and competitions.", &"MutedLabel", true))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override(&"h_separation", 16)
@@ -181,9 +171,7 @@ func _build() -> void:
 	age_spin.max_value = 30
 	age_spin.value = 18
 	grid.add_child(age_spin)
-	_database_option = _option(grid, "World template")
-	seed_edit = _line(grid, "Career seed (optional)", "")
-	seed_edit.placeholder_text = "Random if blank"
+	_database_option = _option(grid, "World database")
 	var import_button := UIFactory.button("Import world template")
 	form.add_child(import_button)
 	_import_dialog = FileDialog.new()

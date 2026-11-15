@@ -147,7 +147,7 @@ func _test_generator() -> void:
 		return
 	var repo := CareerRepository.new()
 	repo.open(TEST_ROOT + "/world_a.db")
-	check(CareerStart.populate(repo, world, 1234).is_empty(), "draft instantiates a career database")
+	check(CareerStart.populate(repo, world).is_empty(), "draft instantiates a career database")
 	var orgs := repo.organisation_count()
 	var players := repo.player_count()
 	check(orgs == 40, "40 organisations across four tiers (%d)" % orgs)
@@ -193,12 +193,12 @@ func _test_generator() -> void:
 func _test_saves() -> void:
 	section("Career saves")
 	var saves := CareerSaves.new(TEST_ROOT + "/slots")
-	var bad := saves.create_career("Broken", {"first_name": ""}, "", 1)
+	var bad := saves.create_career("Broken", {"first_name": ""})
 	check(not bad.is_ok() and bad.error.contains("required"), "invalid profiles are rejected before anything is written")
 	var small := TEST_ROOT + "/small.f2fdb"
 	check(WorldGenerator.build(small, 99, "small_test", "Small world", "", {1: 2, 2: 2, 3: 2, 4: 2}, 10).is_empty(),
 		"test career uses a small standalone world")
-	var session := saves.create_career("Test career", PROFILE, small, 99)
+	var session := saves.create_career("Test career", PROFILE, small)
 	check(session.is_ok(), "career created (%s)" % session.error)
 	if not session.is_ok():
 		return
@@ -290,21 +290,22 @@ func _test_template() -> void:
 		"19 competition definitions and 14 ranges per AI player")
 
 	var saves := CareerSaves.new(TEST_ROOT + "/independent", library)
-	var a := saves.create_career("One", PROFILE, "", 120)
-	var b := saves.create_career("Two", PROFILE, "", 120)
-	var c := saves.create_career("Three", PROFILE, "", 121)
-	check(a.is_ok() and b.is_ok() and c.is_ok(), "three independent careers start from the default template")
-	if not (a.is_ok() and b.is_ok() and c.is_ok()):
+	var a := saves.create_career("One", PROFILE)
+	var b := saves.create_career("Two", PROFILE)
+	check(a.is_ok() and b.is_ok(), "two independent careers start from the fixed default database")
+	if not (a.is_ok() and b.is_ok()):
 		world.close()
 		return
 	var identities := "SELECT id, nickname FROM player WHERE is_human = 0 ORDER BY id;"
-	var abilities := "SELECT player_id, ability, value FROM player_ability ORDER BY player_id, ability;"
-	check(a.repo.db.rows(identities) == b.repo.db.rows(identities)
-		and a.repo.db.rows(identities) == c.repo.db.rows(identities)
-		and a.repo.competitions().size() == 19 and a.repo.organisation_count() == 40,
-		"career seeds preserve authored identities and copy competitions")
-	check(a.repo.db.rows(abilities) == b.repo.db.rows(abilities) and a.repo.db.rows(abilities) != c.repo.db.rows(abilities),
-		"same seed repeats AI rolls and a different seed changes them")
+	var authored_players: Array[Dictionary] = []
+	for player: Dictionary in players:
+		authored_players.append({"id": player["id"], "nickname": player["nickname"]})
+	check(a.repo.db.rows(identities) == authored_players and b.repo.db.rows(identities) == authored_players
+		and a.repo.competitions().size() == 19 and b.repo.organisation_count() == 40,
+		"new careers copy the authored players, teams and competitions")
+	check(a.repo.meta_value("database_id") == world.database_id()
+		and a.repo.meta_value("career_seed").is_empty() and b.repo.meta_value("career_seed").is_empty(),
+		"new careers record the source database without a seed")
 	var in_range := true
 	for found: Dictionary in world.range_rows():
 		var value := int(a.repo.db.scalar("SELECT value FROM player_ability WHERE player_id = ? AND ability = ?;",
@@ -324,11 +325,10 @@ func _test_template() -> void:
 			break
 	check(starters_match, "every career lineup contains the authored starting five")
 	a.repo.set_current_day(42)
-	check(b.repo.current_day() == 0 and a.repo.meta_value("career_seed") == "120"
-		and a.repo.abilities(a.human_player_id).is_empty(), "the seed is recorded and careers evolve independently")
+	check(b.repo.current_day() == 0 and a.repo.abilities(a.human_player_id).is_empty(),
+		"careers evolve independently and human players have no simulated abilities")
 	a.close()
 	b.close()
-	c.close()
 	world.close()
 
 
@@ -347,7 +347,7 @@ func _test_migration_failures() -> void:
 	legacy.db.open(path)
 	legacy.set_meta_value("format", CareerSchema.FORMAT)
 	legacy.seed_reference_data()
-	var human := HumanCareer.create(legacy, PROFILE, 1, 42)
+	var human := HumanCareer.create(legacy, PROFILE, 1)
 	legacy.set_current_day(19)
 	legacy.close()
 

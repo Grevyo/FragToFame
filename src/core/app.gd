@@ -88,9 +88,8 @@ func load_career(save_id: String) -> String:
 
 ## Starts a new career from a world database ("" = the shipped default) and makes it current.
 ## Returns "" or an error message.
-func new_career(save_name: String, human_profile: Dictionary, database_path: String = "",
-		career_seed: int = -1) -> String:
-	var session := career_saves.create_career(save_name, human_profile, database_path, career_seed)
+func new_career(save_name: String, human_profile: Dictionary, database_path: String = "") -> String:
+	var session := career_saves.create_career(save_name, human_profile, database_path)
 	if not session.is_ok():
 		return session.error
 	close_career()

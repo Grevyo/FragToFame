@@ -8,6 +8,8 @@ extends Node3D
 @onready var match_session: MatchSession = $MatchSession
 @onready var level: SandboxLevel = $Level
 @onready var effects: WeaponEffects = $Effects
+@onready var sun: DirectionalLight3D = $Sun
+@onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 var is_paused: bool = false
 ## Present only while a competitive match is running in this runtime.
@@ -36,6 +38,8 @@ func _ready() -> void:
 	player.weapons.shot_fired.connect(_on_shot_fired)
 	player.weapons.target_hit.connect(_on_target_hit)
 	player.died.connect(_on_player_died)
+	# The environment is a shared scene resource; map lighting must not leak into the next map.
+	world_environment.environment = world_environment.environment.duplicate() as Environment
 	_load_level()
 	resume()
 
@@ -47,9 +51,15 @@ func _load_level() -> void:
 	var playtest := App.is_playtesting()
 	var doc := App.playtest_map if playtest else MapTemplates.sandbox_arena()
 	level.load_map(doc)
-	var spawn := level.spawn_point("attack")
+	MapLighting.apply(doc.lighting, sun, world_environment.environment)
+	# The editor can playtest as either team from any spawn.
+	var options := App.playtest_options if playtest else {}
+	var team := str(options.get("team", "attack"))
+	var spawns := level.spawn_points(team)
+	var spawn := spawns[clampi(int(options.get("spawn", 0)), 0, spawns.size() - 1)]
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
-	hud.set_mode("PLAYTEST · %s" % doc.name if playtest else "FPS SANDBOX · %s" % doc.name, playtest)
+	hud.set_mode("PLAYTEST · %s · %s spawn %d" % [doc.name, team, spawns.find(spawn) + 1] if playtest
+		else "FPS SANDBOX · %s" % doc.name, playtest)
 
 
 func _start_match() -> void:
@@ -59,6 +69,7 @@ func _start_match() -> void:
 	var doc := match_data[2] as MapDocument
 	_match_options = (match_data[3] as Dictionary).duplicate(true)
 	level.load_map(doc, false)
+	MapLighting.apply(doc.lighting, sun, world_environment.environment)
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
 	player.weapons.set_loadout([WeaponCatalog.DEFAULT_SECONDARY])
@@ -95,7 +106,9 @@ func _match_owns_mouse() -> bool:
 func _on_practice_match_requested() -> void:
 	match_session.leave("starting practice match")
 	if match_director == null:
-		App.start_practice_match(level.document)
+		var map_id := hud.selected_practice_map_id()
+		var chosen := level.document if map_id.is_empty() else App.map_by_id(map_id)
+		App.start_practice_match(chosen if chosen != null else level.document)
 		return
 	var prior := match_director.state
 	if _is_career_fixture():
@@ -136,6 +149,7 @@ func _process(delta: float) -> void:
 		" · crouched" if player.is_crouched() else "",
 		Engine.get_frames_per_second(),
 	])
+	hud.set_location_text(MapTactical.area_name_at(level.document, p))
 	_update_combat_hud()
 	_update_network_hud()
 	if _respawn_left >= 0.0 and not is_paused:

@@ -28,6 +28,13 @@ func save(doc: MapDocument) -> Error:
 		return err
 	var next := doc.to_dict()
 	next["revision"] = doc.revision + 1
+	# The content version only moves when gameplay content changed, so cosmetic saves (names,
+	# materials, lights, layers) never flag tactics for review.
+	var fingerprint := doc.content_fingerprint()
+	var content_changed := fingerprint != doc.content_hash
+	if content_changed:
+		next["content_version"] = doc.content_version + 1
+		next["content_hash"] = fingerprint
 	var temp := target + "." + Ids.generate("stage")
 	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
@@ -40,6 +47,9 @@ func save(doc: MapDocument) -> Error:
 	err = FileReplacement.install(temp, target, target + ".bak")
 	if err == OK:
 		doc.revision += 1
+		if content_changed:
+			doc.content_version += 1
+			doc.content_hash = fingerprint
 	else:
 		DirAccess.remove_absolute(temp)
 	return err

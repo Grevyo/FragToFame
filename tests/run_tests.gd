@@ -2,6 +2,7 @@ extends SceneTree
 ## Headless test runner. Runs every suite in SUITES and exits with 0 (all passed) or 1.
 ##
 ## Run:  <godot> --headless --path <project> --script res://tests/run_tests.gd
+## One or more suites only (file name contains the text):  ... run_tests.gd -- --suite=map_creator
 ##
 ## Suites are loaded at runtime (not preloaded) so they can reference autoload singletons such
 ## as App, which do not exist yet when this script itself is compiled.
@@ -22,6 +23,8 @@ const SUITES: Array[String] = [
 	"res://tests/suites/career_db_suite.gd",
 	"res://tests/suites/career_flow_suite.gd",
 	"res://tests/suites/tactic_editor_suite.gd",
+	"res://tests/suites/map_creator_suite.gd",
+	"res://tests/suites/official_map_suite.gd",
 	"res://tests/suites/career_fixture_suite.gd",
 	"res://tests/suites/match_statistics_suite.gd",
 	"res://tests/suites/career_development_suite.gd",
@@ -39,7 +42,13 @@ func _run() -> void:
 	await process_frame
 	var passed := 0
 	var failed := 0
+	var only: Array[String] = []
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--suite="):
+			only.append(argument.trim_prefix("--suite="))
 	for path: String in SUITES:
+		if not only.is_empty() and not only.any(func(text: String) -> bool: return path.get_file().contains(text)):
+			continue
 		var script := load(path) as GDScript
 		var suite: TestSuite = script.new() as TestSuite if script != null and script.can_instantiate() else null
 		if suite == null:

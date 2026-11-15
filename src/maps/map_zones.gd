@@ -2,16 +2,22 @@ class_name MapZones
 extends RefCounted
 ## Point-in-zone queries over a map document's gameplay volumes (bombsites, buy zones, callouts).
 ## Pure data: the runtime asks "is this position inside bombsite A / the defence buy zone?".
+## Zones may be rotated to any angle; tests use the zone's own oriented box.
 
 ## Extra vertical tolerance so a player standing on a zone's floor counts as inside it.
 const FLOOR_TOLERANCE: float = 0.3
 
 
+## World AABB enclosing the zone, including the floor tolerance.
 static func zone_aabb(piece: Dictionary) -> AABB:
 	var box := MapDocument.piece_aabb(piece)
 	box.position.y -= FLOOR_TOLERANCE
 	box.size.y += FLOOR_TOLERANCE
 	return box
+
+
+static func contains(piece: Dictionary, point: Vector3) -> bool:
+	return MapDocument.piece_contains(piece, point, FLOOR_TOLERANCE)
 
 
 ## First zone of [param type] containing [param point] (optionally only those whose props match
@@ -20,7 +26,7 @@ static func zone_at(doc: MapDocument, type: String, point: Vector3, props_filter
 	for piece: Dictionary in doc.pieces_of_type(type):
 		if not _props_match(piece, props_filter):
 			continue
-		if zone_aabb(piece).has_point(point):
+		if contains(piece, point):
 			return piece
 	return {}
 

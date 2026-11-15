@@ -68,11 +68,14 @@ func run() -> void:
 	var wrong := MapTemplates.blank()
 	check(str(store.load_path(path, wrong)["error"]).contains("different map"), "rejects the wrong map ID")
 	wrong = map_controller.document.duplicate_document()
-	wrong.name = "Modified bytes, same revision"
-	check(str(store.load_path(path, wrong)["error"]).contains("differs"), "rejects changed content at the same revision")
-	wrong = map_controller.document.duplicate_document()
-	wrong.revision += 1
-	check(str(store.load_path(path, wrong)["error"]).contains("differs"), "rejects a different map revision")
+	wrong.name = "Renamed only"
+	var renamed := store.load_path(path, wrong)
+	check(renamed["tactic"] != null and (renamed["warnings"] as Array).is_empty(), "a cosmetic map change leaves the tactic current")
+	wrong.add_piece(MapDocument.make_piece("crate", Vector3(6, 0, 6)))
+	var changed := store.load_path(path, wrong)
+	check(changed["tactic"] != null and str(changed["error"]).is_empty()
+		and str((changed["warnings"] as Array)[0]).contains("map has changed"),
+		"a changed map opens the tactic with a warning instead of refusing it")
 	var malformed := saved.duplicate(true)
 	malformed["format_version"] = 99
 	check(TacticDocument.from_dict(malformed) == null, "rejects unknown tactic versions")

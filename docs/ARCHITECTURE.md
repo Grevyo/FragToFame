@@ -60,8 +60,14 @@ src/core/input_actions.gd       InputActions: action names + default bindings, r
                               career_sync_service.gd (autoload "CareerSync")
   net/match/                  IN-MATCH NETCODE: MatchSession (listen server), RemotePlayerAvatar
   world/block_builder.gd      BlockBuilder: textured static box geometry helper
-  maps/                       MAPS: PieceCatalog, MapDocument (f2f.map v1), MapBuilder,
-                              MapValidator, MapStorage, MapTemplates, MapEditController
+  maps/                       MAPS: PieceCatalog, PieceShapes, MapMaterials, MapDocument (f2f.map v2),
+                              MapBuilder, MapValidator, MapStorage, MapAutosave, MapTemplates,
+                              MapEditController, MapSnapping, MapClipboard, MapPrefabs, MapLighting,
+                              MapZones, MapTactical, OfficialMaps
+  ai/map_analysis.gd          MapAnalysis: navmesh reachability, islands, route timings
+  tactics/                    TacticDocument (f2f.tactic v2), TacticStorage, TacticPreview,
+                              TacticCompatibility
+data/maps/official/           Official maps: ordinary saved map documents
   combat/                     COMBAT: WeaponDefinition/Catalog, WeaponState, ShooterMotion,
                               DamageModel, DamageInfo, Health, Hitbox, Hitscan,
                               WeaponController, CombatTally
@@ -162,6 +168,72 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   builds `App.playtest_map` instead of the default arena; "Return to editor" calls
   `App.end_playtest()` and the studio restores the session (document, path, dirty flag, camera).
   The runtime still only receives a document; it never reaches into the editor.
+
+### Map creator tools, AI support and official maps (Milestone 16)
+
+```
+ StudioUI ── intent signals ──► creation_studio.gd ──► MapEditController (multi-piece undo steps)
+ EditorGizmo ── handle values ─┘        │                     │ signals
+ MapSnapping / MapClipboard / MapPrefabs┘                     ▼
+                                                        MapEditorView (nodes, outlines, overlay)
+ MapDocument ──► MapAnalysis.analyse(doc, host) ──► issues + timings + overlay mesh
+                   └ NavigationBuilder.bake_mesh (same settings as bots)
+ TacticStorage ──► TacticCompatibility.check/scan(tactic, map, analysis) ──► named warnings
+```
+
+- **Format `f2f.map` v2.** Pieces gain `material`, `layer` and `group`, and yaw is any angle.
+  The document gains `lighting`, editor-only `layers`, saved `prefabs`, and `content_version` +
+  `content_hash`. v1 files migrate on load (default layer, no material, no group, empty
+  lighting/prefabs, content version 0). Zones and picking use each piece's oriented box.
+- **Content version.** `MapDocument.content_fingerprint()` hashes only what changes play: solid
+  geometry and gameplay pieces with their props. `MapStorage.save` raises `content_version` only
+  when that hash changes, so renames, materials, lights and layers never flag tactics.
+- **Catalogue.** 54 piece types in ten palette groups. `block`, `ramp`, `stairs` and `compound`
+  are solid; `PieceShapes.parts()` describes compound pieces (doorways, arches, vehicles, stalls)
+  as boxes and cylinders, and `MapBuilder` makes one mesh and one identical collider per part.
+  Stairs are visual steps over a solid wedge collider. `walkable` marks floor-like types.
+- **Materials and lighting.** `MapMaterials` is an original palette of textures generated in code
+  and mapped in world space. A piece's material falls back to its type default, then to the dev
+  checker. `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
+  empty settings leave the scene defaults. `light_lamp` and `light_spot` pieces emit in both.
+- **Editing.** Every edit is a list of piece before/after states recorded as one undo step:
+  group move/rotate/duplicate/delete, paste, prefab placement, grouping, material and layer
+  changes. Lighting, layers and prefabs are document state recorded the same way. Gizmo and
+  mouse drags preview without history and commit once. `MapClipboard` is app-wide, so a copy
+  survives opening another map. A placed prefab shares a group ID and selects as one unit.
+- **Snapping.** `MapSnapping` holds the pure rules: grid, angle, surface height, edge offset,
+  group transforms and the measuring readout.
+- **Autosave.** `MapAutosave` writes one recovery file per map ID while there are unsaved
+  changes (every 45 s). Saving or discarding removes it; opening the studio offers the newest.
+- **Layers.** Stored in the map but editor-only: hidden layers are not drawn or pickable in the
+  editor, locked layers are not pickable, and the runtime builds every piece regardless.
+- **Structural vs navigation validation.** `MapValidator` stays pure data in `src/maps`.
+  `MapAnalysis` lives in `src/ai` because it bakes with `NavigationBuilder`: it builds the map
+  under a host node for the duration of the call, bakes, and queries a private navigation map.
+  It reports spawns off the navmesh, objectives a team cannot reach, unreachable islands of
+  playable floor, and floor that people reach by jump or crouch but bots cannot (found by baking
+  a second navmesh for a crouched agent with a 1.1 m climb). All are warnings. Pockets of navmesh
+  sealed inside box pieces and tops of non-walkable pieces are ignored.
+- **Route timings.** From the same analysis: shortest path from each team's spawns to every
+  callout area with a timing role (`mid`, `entrance_a`, `entrance_b`) and to each site, site-to-site
+  rotations and entrance-to-entrance crossings, at 6.35 m/s and at the rifle's 0.86 mobility.
+- **Tactical pieces.** Callout areas, tactical anchors (plant, default, utility) and AI hints
+  (cover, hold, angle) are pieces, so their piece ID is their stable ID. `MapTactical` is the
+  query API. Readers: the editor, the Tactical Play Creator (areas, anchors as snap targets), the
+  FPS HUD (current area), `MapAnalysis` (timing targets), `TacticCompatibility`, and `BotSquad`
+  (defenders stand on `ai_hold` points for their site and watch along the hint's facing).
+  `ai_cover` and `ai_angle` are stored and queryable; nothing consumes them until M7.
+- **Format `f2f.tactic` v2.** Adds `map_content_version` and, per start and waypoint, the callout
+  area ID and anchor ID. v1 files migrate with no references and content version 0. A tactic for
+  a changed map now opens with warnings instead of being refused; only a different map is refused.
+- **Tactic compatibility.** `TacticCompatibility` names the tactic, player and step for a missing
+  or left area, a missing or moved anchor and an unreachable step. The editor runs it after a
+  save that raised the content version and in Validate; the Tactical Play Creator runs it when
+  opening a tactic. Tactic files are written only by `TacticStorage.save`, when the author saves.
+- **Official maps.** `OfficialMaps` lists files in `res://data/maps/official`. They load through
+  `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and
+  tactics as shipped; saving creates the player's copy under a new ID. `App.map_by_id` resolves
+  official maps, the dev arena and saved maps for practice and career fixtures.
 
 ### Tactical Play Creator (Milestone 8)
 
@@ -412,7 +484,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
 | Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
 | Statistics **(M11)** | Versioned events, derived per-player counts and calculated ratings | Perceived/scouted values and reputation remain separate. |
-| Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
+| Map editor **(M3, M16)** | Modular pieces, group editing, prefabs, snapping, materials, lighting, navigation validation, playtest | `src/maps/` + Creation Studio; see the M16 section. Sharing is M17. |
 | Tactical Play Creator **(M8)** | Five starts, ordered routes, editing, persistence and preview | Tactic documents are bound to saved map revisions. Roles, utility, triggers and playbooks are later work. |
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |
 | Co-op career sync **(proof)** | Career host authority, client requests, calendar sync | Raw ENet message protocol; see Networking above. Calendar sync not yet. |
@@ -472,4 +544,16 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |
 | 2026-11-15 | Run speed comes from the held weapon's `mobility`; weapon spread sees speed rescaled so a full run is always the reference speed | Retuning movement never silently changes weapon balance |
+| 2026-11-15 | Navigation validation lives in `src/ai` (`MapAnalysis`), structural validation stays in `src/maps` | The checks must bake with the exact bot settings; `src/maps` stays free of AI and navigation code |
+| 2026-11-15 | Reachability findings are warnings, not errors | A half-built map must stay playtestable; official maps are held to "no warnings" by their test |
+| 2026-11-15 | "Playable floor" = navmesh resting on a `walkable` catalogue type | Roofs, crate tops and wall tops always form islands; only floors matter |
+| 2026-11-15 | Jump/crouch routes found by a second bake for a crouched, climbing agent | One mechanism covers both cases without modelling jumps |
+| 2026-11-15 | Areas, anchors and hints are pieces; piece ID = stable ID | One ID scheme, one undo path, one file; no parallel registry to keep in sync |
+| 2026-11-15 | Tactics bind to a map content version and warn, instead of refusing any changed map | Any edit used to orphan every tactic without saying what broke |
+| 2026-11-15 | Content fingerprint excludes names, materials, lights, layers, groups and prefabs | Cosmetic work must not flag tactics |
+| 2026-11-15 | Compound pieces are lists of boxes and cylinders with identical colliders | Collision matches visuals by construction; no imported meshes |
+| 2026-11-15 | Stairs collide as a solid wedge, not a thin slope sheet | Nothing can pass under a stair run |
+| 2026-11-15 | Palette textures generated in code | Original content, no asset pipeline, reviewable in a diff |
+| 2026-11-15 | Official maps are saved map files in `res://data/maps/official`; saving one makes a copy | Official content uses the community path and cannot be shadowed by a player file |
+| 2026-11-15 | Kilnmarket authored by a session script that drives the Creation Studio scene (`tools/author_kilnmarket.gd`) | A headless agent cannot click; this uses only editor operations and leaves a rebuildable record. To be replaced by hand edits in the editor as the map is iterated |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

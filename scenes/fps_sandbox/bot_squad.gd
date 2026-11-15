@@ -26,6 +26,8 @@ var skills: Dictionary[String, BotSkill] = {}
 
 var _decide_timer: float = 0.0
 var _site_positions: Dictionary[String, Vector3] = {}
+## Optional "ai_hold" hint pieces per bombsite letter (authored in the map editor).
+var _hold_points: Dictionary[String, Array] = {}
 
 
 func _init(owner_director: MatchDirector, skill: StringName) -> void:
@@ -64,6 +66,7 @@ func spawn_bots() -> void:
 		var letter := str(site.get("props", {}).get("site", "A"))
 		# Raw centre: the navmesh may not be synced yet, goals are snapped when they are set.
 		_site_positions[letter] = site["position"] as Vector3
+		_hold_points[letter] = MapTactical.hints(director.document, "ai_hold", letter)
 	for id: String in director.state.players:
 		var player_state := director.state.get_player(id)
 		if player_state.is_human:
@@ -173,11 +176,19 @@ func _decide() -> void:
 					and not bot.sees_enemy()
 			else:
 				var letters := _site_positions.keys()
+				var watch := attack_spawn + Vector3(0, 1.5, 0)
 				if not letters.is_empty():
 					var letter: String = letters[defence_index % letters.size()]
-					bot.set_goal(_on_navmesh(_site_positions[letter] + spread))
+					var holds: Array = _hold_points.get(letter, [])
+					if holds.is_empty():
+						bot.set_goal(_on_navmesh(_site_positions[letter] + spread))
+					else:
+						# Authored hold point: stand on it and watch along its facing.
+						var hold: Dictionary = holds[floori(float(defence_index) / letters.size()) % holds.size()]
+						bot.set_goal(_on_navmesh(hold["position"] as Vector3))
+						watch = MapTactical.hint_watch_point(hold)
 				defence_index += 1
-				bot.set_watch_point(attack_spawn + Vector3(0, 1.5, 0))
+				bot.set_watch_point(watch)
 				bot.interact_held = false
 
 

@@ -2,7 +2,8 @@ class_name NavigationBuilder
 extends RefCounted
 ## Bakes a navigation mesh at runtime from the static world colliders of a built map, using
 ## Godot's native NavigationServer3D. Every editor-made map becomes walkable for bots without
-## a separate authoring step.
+## a separate authoring step. The editor's navmesh preview and MapAnalysis bake through the same
+## function, so what the editor shows is what bots get.
 
 ## Must match project setting navigation/3d/default_cell_size (agent radius = 2 cells).
 const CELL_SIZE: float = 0.2
@@ -19,12 +20,22 @@ const AGENT_MAX_SLOPE: float = 46.0
 ## Parses the world colliders under [param source_root], bakes, and assigns the result to
 ## [param region]. Runs synchronously (maps are small); must be called on the main thread.
 static func bake(region: NavigationRegion3D, source_root: Node3D) -> NavigationMesh:
+	var navmesh := bake_mesh(source_root)
+	region.navigation_mesh = navmesh
+	return navmesh
+
+
+## Bakes and returns a navigation mesh for the colliders under [param source_root] (which must
+## be inside the scene tree). The defaults are the bot agent; MapAnalysis passes a crouching,
+## jumping "human" agent to find routes people can take but bots cannot.
+static func bake_mesh(source_root: Node3D, agent_height: float = AGENT_HEIGHT,
+		agent_max_climb: float = AGENT_MAX_CLIMB) -> NavigationMesh:
 	var navmesh := NavigationMesh.new()
 	navmesh.cell_size = CELL_SIZE
 	navmesh.cell_height = CELL_HEIGHT
 	navmesh.agent_radius = AGENT_RADIUS
-	navmesh.agent_height = AGENT_HEIGHT
-	navmesh.agent_max_climb = AGENT_MAX_CLIMB
+	navmesh.agent_height = agent_height
+	navmesh.agent_max_climb = agent_max_climb
 	navmesh.agent_max_slope = AGENT_MAX_SLOPE
 	navmesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	navmesh.geometry_collision_mask = Hitscan.LAYER_WORLD
@@ -32,7 +43,6 @@ static func bake(region: NavigationRegion3D, source_root: Node3D) -> NavigationM
 	var source := NavigationMeshSourceGeometryData3D.new()
 	NavigationServer3D.parse_source_geometry_data(navmesh, source, source_root)
 	NavigationServer3D.bake_from_source_geometry_data(navmesh, source)
-	region.navigation_mesh = navmesh
 	return navmesh
 
 

@@ -24,7 +24,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
 | 14 | World progression, transfers, rookies, retirement | 12, 13 | ⬜ |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
-| 16 | Official content creation (5–7 maps) | 3, 6, 8 | ⬜ |
+| 16 | Official content creation (5–7 maps) | 3, 6, 8 | 🔶 first map; awaiting manual test |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
 | 19 | Database and Competition Editor | 9, 13 | ⬜ |
@@ -352,6 +352,78 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
       map selection, configurable BO1, BO3 and BO5 series, MR length and overtime.
 - [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
 
+## Milestone 16 — Official content creation 🔶
+
+**Goal:** 5–7 official competitive maps built with the shipped Creation Studio. The first slice
+makes the map creator a capable level-design tool, adds AI pathing and tactics support, and ships
+the first official map.
+
+### Editor gap audit (2026-11-15, before the first slice)
+
+What the M3/M8 editor could do: place one piece at a time from a 15-piece catalogue, select one
+piece, drag it on the build plane, rotate in 90° steps, duplicate, delete, edit position/size in
+the inspector, undo/redo, save/open, structural validation, playtest from the first attacker spawn.
+
+Gaps against building a full competitive map:
+
+| Area | Gap |
+|---|---|
+| Selection | Single selection only: no box select, shift-click, group move/rotate/duplicate/delete. |
+| Reuse | No copy/paste, no way to carry work between maps, no prefabs or groups. |
+| Transform | No gizmos; rotation locked to 90°; five fixed grid sizes; no angle snap, snap-to-surface on move or snap-to-edge; no measuring; no overhead view. |
+| Catalogue | Grey-box only: no openings (doorways, arches, windows), no props beyond crates, no vehicles, awnings or sightline blockers; one checker look, no materials. |
+| Lighting | Fixed sun and ambient in the scene; no placeable lights (tunnels and interiors cannot be lit). |
+| Safety | No autosave or crash recovery; no layers, so large maps cannot be decluttered or locked. |
+| Playtest | Always the first attacker spawn; cannot test the defender side or a specific spawn. |
+| Pathing | Navmesh is invisible until bots fail; the validator knows nothing about reachability, islands, bot-unpathable jumps or route timings. |
+| Tactics | Callouts have no stable role or tactics use; no anchors or AI hints; tactics are bound to one exact map revision, so any map edit orphans them without saying what broke. |
+| Content | No official-map location or registry; practice, tactics and fixtures only know the dev arena. |
+
+### Completion criteria (first slice)
+
+- [x] Stage A: multi-select, group edits, copy/paste, prefabs, gizmos, snapping, numeric transform,
+      measuring, overhead view, desert-town catalogue with matching collision, materials, lighting,
+      autosave/recovery, layers, playtest as either team from any spawn.
+- [x] Stage B: navmesh overlay, reachability/island/bot-unpathable validation, route timing readout,
+      AI hints, callout areas, tactical anchors, map content version and tactic compatibility.
+- [x] Stage C: first official map (Kilnmarket) authored through the Creation Studio, validated,
+      selectable for practice, tactics and career fixtures.
+- [ ] Owner walkthrough of the editor checklist and the map (README).
+- [ ] Remaining official maps (4–6 more).
+
+### Kilnmarket — route timings (2026-11-15, map content version 1)
+
+From the editor's timing readout: shortest navmesh path from the nearest spawn, at the measured
+6.35 m/s (pistol/SMG) and 5.46 m/s (rifle, mobility 0.86). Acceleration is not modelled.
+
+| Route | Length | Pistol/SMG | Rifle |
+|---|---|---|---|
+| Attackers → Kiln Gate (long A approach) | 88.6 m | 13.9 s | 16.2 s |
+| Attackers → Potter's Door (short A route) | 70.5 m | 11.1 s | 12.9 s |
+| Attackers → Weigh Door (A from mid) | 83.6 m | 13.2 s | 15.3 s |
+| Attackers → Culvert Mouth (B tunnel) | 72.8 m | 11.5 s | 13.3 s |
+| Attackers → Dyers' Door (B from mid) | 91.2 m | 14.4 s | 16.7 s |
+| Attackers → Dogleg (mid) | 46.1 m | 7.3 s | 8.4 s |
+| Defenders → Site A | 49.8 m | 7.8 s | 9.1 s |
+| Defenders → Site B | 50.2 m | 7.9 s | 9.2 s |
+| Defenders → Dogleg (mid) | 43.8 m | 6.9 s | 8.0 s |
+| Rotation Site A ↔ Site B | 89.4 m | 14.1 s | 16.4 s |
+| Crossing Kiln Gate ↔ Culvert Mouth | 113.9 m | 17.9 s | 20.9 s |
+| Crossing Potter's Door ↔ Culvert Mouth | 101.5 m | 16.0 s | 18.6 s |
+| Mid link Weigh Door ↔ Dyers' Door | 59.2 m | 9.3 s | 10.8 s |
+
+Reading: defenders are on either site about 3.3 s (A) and 3.6 s (B) before the first attacker
+can reach an entrance. The long A approach costs attackers 2.8 s more than the short route. A
+defender rotation (14.1 s) beats crossing between the two main approaches (16.0–17.9 s) but is
+far from instant. Holding the middle is what shortens it: door to door through the Crossing is
+9.3 s, for either side. Mid is contested (6.9 s vs 7.3 s).
+
+How the map was made: `tools/author_kilnmarket.gd` drives the shipped Creation Studio scene
+through its own operations (palette, place, inspector edits, layers, lighting, copy/paste, a
+prefab, validate, save) with explicit coordinates for every piece, then copies the saved file to
+`data/maps/official/`. It was authored and tuned headlessly from the timing readout; nobody has
+yet walked it in a window, so sightlines and feel are unverified until the owner's walkthrough.
+
 ## Milestone 19 — Database and Competition Editor ⬜
 
 **Goal:** Every world database, including the shipped default, can be created and curated in the
@@ -396,4 +468,5 @@ Planned scope:
 | 2026-11-15 | M13 publishes fixed-database league seasons and derives standings from accepted series results. Godot 4.7.2 validation passed 782 checks. Match and cup integration remain open. |
 | 2026-11-15 | Owner approved a Database and Competition Editor milestone (M19), placed before M17. |
 | 2026-11-15 | M13: day-by-day calendar with simulated AI series and calendar conflicts. Godot 4.7.2 validation passed 886 checks. |
+| 2026-11-15 | M16 first slice: map creator tools (multi-select, clipboard, prefabs, gizmos, snapping, measuring, top view, 54-piece catalogue, materials, lighting, autosave, layers), AI support (navmesh analysis, timings, areas, anchors, hints, tactic compatibility) and the first official map, Kilnmarket. Godot 4.7.2 validation passed 1203 checks. Manual editor and map walkthrough remains open. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

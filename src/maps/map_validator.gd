@@ -1,6 +1,8 @@
 class_name MapValidator
 extends RefCounted
-## Checks a MapDocument. Errors block playtesting; warnings are advice for competitive maps.
+## Structural checks of a MapDocument (pure data). Errors block playtesting; warnings are advice
+## for competitive maps. Navigation checks (reachability, islands, route timings) need a baked
+## navmesh and live in MapAnalysis (src/ai), which adds its findings to this report.
 
 const MAX_HALF_EXTENT: float = 256.0
 const MIN_SIZE: float = 0.05
@@ -35,8 +37,11 @@ static func validate(doc: MapDocument) -> Dictionary:
 		var position: Vector3 = piece["position"]
 		if absf(position.x) > MAX_HALF_EXTENT or absf(position.z) > MAX_HALF_EXTENT or absf(position.y) > MAX_HALF_EXTENT:
 			errors.append("%s is outside the %d m build area." % [id, int(MAX_HALF_EXTENT * 2)])
-		if int(piece["rotation_y"]) % MapDocument.ROTATION_STEP != 0:
-			errors.append("%s has a rotation that is not a multiple of 90°." % id)
+		var material := str(piece.get("material", ""))
+		if not material.is_empty() and not MapMaterials.has_material(material):
+			errors.append("%s uses unknown material '%s'." % [id, material])
+		if doc.layer(str(piece.get("layer", MapDocument.DEFAULT_LAYER))).is_empty():
+			errors.append("%s is on a layer that does not exist." % id)
 		if PieceCatalog.is_solid(type):
 			solid_count += 1
 		match type:
@@ -63,4 +68,12 @@ static func validate(doc: MapDocument) -> Dictionary:
 			warnings.append("Bombsite %s is defined %d times." % [site, sites[site]])
 	if doc.pieces_of_type("buy_zone").is_empty():
 		warnings.append("No buy zones placed.")
+	var area_names: Dictionary[String, bool] = {}
+	for area: Dictionary in MapTactical.areas(doc):
+		var area_name := str(area.get("props", {}).get("name", "")).strip_edges()
+		if area_name.is_empty():
+			warnings.append("Callout area %s has no name." % area["id"])
+		elif area_names.has(area_name.to_lower()):
+			warnings.append("Two callout areas are named \"%s\"." % area_name)
+		area_names[area_name.to_lower()] = true
 	return {"errors": errors, "warnings": warnings}

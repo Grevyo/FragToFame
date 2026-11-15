@@ -88,9 +88,18 @@ func _refresh_fixture_card() -> void:
 		_fixture_card.add_child(UIFactory.label(
 			"Schedule a 5v5 career match. The calendar advances after its final score is saved.",
 			&"MutedLabel", true))
+		var map_ids: Array[String] = []
+		var map_option := OptionButton.new()
+		map_option.tooltip_text = "Map for this fixture"
+		for entry: Dictionary in OfficialMaps.listing():
+			map_option.add_item("%s (official)" % entry["name"])
+			map_ids.append(str(entry["map_id"]))
+		map_option.add_item("Sandbox Arena (dev)")
+		map_ids.append(MapTemplates.SANDBOX_ARENA_ID)
+		_fixture_card.add_child(map_option)
 		var schedule := UIFactory.button("Schedule amateur match", &"AccentButton")
 		schedule.pressed.connect(func() -> void:
-			var problem := App.schedule_career_fixture()
+			var problem := App.schedule_career_fixture(map_ids[maxi(0, map_option.selected)])
 			if problem.is_empty():
 				_refresh_fixture_card()
 			else:

@@ -347,6 +347,57 @@ from spawn, so rounds often start with a long-range fight.
       the first has an eight-team table and the second shows its eligible field.
 - [ ] Select an authored cup and check that its competition details and scheduling status appear.
 
+### Manual test checklist (Milestone 16 — map creator tools and Kilnmarket)
+
+Automated tests cover every operation below headlessly; these checks are for feel and visuals.
+
+Editor (Creation Studio, start from **Open → Sandbox Arena** or a blank map):
+
+- [ ] Click a piece, Shift+click more, and drag a box over empty space. Selected pieces are outlined.
+- [ ] Drag a multi-selection, press **R**, **Ctrl+D** and **Del**; one **Ctrl+Z** undoes each.
+- [ ] **Ctrl+C**, open another map, **Ctrl+V**: the pieces arrive under the cursor.
+- [ ] Place a stock prefab (palette → PREFABS). It selects as one unit; Alt+click picks one piece.
+      Save a selection as a prefab, save the map, reopen: the prefab is still listed.
+- [ ] **G / T / X** gizmos: drag the axis handles and the rotate ring. Change **Grid** and
+      **Angle** and confirm drags and **R** follow them.
+- [ ] With **Snap to surface** on, place a crate on a block. With **Snap to edge** on, drag a
+      wall near another and watch it close the gap.
+- [ ] Select one piece and type exact position, rotation and size in the inspector. Select
+      several and use the group position and **Apply rotation** fields.
+- [ ] **M**, click two points: the line shows distance, height and run time. **Tab** toggles the
+      top view; right-drag pans and the wheel zooms.
+- [ ] Place pieces from every palette group. Walk into doorways, arches, vehicles and stalls in
+      a playtest and check that what you see is what blocks you and your shots.
+- [ ] Change a piece's material. With nothing selected, change the sun direction and height,
+      and place a lamp in a roofed area.
+- [ ] Add a layer, move pieces to it, hide it and lock it. Hidden pieces still exist in a playtest.
+- [ ] Edit without saving, wait a minute, close the game from the task manager, relaunch and
+      open the studio: it offers to recover the work.
+- [ ] Choose **Defence** and **Spawn 3**, then **Playtest**: you start there. Return to the editor.
+- [ ] Tick **Navmesh**: green is where bots can go. Build a platform with no stairs and
+      **Validate**: it is reported as bot-unpathable or unreachable. **Timings** lists routes.
+- [ ] Place callout areas, tactical anchors and AI hints. In a playtest the HUD (bottom left)
+      names the area you stand in.
+- [ ] In **Tactics**, click near an anchor: the waypoint snaps to it and the list shows the area
+      and anchor. Save the tactic, return, delete that anchor, save the map: a dialog names the
+      tactic and step. Reopen the tactic in Tactics: it opens with the same warning.
+
+Kilnmarket (official map):
+
+- [ ] **Creation Studio → Open → Kilnmarket**. Fly through it and use the top view. Check the
+      layout reads as three lanes and that nothing floats, overlaps oddly or z-fights badly.
+- [ ] Playtest from an attacker spawn. Run the Salt Road to the Kiln Gate, Potter's Passage up
+      the steps into the Kiln Yard, Spice Row to the Dogleg, and Tanners' Lane through the
+      Culvert into the Cistern. Compare your times with the roadmap table.
+- [ ] Playtest as a defender. Reach both sites, climb to the Overlook, and rotate through the
+      Weighhouse and Dyers' Cut. Check the defender spawn cannot see down the middle.
+- [ ] Judge the sightlines: the Salt Road duel lane, the Culvert exit under the Overlook, and
+      the cover for planting and retaking on both sites. Note anything too open or too closed.
+- [ ] Check the lighting: the Culvert and Weighhouse are dim but readable.
+- [ ] From the FPS Sandbox pause menu choose **Practice on: Kilnmarket** and start a practice
+      match. Bots should reach both sites, plant, hold and retake.
+- [ ] **Career Hub → Home**: schedule an amateur match with Kilnmarket selected and play it.
+
 ## Project layout
 
 ```

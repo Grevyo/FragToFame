@@ -14,6 +14,10 @@ var selected_slot: int = 0
 var selected_point: int = 0
 var edit_mode: EditMode = EditMode.SET_START
 var dirty: bool = false
+## Clicks within MapTactical.ANCHOR_SNAP_RADIUS of a tactical anchor land exactly on it.
+var snap_to_anchors: bool = true
+## What no longer fits the map in the tactic that was last opened (see TacticCompatibility).
+var compatibility_warnings: Array[String] = []
 
 var _map: MapDocument
 var _camera: EditorFlyCamera
@@ -31,6 +35,8 @@ var _confirm_dialog: ConfirmationDialog
 var _after_confirmation: Callable
 var _click_pending: bool = false
 var _click: Vector2
+var _warning_label: Label
+var _anchor_list: ItemList
 
 
 func bind(map: MapDocument, camera: EditorFlyCamera, map_view: MapEditorView) -> void:
@@ -79,25 +85,31 @@ func _physics_process(_delta: float) -> void:
 func apply_point(point: Vector3) -> String:
 	if not TacticDocument.is_valid_point(point):
 		return "This position is outside the editing area."
+	var anchor_id := ""
+	if snap_to_anchors:
+		var anchor := MapTactical.anchor_near(_map, point)
+		if not anchor.is_empty():
+			point = anchor["position"]
+			anchor_id = str(anchor["id"])
+	var area_id := MapTactical.area_id_at(_map, point)
 	var slot := document.slots[selected_slot]
 	if edit_mode != EditMode.SET_START and not slot.has_start:
 		return "Set this player's start position first."
 	stop_preview()
 	match edit_mode:
 		EditMode.SET_START:
-			slot.start = point
-			slot.has_start = true
+			slot.set_start(point, area_id, anchor_id)
 			selected_point = 0
 		EditMode.ADD_WAYPOINT:
 			if slot.route.size() >= TacticDocument.MAX_WAYPOINTS:
 				return "This player has reached the waypoint limit."
-			slot.route.append(point)
+			slot.add_waypoint(point, area_id, anchor_id)
 			selected_point = slot.route.size()
 		EditMode.MOVE_POINT:
 			if selected_point == 0:
-				slot.start = point
+				slot.set_start(point, area_id, anchor_id)
 			else:
-				slot.route[selected_point - 1] = point
+				slot.set_waypoint(selected_point - 1, point, area_id, anchor_id)
 	dirty = true
 	_refresh()
 	return ""
@@ -107,7 +119,7 @@ func remove_waypoint() -> void:
 	if selected_point < 1:
 		return
 	stop_preview()
-	document.slots[selected_slot].route.remove_at(selected_point - 1)
+	document.slots[selected_slot].remove_waypoint(selected_point - 1)
 	selected_point -= 1
 	dirty = true
 	_refresh()
@@ -123,14 +135,26 @@ func save_tactic() -> String:
 	return problem
 
 
+## Opens a tactic. If the map changed since it was saved, the tactic still opens and
+## [member compatibility_warnings] names every step that no longer fits; the file is untouched.
 func load_tactic(path: String) -> String:
 	var result := store.load_path(path, _map)
 	var problem := str(result["error"])
 	if not problem.is_empty():
 		_status.text = problem
 		return problem
-	_set_document(result["tactic"] as TacticDocument)
-	_status.text = "Opened %s." % document.display_name
+	var tactic := result["tactic"] as TacticDocument
+	var warnings: Array[String] = result["warnings"]
+	if not warnings.is_empty():
+		# The map changed: re-check with a baked navmesh so unreachable steps are named too.
+		warnings = store.load_path(path, _map, MapAnalysis.analyse(_map, self))["warnings"]
+	_set_document(tactic)
+	compatibility_warnings = warnings
+	_warning_label.text = "\n".join(warnings)
+	_warning_label.visible = not warnings.is_empty()
+	dirty = not warnings.is_empty()
+	_status.text = "Opened %s." % document.display_name if warnings.is_empty() \
+		else "Opened %s with %d warning(s). Review, then save to accept the map as it is now." % [document.display_name, warnings.size() - 1]
 	return ""
 
 
@@ -164,6 +188,7 @@ func stop_preview() -> void:
 
 func close_editor() -> void:
 	stop_preview()
+	_camera.set_overhead(false)
 	_marker_root.queue_free()
 	queue_free()
 
@@ -174,6 +199,9 @@ func _set_document(tactic: TacticDocument) -> void:
 	_name_edit.text = tactic.display_name
 	selected_point = 0
 	dirty = false
+	compatibility_warnings = []
+	_warning_label.text = ""
+	_warning_label.visible = false
 	edit_mode = EditMode.SET_START
 	_mode_picker.select(EditMode.SET_START)
 	_refresh()
@@ -182,16 +210,29 @@ func _set_document(tactic: TacticDocument) -> void:
 func _refresh() -> void:
 	var slot := document.slots[selected_slot]
 	_point_list.clear()
-	_point_list.add_item("Start" if slot.has_start else "Start · unset")
+	_point_list.add_item("Start%s" % _place_text(slot.start_area, slot.start_anchor) if slot.has_start else "Start · unset")
 	if slot.has_start:
 		_point_list.set_item_tooltip(0, str(slot.start))
 	for i: int in slot.route.size():
 		var point := slot.route[i]
-		_point_list.add_item("%d    %.1f, %.1f, %.1f" % [i + 1, point.x, point.y, point.z])
+		_point_list.add_item("%d    %.1f, %.1f, %.1f%s" % [i + 1, point.x, point.y, point.z,
+			_place_text(slot.area_of(i), slot.anchor_of(i))])
 	_point_list.select(selected_point)
 	_delete_button.disabled = selected_point < 1
 	_refresh_progress()
 	_draw_routes()
+
+
+## " · Area name · anchor name" for the references of a step (empty when it has none).
+func _place_text(area_id: String, anchor_id: String) -> String:
+	var text := ""
+	var area := MapTactical.area_name(_map, area_id)
+	if not area.is_empty():
+		text += "  ·  " + area
+	var anchor := _map.get_piece(anchor_id)
+	if not anchor.is_empty():
+		text += "  ·  ⚑ " + str(anchor.get("props", {}).get("name", anchor_id))
+	return text
 
 
 func _refresh_progress() -> void:
@@ -284,6 +325,9 @@ func _build_controls() -> void:
 		stop_preview()
 		_status.text = "Preview stopped.")
 	_stop_button.disabled = true
+	var top_view := _add_button(toolbar, "Top view", func() -> void:
+		_camera.set_overhead(not _camera.overhead, MapSnapping.bounds(_map.pieces).get_center()))
+	top_view.tooltip_text = "Switch between the overhead and 3D views"
 	_add_button(toolbar, "Map Creator", func() -> void: _guard_unsaved(map_creator_requested.emit))
 	_add_button(toolbar, "Menu", func() -> void: _guard_unsaved(main_menu_requested.emit))
 
@@ -301,7 +345,7 @@ func _build_controls() -> void:
 	var panel := UIFactory.vbox(10)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(panel)
-	panel.add_child(UIFactory.label("%s  ·  revision %d" % [_map.name, _map.revision], &"AccentLabel", true))
+	panel.add_child(UIFactory.label("%s  ·  revision %d  ·  content v%d" % [_map.name, _map.revision, _map.content_version], &"AccentLabel", true))
 	panel.add_child(UIFactory.label("Select a player and a tool, then click a walkable surface. Hold RMB to fly.", &"MutedLabel", true))
 	var slots := OptionButton.new()
 	for i: int in TacticDocument.SLOT_COUNT:
@@ -326,6 +370,31 @@ func _build_controls() -> void:
 		_draw_routes())
 	panel.add_child(_point_list)
 	_delete_button = _add_button(panel, "Remove selected waypoint", remove_waypoint)
+	_warning_label = UIFactory.label("", &"WarningLabel", true)
+	_warning_label.visible = false
+	panel.add_child(_warning_label)
+
+	var snap := CheckBox.new()
+	snap.text = "Snap clicks to tactical anchors"
+	snap.button_pressed = snap_to_anchors
+	snap.toggled.connect(func(on: bool) -> void: snap_to_anchors = on)
+	panel.add_child(snap)
+	panel.add_child(UIFactory.label("TACTICAL ANCHORS (click to use)", &"SectionLabel"))
+	_anchor_list = ItemList.new()
+	_anchor_list.custom_minimum_size.y = 110
+	var anchors := MapTactical.anchors(_map)
+	for anchor: Dictionary in anchors:
+		_anchor_list.add_item("%s  ·  %s" % [MapTactical.anchor_label(anchor),
+			MapTactical.area_name_at(_map, anchor["position"] as Vector3)])
+	_anchor_list.item_selected.connect(func(index: int) -> void:
+		_status.text = apply_point(anchors[index]["position"] as Vector3))
+	panel.add_child(_anchor_list)
+	var area_names: Array[String] = []
+	for area: Dictionary in MapTactical.areas(_map):
+		area_names.append(str(area.get("props", {}).get("name", "")))
+	panel.add_child(UIFactory.label("CALLOUT AREAS", &"SectionLabel"))
+	panel.add_child(UIFactory.label(", ".join(area_names) if not area_names.is_empty() else "This map has no callout areas.",
+		&"MutedLabel", true))
 
 	panel.add_child(HSeparator.new())
 	for i: int in TacticDocument.SLOT_COUNT:

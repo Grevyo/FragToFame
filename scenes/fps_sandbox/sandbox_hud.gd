@@ -16,6 +16,8 @@ var resume_button: Button
 var main_menu_button: Button
 var editor_button: Button
 var practice_button: Button
+## Map choice for a new practice match: the loaded map, an official map or the dev arena.
+var map_option: OptionButton
 var host_button: Button
 var join_button: Button
 var leave_button: Button
@@ -23,6 +25,8 @@ var address_edit: LineEdit
 var port_edit: LineEdit
 
 var _debug_label: Label
+var _location_label: Label
+var _practice_map_ids: Array[String] = [""]
 var _hint_panel: PanelContainer
 var _title_label: Label
 var _pause_message: Label
@@ -90,6 +94,7 @@ func set_mode(title: String, playtest: bool, in_match: bool = false, career_fixt
 	_title_label.text = title
 	editor_button.visible = playtest
 	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 · 5v5 with bots)"
+	map_option.visible = not in_match
 	_network_section.visible = not career_fixture
 	if career_fixture:
 		practice_button.text = "Restart fixture"
@@ -102,6 +107,29 @@ func set_pause_message(text: String) -> void:
 
 func set_debug_text(text: String) -> void:
 	_debug_label.text = text
+
+
+## Shows the name of the callout area the player is standing in ("" hides it).
+func set_location_text(text: String) -> void:
+	_location_label.text = text
+	_location_label.visible = not text.is_empty()
+
+
+func location_text() -> String:
+	return _location_label.text
+
+
+## Map ID chosen for a new practice match ("" = the map that is loaded now).
+func selected_practice_map_id() -> String:
+	return _practice_map_ids[map_option.selected] if map_option.selected >= 0 else ""
+
+
+## Selects a practice map by ID. Returns false when it is not offered.
+func select_practice_map(map_id: String) -> bool:
+	var index := _practice_map_ids.find(map_id)
+	if index >= 0:
+		map_option.select(index)
+	return index >= 0
 
 
 ## Weapon panel: name, magazine / reserve ammo and reload progress (negative = not reloading).
@@ -225,6 +253,9 @@ func _build_debug() -> void:
 	_network_badge = UIFactory.label("", &"AccentLabel")
 	_network_badge.visible = false
 	column.add_child(_network_badge)
+	_location_label = UIFactory.label("", &"AccentLabel")
+	_location_label.visible = false
+	column.add_child(_location_label)
 	_debug_label = UIFactory.label("", &"MutedLabel")
 	column.add_child(_debug_label)
 	panel.add_child(column)
@@ -353,6 +384,15 @@ func _build_pause_overlay() -> void:
 	editor_button.pressed.connect(return_to_editor_requested.emit)
 	editor_button.visible = false
 	column.add_child(editor_button)
+	map_option = OptionButton.new()
+	map_option.tooltip_text = "Map for the practice match"
+	map_option.add_item("Practice on: this map")
+	for entry: Dictionary in OfficialMaps.listing():
+		map_option.add_item("Practice on: %s (official)" % entry["name"])
+		_practice_map_ids.append(str(entry["map_id"]))
+	map_option.add_item("Practice on: Sandbox Arena (dev)")
+	_practice_map_ids.append(MapTemplates.SANDBOX_ARENA_ID)
+	column.add_child(map_option)
 	practice_button = UIFactory.button("Start practice match (MR3 · 5v5 with bots)")
 	practice_button.pressed.connect(practice_match_requested.emit)
 	column.add_child(practice_button)

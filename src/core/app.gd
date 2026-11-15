@@ -31,6 +31,8 @@ var current_scene_id: StringName = SCENE_MAIN_MENU
 var playtest_map: MapDocument = null
 ## Editor state preserved across a playtest so unsaved work is not lost. Consumed by the studio.
 var editor_session: Dictionary = {}
+## Playtest choices from the editor: {"team": "attack" | "defence", "spawn": index}.
+var playtest_options: Dictionary = {}
 ## Match the FPS runtime should run when it next loads (consumed by the runtime).
 var pending_match_setup: MatchSetup = null
 var pending_match_rules: MatchRules = null
@@ -114,11 +116,18 @@ func close_career() -> void:
 	career = null
 
 
+## Any playable map by ID: an official map, the development arena or a map the player saved.
+func map_by_id(map_id: String) -> MapDocument:
+	return OfficialMaps.find_map(map_id, MapStorage.new())
+
+
 ## Practice match against an organisation of the open career (bots use the players' abilities).
-func start_practice_against(org_id: String) -> Error:
+func start_practice_against(org_id: String, map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> Error:
 	if not has_career():
 		return ERR_UNCONFIGURED
-	var map := MapTemplates.sandbox_arena()
+	var map := map_by_id(map_id)
+	if map == null:
+		return ERR_DOES_NOT_EXIST
 	var setup := CareerMatches.practice_setup(career.repo, career.human_player_id, org_id, map.map_id)
 	if setup == null:
 		return ERR_DOES_NOT_EXIST
@@ -137,10 +146,12 @@ func advance_career_day() -> String:
 	return problem
 
 
-func schedule_career_fixture() -> String:
+func schedule_career_fixture(map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> String:
 	if not has_career():
 		return "Open a career first."
-	return CareerFixtures.schedule(career.repo, career.human_player_id, MapTemplates.SANDBOX_ARENA_ID)
+	if map_by_id(map_id) == null:
+		return "The chosen map is unavailable."
+	return CareerFixtures.schedule(career.repo, career.human_player_id, map_id)
 
 
 func start_career_fixture(fixture_id: String) -> String:
@@ -152,8 +163,8 @@ func start_career_fixture(fixture_id: String) -> String:
 	if fixture == null or fixture.player_id != career.human_player_id or fixture.result != null:
 		return "This fixture is unavailable or already completed."
 	var setup := fixture.setup
-	var map := MapTemplates.sandbox_arena()
-	if setup.map_id != map.map_id:
+	var map := map_by_id(setup.map_id)
+	if map == null:
 		return "The required fixture map is unavailable."
 	var err := start_match(setup, MatchRules.competitive(setup.max_rounds), map,
 		{"opponents": "bots", "career_fixture": true})
@@ -191,10 +202,11 @@ func report_match_finished(result: MatchResult) -> String:
 
 
 ## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.
-func start_playtest(doc: MapDocument, session: Dictionary) -> Error:
+func start_playtest(doc: MapDocument, session: Dictionary, options: Dictionary = {}) -> Error:
 	_active_fixture_id = ""
 	_active_fixture_save_id = ""
 	playtest_map = doc
+	playtest_options = options
 	editor_session = session
 	return go_to(SCENE_FPS_SANDBOX)
 

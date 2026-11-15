@@ -4,6 +4,7 @@ extends CanvasLayer
 
 signal resume_requested
 signal main_menu_requested
+signal return_to_editor_requested
 signal host_match_requested(port: int)
 signal join_match_requested(address: String, port: int)
 signal leave_match_requested
@@ -11,6 +12,7 @@ signal leave_match_requested
 var pause_overlay: Control
 var resume_button: Button
 var main_menu_button: Button
+var editor_button: Button
 var host_button: Button
 var join_button: Button
 var leave_button: Button
@@ -19,6 +21,7 @@ var port_edit: LineEdit
 
 var _debug_label: Label
 var _hint_panel: PanelContainer
+var _title_label: Label
 var _network_status: Label
 var _network_badge: Label
 
@@ -36,6 +39,12 @@ func set_paused(paused: bool) -> void:
 	_hint_panel.visible = not paused
 	if paused:
 		resume_button.grab_focus.call_deferred()
+
+
+## Shows the map title; in playtest mode also offers the return-to-editor button.
+func set_mode(title: String, playtest: bool) -> void:
+	_title_label.text = title
+	editor_button.visible = playtest
 
 
 func set_debug_text(text: String) -> void:
@@ -92,7 +101,8 @@ func _build_hint() -> void:
 	_hint_panel.position = Vector2(16, 16)
 	_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var column := UIFactory.vbox(2)
-	column.add_child(UIFactory.label("FPS SANDBOX", &"AccentLabel"))
+	_title_label = UIFactory.label("FPS SANDBOX", &"AccentLabel")
+	column.add_child(_title_label)
 	column.add_child(UIFactory.label("WASD move · Mouse look · Space jump · Shift walk", &"MutedLabel"))
 	column.add_child(UIFactory.label("Esc pause / release mouse · Click to recapture", &"MutedLabel"))
 	_hint_panel.add_child(column)
@@ -139,6 +149,10 @@ func _build_pause_overlay() -> void:
 	resume_button = UIFactory.button("Resume", &"AccentButton")
 	resume_button.pressed.connect(resume_requested.emit)
 	column.add_child(resume_button)
+	editor_button = UIFactory.button("Return to Creation Studio", &"AccentButton")
+	editor_button.pressed.connect(return_to_editor_requested.emit)
+	editor_button.visible = false
+	column.add_child(editor_button)
 	main_menu_button = UIFactory.button("Return to Main Menu")
 	main_menu_button.pressed.connect(main_menu_requested.emit)
 	column.add_child(main_menu_button)

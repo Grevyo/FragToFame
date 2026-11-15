@@ -72,6 +72,15 @@ func _physics_process(delta: float) -> void:
 		respawn()
 
 
+## Moves the player to a spawn point (feet position, facing yaw) and remembers it for respawns.
+func set_spawn(feet_position: Vector3, yaw: float) -> void:
+	global_position = feet_position + Vector3(0, 0.05, 0)
+	rotation = Vector3(0, yaw, 0)
+	head.rotation = Vector3.ZERO
+	velocity = Vector3.ZERO
+	_spawn_transform = global_transform
+
+
 func respawn() -> void:
 	global_transform = _spawn_transform
 	head.rotation = Vector3.ZERO

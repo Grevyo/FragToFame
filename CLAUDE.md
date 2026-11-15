@@ -8,7 +8,9 @@ Godot 4.7.2 game. These rules persist across sessions.
 1. Read `docs/GAME_VISION.md` (canonical design), `docs/ARCHITECTURE.md` (module boundaries) and
    `docs/ROADMAP.md` (current milestone). Do not work beyond the current milestone unless asked.
 2. If a change alters design or architecture, update the relevant doc **in the same commit**.
-3. Never move to the next milestone automatically. Finish, validate, report, stop.
+3. Work through the roadmap continuously (owner's instruction, 2026-11-15): finish a milestone,
+   validate it, commit and push it to `main`, give a short report, then start the next one without
+   asking. Stop only for genuine blockers or decisions that are the owner's to make.
 
 ## Technology constraints
 
@@ -38,6 +40,7 @@ src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
 src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource)
 src/world/     shared 3D building blocks
+src/maps/      map document format, builder, validator, storage, edit controller (no UI)
 src/orchestration/    MatchSetup / MatchResult contracts and match runners
 src/net/career_sync/  career-host networking (raw ENet messages) — never uses net/match
 src/net/match/        in-match netcode (SceneMultiplayer branch) — never uses net/career_sync

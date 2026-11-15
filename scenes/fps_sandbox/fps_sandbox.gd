@@ -1,10 +1,11 @@
 extends Node3D
-## FPS sandbox root: owns mouse capture and pause state, wires the HUD to the player and
-## to the local match network session.
+## FPS runtime root (FPS Sandbox / map playtest): loads a map, owns mouse capture and pause
+## state, and wires the HUD to the player and to the local match network session.
 
 @onready var player: FirstPersonController = $Player
 @onready var hud: SandboxHud = $Hud
 @onready var match_session: MatchSession = $MatchSession
+@onready var level: SandboxLevel = $Level
 
 var is_paused: bool = false
 var _last_network_message: String = ""
@@ -13,12 +14,23 @@ var _last_network_message: String = ""
 func _ready() -> void:
 	hud.resume_requested.connect(resume)
 	hud.main_menu_requested.connect(_on_main_menu_requested)
+	hud.return_to_editor_requested.connect(_on_return_to_editor)
 	hud.host_match_requested.connect(_on_host_match_requested)
 	hud.join_match_requested.connect(_on_join_match_requested)
 	hud.leave_match_requested.connect(func() -> void: match_session.leave("left"))
 	match_session.local_body = player
 	match_session.session_ended.connect(_on_session_ended)
+	_load_level()
 	resume()
+
+
+func _load_level() -> void:
+	var playtest := App.is_playtesting()
+	var doc := App.playtest_map if playtest else MapTemplates.sandbox_arena()
+	level.load_map(doc)
+	var spawn := level.spawn_point("attack")
+	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
+	hud.set_mode("PLAYTEST · %s" % doc.name if playtest else "FPS SANDBOX · %s" % doc.name, playtest)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,17 +75,29 @@ func resume() -> void:
 
 func _on_main_menu_requested() -> void:
 	match_session.leave("returned to main menu")
+	App.playtest_map = null
 	App.go_to(App.SCENE_MAIN_MENU)
+
+
+func _on_return_to_editor() -> void:
+	match_session.leave("returned to editor")
+	App.end_playtest()
 
 
 func _on_host_match_requested(port: int) -> void:
 	var err := match_session.host(port)
-	_last_network_message = "Hosting on port %d" % port if err == OK 		else "Could not host on port %d (error %d)" % [port, err]
+	if err == OK:
+		_last_network_message = "Hosting on port %d" % port
+	else:
+		_last_network_message = "Could not host on port %d (error %d)" % [port, err]
 
 
 func _on_join_match_requested(address: String, port: int) -> void:
 	var err := match_session.join(address, port)
-	_last_network_message = "Connecting to %s:%d..." % [address, port] if err == OK 		else "Could not start connection (error %d)" % err
+	if err == OK:
+		_last_network_message = "Connecting to %s:%d..." % [address, port]
+	else:
+		_last_network_message = "Could not start connection (error %d)" % err
 
 
 func _on_session_ended(reason: String) -> void:

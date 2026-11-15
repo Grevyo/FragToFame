@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–2)
+## 2. Current implementation (Milestones 1–3)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -60,15 +60,18 @@ src/core/input_actions.gd       InputActions: action names + default bindings, r
                               career_sync_service.gd (autoload "CareerSync")
   net/match/                  IN-MATCH NETCODE: MatchSession (listen server), RemotePlayerAvatar
   world/block_builder.gd      BlockBuilder: textured static box geometry helper
+  maps/                       MAPS: PieceCatalog, MapDocument (f2f.map v1), MapBuilder,
+                              MapValidator, MapStorage, MapTemplates, MapEditController
 scenes/
   main_menu/                  Main menu (Career Hub / FPS Sandbox / Creation Studio / Quit)
   career_hub/career_hub.*     Sidebar + page host
   career_hub/pages/*.gd       One CareerPage subclass per section
-  fps_sandbox/                Test level, first-person controller, HUD + pause overlay
-  creation_studio/            Fly camera, grid, snapped cursor, editor UI shell
+  fps_sandbox/                Map-driven level, first-person controller, HUD + pause overlay
+  creation_studio/            Map editor: scene controller, MapEditorView, StudioUI, fly camera, grid
 tests/run_tests.gd            Headless test runner (SceneTree script) over tests/suites/*
 tests/test_suite.gd           TestSuite base: check(), wait_until(), scene helpers
 tools/validate.ps1            Import + test runner for Windows
+tools/capture_screens.gd      Non-headless screenshot capture of key screens (developer aid)
 ```
 
 ### Scene routing
@@ -81,7 +84,9 @@ mouse mode to visible so a scene can never leave the cursor captured for the nex
 
 Top-level UI is built in code from small `.tscn` roots. Reasons: hand-authored scenes stay
 diff-friendly, theme usage is consistent, and pages are trivially data-driven. The theme is built
-once by `F2FTheme.build()` and assigned to the root `Window`, so every Control inherits it.
+once by `F2FTheme.build()`, assigned to the root `Window` and merged into the default theme
+(`ThemeDB.get_default_theme()`), because Controls under a `CanvasLayer` do not inherit the Window
+theme.
 Named type variations (`TitleLabel`, `CardPanel`, `SidebarButton`, …) are the styling vocabulary;
 avoid per-node colour overrides.
 
@@ -123,6 +128,34 @@ and lag compensation are deliberately deferred to the FPS milestones.
 **Not yet:** persistence of the career world, calendar advancement blocked on unresolved
 fixtures, the career host choosing a match host, spectating, NAT traversal / Steam networking.
 
+### Maps and the Creation Studio (Milestone 3)
+
+```
+ MapDocument (data, JSON) ──► MapBuilder.build(doc, EDITOR)  ──► MapEditorView (studio)
+          ▲                └► MapBuilder.build(doc, RUNTIME) ──► SandboxLevel (FPS runtime)
+          │
+ MapEditController (UndoRedo, selection, dirty) ◄── creation_studio.gd ◄── StudioUI signals
+          │
+ MapStorage (user://maps/*.f2fmap.json, atomic + .bak)    MapValidator (errors / warnings)
+```
+
+- **Document.** `MapDocument` is plain data (`RefCounted`): metadata plus an ordered list of piece
+  dictionaries `{id, type, position, rotation, size, props}`. Positions are the piece's
+  *bottom-centre*; rotation is yaw in 90° steps. Piece IDs are `pc_N` from a counter that is saved
+  and never reused, so deleting and re-adding cannot collide. Format `f2f.map`, version 1.
+- **Catalog.** `PieceCatalog.TYPES` is the single list of piece types (kind, default size, colour,
+  resizable, palette group). Kinds: block, ramp, stairs, marker, zone.
+- **Builder.** `MapBuilder` turns a document into nodes. EDITOR mode shows markers and zones;
+  RUNTIME mode hides them (bombsites keep a floor tint). Stairs are visual steps over an invisible
+  slope collider, because `CharacterBody3D` does not step up ledges.
+- **Editing.** All edits go through `MapEditController`, which records before/after piece states in
+  Godot's `UndoRedo`. Drags preview without history and commit as one step. The controller emits
+  per-piece signals; `MapEditorView` rebuilds only the affected piece.
+- **Playtest.** The studio validates, then calls `App.start_playtest(doc, session)`. The FPS scene
+  builds `App.playtest_map` instead of the default arena; "Return to editor" calls
+  `App.end_playtest()` and the studio restores the session (document, path, dirty flag, camera).
+  The runtime still only receives a document; it never reaches into the editor.
+
 ### Input
 
 `InputActions.register_defaults()` adds actions only if they don't already exist, so future
@@ -142,12 +175,12 @@ keycodes so WASD works on non-QWERTY layouts.
 | FPS runtime **(partial: movement)** | Rounds, economy, weapons, utility, bombsite | Server-authoritative on match host. |
 | Bot AI / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | One team-tactics layer shared by AI and human IGLs. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
-| Map editor **(shell)** | Modular pieces, snapping, gameplay markers, validation, playtest | Saves versioned map documents; official maps use it too. |
+| Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
 | Tactical Play Creator **(planned)** | Routes, roles, utility, triggers, playbooks | Produces tactic documents consumed by Tactical AI. |
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |
 | Co-op career sync **(proof)** | Career host authority, client requests, calendar sync | Raw ENet message protocol; see Networking above. Calendar sync not yet. |
 | Match netcode **(proof)** | Listen server on a player's PC, player state sync | `MatchSession`; position + facing only. |
-| Persistence & backup **(planned)** | Atomic saves, rotating backups, migrations | Write-temp-then-rename; schema version in every save. |
+| Persistence & backup **(partial)** | Atomic saves, rotating backups, migrations | `MapStorage` already writes temp-then-rename with a `.bak`; career saves later. |
 
 ## 4. Data and identity rules
 
@@ -172,3 +205,9 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Career host connects to itself as a client | One code path for every human, fewer host-only bugs |
 | 2026-11-15 | Dedupe by submission ID or identical scoreline; differing score = CONFLICT | Safe resends/recovery; several participants may report the same fixture |
 | 2026-11-15 | Clients own their position in the M2 proof | Smallest proof of the two-network split; authority model revisited in M4/M5 |
+| 2026-11-15 | One `MapBuilder` for editor and runtime | What you edit is exactly what you play; no export step |
+| 2026-11-15 | The sandbox arena is a map document (template) | Proves official content can be authored with the shipped editor |
+| 2026-11-15 | Bottom-centre origin, 90° rotations, axis-aligned pieces | Simple snapping, exact AABB picking and stacking; free rotation later |
+| 2026-11-15 | UndoRedo targets a weak-referencing `_Applier` | `UndoRedo` holds strong refs to RefCounted targets; targeting the controller leaked a cycle |
+| 2026-11-15 | Merge `F2FTheme` into the default theme | CanvasLayer UIs (HUD, studio) otherwise render with Godot's default styling |
+| 2026-11-15 | Stairs = visual steps + hidden slope collider | `CharacterBody3D` has no step-up; a slope is smooth and predictable |

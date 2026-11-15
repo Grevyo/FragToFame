@@ -22,11 +22,19 @@ const SCENE_PATHS: Dictionary[StringName, String] = {
 }
 
 var current_scene_id: StringName = SCENE_MAIN_MENU
+## Map to load in the FPS runtime instead of the default sandbox arena (set by the editor).
+var playtest_map: MapDocument = null
+## Editor state preserved across a playtest so unsaved work is not lost. Consumed by the studio.
+var editor_session: Dictionary = {}
 
 
 func _ready() -> void:
 	InputActions.register_defaults()
-	get_tree().root.theme = F2FTheme.build()
+	var theme := F2FTheme.build()
+	get_tree().root.theme = theme
+	# Controls under a CanvasLayer do not inherit the Window theme; they fall back to the default
+	# theme. Merging ours into it makes HUDs and editor overlays use the same styling.
+	ThemeDB.get_default_theme().merge_with(theme)
 
 
 ## Switches the active top-level scene. Returns OK, or an error if the ID is unknown or loading fails.
@@ -42,6 +50,22 @@ func go_to(scene_id: StringName) -> Error:
 	current_scene_id = scene_id
 	scene_changed.emit(scene_id)
 	return OK
+
+
+## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.
+func start_playtest(doc: MapDocument, session: Dictionary) -> Error:
+	playtest_map = doc
+	editor_session = session
+	return go_to(SCENE_FPS_SANDBOX)
+
+
+func is_playtesting() -> bool:
+	return playtest_map != null
+
+
+func end_playtest() -> Error:
+	playtest_map = null
+	return go_to(SCENE_CREATION_STUDIO)
 
 
 func quit_game() -> void:

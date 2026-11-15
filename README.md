@@ -49,7 +49,21 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | RMB + mouse wheel | Change fly speed |
 | Mouse wheel | Dolly forward / back |
 | F | Reset view |
-| Grid snap dropdown | Change grid / cursor snap (0.25–4 m) |
+| Left click | Select tool: select a piece and drag to move it · Place tool: place a piece |
+| 1 / 2 | Select tool / Place tool (last palette piece) |
+| R / Shift+R | Rotate selected piece (or placement ghost) by ±90° |
+| Arrow keys | Nudge selected piece by one snap step on X / Z |
+| PgUp / PgDn | Nudge selected piece up / down, or raise / lower the build height |
+| Delete / Backspace | Delete selected piece |
+| Ctrl+D | Duplicate selected piece |
+| Ctrl+Z · Ctrl+Y / Ctrl+Shift+Z | Undo · Redo |
+| Ctrl+S · Ctrl+O · Ctrl+N | Save · Open · New |
+| F5 | Validate and playtest the map in the FPS runtime |
+| Esc | Cancel drag / leave Place tool / deselect |
+| Snap dropdown | Change grid / placement snap (0.25–4 m) |
+
+Maps are saved to `%APPDATA%\Godot\app_userdata\Frag to Fame\maps\*.f2fmap.json`
+(the previous version is kept as `.bak`).
 
 ## Testing
 
@@ -117,6 +131,24 @@ Match netcode (FPS Sandbox → Esc → *Local match network*):
 
 Ports: career sync **24560**, match **24570** (UDP).
 
+### Manual test checklist (Milestone 3 — map editing)
+
+- [ ] **Creation Studio → Open → Templates → Sandbox Arena (dev)**: the arena appears with coloured
+      spawn markers, translucent bombsite / buy-zone volumes and floating labels.
+- [ ] Click a palette piece (e.g. *Crate*): a ghost follows the mouse, snapped to the grid and
+      stacking on top of solid pieces; **R** rotates it; left click places it.
+- [ ] **1** then click a piece: it gets a yellow outline and the inspector shows its position,
+      rotation and size. Drag moves it on the grid; arrows / PgUp / PgDn nudge it.
+- [ ] Edit a size in the inspector: the piece resizes. **Ctrl+Z** undoes each step, **Ctrl+Y**
+      redoes; a whole drag undoes in one step.
+- [ ] **Delete** and **Ctrl+D** work on the selection.
+- [ ] **Validate** lists errors / warnings (try deleting all attacker spawns: Playtest is blocked).
+- [ ] Rename the map in the inspector, **Save**, **New**, then **Open** the saved map: it comes
+      back identical. Closing with unsaved changes asks for confirmation.
+- [ ] **Playtest** (F5): you spawn at the attacker spawn and can walk up the ramp and stairs and
+      onto the platform. Esc → **Return to editor** brings back the map, unsaved edits and camera.
+- [ ] **FPS Sandbox** from the main menu still loads the default arena (not the last playtest).
+
 ## Project layout
 
 ```
@@ -124,6 +156,9 @@ src/core      App autoload (scene routing), input actions
 src/ui        Theme builder, UI helpers
 src/career    Career-world data (currently dev sample data only)
 src/world     Shared 3D building blocks
+src/maps      Map document format, builder, validator, storage, edit controller
+src/orchestration  MatchSetup / MatchResult contracts
+src/net       career_sync (career host) and match (in-match netcode), kept separate
 scenes/       main_menu, career_hub (+pages), fps_sandbox, creation_studio
 tests/        Headless test runner
 tools/        Validation script

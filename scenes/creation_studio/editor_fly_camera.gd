@@ -32,6 +32,13 @@ func reset_view() -> void:
 	_pitch = rotation.x
 
 
+## Restores a saved camera transform (e.g. after returning from a playtest).
+func set_view(view_transform: Transform3D) -> void:
+	global_transform = view_transform
+	_yaw = rotation.y
+	_pitch = rotation.x
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(InputActions.EDITOR_LOOK):
 		_set_looking(true)

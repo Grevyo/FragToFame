@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scenes/creation_studio/creation_studio.gd" id="1_studio"]
 [ext_resource type="Script" path="res://scenes/creation_studio/editor_fly_camera.gd" id="2_camera"]
 [ext_resource type="Script" path="res://scenes/creation_studio/editor_grid.gd" id="3_grid"]
+[ext_resource type="Script" path="res://scenes/creation_studio/map_editor_view.gd" id="4_view"]
+[ext_resource type="Script" path="res://scenes/creation_studio/studio_ui.gd" id="5_ui"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -41,4 +43,21 @@ script = ExtResource("3_grid")
 mesh = SubResource("CursorMesh_1")
 surface_material_override/0 = SubResource("CursorMaterial_1")
 
+[node name="MapView" type="Node3D" parent="."]
+script = ExtResource("4_view")
+
+[node name="Ghost" type="MeshInstance3D" parent="."]
+visible = false
+cast_shadow = 0
+
 [node name="UI" type="CanvasLayer" parent="."]
+
+[node name="StudioUI" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_ui")

@@ -37,6 +37,13 @@ func _test_app_autoload() -> void:
 	for scene_id: StringName in paths:
 		check(ResourceLoader.exists(paths[scene_id] as String), "scene path exists for '%s'" % scene_id)
 	check(tree.root.theme != null, "root window theme is assigned")
+	var layer := CanvasLayer.new()
+	var probe := Label.new()
+	probe.theme_type_variation = &"LogoLabel"
+	layer.add_child(probe)
+	tree.root.add_child(layer)
+	check(probe.get_theme_color(&"font_color") == F2FTheme.ACCENT, "controls under a CanvasLayer get the F2F theme")
+	layer.free()
 
 
 func _test_input_actions() -> void:
@@ -129,8 +136,10 @@ func _test_fps_sandbox() -> void:
 	check(sandbox.get_node_or_null("Player/Head/Camera") is Camera3D, "first-person camera present")
 	var session := sandbox.get_node_or_null("MatchSession") as MatchSession
 	check(session != null and not session.is_active(), "match session present and offline by default")
-	var level := sandbox.get_node_or_null("Level")
-	check(level != null and level.get_child_count() > 10, "level geometry built")
+	var level := sandbox.get_node_or_null("Level") as SandboxLevel
+	check(level != null and level.map_root != null and level.map_root.get_child_count() > 10,
+		"default arena map built from map pieces")
+	check(level != null and level.document.map_id == "map_dev_sandbox_arena", "sandbox uses the editable arena map")
 	if player == null:
 		await despawn(sandbox)
 		return
@@ -167,23 +176,23 @@ func _test_creation_studio() -> void:
 	check(grid != null and grid.line_count() > 0, "grid mesh generated")
 	if grid != null:
 		var lines_at_1m := grid.line_count()
-		studio.call("set_snap_size", 0.5)
+		studio.call("_set_snap", 0.5)
 		check(grid.line_count() > lines_at_1m, "finer snap produces more grid lines")
-		studio.call("set_snap_size", 1.0)
+		studio.call("_set_snap", 1.0)
 	# Use the stretched visible rect (same space as get_mouse_position), not the raw window size.
 	var screen_centre := tree.root.get_visible_rect().size / 2.0
-	var cell: Variant = studio.call("ground_cell_at", screen_centre)
-	check(cell is Vector3, "screen centre ray hits the ground plane")
-	if cell is Vector3:
-		var v := cell as Vector3
-		check(is_equal_approx(fposmod(v.x, 1.0), 0.5) and is_equal_approx(fposmod(v.z, 1.0), 0.5),
-			"cursor snaps to 1 m cell centres")
+	var point: Variant = studio.call("placement_point", screen_centre)
+	check(point is Vector3, "screen centre ray finds a placement point")
+	if point is Vector3:
+		var v := point as Vector3
+		check(is_equal_approx(fposmod(v.x, 1.0), 0.0) and is_equal_approx(fposmod(v.z, 1.0), 0.0),
+			"placement snaps to the 1 m grid")
 	if camera != null:
 		camera.position = Vector3(100, 100, 100)
 		camera.reset_view()
 		check(camera.position.is_equal_approx(EditorFlyCamera.DEFAULT_POSITION), "reset view restores camera")
-	var menu_button := studio.get("main_menu_button") as Button
-	check(menu_button != null and menu_button.pressed.get_connections().size() > 0, "main menu button connected")
+	var ui := studio.get_node_or_null("UI/StudioUI") as StudioUI
+	check(ui != null and ui.main_menu_button.pressed.get_connections().size() > 0, "main menu button connected")
 	await despawn(studio)
 
 

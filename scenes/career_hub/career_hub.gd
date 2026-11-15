@@ -56,7 +56,9 @@ func show_page(page_id: StringName) -> bool:
 	current_page = page
 	current_page_id = page_id
 	_page_title.text = page.get_page_title()
-	_nav_buttons[page_id].set_pressed_no_signal(true)
+	# set_pressed_no_signal does not release the other buttons in the group, so do it explicitly.
+	for id: StringName in _nav_buttons:
+		_nav_buttons[id].set_pressed_no_signal(id == page_id)
 	_scroll.scroll_vertical = 0
 	page_changed.emit(page_id)
 	return true

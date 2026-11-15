@@ -2,12 +2,16 @@ extends SceneTree
 ## Headless test runner. Runs every suite in SUITES and exits with 0 (all passed) or 1.
 ##
 ## Run:  <godot> --headless --path <project> --script res://tests/run_tests.gd
+##
+## Suites are loaded at runtime (not preloaded) so they can reference autoload singletons such
+## as App, which do not exist yet when this script itself is compiled.
 
-const SUITES: Array[GDScript] = [
-	preload("res://tests/suites/foundation_suite.gd"),
-	preload("res://tests/suites/career_world_suite.gd"),
-	preload("res://tests/suites/career_sync_suite.gd"),
-	preload("res://tests/suites/match_session_suite.gd"),
+const SUITES: Array[String] = [
+	"res://tests/suites/foundation_suite.gd",
+	"res://tests/suites/career_world_suite.gd",
+	"res://tests/suites/career_sync_suite.gd",
+	"res://tests/suites/match_session_suite.gd",
+	"res://tests/suites/map_editor_suite.gd",
 ]
 
 
@@ -20,8 +24,13 @@ func _run() -> void:
 	await process_frame
 	var passed := 0
 	var failed := 0
-	for script: GDScript in SUITES:
-		var suite := script.new() as TestSuite
+	for path: String in SUITES:
+		var script := load(path) as GDScript
+		var suite: TestSuite = script.new() as TestSuite if script != null and script.can_instantiate() else null
+		if suite == null:
+			printerr("  FAIL  could not load suite %s" % path)
+			failed += 1
+			continue
 		suite.tree = self
 		print("\n## %s" % suite.suite_name())
 		await suite.run()

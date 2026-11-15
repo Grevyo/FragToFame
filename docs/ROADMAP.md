@@ -1,7 +1,9 @@
 # Frag to Fame — Roadmap
 
 Each milestone is a small, independently testable vertical slice. The order may change where
-dependencies demand it. **Do not start the next milestone until the current one is accepted.**
+dependencies demand it. The owner asked (2026-11-15) for milestones to be worked through
+continuously: each one is validated, committed and pushed, and manual checks are collected in the
+README for the owner to run.
 
 Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 
@@ -9,7 +11,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 |---|---|---|---|
 | 1 | Runnable application foundation | — | ✅ |
 | 2 | Early networking architecture proof | 1 | 🔶 awaiting manual test |
-| 3 | Basic runtime map editing | 1 | ⬜ |
+| 3 | Basic runtime map editing | 1 | 🔶 awaiting manual test |
 | 4 | Basic FPS mechanics | 1 | ⬜ |
 | 5 | Competitive match rules | 4 | ⬜ |
 | 6 | Individual combat and navigation AI | 3, 4 | ⬜ |
@@ -68,10 +70,30 @@ Completion criteria:
 Out of scope (later): saving the world, calendar advancement, the career host choosing the match
 host, spectating, server-authoritative movement.
 
-## Milestone 3 — Basic runtime map editing
+## Milestone 3 — Basic runtime map editing 🔶
 
-Place/select/move/rotate/delete modular blocks with snapping, undo/redo, save/load a versioned map
-document, and "Playtest" that loads the map into the FPS runtime.
+Completion criteria:
+
+- [x] Versioned map document (`f2f.map` v1) with stable map and piece IDs; strict loading rejects
+      unknown formats, versions and piece types.
+- [x] Piece catalog: floor, wall, block, pillar, ramp, stairs, props, attacker/defender spawns,
+      bombsite, buy zone, callout.
+- [x] One `MapBuilder` builds the same document for the editor and the FPS runtime.
+- [x] Creation Studio: palette, ghost preview, place / select / drag-move / rotate / duplicate /
+      delete, snap sizes, build height, inspector editing of position, rotation, size and props.
+- [x] Undo/redo for every edit (a drag is a single step); dirty tracking and unsaved-change prompts.
+- [x] Save / open / delete maps in `user://maps` with atomic writes and a `.bak` backup.
+- [x] Validator with errors (block playtest) and warnings (advisory).
+- [x] Playtest loads the map into the FPS runtime and returns to the editor with unsaved work,
+      the file path and the camera intact.
+- [x] The FPS Sandbox arena is itself a map document (`MapTemplates.sandbox_arena`) and can be
+      opened and edited as a template.
+- [x] Automated tests: document, validator, storage, controller (incl. leak check), physics
+      geometry of ramps/stairs/platforms, studio editing, playtest round trip.
+- [ ] Manual editor walkthrough (README) completed by the project owner.
+
+Out of scope (later): multi-select, free rotation, custom materials, lighting tools, navmesh
+baking, tactical markers beyond spawns/sites, map sharing.
 
 ## Milestone 4 — Basic FPS mechanics
 
@@ -88,3 +110,4 @@ crouch, simple target dummies.
 |---|---|
 | 2026-11-15 | Milestone 1 implemented; automated checks passing; awaiting manual acceptance. |
 | 2026-11-15 | Milestone 1 accepted. Milestone 2 implemented; automated checks passing; awaiting manual two-instance test. |
+| 2026-11-15 | Owner asked for continuous milestone work. Milestone 3 implemented; 234 automated checks passing; awaiting manual editor walkthrough. |

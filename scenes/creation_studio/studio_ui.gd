@@ -8,6 +8,7 @@ signal open_requested
 signal save_requested
 signal validate_requested
 signal playtest_requested
+signal tactics_requested
 signal main_menu_requested
 signal undo_requested
 signal redo_requested
@@ -201,6 +202,7 @@ func _build_top_bar() -> Control:
 	_toolbar_button(row, "Validate", validate_requested.emit, "Check the map for problems")
 	playtest_button = _toolbar_button(row, "▶ Playtest", playtest_requested.emit, "Play this map in first person (F5)")
 	playtest_button.theme_type_variation = &"AccentButton"
+	_toolbar_button(row, "Tactics", tactics_requested.emit, "Author five-player routes for the saved map")
 
 	var snap_label := UIFactory.label("Snap", &"MutedLabel")
 	snap_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER

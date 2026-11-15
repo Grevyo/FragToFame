@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 9 career templates and local bot practice. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 8 Tactical Play Creator, career templates and local bot practice. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -75,6 +75,23 @@ Weapons, numbers and names are original development values and will be tuned.
 
 Maps are saved to `%APPDATA%\Godot\app_userdata\Frag to Fame\maps\*.f2fmap.json`
 (the previous version is kept as `.bak`).
+
+### Tactical Play Creator
+
+Open a saved map in **Creation Studio** and select **Tactics**. The tool uses the map's saved
+revision. To try it on the sandbox arena, open the template and save the resulting map first.
+
+1. Select a player from **Player 1–5**, choose **Set start**, and click a walkable surface.
+2. Choose **Add waypoint** and click the route points in traversal order. The map shows coloured
+   routes and numbered markers for the selected player. To relocate a point, select it in the
+   list, choose **Move selected point**, and click its new position. **Remove selected waypoint**
+   deletes the selected waypoint. A player without waypoints holds at their start.
+3. Name the tactic and press **Save**. To reopen it, load the same saved map and use **Tactics →
+   Open**. Tactics live under `user://tactics` as `*.f2ftactic.json`. Re-saving also keeps the previous
+   tactic as `.bak`.
+4. Press **Preview** to spawn the five navigation bots, then watch their progress in the sidebar.
+   **Stop** removes them. **Preview** starts again at the authored positions. Unreachable points
+   are reported per player. **Map Creator** returns to the saved map.
 
 ## Testing
 
@@ -264,6 +281,20 @@ Known limits: bots do not coordinate as a team yet (M7), there is no audio so bo
 you, and there are no grenades/utility. On the open sandbox arena both teams can see each other
 from spawn, so rounds often start with a long-range fight.
 
+### Manual test checklist (Milestone 8 — tactical route authoring)
+
+- [ ] Open a saved map, switch to **Tactics**, and place all five starts and several waypoints
+      for each player. Check that the selected slot, numbered points and coloured routes agree.
+- [ ] Move a waypoint and delete another. Add its replacement and verify the displayed order.
+- [ ] Save, quit, relaunch and reopen the map and tactic. Start preview, watch all five bots
+      attempt their routes, then stop and replay from the starts.
+- [ ] Edit and save the tactic again. Reopen it and verify the edits and route order.
+- [ ] Try an unreachable surface and confirm the affected slot reports the issue. Return to Map
+      Creator, save a new map revision, and try opening the old tactic. Check that the editor
+      reports the mismatch and the tactic file is preserved.
+- [ ] Return to Map Creator and use normal map selection, save/open and FPS playtest. Try leaving
+      Tactical Play Creator with unsaved edits and verify the discard prompt.
+
 ## Project layout
 
 ```
@@ -277,6 +308,7 @@ src/maps      Map document format, builder, validator, storage, edit controller
 src/combat    Weapons, spread/recoil, damage, health, armour, hitboxes, hitscan, shooting tally
 src/rules     Competitive rules: MatchRules (format/economy data), ShopCatalog, MatchState
 src/ai        Bot AI: navmesh baking, skills, aim model, BotController (individual combat)
+src/tactics   Versioned, map-bound tactic documents, save/open and navigation preview
 src/orchestration  MatchSetup / MatchResult contracts
 src/net       career_sync (career host) and match (in-match netcode), kept separate
 scenes/       main_menu, career_select, career_hub (+pages), fps_sandbox, creation_studio

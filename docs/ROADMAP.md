@@ -16,7 +16,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 5 | Competitive match rules | 4 | 🔶 awaiting manual test |
 | 6 | Individual combat and navigation AI | 3, 4 | 🔶 awaiting manual test |
 | 7 | Tactical team AI and IGL | 5, 6, 8, 9 | ⬜ |
-| 8 | Tactical Play Creator | 3, 6 | ⬜ |
+| 8 | Tactical Play Creator | 3, 6 | 🔶 awaiting manual test |
 | 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
 | 10 | Career fixtures and playable match integration | 5, 9 | ⬜ |
 | 11 | Detailed statistics | 5, 10 | ⬜ |
@@ -218,6 +218,22 @@ Planned scope:
 - Tests: plan selection, role assignment, economy decisions, calls → bot goals, a scene match
   where an execute happens as a group.
 
+## Milestone 8 — Tactical Play Creator 🔶
+
+- [x] Switch from Map Creator into tactical mode on a saved map. Reuse the existing map geometry
+      and camera, and keep editing and preview local to Creation Studio.
+- [x] Place five labelled starts. Add, move and remove ordered waypoints with distinct route
+      markers for each player.
+- [x] Save and reopen a versioned tactic with a stable ID and the source map ID, revision and
+      fingerprint. Refuse incompatible maps and malformed or unsupported tactic documents.
+- [x] Run, stop and restart a five-bot route preview with per-slot progress and unreachable-waypoint
+      feedback, using the existing navmesh and bot movement.
+- [x] Headless tests cover authoring, saving, reopening, revision checks, editing and bot routes.
+- [ ] Owner walkthrough in the README, including a game relaunch and viewport editing.
+
+M7 consumes these authored routes. Tactical roles, utility, triggers, adaptive calls and career
+integration are outside this slice.
+
 ## Milestone 9 — Persistent player/team database 🔶
 
 **Goal:** Every career is a persistent, safe SQLite world of original organisations and
@@ -275,3 +291,4 @@ saves from the UI.
 | 2026-11-15 | Milestone 6 implemented; 514 automated checks passing; awaiting manual 5v5 bot practice match. Order changed: M9 → M8 → M7 next. |
 | 2026-11-15 | Career database = SQLite (owner). Milestone 9 implemented; 614 automated checks passing; awaiting manual career walkthrough. |
 | 2026-11-15 | M9 stabilisation verified on Godot 4.7.2 with 663 automated checks. World-template creation, backup and restore failures, reconnect isolation, practice pause and replay, and content replacement covered. Manual acceptance remains open. |
+| 2026-11-15 | M8 implemented and the full Godot 4.7.2 validation passed with 700 checks, including 37 tactic checks. Manual acceptance remains open. |

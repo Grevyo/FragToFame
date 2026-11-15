@@ -18,6 +18,7 @@ var snap_size: float = 1.0
 ## Height of the build plane used when the cursor is not over a solid piece.
 var build_level: float = 0.0
 var current_path: String = ""
+var tactic_editor: TacticEditor
 
 var _drag_active: bool = false
 var _drag_before: Dictionary = {}
@@ -79,6 +80,7 @@ func _connect_ui() -> void:
 	ui.save_requested.connect(save_map)
 	ui.validate_requested.connect(_show_validation)
 	ui.playtest_requested.connect(playtest)
+	ui.tactics_requested.connect(open_tactic_editor)
 	ui.main_menu_requested.connect(func() -> void: _guard_unsaved(func() -> void: App.go_to(App.SCENE_MAIN_MENU)))
 	ui.undo_requested.connect(func() -> void: controller.undo())
 	ui.redo_requested.connect(func() -> void: controller.redo())
@@ -177,6 +179,35 @@ func playtest() -> bool:
 	return true
 
 
+## Uses the loaded saved revision so every tactic can be reopened against a known map.
+func open_tactic_editor() -> bool:
+	if tactic_editor != null:
+		return true
+	var saved := storage.load_path(current_path) if not current_path.is_empty() else null
+	if saved == null or controller.is_dirty() or TacticDocument.fingerprint(saved) != TacticDocument.fingerprint(controller.document):
+		ui.show_message("Save the map first", "Save or open a saved map before entering Tactical Play Creator.")
+		return false
+	_cancel_drag()
+	controller.select("")
+	cursor.hide()
+	ghost.hide()
+	ui.hide()
+	tactic_editor = TacticEditor.new()
+	tactic_editor.bind(saved, camera, view)
+	tactic_editor.map_creator_requested.connect(close_tactic_editor)
+	tactic_editor.main_menu_requested.connect(func() -> void: App.go_to(App.SCENE_MAIN_MENU))
+	ui.get_parent().add_child(tactic_editor)
+	return true
+
+
+func close_tactic_editor() -> void:
+	if tactic_editor != null:
+		tactic_editor.hide()
+		tactic_editor.close_editor()
+		tactic_editor = null
+	ui.show()
+
+
 # --- tools --------------------------------------------------------------------------------------
 
 func _set_tool(new_tool: StudioUI.Tool) -> void:
@@ -234,6 +265,8 @@ func place_at(world_position: Vector3) -> String:
 
 
 func _process(_delta: float) -> void:
+	if tactic_editor != null:
+		return
 	var mouse := get_viewport().get_mouse_position()
 	_hover_point = null if camera.is_looking else placement_point(mouse)
 	cursor.visible = _hover_point != null and tool == StudioUI.Tool.SELECT
@@ -251,6 +284,8 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if tactic_editor != null:
+		return
 	var button := event as InputEventMouseButton
 	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
 		if button.pressed:

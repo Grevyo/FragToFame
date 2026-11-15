@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–6, 9)
+## 2. Current implementation (Milestones 1–6, 8, 9)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -163,6 +163,24 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   builds `App.playtest_map` instead of the default arena; "Return to editor" calls
   `App.end_playtest()` and the studio restores the session (document, path, dirty flag, camera).
   The runtime still only receives a document; it never reaches into the editor.
+
+### Tactical Play Creator (Milestone 8)
+
+Tactical mode lives inside Creation Studio. It uses the existing camera and `MapEditorView`
+geometry for input raycasts and navigation. The saved map stays read-only while in this mode.
+The editor draws colour-coded start/waypoint markers and route lines and keeps selection and
+unfinished edits in memory.
+
+`TacticDocument` serialises `f2f.tactic` version 1 as JSON. It stores a tactic ID and name, map ID,
+map revision, a SHA-256 fingerprint of the canonical map data and exactly five ordered player
+slots. Each slot has an explicit number, start XYZ and an ordered waypoint array. A missing map,
+a mismatched revision or changed fingerprint prevents opening the tactic. `TacticStorage`
+publishes verified staged files in `user://tactics` and retains the previous file as `.bak`.
+
+The preview bakes the current map colliders with `NavigationBuilder` and assigns subsequent
+goals to `BotController` instances as each waypoint is reached. Each bot uses world collision,
+with combat and inter-player collision excluded from preview. Progress and unreachable points are
+reported per slot. The same route data can be consumed by future M7 play execution.
 
 ### Combat (Milestone 4)
 
@@ -312,7 +330,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
 | Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
-| Tactical Play Creator **(planned)** | Routes, roles, utility, triggers, playbooks | Produces tactic documents consumed by Tactical AI. |
+| Tactical Play Creator **(M8)** | Five starts, ordered routes, editing, persistence and preview | Tactic documents are bound to saved map revisions. Roles, utility, triggers and playbooks are later work. |
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |
 | Co-op career sync **(proof)** | Career host authority, client requests, calendar sync | Raw ENet message protocol; see Networking above. Calendar sync not yet. |
 | Match netcode **(proof)** | Listen server on a player's PC, player state sync | `MatchSession`; position + facing only. |

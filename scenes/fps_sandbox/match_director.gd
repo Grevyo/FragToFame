@@ -63,6 +63,8 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	player.weapons.shooter_id = local_player_id
 	player.health.owner_id = local_player_id
 	state.add_player(local_player_id, "You", MatchState.HOME, true)
+	player.weapons.shot_attempted.connect(state.record_shot.bind(local_player_id))
+	player.health.damaged.connect(state.record_damage.bind(local_player_id))
 	if opponents == OPPONENTS_BOTS:
 		var skill := StringName(str(options.get("skill", "normal")))
 		squad = BotSquad.new(self, skill)
@@ -72,6 +74,9 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 		player.set_team(BotSquad.TEAM_KEYS[MatchState.HOME])
 		level.build_navigation()
 		squad.spawn_bots()
+		for bot: BotController in squad.bots.values():
+			bot.weapons.shot_attempted.connect(state.record_shot.bind(bot.bot_id))
+			bot.health.damaged.connect(state.record_damage.bind(bot.bot_id))
 		if bool(options.get("career_fixture", false)):
 			hud.set_notice("%s · MR%d · vs %s" % [setup.competition, setup.max_rounds, setup.away_team_name])
 		elif not setup.away_lineup.is_empty():
@@ -338,6 +343,7 @@ func _place_combatants() -> void:
 		level.add_child(dummy)
 		dummy.health.armour = state.get_player(id).armour
 		dummy.health.has_helmet = state.get_player(id).helmet
+		dummy.health.damaged.connect(state.record_damage.bind(id))
 		dummy.health.died.connect(_on_combatant_died.bind(dummy))
 		combatants[id] = dummy
 

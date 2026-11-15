@@ -55,11 +55,28 @@ static func record_result(repo: CareerRepository, player_id: String, result: Mat
 				return true
 			rejected.append("This fixture already has a different final score.")
 			return false
-		return repo.store_fixture_result(result) \
-			and repo.set_current_day(maxi(repo.current_day(), fixture.scheduled_day + 1)))
+		var totals: Dictionary[String, Dictionary] = {}
+		if not result.events.is_empty():
+			totals = MatchStatistics.calculate(result)
+			if totals.is_empty() or not _covers_lineups(fixture.setup, totals):
+				rejected.append("The match statistics do not match the scheduled fixture.")
+				return false
+		if not repo.store_fixture_result(result):
+			return false
+		if not totals.is_empty() and not repo.store_fixture_statistics(fixture, result, totals):
+			return false
+		return repo.set_current_day(maxi(repo.current_day(), fixture.scheduled_day + 1)))
 	if stored:
 		return ""
 	return rejected[0] if not rejected.is_empty() else "Could not save the result. Try again from the Career Hub."
+
+
+static func _covers_lineups(setup: MatchSetup, totals: Dictionary[String, Dictionary]) -> bool:
+	for lineup: Array[Dictionary] in [setup.home_lineup, setup.away_lineup]:
+		for player: Dictionary in lineup:
+			if not totals.has(str(player["player_id"])):
+				return false
+	return true
 
 
 static func _amateur_setup(repo: CareerRepository, human: CareerRecords.PlayerRecord, map_id: String) -> MatchSetup:

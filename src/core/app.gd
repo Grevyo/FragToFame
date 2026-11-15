@@ -7,7 +7,7 @@ extends Node
 signal scene_changed(scene_id: StringName)
 
 const VERSION: String = "0.1.0"
-const MILESTONE: String = "Milestone 10 — Playable Career Fixtures"
+const MILESTONE: String = "Milestone 11 — Match Statistics"
 
 const SCENE_MAIN_MENU: StringName = &"main_menu"
 const SCENE_CAREER_HUB: StringName = &"career_hub"

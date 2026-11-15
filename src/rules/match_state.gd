@@ -122,9 +122,11 @@ func add_player(id: String, display_name: String, team_index: int, is_human: boo
 func start() -> void:
 	if phase != Phase.WAITING:
 		return
+	var lineup: Dictionary[String, int] = {}
 	for player: PlayerState in players.values():
 		player.money = rules.start_money
-	_log("match_started", {"rules": rules.to_dict(), "fixture_id": setup.fixture_id})
+		lineup[player.id] = player.team
+	_log("match_started", {"rules": rules.to_dict(), "fixture_id": setup.fixture_id, "lineup": lineup})
 	_begin_round()
 
 
@@ -256,6 +258,24 @@ func buy(player_id: String, item_id: StringName) -> String:
 			player.has_kit = true
 	_log("purchase", {"player": player_id, "item": String(item_id), "cost": cost})
 	return ""
+
+
+## Captures a live shot before resolving damage, including misses.
+func record_shot(weapon_id: StringName, shooter_id: String) -> void:
+	var shooter := get_player(shooter_id)
+	if phase == Phase.LIVE and shooter != null and shooter.alive:
+		_log("shot", {"player": shooter_id, "weapon": String(weapon_id)})
+
+
+## Uses health actually lost after armour and overkill, before the death event fires.
+func record_damage(info: DamageInfo, victim_id: String) -> void:
+	if phase != Phase.LIVE or info.applied <= 0 or info.cause != DamageInfo.CAUSE_WEAPON:
+		return
+	var attacker := get_player(info.source_id)
+	var victim := get_player(victim_id)
+	if attacker != null and victim != null and attacker.team != victim.team:
+		_log("damage", {"player": attacker.id, "victim": victim_id, "hp": info.applied,
+			"weapon": String(info.weapon_id), "headshot": info.is_headshot()})
 
 
 ## Records a death. [param killer_id] may be empty (world) or the victim (suicide).
@@ -401,7 +421,7 @@ func _end_round(winner: int, reason: StringName) -> void:
 	last_round_winner = winner
 	last_round_reason = reason
 	_set_phase(Phase.ROUND_END, rules.round_end_delay)
-	_log("round_ended", {"winner": teams[winner].id, "reason": String(reason),
+	_log("round_ended", {"winner": teams[winner].id, "winner_team": winner, "reason": String(reason),
 		"score": [teams[HOME].score, teams[AWAY].score]})
 	round_ended.emit(winner, reason)
 
@@ -414,6 +434,7 @@ func _after_round() -> void:
 		_set_phase(Phase.MATCH_END, 0.0)
 		var final := result()
 		_log("match_ended", {"score": [final.home_score, final.away_score]})
+		final.events = events.duplicate(true)
 		match_ended.emit(final)
 		return
 	var played := rounds_played()

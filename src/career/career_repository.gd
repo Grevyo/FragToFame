@@ -390,6 +390,51 @@ func store_fixture_result(result: MatchResult) -> bool:
 		[result.submission_id, JSON.stringify(result.to_dict()), result.fixture_id])
 
 
+# --- Recorded match statistics and calculated ratings ------------------------------------------
+
+## Part of the same transaction as the score and calendar advance.
+func store_fixture_statistics(fixture: CareerFixture, result: MatchResult,
+		totals: Dictionary[String, Dictionary]) -> bool:
+	if not db.execute("INSERT INTO career_match_event VALUES (?, ?, ?);",
+			[result.fixture_id, MatchStatistics.EVENT_VERSION, JSON.stringify(result.events)]):
+		return false
+	for lineup: Array[Dictionary] in [fixture.setup.home_lineup, fixture.setup.away_lineup]:
+		for player: Dictionary in lineup:
+			var player_id := str(player["player_id"])
+			var counts := totals[player_id]
+			var keys := [result.fixture_id, player_id]
+			if not db.execute("INSERT INTO career_match_stat VALUES (?, ?, ?);", keys + [JSON.stringify(counts)]):
+				return false
+			if not db.execute("INSERT INTO career_match_rating VALUES (?, ?, ?, ?);",
+					keys + [MatchStatistics.RATING_VERSION, MatchStatistics.rating(counts)]):
+				return false
+	return true
+
+
+func performance_totals(player_id: String) -> Dictionary:
+	var stats_sql: PackedStringArray = ["COUNT(*) AS matches"]
+	for counter: String in MatchStatistics.COUNTERS:
+		stats_sql.append("COALESCE(SUM(json_extract(counts_json, '$.%s')), 0) AS %s" % [counter, counter])
+	return db.row("SELECT %s FROM career_match_stat WHERE player_id = ?;" % ", ".join(stats_sql), [player_id])
+
+
+## Recent recorded fixtures with per-match counts and their original rating version.
+func recent_performance(player_id: String, limit: int = 20) -> Array[Dictionary]:
+	var history: Array[Dictionary] = []
+	for row: Dictionary in db.rows("""SELECT f.*, s.counts_json, r.rating, r.formula_version
+			FROM career_match_stat s
+			JOIN career_fixture f ON f.id = s.fixture_id
+			JOIN career_match_rating r ON r.fixture_id = s.fixture_id AND r.player_id = s.player_id
+			WHERE s.player_id = ? ORDER BY f.scheduled_day DESC, f.id DESC LIMIT ?;""",
+			[player_id, limit]):
+		var fixture := CareerFixture.from_row(row)
+		var counts: Variant = JSON.parse_string(str(row["counts_json"]))
+		if fixture != null and fixture.result != null and counts is Dictionary:
+			history.append({"fixture": fixture, "counts": counts, "rating": float(row["rating"]),
+				"rating_version": int(row["formula_version"])})
+	return history
+
+
 # --- Competitions (definitions; scheduled and played from Milestone 13) ----------------------
 
 func insert_competition(competition: CompetitionRecord) -> bool:

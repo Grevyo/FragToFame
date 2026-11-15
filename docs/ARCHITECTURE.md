@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–6, 8–10)
+## 2. Current implementation (Milestones 1–6, 8–11)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -223,7 +223,7 @@ reported per slot. The same route data can be consumed by future M7 play executi
                                  ▼   │
                          MatchState (pure rules) ──► MatchResult ──► App.last_match_result
                                  │
-                                 └─► events[] (round-stamped log → statistics later)
+                                 └─► events[] (round-stamped log → career statistics)
 ```
 
 - **Pure rules.** `MatchState` has no nodes. The runtime tells it what happened; it decides round
@@ -261,8 +261,8 @@ reported per slot. The same route data can be consumed by future M7 play executi
 - **Schema versioning.** `CareerSchema.MIGRATIONS[n]` upgrades n → n+1; the version is SQLite's
   `user_version`. Opening an older save snapshots it first; a newer save is refused.
 - **Stat layers are separate tables:** `player_ability` (true, AI only — the repository refuses
-  humans), `player_perceived` (+ confidence), `player_reputation`; recorded statistics and
-  calculated ratings will be their own tables (M11).
+  humans), `player_perceived` (+ confidence), `player_reputation`; schema v4 adds separate
+  tables for raw events, derived counters and calculated match ratings.
 - **Content vs save data.** Catalogue IDs live in code. The shipped `data/databases/default.f2fdb`
   and imported standalone world databases are templates. `CareerStart` copies their stable
   identities, rosters and competition definitions into each new save. Template imports verify
@@ -298,6 +298,25 @@ and the in-memory result can be retried from Career Home.
 These fixtures use local 5v5 play and the existing individual bots. Career sync, world
 simulation and competition scheduling will build on later milestones. M7 remains deferred
 until representative maps and gameplay-relevant player traits are ready.
+
+### Recorded match statistics (Milestone 11)
+
+The match state records weapon attempts before hit resolution and actual enemy health damage
+before any lethal hit triggers a round end. Events include the participant IDs and team
+assignments, completed rounds, and objective actions. The FPS runtime sends the local event
+stream with its completion result. The existing score-only network packet remains compatible
+with the dev co-op proof.
+
+`MatchStatistics` derives per-player counts from live rounds. A damage assist credits the
+teammate who dealt the most damage above a 40 HP threshold. A trade credits a kill of the player
+who killed a teammate within five seconds. KAST includes kills, assists, survival and traded
+deaths. ADR uses applied HP after armour and overkill. First-shot accuracy measures each
+player's first shot of a round. A clutch attempt starts when a side is down to one player.
+
+The repository stores one versioned raw event stream per fixture, per-player counts, and
+per-player ratings calculated with an independently versioned formula. F2F rating v1 combines
+kills and damage per round with KAST and survival. Career totals combine counts across recorded
+matches before computing rates. Older score-only fixtures remain in Calendar.
 
 ### Bot AI (Milestone 6)
 
@@ -339,7 +358,7 @@ keycodes so WASD works on non-QWERTY layouts.
 
 | Module | Responsibility | Notes |
 |---|---|---|
-| Career world repository **(M9–10)** | Typed access to players, orgs, contracts and local fixtures | SQLite via `godot-sqlite` behind `CareerRepository`. Detailed statistics arrive in M11. |
+| Career world repository **(M9–11)** | Typed access to players, orgs, contracts, fixtures and recorded performance | SQLite via `godot-sqlite` behind `CareerRepository`. |
 | World progression & calendar **(partial, M10)** | Career fixture list and day advancement on a saved local result | World simulation and shared calendar coordination are planned. |
 | Identity & traits **(planned)** | Stable IDs, trait library, trait-conflict rules | Traits are data (resources/JSON) with effect hooks consumed by decision systems. |
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
@@ -347,7 +366,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Match orchestration **(local fixtures, M10)** | `MatchSetup` → FPS runtime → `MatchResult`, idempotent submission by fixture ID | The dev co-op proof uses `StubMatchRunner`. |
 | FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
 | Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
-| Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
+| Statistics **(M11)** | Versioned events, derived per-player counts and calculated ratings | Perceived/scouted values and reputation remain separate. |
 | Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
 | Tactical Play Creator **(M8)** | Five starts, ordered routes, editing, persistence and preview | Tactic documents are bound to saved map revisions. Roles, utility, triggers and playbooks are later work. |
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |

@@ -20,6 +20,9 @@ var home_score: int = 0
 var away_score: int = 0
 var rounds_played: int = 0
 var map_id: String = ""
+## Match telemetry accompanies local completion. The score packet stays small and compatible
+## with the dev co-op protocol. The career stores the event stream separately.
+var events: Array[Dictionary] = []
 
 
 static func create(fixture_id_value: String, home: int, away: int, source_value: String) -> MatchResult:

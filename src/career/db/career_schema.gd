@@ -8,10 +8,11 @@ extends RefCounted
 ##   player_ability     true simulated abilities (AI players only; never exists for humans)
 ##   player_perceived   what scouts / the public believe (every player, incl. humans)
 ##   player_reputation  career standing
-##   (recorded match statistics and calculated ratings arrive with Milestone 11)
+##   career_match_event / career_match_stat record what happened in playable fixtures.
+##   career_match_rating stores independent, versioned performance ratings.
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 3
+const CURRENT_VERSION: int = 4
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -130,6 +131,29 @@ const MIGRATIONS: Array[PackedStringArray] = [
 		);""",
 		"CREATE UNIQUE INDEX career_fixture_one_pending ON career_fixture(player_id) WHERE submission_id IS NULL;",
 		"CREATE INDEX career_fixture_calendar ON career_fixture(player_id, scheduled_day DESC, id DESC);",
+	],
+	# v4 — raw telemetry, derived counts and calculated ratings are separate layers.
+	[
+		"""CREATE TABLE career_match_event (
+			fixture_id TEXT PRIMARY KEY REFERENCES career_fixture(id),
+			format_version INTEGER NOT NULL,
+			events_json TEXT NOT NULL
+		);""",
+		"""CREATE TABLE career_match_stat (
+			fixture_id TEXT NOT NULL REFERENCES career_match_event(fixture_id),
+			player_id TEXT NOT NULL REFERENCES player(id),
+			counts_json TEXT NOT NULL,
+			PRIMARY KEY (fixture_id, player_id)
+		) WITHOUT ROWID;""",
+		"CREATE INDEX career_match_stat_player ON career_match_stat(player_id, fixture_id);",
+		"""CREATE TABLE career_match_rating (
+			fixture_id TEXT NOT NULL,
+			player_id TEXT NOT NULL,
+			formula_version INTEGER NOT NULL,
+			rating REAL NOT NULL,
+			PRIMARY KEY (fixture_id, player_id),
+			FOREIGN KEY (fixture_id, player_id) REFERENCES career_match_stat(fixture_id, player_id)
+		) WITHOUT ROWID;""",
 	],
 ]
 

@@ -6,6 +6,7 @@ extends Node
 ## [method select_slot] / [method request_reload]. The local player does this from the keyboard;
 ## bots will do it from AI. Presentation (tracers, viewmodel, sounds) listens to the signals.
 
+signal shot_attempted(weapon_id: StringName)
 signal shot_fired(origin: Vector3, end_position: Vector3, result: Hitscan.Result)
 signal target_hit(info: DamageInfo, target: Health, killed: bool)
 signal weapon_switched(state: WeaponState)
@@ -155,6 +156,8 @@ func step(delta: float) -> void:
 
 func _resolve_shot(state: WeaponState, offset: Vector2) -> void:
 	var definition := state.definition
+	# Record the attempt before damage can end the round.
+	shot_attempted.emit(definition.id)
 	var origin := eye.global_position
 	var direction := Hitscan.offset_direction(eye.global_basis, offset)
 	var space := eye.get_world_3d().direct_space_state

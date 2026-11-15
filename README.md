@@ -4,7 +4,7 @@ An original commercial PC game that combines an individual esports **player care
 **Football Manager-style** persistent world, and fully playable **tactical 5v5 first-person**
 matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Windows / Steam.
 
-> **Status:** Pre-alpha — Milestone 10 playable career fixtures. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Pre-alpha — Milestone 11 recorded match statistics. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documentation
 
@@ -305,6 +305,15 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Quit and reopen the career. The score and date persist. Scheduling another match creates
       a new fixture on the new date. Ordinary practice from Teams stays off the career calendar.
 
+### Manual test checklist (Milestone 11 — recorded statistics)
+
+- [ ] Play a career fixture. Take several shots, land hits and complete the match. Return to
+      **Career Hub → Statistics** and check K-D-A, ADR, KAST, accuracy and the recent-match score.
+- [ ] Check the weapon breakdown and the performance rating on your player profile. Find an
+      AI opponent in the Players browser and verify their profile also shows the recorded match.
+- [ ] Reopen the career and confirm the recorded match remains visible. A practice match from
+      Teams leaves the statistics unchanged.
+
 ## Project layout
 
 ```
@@ -317,6 +326,7 @@ src/world     Shared 3D building blocks
 src/maps      Map document format, builder, validator, storage, edit controller
 src/combat    Weapons, spread/recoil, damage, health, armour, hitboxes, hitscan, shooting tally
 src/rules     Competitive rules: MatchRules (format/economy data), ShopCatalog, MatchState
+src/statistics  Round-event reduction, career counters and the F2F performance formula
 src/ai        Bot AI: navmesh baking, skills, aim model, BotController (individual combat)
 src/tactics   Versioned, map-bound tactic documents, save/open and navigation preview
 src/orchestration  MatchSetup / MatchResult contracts

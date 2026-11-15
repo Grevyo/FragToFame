@@ -19,7 +19,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 8 | Tactical Play Creator | 3, 6 | 🔶 awaiting manual test |
 | 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
 | 10 | Career fixtures and playable match integration | 5, 9 | 🔶 awaiting manual test |
-| 11 | Detailed statistics | 5, 10 | ⬜ |
+| 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | ⬜ |
 | 13 | Competition and tournament systems | 9, 10 | ⬜ |
 | 14 | World progression, transfers, rookies, retirement | 12, 13 | ⬜ |
@@ -294,8 +294,25 @@ saves from the UI.
       retry, duplicate and conflicting results, and calendar display.
 - [ ] Manual walkthrough of a complete fixture using the README checklist.
 
-Later milestones cover detailed ratings, league schedules and standings, AI-only world
-simulation, production map rotation and multiplayer fixture hosting.
+Later milestones cover league schedules and standings, AI-only world simulation,
+production map rotation and multiplayer fixture hosting.
+
+## Milestone 11 — Detailed match statistics 🔶
+
+- [x] Capture live-round weapon attempts, actual health damage, kills, objective events and
+      round outcomes for the human and AI players using their match IDs.
+- [x] Derive K-D-A, KAST, damage per round, weapon and first-shot accuracy, headshot kills,
+      openers, trades, clutch attempts and wins by opponent count, and plants and defuses.
+- [x] Store raw events, derived counts and versioned F2F ratings separately in schema v4.
+      Commit all three with the fixture score and calendar date in one transaction.
+- [x] Show recorded match history, rating, aggregate statistics and recent weapon breakdown in
+      Career Hub. Player profiles also show recorded match count and performance rating.
+- [x] Tests cover live weapon capture, contextual counters, round normalisation, persistence
+      and rollback. Results from older saves retain their scores.
+- [ ] Play a career fixture and review the displayed statistics in Godot.
+
+Utility effects, detailed role and situation ratings, and simulated AI-only match telemetry
+depend on the corresponding gameplay and world simulation systems.
 
 ---
 
@@ -313,3 +330,4 @@ simulation, production map rotation and multiplayer fixture hosting.
 | 2026-11-15 | M9 stabilisation verified on Godot 4.7.2 with 663 automated checks. World-template creation, backup and restore failures, reconnect isolation, practice pause and replay, and content replacement covered. Manual acceptance remains open. |
 | 2026-11-15 | M8 implemented and the full Godot 4.7.2 validation passed with 700 checks, including 37 tactic checks. Manual acceptance remains open. |
 | 2026-11-15 | Owner deferred M7 pending representative maps and gameplay-relevant player traits. M10 implemented and validated on Godot 4.7.2 with 732 passing checks. Manual fixture walkthrough remains open. |
+| 2026-11-15 | M11 records career match telemetry, statistics and F2F ratings. Godot 4.7.2 validation passed 748 checks. Manual acceptance remains open. |

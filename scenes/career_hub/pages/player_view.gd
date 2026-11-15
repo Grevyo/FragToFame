@@ -37,12 +37,16 @@ static func build(parent: Control, repo: CareerRepository, player_id: String, st
 
 	var standing := UIFactory.card(row, "Standing")
 	var reputation := repo.reputation(player.id)
+	var counts := repo.performance_totals(player.id)
+	var recorded_matches := int(counts.get("matches", 0))
 	var standing_rows: Array[PackedStringArray] = [
 		PackedStringArray(["Reputation", "%s (%d)" % [CareerCatalog.reputation_label(reputation), reputation]]),
 		PackedStringArray(["Perceived rating", str(repo.perceived_rating(player.id))]),
 		PackedStringArray(["Scouting confidence", "%d%%" % repo.perceived_confidence(player.id)]),
-		PackedStringArray(["Match statistics", "Recorded from Milestone 11"]),
+		PackedStringArray(["Recorded matches", str(recorded_matches)]),
 	]
+	if recorded_matches > 0:
+		standing_rows.append(PackedStringArray(["F2F performance rating", "%.2f" % MatchStatistics.rating(counts)]))
 	UIFactory.key_value_grid(standing, standing_rows)
 	var trait_list := repo.traits(player.id)
 	if not trait_list.is_empty():

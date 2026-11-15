@@ -39,12 +39,15 @@ func _run_fixture_flow() -> void:
 	var player_id := session.human_player_id
 
 	# Restore the fixture-free M9 schema on the disposable database, then load normally.
-	check(session.repo.db.execute("DROP TABLE career_fixture;") and session.repo.db.set_user_version(2),
+	check(session.repo.db.execute("DROP TABLE career_match_rating;")
+		and session.repo.db.execute("DROP TABLE career_match_stat;")
+		and session.repo.db.execute("DROP TABLE career_match_event;")
+		and session.repo.db.execute("DROP TABLE career_fixture;") and session.repo.db.set_user_version(2),
 		"prepares an existing v2 career")
 	var backups_before := _saves.backups(_save_id).size()
 	problem = _app.call("load_career", _save_id)
 	session = _app.get("career") as CareerSession
-	check(problem.is_empty() and session != null and session.repo.db.user_version() == 3
+	check(problem.is_empty() and session != null and session.repo.db.user_version() == CareerSchema.CURRENT_VERSION
 		and session.human_player_id == player_id and _saves.backups(_save_id).size() == backups_before + 1,
 		"opening v2 preserves the career and snapshots before adding fixtures")
 	if not problem.is_empty():
@@ -133,6 +136,8 @@ func _run_fixture_flow() -> void:
 		"finishing a real rules-driven FPS match retains its result when writing fails")
 	check(session.repo.pending_fixture(player_id) != null and session.repo.current_day() == fixture.scheduled_day,
 		"calendar write failure rolls back both the result and day")
+	check(int(session.repo.performance_totals(player_id).get("matches", -1)) == 0,
+		"failed result publication also rolls back telemetry and ratings")
 	check(not director.hud.play_again_button.visible and director.hud.main_menu_button.text == "Return to Career Hub",
 		"career match completion offers return to the hub")
 	await wait_frames(2)
@@ -168,6 +173,22 @@ func _run_fixture_flow() -> void:
 	tree.current_scene.call("show_page", &"calendar")
 	await wait_frames(2)
 	check(_has_label(tree.current_scene, "6 – 0"), "Calendar displays the persisted final score")
+	var counts := session.repo.performance_totals(player_id)
+	var recorded_players := int(session.repo.db.scalar(
+		"SELECT COUNT(*) FROM career_match_stat WHERE fixture_id = ?;", [id], 0))
+	var raw_events := str(session.repo.db.scalar(
+		"SELECT events_json FROM career_match_event WHERE fixture_id = ?;", [id], ""))
+	check(int(counts["matches"]) == 1 and int(counts["rounds"]) == 6 and int(counts["kills"]) == 30
+		and recorded_players == 10 and raw_events.contains("round_ended"),
+		"raw events and calculated counts persist for both lineups")
+	var history := session.repo.recent_performance(player_id)
+	check(history.size() == 1 and float(history[0]["rating"]) > 0.0
+		and int(history[0]["rating_version"]) == MatchStatistics.RATING_VERSION,
+		"per-match performance rating occupies a separate versioned record")
+	tree.current_scene.call("show_page", &"statistics")
+	await wait_frames(2)
+	check(_has_label(tree.current_scene, "F2F RATING") and _has_label(tree.current_scene, "30-0-0"),
+		"Statistics displays the recorded fixture and calculated rating")
 	check(str(_app.call("schedule_career_fixture")).is_empty()
 		and session.repo.pending_fixture(player_id).scheduled_day == 1
 		and session.repo.pending_fixture(player_id).setup.fixture_id != id, "the next fixture is a new match on the next day")

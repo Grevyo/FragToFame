@@ -74,6 +74,12 @@ func run() -> void:
 	section("Practice match: round 1 elimination")
 	var live := await wait_until(func() -> bool: return state.phase == MatchState.Phase.LIVE, 2.0)
 	check(live and not player.frozen, "round goes live and the player can move")
+	player.weapons.trigger = true
+	player.weapons.step(0.1)
+	player.weapons.trigger = false
+	var fired := state.events.any(func(event: Dictionary) -> bool:
+		return event.get("type") == "shot" and event.get("player") == MatchDirector.HUMAN_ID)
+	check(fired, "actual weapon fire is captured before damage")
 	for dummy: TargetDummy in director.combatants.values():
 		_shoot(dummy.health, WeaponCatalog.KESTREL_PISTOL)
 	check(state.phase == MatchState.Phase.ROUND_END and state.teams[MatchState.HOME].score == 1,
@@ -128,6 +134,10 @@ func run() -> void:
 	var result := app.get("last_match_result") as MatchResult
 	check(result != null and result.home_score == 3 and result.away_score == 1 and result.validate() == "",
 		"a valid MatchResult is produced")
+	var recorded := MatchStatistics.calculate(result)
+	var human_counts: Dictionary = recorded.get(MatchDirector.HUMAN_ID, {})
+	check(human_counts.get("damage", -1) == 200 and human_counts.get("rounds", -1) == 4
+		and human_counts.get("defuses", -1) == 1, "finished telemetry captures applied health damage and objectives")
 	check(director.hud.end_panel.visible and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
 		"match-end screen shown with a free cursor")
 	check(director.hud.play_again_button.pressed.get_connections().size() > 0, "play again is wired")

@@ -263,7 +263,7 @@ keycodes so WASD works on non-QWERTY layouts.
 
 | Module | Responsibility | Notes |
 |---|---|---|
-| Career world repository **(planned)** | Typed access to players, orgs, contracts, fixtures | SQLite via a GDExtension (evaluate `godot-sqlite`) once data volume justifies it; JSON documents before that. Versioned schema + migrations. |
+| Career world repository **(planned, M9)** | Typed access to players, orgs, contracts, fixtures, stats | **SQLite from the start** via the `godot-sqlite` GDExtension, behind a typed repository API (no SQL outside `src/career/`). Versioned schema + migrations. |
 | World progression & calendar **(planned)** | Day-by-day advancement, blocking on unresolved fixtures | Pure logic, deterministic given seed + inputs. |
 | Identity & traits **(planned)** | Stable IDs, trait library, trait-conflict rules | Traits are data (resources/JSON) with effect hooks consumed by decision systems. |
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
@@ -296,7 +296,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Theme generated in code (`F2FTheme`) rather than a `.tres` | Single source of truth for palette; easy to review |
 | 2026-11-15 | Input actions registered at runtime with physical keycodes | Readable, layout-independent, rebinding-friendly |
 | 2026-11-15 | Sandbox level built from `BlockBuilder` boxes | Same primitive vocabulary the map editor will use |
-| 2026-11-15 | Defer SQLite until the career database milestone | Avoid a GDExtension dependency before it pays for itself |
+| 2026-11-15 | Defer SQLite until the career database milestone | Avoid a GDExtension dependency before it pays for itself (superseded below: SQLite from M9) |
 | 2026-11-15 | Career sync = raw ENet peer + versioned dictionary messages, no RPC | Transactional, testable, version-checkable; cannot become entangled with scene-tree RPCs |
 | 2026-11-15 | Match netcode = SceneMultiplayer on its own tree branch | Native RPCs for real-time play; branch isolation lets host and client (and tests) coexist in one process |
 | 2026-11-15 | Career host connects to itself as a client | One code path for every human, fewer host-only bugs |
@@ -322,3 +322,4 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Navmesh max climb = one cell | Bodies have no step-up; routing over ledges stranded bots |
 | 2026-11-15 | Objective play in a thin `BotSquad`, replaced in M7 | Bot matches are playable now without pre-empting the team-tactics design |
 | 2026-11-15 | Practice defaults to bots; passive targets stay as an option | Rules tests remain deterministic; players get real opponents |
+| 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

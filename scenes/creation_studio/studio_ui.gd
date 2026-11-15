@@ -26,6 +26,7 @@ const SNAP_SIZES: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
 const DEFAULT_SNAP_INDEX: int = 2
 const SITES: Array[String] = ["A", "B", "C"]
 const TEAMS: Array[String] = ["attack", "defence"]
+const DUMMY_MOTIONS: Array[String] = ["static", "strafe"]
 const ROTATIONS: Array[int] = [0, 90, 180, 270]
 
 var undo_button: Button
@@ -414,6 +415,9 @@ func _build_piece_properties(piece: Dictionary) -> void:
 		"buy_zone":
 			_inspector.add_child(UIFactory.label("TEAM", &"SectionLabel"))
 			_option_prop("team", TEAMS, str(props.get("team", "attack")))
+		"target_dummy":
+			_inspector.add_child(UIFactory.label("MOTION", &"SectionLabel"))
+			_option_prop("motion", DUMMY_MOTIONS, str(props.get("motion", "static")))
 		"callout":
 			var name_edit := _line_field("Callout name", str(props.get("name", "")))
 			var submit := func() -> void: _edit_prop("name", name_edit.text.strip_edges())

@@ -12,7 +12,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 1 | Runnable application foundation | — | ✅ |
 | 2 | Early networking architecture proof | 1 | 🔶 awaiting manual test |
 | 3 | Basic runtime map editing | 1 | 🔶 awaiting manual test |
-| 4 | Basic FPS mechanics | 1 | ⬜ |
+| 4 | Basic FPS mechanics | 1 | 🔶 awaiting manual test |
 | 5 | Competitive match rules | 4 | ⬜ |
 | 6 | Individual combat and navigation AI | 3, 4 | ⬜ |
 | 7 | Tactical team AI and IGL | 5, 6 | ⬜ |
@@ -95,10 +95,37 @@ Completion criteria:
 Out of scope (later): multi-select, free rotation, custom materials, lighting tools, navmesh
 baking, tactical markers beyond spawns/sites, map sharing.
 
-## Milestone 4 — Basic FPS mechanics
+## Milestone 4 — Basic FPS mechanics 🔶
 
-Hitscan weapon with original stats, recoil pattern, spread, damage, health, death/respawn,
-crouch, simple target dummies.
+Completion criteria:
+
+- [x] Three original weapons (VK-12 Vanta rifle, P-4 Kestrel pistol, M-5 Wasp SMG) defined as data
+      in `WeaponCatalog`: damage, fire rate, magazine/reserve, reload/draw time, falloff, spread,
+      bloom, fixed recoil pattern, recovery.
+- [x] `WeaponState`: pure, deterministic (seeded) simulation of cadence, semi/auto, ammo, reload,
+      bloom, movement/air/crouch spread and recoil with recovery.
+- [x] Hitscan shots on dedicated physics layers (world / characters / hitboxes); per-zone damage
+      (head ×4, stomach ×1.25, chest ×1, arms ×0.9, legs ×0.75) with range falloff.
+- [x] `Health` component with damage/death/revive events; `DamageInfo` event data; `CombatTally`
+      for recorded shooting numbers.
+- [x] Player crouch (smaller capsule, lower eye, slower, more accurate, cannot stand under
+      ceilings), death (falling out of the world) and timed respawn with refilled ammo.
+- [x] Target dummies with hitboxes, damage numbers, elimination and respawn, optional strafing,
+      placeable in the editor as a Training piece.
+- [x] HUD: dynamic crosshair, hit marker, weapon/ammo/reload, health, training stats, kill feed,
+      death overlay. Viewmodel, muzzle flash, tracers and impact marks.
+- [x] Automated tests: catalog, damage, cadence, reload, spread, recoil, health, hitscan maths,
+      tally, and a scene test that shoots dummies, walls, crouches and respawns.
+- [ ] Manual feel test (README) by the project owner.
+
+Out of scope (later): armour, penetration, buying and economy (M5), sounds (no audio assets yet),
+networked damage / server-authoritative hits (with match rules), player hitboxes for bots (M6),
+grenades and utility, scoped weapons, fall damage.
+
+## Milestone 5 — Competitive match rules
+
+Rounds, teams, economy (money, buying, armour), bomb plant/defuse on bombsites, round win
+conditions, half-time switch, overtime, match end producing a `MatchResult`.
 
 *(Later milestones are elaborated when they become next-up.)*
 
@@ -111,3 +138,4 @@ crouch, simple target dummies.
 | 2026-11-15 | Milestone 1 implemented; automated checks passing; awaiting manual acceptance. |
 | 2026-11-15 | Milestone 1 accepted. Milestone 2 implemented; automated checks passing; awaiting manual two-instance test. |
 | 2026-11-15 | Owner asked for continuous milestone work. Milestone 3 implemented; 234 automated checks passing; awaiting manual editor walkthrough. |
+| 2026-11-15 | Milestone 4 implemented; 340 automated checks passing; awaiting manual feel test. |

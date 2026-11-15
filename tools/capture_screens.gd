@@ -39,6 +39,20 @@ func _run() -> void:
 	await _shot("05_fps_sandbox_paused")
 	current_scene.call("resume")
 	await _shot("06_fps_sandbox")
+	var player := current_scene.get_node("Player") as FirstPersonController
+	var level := current_scene.get_node("Level") as SandboxLevel
+	player.input_enabled = false
+	player.face_point(level.dummies[0].zone_position(DamageModel.ZONE_CHEST))
+	player.weapons.trigger = true
+	for i: int in 3:
+		await physics_frame
+	await _shot("07_fps_firing")
+	player.weapons.trigger = false
+	player.wants_crouch = true
+	for i: int in 30:
+		await physics_frame
+	player.face_point(level.dummies[1].zone_position(DamageModel.ZONE_HEAD))
+	await _shot("08_fps_crouched_far_target")
 	quit(0)
 
 

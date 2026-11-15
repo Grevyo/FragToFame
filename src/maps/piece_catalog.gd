@@ -5,7 +5,8 @@ extends RefCounted
 ## kind:
 ##   "block"   solid box            "ramp"   solid wedge rising toward local -Z
 ##   "stairs"  visual steps rising toward local -Z, walked on via a hidden slope
-##   "marker"  gameplay point (spawns) — invisible in matches
+##   "marker"  gameplay point (spawns, training targets) — invisible as geometry in matches;
+##             the FPS runtime spawns its own entities (e.g. target dummies) from them
 ##   "zone"    gameplay volume (bombsite, buy zone, callout) — non-solid
 ##
 ## All pieces use a bottom-centre origin: position is the centre of the piece's footprint at
@@ -26,9 +27,10 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"bombsite": {"label": "Bombsite", "kind": "zone", "size": Vector3(6, 3, 6), "color": Color(0.95, 0.3, 0.3, 0.25), "resizable": true, "group": "Gameplay"},
 	"buy_zone": {"label": "Buy zone", "kind": "zone", "size": Vector3(8, 3, 8), "color": Color(0.25, 0.8, 0.4, 0.2), "resizable": true, "group": "Gameplay"},
 	"callout": {"label": "Callout area", "kind": "zone", "size": Vector3(6, 3, 6), "color": Color(0.85, 0.85, 0.95, 0.12), "resizable": true, "group": "Gameplay"},
+	"target_dummy": {"label": "Target dummy", "kind": "marker", "size": Vector3(0.6, 1.8, 0.6), "color": Color("c9b48a"), "resizable": false, "group": "Training"},
 }
 
-const GROUP_ORDER: Array[String] = ["Structure", "Props", "Gameplay"]
+const GROUP_ORDER: Array[String] = ["Structure", "Props", "Gameplay", "Training"]
 
 
 static func has_type(type: String) -> bool:

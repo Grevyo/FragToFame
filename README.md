@@ -34,9 +34,14 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | W A S D | Move |
 | Mouse | Look |
 | Space | Jump |
-| Shift (hold) | Walk (slower, quieter later) |
+| Shift (hold) | Walk (slower, more accurate, quieter later) |
+| Ctrl or C (hold) | Crouch (slower, more accurate; you stay crouched under low ceilings) |
+| Left click | Fire (or recapture the mouse if it was released) |
+| R | Reload |
+| 1 / 2 / 3 · mouse wheel | VK-12 Vanta rifle / P-4 Kestrel pistol / M-5 Wasp SMG · cycle |
 | Esc | Pause menu / release mouse (Esc again resumes) |
-| Left click | Recapture mouse if it was released |
+
+Weapons, numbers and names are original development values and will be tuned.
 
 **Creation Studio**
 
@@ -149,6 +154,27 @@ Ports: career sync **24560**, match **24570** (UDP).
       onto the platform. Esc → **Return to editor** brings back the map, unsaved edits and camera.
 - [ ] **FPS Sandbox** from the main menu still loads the default arena (not the last playtest).
 
+### Manual test checklist (Milestone 4 — FPS mechanics)
+
+- [ ] FPS Sandbox: four target dummies face the spawn (one close, one far behind low cover,
+      one strafing, one on the platform). A gun model is visible bottom right.
+- [ ] Left click fires: muzzle flash, tracer, a hit marker on hits, floating damage numbers on the
+      dummy (yellow-red for headshots), dark impact marks on walls. Ammo counts down.
+- [ ] Hold fire with the rifle: the spray climbs, then drifts left and right in the same pattern
+      every time; pulling the mouse down compensates. Releasing lets the view settle back.
+- [ ] The crosshair opens while running/jumping and tightens when still or crouched; first shots
+      while standing still land on the crosshair, running shots scatter.
+- [ ] One rifle headshot (or one close pistol headshot) eliminates a dummy: it tips over, the kill
+      feed and training stats update, and it stands back up after ~2.5 s.
+- [ ] **R** reloads (bar under the ammo); an empty magazine reloads on the next click.
+      Switching weapons cancels a reload and has a short draw delay; each weapon keeps its ammo.
+- [ ] Crouch lowers the view and slows you down. To check ceilings, place a block in the studio
+      raised 1.3 m (PgUp) over open floor, playtest, crouch under it and release: you stay crouched.
+- [ ] Jump off the arena (or fly off in a playtest map without walls): the ELIMINATED overlay
+      counts down and you respawn at the spawn with full health and ammo.
+- [ ] Creation Studio: the **Training → Target dummy** piece can be placed, set to *strafe* in the
+      inspector and shot at in Playtest.
+
 ## Project layout
 
 ```
@@ -157,6 +183,7 @@ src/ui        Theme builder, UI helpers
 src/career    Career-world data (currently dev sample data only)
 src/world     Shared 3D building blocks
 src/maps      Map document format, builder, validator, storage, edit controller
+src/combat    Weapons, spread/recoil, damage, health, hitboxes, hitscan, shooting tally
 src/orchestration  MatchSetup / MatchResult contracts
 src/net       career_sync (career host) and match (in-match netcode), kept separate
 scenes/       main_menu, career_hub (+pages), fps_sandbox, creation_studio

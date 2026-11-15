@@ -52,6 +52,8 @@ static func default_props(type: String) -> Dictionary:
 			return {"team": "attack"}
 		"spawn_defence":
 			return {"team": "defence"}
+		"target_dummy":
+			return {"motion": "static"}
 	return {}
 
 

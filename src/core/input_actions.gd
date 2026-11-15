@@ -17,6 +17,14 @@ const EDITOR_UP: StringName = &"editor_up"
 const EDITOR_DOWN: StringName = &"editor_down"
 const EDITOR_FAST: StringName = &"editor_fast"
 const EDITOR_RESET_VIEW: StringName = &"editor_reset_view"
+const FIRE: StringName = &"fire"
+const RELOAD: StringName = &"reload"
+const CROUCH: StringName = &"crouch"
+const WEAPON_1: StringName = &"weapon_1"
+const WEAPON_2: StringName = &"weapon_2"
+const WEAPON_3: StringName = &"weapon_3"
+const WEAPON_NEXT: StringName = &"weapon_next"
+const WEAPON_PREVIOUS: StringName = &"weapon_previous"
 
 
 static func register_defaults() -> void:
@@ -32,11 +40,20 @@ static func register_defaults() -> void:
 	_add_key(EDITOR_DOWN, KEY_Q)
 	_add_key(EDITOR_FAST, KEY_SHIFT)
 	_add_key(EDITOR_RESET_VIEW, KEY_F)
+	_add_mouse_button(FIRE, MOUSE_BUTTON_LEFT)
+	_add_key(RELOAD, KEY_R)
+	_add_keys(CROUCH, [KEY_CTRL, KEY_C])
+	_add_key(WEAPON_1, KEY_1)
+	_add_key(WEAPON_2, KEY_2)
+	_add_key(WEAPON_3, KEY_3)
+	_add_mouse_button(WEAPON_NEXT, MOUSE_BUTTON_WHEEL_DOWN)
+	_add_mouse_button(WEAPON_PREVIOUS, MOUSE_BUTTON_WHEEL_UP)
 
 
 static func all_actions() -> Array[StringName]:
 	return [MOVE_FORWARD, MOVE_BACK, MOVE_LEFT, MOVE_RIGHT, JUMP, WALK, PAUSE_MENU,
-		EDITOR_LOOK, EDITOR_UP, EDITOR_DOWN, EDITOR_FAST, EDITOR_RESET_VIEW]
+		EDITOR_LOOK, EDITOR_UP, EDITOR_DOWN, EDITOR_FAST, EDITOR_RESET_VIEW,
+		FIRE, RELOAD, CROUCH, WEAPON_1, WEAPON_2, WEAPON_3, WEAPON_NEXT, WEAPON_PREVIOUS]
 
 
 static func _ensure_action(action: StringName) -> bool:
@@ -51,6 +68,15 @@ static func _add_key(action: StringName, keycode: Key) -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = keycode
 	InputMap.action_add_event(action, event)
+
+
+static func _add_keys(action: StringName, keycodes: Array[Key]) -> void:
+	if not _ensure_action(action):
+		return
+	for keycode: Key in keycodes:
+		var event := InputEventKey.new()
+		event.physical_keycode = keycode
+		InputMap.action_add_event(action, event)
 
 
 static func _add_mouse_button(action: StringName, button: MouseButton) -> void:

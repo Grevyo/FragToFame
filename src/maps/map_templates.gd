@@ -16,7 +16,7 @@ static func sandbox_arena() -> MapDocument:
 	var doc := MapDocument.create("Sandbox Arena (dev)")
 	doc.map_id = "map_dev_sandbox_arena"
 	doc.author = "F2F development"
-	doc.description = "Movement test arena used by the FPS Sandbox."
+	doc.description = "Movement and shooting test arena used by the FPS Sandbox."
 	var s := 30.0
 	var h := 4.0
 	_add(doc, "floor", Vector3(0, -1, 0), 0, Vector3(s * 2, 1, s * 2))
@@ -46,6 +46,12 @@ static func sandbox_arena() -> MapDocument:
 	_add(doc, "bombsite", Vector3(-18, 0, -18), 0, Vector3(8, 3, 8), {"site": "B"})
 	_add(doc, "callout", Vector3(0, 0, 0), 0, Vector3(10, 3, 10), {"name": "Mid"})
 	_add(doc, "buy_zone", Vector3(0, 0, 22), 0, Vector3(12, 3, 10), {"team": "attack"})
+
+	# Training targets facing the attacker spawn: close, far (half behind low cover), strafing.
+	_add(doc, "target_dummy", Vector3(-6, 0, 4), 180)
+	_add(doc, "target_dummy", Vector3(4, 0, -14), 180)
+	_add(doc, "target_dummy", Vector3(-15, 0, -2), 180, Vector3.ZERO, {"motion": "strafe"})
+	_add(doc, "target_dummy", Vector3(14, 3, -7), 180)
 	return doc
 
 

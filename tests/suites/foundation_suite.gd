@@ -158,9 +158,12 @@ func _test_fps_sandbox() -> void:
 	check(hud.main_menu_button.pressed.get_connections().size() > 0, "return-to-menu button connected")
 	sandbox.call("resume")
 	check(sandbox.get("is_paused") == false and player.input_enabled, "resume re-enables player input")
+	sandbox.set("respawn_delay", 0.2)
 	player.global_position = Vector3(0, -40, 0)
 	await wait_physics_frames(2)
-	check(player.global_position.y > -1.0, "falling out of the world respawns the player")
+	check(player.health.is_dead, "falling out of the world kills the player")
+	var back := await wait_until(func() -> bool: return not player.health.is_dead, 2.0)
+	check(back and player.global_position.y > -1.0, "player respawns at the spawn after the delay")
 	await despawn(sandbox)
 
 

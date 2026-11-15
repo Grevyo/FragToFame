@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–3)
+## 2. Current implementation (Milestones 1–4)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -62,11 +62,15 @@ src/core/input_actions.gd       InputActions: action names + default bindings, r
   world/block_builder.gd      BlockBuilder: textured static box geometry helper
   maps/                       MAPS: PieceCatalog, MapDocument (f2f.map v1), MapBuilder,
                               MapValidator, MapStorage, MapTemplates, MapEditController
+  combat/                     COMBAT: WeaponDefinition/Catalog, WeaponState, ShooterMotion,
+                              DamageModel, DamageInfo, Health, Hitbox, Hitscan,
+                              WeaponController, CombatTally
 scenes/
   main_menu/                  Main menu (Career Hub / FPS Sandbox / Creation Studio / Quit)
   career_hub/career_hub.*     Sidebar + page host
   career_hub/pages/*.gd       One CareerPage subclass per section
-  fps_sandbox/                Map-driven level, first-person controller, HUD + pause overlay
+  fps_sandbox/                Map-driven level, first-person controller (crouch, health, weapons),
+                              target dummies, weapon effects/viewmodel, HUD + pause overlay
   creation_studio/            Map editor: scene controller, MapEditorView, StudioUI, fly camera, grid
 tests/run_tests.gd            Headless test runner (SceneTree script) over tests/suites/*
 tests/test_suite.gd           TestSuite base: check(), wait_until(), scene helpers
@@ -156,6 +160,36 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   `App.end_playtest()` and the studio restores the session (document, path, dirty flag, camera).
   The runtime still only receives a document; it never reaches into the editor.
 
+### Combat (Milestone 4)
+
+```
+ owner input (player keys / later bot AI)
+        │ trigger, slot, reload, ShooterMotion
+        ▼
+ WeaponController ──► WeaponState.update(dt, trigger, motion, rng) ──► aim offsets (deg)
+        │                                (pure: cadence, ammo, reload, spread, recoil)
+        ▼
+ Hitscan.trace (world + hitbox layers) ──► Hitbox.zone ──► DamageModel ──► Health.apply_damage
+        │
+        └─ signals: shot_fired, target_hit, reload_*, weapon_switched ──► HUD, WeaponEffects, CombatTally
+```
+
+- **Data vs state.** `WeaponDefinition` (from `WeaponCatalog.DATA`) is immutable stats; each
+  carried weapon has a `WeaponState`. All randomness comes from a caller-supplied
+  `RandomNumberGenerator`, so a seeded run is reproducible (needed later for server checks).
+- **Spread and recoil.** Spread = base + bloom + run spread × (speed ratio)² (+ air), × crouch
+  multiplier. Recoil is a fixed per-weapon pattern accumulated into an offset that bullets follow in
+  full; the camera shows a fraction (`view_punch`). Bloom and recoil hold during sustained fire and
+  recover after `recovery_delay`.
+- **Physics layers.** 1 world, 2 character bodies (movement only), 3 hitboxes (shots only). Shots
+  ignore bodies, so hitboxes alone decide what was hit; the shooter's own RIDs are excluded.
+- **Input-agnostic shooting.** `WeaponController` reads no input. The player controller feeds it
+  from the keyboard; bots will feed it from AI. Presentation listens to signals and never changes
+  outcomes.
+- **Runtime entities from map markers.** `SandboxLevel` spawns `TargetDummy` nodes from
+  `target_dummy` pieces; the maps module stays unaware of combat.
+- **Not yet:** armour, penetration, networked/authoritative damage, player hitboxes, audio.
+
 ### Input
 
 `InputActions.register_defaults()` adds actions only if they don't already exist, so future
@@ -172,7 +206,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
 | Match orchestration **(contracts + stub)** | `MatchSetup` → runtime → `MatchResult`, idempotent submission by fixture ID | Contracts in `src/orchestration/`; only `StubMatchRunner` exists so far. |
-| FPS runtime **(partial: movement)** | Rounds, economy, weapons, utility, bombsite | Server-authoritative on match host. |
+| FPS runtime **(partial: movement, weapons, health)** | Rounds, economy, weapons, utility, bombsite | `src/combat/` + `scenes/fps_sandbox/`; rules and economy next (M5). Server-authoritative on match host later. |
 | Bot AI / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | One team-tactics layer shared by AI and human IGLs. |
 | Statistics **(planned)** | Event log → derived stats → ratings | Raw events stored; stats recomputable. Perceived/scouted values stored separately. |
 | Map editor **(basic)** | Modular pieces, snapping, gameplay markers, validation, playtest | `src/maps/` + Creation Studio; see Maps above. Navmesh, tactical markers and sharing later. |
@@ -211,3 +245,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | UndoRedo targets a weak-referencing `_Applier` | `UndoRedo` holds strong refs to RefCounted targets; targeting the controller leaked a cycle |
 | 2026-11-15 | Merge `F2FTheme` into the default theme | CanvasLayer UIs (HUD, studio) otherwise render with Godot's default styling |
 | 2026-11-15 | Stairs = visual steps + hidden slope collider | `CharacterBody3D` has no step-up; a slope is smooth and predictable |
+| 2026-11-15 | Weapons as data (`WeaponCatalog`) + pure `WeaponState` | Balancing without code changes; unit-testable; bots and a future server reuse it |
+| 2026-11-15 | Fixed recoil patterns, bullets follow full offset, camera shows a fraction | Learnable, skill-based spray control; matches the vision of mechanics belonging to the player |
+| 2026-11-15 | Separate hitbox physics layer, shots ignore movement bodies | Precise zone damage; capsules stay simple for movement |
+| 2026-11-15 | `WeaponController` is input-agnostic | One shooting path for humans and bots |

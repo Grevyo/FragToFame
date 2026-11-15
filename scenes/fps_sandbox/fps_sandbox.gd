@@ -1,13 +1,21 @@
 extends Node3D
-## FPS runtime root (FPS Sandbox / map playtest): loads a map, owns mouse capture and pause
-## state, and wires the HUD to the player and to the local match network session.
+## FPS runtime root (FPS Sandbox / map playtest): loads a map, owns mouse capture, pause and
+## respawn state, records training stats, and wires the HUD to the player, the weapons and the
+## local match network session.
 
 @onready var player: FirstPersonController = $Player
 @onready var hud: SandboxHud = $Hud
 @onready var match_session: MatchSession = $MatchSession
 @onready var level: SandboxLevel = $Level
+@onready var effects: WeaponEffects = $Effects
 
 var is_paused: bool = false
+## Seconds between the player's death and respawn.
+var respawn_delay: float = 3.0
+## Recorded shooting numbers for this session (shown in the HUD; not persisted yet).
+var tally := CombatTally.new()
+var _respawn_left: float = -1.0
+var _death_cause: String = ""
 var _last_network_message: String = ""
 
 
@@ -20,6 +28,10 @@ func _ready() -> void:
 	hud.leave_match_requested.connect(func() -> void: match_session.leave("left"))
 	match_session.local_body = player
 	match_session.session_ended.connect(_on_session_ended)
+	effects.bind(player.weapons, player.camera)
+	player.weapons.shot_fired.connect(_on_shot_fired)
+	player.weapons.target_hit.connect(_on_target_hit)
+	player.died.connect(_on_player_died)
 	_load_level()
 	resume()
 
@@ -49,14 +61,71 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var p := player.global_position
-	hud.set_debug_text("pos %.1f, %.1f, %.1f   speed %.2f m/s   %s   %d fps" % [
+	hud.set_debug_text("pos %.1f, %.1f, %.1f   speed %.2f m/s   %s%s   %d fps" % [
 		p.x, p.y, p.z, player.horizontal_speed(),
 		"grounded" if player.is_on_floor() else "airborne",
+		" · crouched" if player.is_crouched() else "",
 		Engine.get_frames_per_second(),
 	])
+	_update_combat_hud()
 	_update_network_hud()
+	if _respawn_left >= 0.0 and not is_paused:
+		_respawn_left -= delta
+		if _respawn_left <= 0.0:
+			respawn_player()
+		else:
+			hud.set_death_state(_respawn_left, _death_cause)
+
+
+func respawn_player() -> void:
+	_respawn_left = -1.0
+	hud.set_death_state(-1.0)
+	player.respawn()
+
+
+func is_awaiting_respawn() -> bool:
+	return _respawn_left >= 0.0
+
+
+func _update_combat_hud() -> void:
+	var weapon := player.weapons.current()
+	if weapon != null:
+		hud.set_weapon(weapon.definition.display_name, weapon.ammo, weapon.reserve,
+			weapon.reload_progress() if weapon.is_reloading() else -1.0)
+	hud.set_health(player.health.current, player.health.max_health)
+	hud.set_crosshair_gap(_spread_to_pixels(player.weapons.current_spread()))
+	hud.set_training_stats("Shots %d · Hits %d · Accuracy %d%% · Headshots %d%% · Kills %d · Damage %d" % [
+		tally.shots, tally.hits, roundi(tally.accuracy() * 100.0), roundi(tally.headshot_rate() * 100.0),
+		tally.kills, tally.damage,
+	])
+
+
+## Converts a spread half-angle (degrees) into a crosshair gap in screen pixels.
+func _spread_to_pixels(spread_degrees: float) -> float:
+	var half_height := get_viewport().get_visible_rect().size.y / 2.0
+	var half_fov := deg_to_rad(player.camera.fov / 2.0)
+	return tan(deg_to_rad(spread_degrees)) / tan(half_fov) * half_height + 3.0
+
+
+func _on_shot_fired(_origin: Vector3, _end: Vector3, _result: Hitscan.Result) -> void:
+	tally.record_shot()
+
+
+func _on_target_hit(info: DamageInfo, _target: Health, killed: bool) -> void:
+	tally.record_hit(info, killed)
+	hud.show_hit_marker(info.is_headshot(), killed)
+	if killed:
+		var weapon := WeaponCatalog.get_definition(info.weapon_id)
+		hud.push_feed("You  [%s%s]  Target dummy  · %.0f m" % [
+			weapon.display_name if weapon != null else "?", " · HEADSHOT" if info.is_headshot() else "", info.distance])
+
+
+func _on_player_died(info: DamageInfo) -> void:
+	_death_cause = "Fell out of the world" if info.cause == DamageInfo.CAUSE_WORLD else "Killed"
+	_respawn_left = respawn_delay
+	hud.set_death_state(_respawn_left, _death_cause)
 
 
 func pause() -> void:

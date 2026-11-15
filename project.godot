@@ -34,6 +34,12 @@ window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="characters"
+3d_physics/layer_3="hitboxes"
+
 [physics]
 
 common/physics_ticks_per_second=60

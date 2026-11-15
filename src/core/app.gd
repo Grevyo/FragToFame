@@ -23,6 +23,9 @@ const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_CAREER_SELECT: "res://scenes/career_select/career_select.tscn",
 }
 
+## Emitted after the open career moves to a later day.
+signal career_day_changed()
+
 var current_scene_id: StringName = SCENE_MAIN_MENU
 ## Map to load in the FPS runtime instead of the default sandbox arena (set by the editor).
 var playtest_map: MapDocument = null
@@ -120,6 +123,18 @@ func start_practice_against(org_id: String) -> Error:
 	if setup == null:
 		return ERR_DOES_NOT_EXIST
 	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots"})
+
+
+## Moves the open career to the next day (other series due today are resolved). Returns "" or why not.
+func advance_career_day() -> String:
+	if not has_career():
+		return "Open a career first."
+	if has_unsaved_fixture_result():
+		return "Save the completed match result before moving on."
+	var problem := CareerCalendar.advance_day(career.repo, career.human_player_id)
+	if problem.is_empty():
+		career_day_changed.emit()
+	return problem
 
 
 func schedule_career_fixture() -> String:

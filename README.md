@@ -337,7 +337,12 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] In a career created from the shipped database, open **Career Hub → Competitions**.
       Check that **Northstar Pro Series** opens on 1 February, shows 16 entrants and has 15 rounds.
 - [ ] Switch rounds and check that dates and pairings update. Reopen the career and verify the
-      same schedule. League results await a match or simulation provider.
+      same schedule.
+- [ ] **Calendar → Advance to next day** a few times: the date in the top bar moves on, "Recent
+      results" fills with BO3 scores, and the Competitions standings change to match.
+- [ ] Over a few weeks, stronger organisations should mostly beat weaker ones, with some upsets.
+- [ ] Schedule an amateur match on Home, then try to advance the day: it is refused until the match
+      is played. Playing it moves the calendar on and resolves that day's other series.
 - [ ] Choose **Europe West Challenger League**, then **Oceania Challenger League**. Check that
       the first has an eight-team table and the second shows its eligible field.
 - [ ] Select an authored cup and check that its competition details and scheduling status appear.

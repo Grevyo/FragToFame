@@ -24,6 +24,7 @@ var main_menu_button: Button
 
 var _nav_buttons: Dictionary[StringName, Button] = {}
 var _nav_group := ButtonGroup.new()
+var _date_label: Label
 var _page_title: Label
 var _page_holder: MarginContainer
 var _scroll: ScrollContainer
@@ -149,9 +150,10 @@ func _build_top_bar() -> Control:
 	row.add_child(UIFactory.expand_spacer())
 
 	if App.has_career():
-		var repo := App.career.repo
-		row.add_child(UIFactory.label("%s  ·  %s" % [repo.meta_value("save_name", "Career"),
-			GameDate.format(repo.current_day())], &"AccentLabel"))
+		_date_label = UIFactory.label("", &"AccentLabel")
+		row.add_child(_date_label)
+		_refresh_date()
+		App.career_day_changed.connect(_refresh_date)
 	else:
 		var badge := PanelContainer.new()
 		badge.theme_type_variation = &"DevBadgePanel"
@@ -159,6 +161,13 @@ func _build_top_bar() -> Control:
 		badge.add_child(UIFactory.label("NO CAREER OPEN", &"WarningLabel"))
 		row.add_child(badge)
 	return bar
+
+
+func _refresh_date() -> void:
+	if _date_label == null or not App.has_career():
+		return
+	var repo := App.career.repo
+	_date_label.text = "%s  ·  %s" % [repo.meta_value("save_name", "Career"), GameDate.format(repo.current_day())]
 
 
 func _on_main_menu_pressed() -> void:

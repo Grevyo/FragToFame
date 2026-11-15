@@ -69,12 +69,8 @@ static func record_result(repo: CareerRepository, player_id: String, result: Mat
 			if fixture.setup.competition == COMPETITION and not CareerDevelopment.apply_amateur_result(
 					repo, fixture, result, totals[player_id]):
 				return false
-		var previous_day := repo.current_day()
-		var new_day := maxi(previous_day, fixture.scheduled_day + 1)
-		var new_year := GameDate.year_of(new_day)
-		if GameDate.year_of(previous_day) != new_year and not CareerCompetitions.ensure_league_seasons(repo, new_year):
-			return false
-		return repo.set_current_day(new_day))
+		# Days passed while playing resolve their other series and new seasons too.
+		return CareerCalendar.advance_to(repo, maxi(repo.current_day(), fixture.scheduled_day + 1)))
 	if stored:
 		return ""
 	return rejected[0] if not rejected.is_empty() else "Could not save the result. Try again from the Career Hub."

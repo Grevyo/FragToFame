@@ -346,7 +346,17 @@ month. Dates are weekly where possible and fit before the next anniversary. A te
 one series per round within each league. Conflicts between different competitions are a future
 calendar concern. The Hub derives the table from stored series scores, ordered by wins and map
 differential. The local career result writer checks the due date, the score and conflicting
-submissions. Official FPS matches and off-screen simulation can feed that writer once connected.
+submissions.
+
+**Calendar and simulated series.** `CareerCalendar` is the only code that moves a career's date.
+`advance_to(day)` runs in one transaction: it resolves every unscored series scheduled before the
+new day, publishes league seasons for any year boundary crossed, then sets the date. A failure
+rolls back the date as well. Saving a played fixture result calls it too, so days spent playing
+are simulated as well. `advance_day` refuses while the player has an unplayed fixture due (a
+calendar conflict). `SeriesSimulator` is pure: each map is won with a logistic chance from the
+gap between the two starting fives' mean true ability (scale 6 points, 5–95% clamp), until one side
+reaches the best-of target. Series of an organisation with a human under contract are never
+simulated; playable league series follow once humans can sign for organisations (M14).
 Cup brackets, promotion and relegation, and the F2F Universal Ladder remain planned.
 
 ### Bot AI (Milestone 6)
@@ -459,6 +469,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Sniper role instead of a weapon-specific role name | Keeps role names original; the vision's "AWPer" maps to `sniper` |
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
+| 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |
 | 2026-11-15 | Run speed comes from the held weapon's `mobility`; weapon spread sees speed rescaled so a full run is always the reference speed | Retuning movement never silently changes weapon balance |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

@@ -550,6 +550,28 @@ func league_fixture(fixture_id: int) -> Dictionary:
 		[fixture_id])
 
 
+## Unscored series scheduled before [param before_day], oldest first, with their best-of.
+func unresolved_league_fixtures(before_day: int) -> Array[Dictionary]:
+	return db.rows("""SELECT f.id, f.home_id, f.away_id, f.scheduled_day, s.best_of FROM league_fixture f
+		JOIN league_season s ON s.competition_id = f.competition_id AND s.season_year = f.season_year
+		WHERE f.home_maps IS NULL AND f.scheduled_day < ? ORDER BY f.scheduled_day, f.id;""", [before_day])
+
+
+## Series on days [param from_day]..[param to_day], with competition and team names.
+func league_fixtures_between(from_day: int, to_day: int, limit: int = 40) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, c.name AS competition_name, h.short_name AS home_name, a.short_name AS away_name
+		FROM league_fixture f JOIN competition c ON c.id = f.competition_id
+		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id
+		WHERE f.scheduled_day BETWEEN ? AND ? ORDER BY f.scheduled_day, c.tier, f.id LIMIT ?;""",
+		[from_day, to_day, limit])
+
+
+## True when a human professional has an active contract with the organisation.
+func organisation_has_human(org_id: String) -> bool:
+	return int(db.scalar("""SELECT COUNT(*) FROM contract c JOIN player p ON p.id = c.player_id
+		WHERE c.organisation_id = ? AND c.status = 'active' AND p.is_human = 1;""", [org_id], 0)) > 0
+
+
 func store_league_score(fixture_id: int, home_maps: int, away_maps: int) -> bool:
 	return db.execute("UPDATE league_fixture SET home_maps = ?, away_maps = ? WHERE id = ?;",
 		[home_maps, away_maps, fixture_id])

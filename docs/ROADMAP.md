@@ -344,8 +344,12 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 - [x] Publish persistent round-robin editions with locked entrants and calendar dates. Surface
       undersubscribed leagues. Resolve a valid series score once and derive standings from results.
 - [ ] Walk through the shipped league calendars and standings in the Career Hub.
-- [ ] Connect playable and simulated fixtures to series results. Handle calendar conflicts, map
-      selection and configurable BO1, BO3 and BO5 series, MR length and overtime.
+- [x] Simulated series: passing a day resolves every due AI series from lineup strength
+      (`SeriesSimulator`, `CareerCalendar`), atomically with the date and new seasons. The
+      Calendar page advances the day and shows the week's series and recent results. A player's
+      unplayed match blocks the day (calendar conflict).
+- [ ] Playable league series for the player's own organisation (needs human contracts, M14):
+      map selection, configurable BO1, BO3 and BO5 series, MR length and overtime.
 - [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
 
 ## Milestone 19 — Database and Competition Editor ⬜
@@ -391,4 +395,5 @@ Planned scope:
 | 2026-11-15 | M12 adds amateur ELO, match-driven career opinions and reputation, training and scouting. Godot 4.7.2 validation passed 764 checks. Manual acceptance remains open. |
 | 2026-11-15 | M13 publishes fixed-database league seasons and derives standings from accepted series results. Godot 4.7.2 validation passed 782 checks. Match and cup integration remain open. |
 | 2026-11-15 | Owner approved a Database and Competition Editor milestone (M19), placed before M17. |
+| 2026-11-15 | M13: day-by-day calendar with simulated AI series and calendar conflicts. Godot 4.7.2 validation passed 886 checks. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

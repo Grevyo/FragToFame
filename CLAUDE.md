@@ -71,7 +71,8 @@ docs/          design + architecture + roadmap
 - Run `tools/validate.ps1` (headless import + `tests/run_tests.gd`) before every commit.
   Godot is not on PATH; the script auto-detects it (override with `GODOT_BIN` or `-Godot <path>`).
   Known local binary:
-  `C:\GrevCo\PokeArkova\Tools\Godot\Editor\Godot_v4.7.2-stable_mono_win64_console.exe`.
+  `C:\GrevCo\Tools\Godot\Godot_v4.7.2-stable_mono_win64_console.exe` (shared, self-contained
+  editor outside any project; the PokeArkova copy is only a fallback).
 - New systems get headless tests as a `TestSuite` in `tests/suites/`, registered in
   `tests/run_tests.gd`. Pure logic should be testable without scenes. Network tests use loopback
   (`127.0.0.1` bind) on test-only ports (246xx) so they never clash with a running game.

@@ -18,7 +18,8 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 ## Setup
 
 1. Install **Godot 4.7.2 Stable** (standard build is fine; the .NET build also works — the project
-   uses GDScript only).
+   uses GDScript only). On the owner's PC a self-contained copy lives in `C:\GrevCo\Tools\Godot\`
+   (run `Godot_v4.7.2-stable_mono_win64.exe`).
 2. Clone: `git clone https://github.com/Grevyo/FragToFame.git C:\GrevCo\FragToFame`
 3. Open Godot → **Import** → select `C:\GrevCo\FragToFame\project.godot` → **Import & Edit**.
 4. Press **F5** (Run Project). The main menu opens.

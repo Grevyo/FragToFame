@@ -27,6 +27,7 @@ function Find-Godot {
     }
 
     $known = @(
+        'C:\GrevCo\Tools\Godot\Godot_v4.7.2-stable_mono_win64_console.exe',
         'C:\GrevCo\PokeArkova\Tools\Godot\Editor\Godot_v4.7.2-stable_mono_win64_console.exe'
     )
     foreach ($path in $known) {

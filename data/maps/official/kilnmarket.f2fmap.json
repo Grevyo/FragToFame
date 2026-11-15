@@ -1,0 +1,3502 @@
+{
+	"author": "F2F official",
+	"content_hash": "a405b4f4b0b26f40c3f9cc35a48e482bb892ddfd85768cec068f6b617fb5d9ea",
+	"content_version": 1,
+	"description": "Desert pottery town. Three lanes: the Salt Road to the Kiln Yard (A), Spice Row through the middle, and the Culvert to the Cistern (B).",
+	"format": "f2f.map",
+	"format_version": 2,
+	"layers": [
+		{
+			"id": "layer_default",
+			"locked": false,
+			"name": "Default",
+			"visible": true
+		},
+		{
+			"id": "layer_1",
+			"locked": false,
+			"name": "Ground",
+			"visible": true
+		},
+		{
+			"id": "layer_2",
+			"locked": false,
+			"name": "Buildings",
+			"visible": true
+		},
+		{
+			"id": "layer_3",
+			"locked": false,
+			"name": "Props",
+			"visible": true
+		},
+		{
+			"id": "layer_4",
+			"locked": false,
+			"name": "Lights",
+			"visible": true
+		},
+		{
+			"id": "layer_5",
+			"locked": false,
+			"name": "Gameplay",
+			"visible": true
+		},
+		{
+			"id": "layer_6",
+			"locked": false,
+			"name": "Tactics",
+			"visible": true
+		}
+	],
+	"lighting": {
+		"ambient_color": "c8b8a0",
+		"ambient_energy": 0.7,
+		"sun_color": "fff0d8",
+		"sun_energy": 1.25,
+		"sun_pitch": 55.0,
+		"sun_yaw": 215.0
+	},
+	"map_id": "map_f2f_kilnmarket",
+	"name": "Kilnmarket",
+	"next_group_number": 2,
+	"next_layer_number": 7,
+	"next_piece_number": 169,
+	"next_prefab_number": 2,
+	"pieces": [
+		{
+			"group": "",
+			"id": "pc_3",
+			"layer": "layer_1",
+			"material": "",
+			"position": [
+				1.0,
+				-1.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				122.0,
+				1.0,
+				106.0
+			],
+			"type": "floor_sand"
+		},
+		{
+			"group": "",
+			"id": "pc_4",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				1.0,
+				0.0,
+				-42.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				122.0,
+				6.0,
+				4.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_5",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				-58.0,
+				0.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				6.0,
+				106.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_6",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				60.0,
+				0.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				6.0,
+				106.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_7",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				1.0,
+				0.0,
+				60.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				122.0,
+				6.0,
+				4.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_8",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				-35.0,
+				0.0,
+				-38.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				42.0,
+				5.5,
+				4.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_9",
+			"layer": "layer_2",
+			"material": "plaster_ochre",
+			"position": [
+				-48.0,
+				0.0,
+				-31.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				6.5,
+				10.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_10",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				-24.0,
+				0.0,
+				-28.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				20.0,
+				5.0,
+				4.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_11",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				-14.0,
+				0.0,
+				-23.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				7.0,
+				10.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_12",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				-11.0,
+				0.0,
+				-4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				6.5,
+				16.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_13",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				-15.0,
+				0.0,
+				10.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				14.0,
+				5.5,
+				12.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_14",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				-25.0,
+				0.0,
+				-8.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				6.0,
+				8.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_15",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				-27.0,
+				0.0,
+				33.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				38.0,
+				7.0,
+				22.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_16",
+			"layer": "layer_2",
+			"material": "plaster_ochre",
+			"position": [
+				-29.0,
+				0.0,
+				45.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				34.0,
+				5.0,
+				3.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_17",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				-37.0,
+				0.0,
+				12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				18.0,
+				6.0,
+				20.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_18",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				-34.0,
+				0.0,
+				56.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				44.0,
+				5.0,
+				3.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_19",
+			"layer": "layer_2",
+			"material": "plaster_ochre",
+			"position": [
+				17.0,
+				0.0,
+				27.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				34.0,
+				7.5,
+				34.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_20",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				23.0,
+				0.0,
+				45.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				5.0,
+				3.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_21",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				19.0,
+				0.0,
+				-4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				6.5,
+				16.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_22",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				21.0,
+				0.0,
+				7.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				26.0,
+				6.0,
+				6.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_23",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				36.0,
+				0.0,
+				10.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				5.5,
+				12.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_24",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				48.0,
+				0.0,
+				39.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				20.0,
+				7.0,
+				38.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_25",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				52.0,
+				0.0,
+				12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				6.0,
+				16.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_26",
+			"layer": "layer_2",
+			"material": "plaster_ochre",
+			"position": [
+				35.0,
+				0.0,
+				56.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				46.0,
+				5.0,
+				3.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_27",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				36.0,
+				0.0,
+				-38.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				44.0,
+				5.5,
+				4.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_28",
+			"layer": "layer_2",
+			"material": "plaster_white",
+			"position": [
+				47.0,
+				0.0,
+				-31.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				6.5,
+				10.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_29",
+			"layer": "layer_2",
+			"material": "plaster_ochre",
+			"position": [
+				19.0,
+				0.0,
+				-23.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				7.0,
+				10.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_30",
+			"layer": "layer_2",
+			"material": "adobe",
+			"position": [
+				22.0,
+				0.0,
+				-29.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				5.0,
+				2.0
+			],
+			"type": "building"
+		},
+		{
+			"group": "",
+			"id": "pc_31",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				-51.0,
+				0.0,
+				2.0
+			],
+			"props": {
+				"opening_height": 3.0,
+				"opening_width": 4.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				5.0,
+				0.800000011920929
+			],
+			"type": "arch"
+		},
+		{
+			"group": "",
+			"id": "pc_32",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-25.0,
+				0.0,
+				10.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.5,
+				5.0
+			],
+			"type": "stairs_stone"
+		},
+		{
+			"group": "",
+			"id": "pc_33",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				-25.0,
+				0.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.5,
+				12.0
+			],
+			"type": "platform"
+		},
+		{
+			"group": "",
+			"id": "pc_34",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-30.5,
+				0.0,
+				-2.0
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				4.0,
+				1.5,
+				5.0
+			],
+			"type": "stairs_stone"
+		},
+		{
+			"group": "",
+			"id": "pc_35",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-28.0,
+				0.0,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				2.0,
+				4.5,
+				0.400000005960464
+			],
+			"type": "wall_adobe"
+		},
+		{
+			"group": "",
+			"id": "pc_36",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-28.0,
+				1.5,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				2.0,
+				1.10000002384186,
+				0.400000005960464
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_37",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				2.25,
+				0.0,
+				-27.6000003814697
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.5,
+				4.0,
+				0.5
+			],
+			"type": "wall_adobe"
+		},
+		{
+			"group": "",
+			"id": "pc_38",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				5.75,
+				0.0,
+				-21.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.5,
+				4.0,
+				0.5
+			],
+			"type": "wall_adobe"
+		},
+		{
+			"group": "",
+			"id": "pc_39",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-28.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"opening_height": 2.6,
+				"opening_width": 2.2
+			},
+			"rotation_y": 90.0,
+			"size": [
+				6.0,
+				4.0,
+				0.5
+			],
+			"type": "doorway"
+		},
+		{
+			"group": "",
+			"id": "pc_40",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				0.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"opening_height": 2.4,
+				"opening_width": 3.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				6.0,
+				4.5,
+				0.600000023841858
+			],
+			"type": "arch"
+		},
+		{
+			"group": "",
+			"id": "pc_41",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				-14.0,
+				4.0,
+				-15.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				0.300000011920929,
+				6.0
+			],
+			"type": "roof"
+		},
+		{
+			"group": "",
+			"id": "pc_42",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-48.5,
+				0.0,
+				26.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.59999990463257,
+				6.0
+			],
+			"type": "vehicle_truck"
+		},
+		{
+			"group": "",
+			"id": "pc_43",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-54.5999984741211,
+				0.0,
+				14.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_44",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-47.5,
+				0.0,
+				10.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_45",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-54.5,
+				0.0,
+				36.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.0,
+				2.0,
+				2.0
+			],
+			"type": "crate_large"
+		},
+		{
+			"group": "",
+			"id": "pc_46",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-30.0,
+				0.0,
+				48.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				1.0,
+				1.0
+			],
+			"type": "crate_long"
+		},
+		{
+			"group": "",
+			"id": "pc_47",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-22.0,
+				0.0,
+				53.4000015258789
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				1.89999997615814,
+				1.5,
+				4.19999980926514
+			],
+			"type": "vehicle_car"
+		},
+		{
+			"group": "",
+			"id": "pc_48",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-50.5,
+				0.0,
+				-17.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.59999990463257,
+				2.40000009536743
+			],
+			"type": "kiln"
+		},
+		{
+			"group": "",
+			"id": "pc_49",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-38.0,
+				0.0,
+				-19.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.59999990463257,
+				2.40000009536743
+			],
+			"type": "kiln"
+		},
+		{
+			"group": "",
+			"id": "pc_50",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-44.0,
+				0.0,
+				-12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.0,
+				2.0,
+				2.0
+			],
+			"type": "crate_large"
+		},
+		{
+			"group": "",
+			"id": "pc_51",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-40.4000015258789,
+				0.0,
+				-13.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_52",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-47.0,
+				0.0,
+				-8.60000038146973
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_53",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-53.0,
+				0.0,
+				-6.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "sandbag_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_54",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-36.5,
+				0.0,
+				-22.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				5.0,
+				1.10000002384186,
+				0.400000005960464
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_55",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-33.0,
+				0.0,
+				-9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.39999997615814,
+				1.20000004768372,
+				2.40000009536743
+			],
+			"type": "vehicle_cart"
+		},
+		{
+			"group": "",
+			"id": "pc_56",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-48.0,
+				0.0,
+				-25.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				2.79999995231628,
+				2.0
+			],
+			"type": "awning"
+		},
+		{
+			"group": "",
+			"id": "pc_57",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-14.0,
+				0.0,
+				-17.2000007629395
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_58",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-22.0,
+				0.0,
+				-12.6999998092651
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				1.0,
+				1.0
+			],
+			"type": "crate_long"
+		},
+		{
+			"group": "",
+			"id": "pc_59",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				-20.0,
+				3.40000009536743,
+				-15.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 2.0,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_60",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				-8.0,
+				3.40000009536743,
+				-15.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 2.0,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_61",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-0.800000011920929,
+				0.0,
+				36.0
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				3.0,
+				2.59999990463257,
+				1.60000002384186
+			],
+			"type": "market_stall"
+		},
+		{
+			"group": "",
+			"id": "pc_62",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-7.19999980926514,
+				0.0,
+				29.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				2.59999990463257,
+				1.60000002384186
+			],
+			"type": "market_stall"
+		},
+		{
+			"group": "",
+			"id": "pc_63",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-0.800000011920929,
+				0.0,
+				22.0
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				3.0,
+				2.59999990463257,
+				1.60000002384186
+			],
+			"type": "market_stall"
+		},
+		{
+			"group": "",
+			"id": "pc_64",
+			"layer": "layer_3",
+			"material": "cloth_red",
+			"position": [
+				-5.75,
+				0.0,
+				13.6000003814697
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.5,
+				2.79999995231628,
+				0.200000002980232
+			],
+			"type": "cloth_screen"
+		},
+		{
+			"group": "",
+			"id": "pc_65",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-7.40000009536743,
+				0.0,
+				40.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.699999988079071,
+				1.0,
+				0.699999988079071
+			],
+			"type": "barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_66",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-6.59999990463257,
+				0.0,
+				5.40000009536743
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.0,
+				2.0,
+				2.0
+			],
+			"type": "crate_large"
+		},
+		{
+			"group": "",
+			"id": "pc_67",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				6.59999990463257,
+				0.0,
+				8.60000038146973
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_68",
+			"layer": "layer_3",
+			"material": "cloth_striped",
+			"position": [
+				1.0,
+				0.0,
+				-3.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				4.0,
+				2.79999995231628,
+				2.0
+			],
+			"type": "awning"
+		},
+		{
+			"group": "",
+			"id": "pc_69",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				6.80000019073486,
+				0.0,
+				-1.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.39999997615814,
+				1.20000004768372,
+				2.40000009536743
+			],
+			"type": "vehicle_cart"
+		},
+		{
+			"group": "",
+			"id": "pc_70",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				7.19999980926514,
+				0.0,
+				-7.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "crate"
+		},
+		{
+			"group": "",
+			"id": "pc_71",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				14.0,
+				0.0,
+				-16.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				2.79999995231628,
+				0.200000002980232
+			],
+			"type": "cloth_screen"
+		},
+		{
+			"group": "",
+			"id": "pc_72",
+			"layer": "layer_3",
+			"material": "cloth_red",
+			"position": [
+				20.0,
+				0.0,
+				-13.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				2.79999995231628,
+				0.200000002980232
+			],
+			"type": "cloth_screen"
+		},
+		{
+			"group": "",
+			"id": "pc_73",
+			"layer": "layer_3",
+			"material": "cloth_striped",
+			"position": [
+				26.0,
+				0.0,
+				-16.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				2.79999995231628,
+				0.200000002980232
+			],
+			"type": "cloth_screen"
+		},
+		{
+			"group": "",
+			"id": "pc_74",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				30.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"opening_height": 2.6,
+				"opening_width": 2.4
+			},
+			"rotation_y": 90.0,
+			"size": [
+				6.0,
+				4.0,
+				0.5
+			],
+			"type": "double_door"
+		},
+		{
+			"group": "",
+			"id": "pc_75",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				36.0,
+				3.20000004768372,
+				33.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				0.400000005960464,
+				27.0
+			],
+			"type": "roof"
+		},
+		{
+			"group": "",
+			"id": "pc_76",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				40.0,
+				3.20000004768372,
+				18.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				0.400000005960464,
+				4.0
+			],
+			"type": "roof"
+		},
+		{
+			"group": "",
+			"id": "pc_77",
+			"layer": "layer_2",
+			"material": "mud_brick",
+			"position": [
+				44.0,
+				3.20000004768372,
+				10.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				0.400000005960464,
+				12.0
+			],
+			"type": "roof"
+		},
+		{
+			"group": "",
+			"id": "pc_78",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				44.0,
+				0.0,
+				4.0
+			],
+			"props": {
+				"opening_height": 2.6,
+				"opening_width": 2.4
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.20000004768372,
+				0.5
+			],
+			"type": "doorway"
+		},
+		{
+			"group": "",
+			"id": "pc_79",
+			"layer": "layer_2",
+			"material": "sandstone",
+			"position": [
+				49.0,
+				0.0,
+				-23.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				18.0,
+				2.5,
+				6.0
+			],
+			"type": "platform"
+		},
+		{
+			"group": "",
+			"id": "pc_80",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				37.5,
+				0.0,
+				-23.0
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				3.0,
+				2.5,
+				5.0
+			],
+			"type": "stairs_stone"
+		},
+		{
+			"group": "",
+			"id": "pc_81",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				49.0,
+				2.5,
+				-20.2000007629395
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				18.0,
+				1.20000004768372,
+				0.400000005960464
+			],
+			"type": "wall_parapet"
+		},
+		{
+			"group": "",
+			"id": "pc_82",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				36.0,
+				2.59999990463257,
+				36.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_83",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				38.0,
+				2.59999990463257,
+				18.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_84",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				44.0,
+				2.59999990463257,
+				10.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_85",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				45.0,
+				0.0,
+				-9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				1.10000002384186,
+				4.0
+			],
+			"type": "well"
+		},
+		{
+			"group": "",
+			"id": "pc_86",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				39.5,
+				0.0,
+				-4.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.0,
+				2.0,
+				2.0
+			],
+			"type": "crate_large"
+		},
+		{
+			"group": "",
+			"id": "pc_87",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				51.4000015258789,
+				0.0,
+				-12.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_88",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				50.5,
+				0.0,
+				-3.59999990463257
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_89",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				35.5,
+				0.0,
+				-9.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "sandbag_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_90",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				56.7999992370605,
+				0.0,
+				-18.6000003814697
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "crate"
+		},
+		{
+			"group": "grp_1",
+			"id": "pc_91",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				32.4000015258789,
+				0.0,
+				1.60000002384186
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.0,
+				2.0,
+				2.0
+			],
+			"type": "crate_large"
+		},
+		{
+			"group": "grp_1",
+			"id": "pc_92",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				34.0,
+				0.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "crate"
+		},
+		{
+			"group": "grp_1",
+			"id": "pc_93",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				32.4000015258789,
+				2.0,
+				1.60000002384186
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "crate"
+		},
+		{
+			"group": "",
+			"id": "pc_94",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				24.0,
+				0.0,
+				54.2000007629395
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				1.0,
+				1.0
+			],
+			"type": "crate_long"
+		},
+		{
+			"group": "",
+			"id": "pc_95",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				30.0,
+				0.0,
+				47.5999984741211
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.699999988079071,
+				1.0,
+				0.699999988079071
+			],
+			"type": "barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_96",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-9.60000038146973,
+				0.0,
+				56.7999992370605
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_97",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				10.6000003814697,
+				0.0,
+				45.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.699999988079071,
+				1.0,
+				0.699999988079071
+			],
+			"type": "barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_98",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				-10.0,
+				0.0,
+				-38.5999984741211
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				1.89999997615814,
+				1.5,
+				4.19999980926514
+			],
+			"type": "vehicle_car"
+		},
+		{
+			"group": "",
+			"id": "pc_99",
+			"layer": "layer_3",
+			"material": "",
+			"position": [
+				11.3999996185303,
+				0.0,
+				-39.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.40000009536743,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_100",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				53.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_101",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				-36.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_102",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				-2.0,
+				0.0,
+				53.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_103",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				-2.0,
+				0.0,
+				-36.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_104",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				2.0,
+				0.0,
+				53.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_105",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				2.0,
+				0.0,
+				-36.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_106",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				-4.0,
+				0.0,
+				53.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_107",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				-4.0,
+				0.0,
+				-36.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_108",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				53.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_109",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				-36.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_110",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				51.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				24.0,
+				3.0,
+				14.0
+			],
+			"type": "buy_zone"
+		},
+		{
+			"group": "",
+			"id": "pc_111",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				-34.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				3.0,
+				12.0
+			],
+			"type": "buy_zone"
+		},
+		{
+			"group": "",
+			"id": "pc_112",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				-44.0,
+				0.0,
+				-14.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				14.0,
+				3.0,
+				12.0
+			],
+			"type": "bombsite"
+		},
+		{
+			"group": "",
+			"id": "pc_113",
+			"layer": "layer_5",
+			"material": "",
+			"position": [
+				45.0,
+				0.0,
+				-9.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				14.0,
+				3.0,
+				12.0
+			],
+			"type": "bombsite"
+		},
+		{
+			"group": "",
+			"id": "pc_114",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				51.0
+			],
+			"props": {
+				"name": "Caravan Gate",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				24.0,
+				3.0,
+				14.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_115",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-34.0,
+				0.0,
+				51.0
+			],
+			"props": {
+				"name": "West Bend",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				44.0,
+				3.0,
+				8.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_116",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-51.0,
+				0.0,
+				26.5
+			],
+			"props": {
+				"name": "Salt Road",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				3.0,
+				41.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_117",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-51.0,
+				0.0,
+				2.0
+			],
+			"props": {
+				"name": "Kiln Gate",
+				"role": "entrance_a"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				3.0,
+				8.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_118",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-42.0,
+				0.0,
+				-14.0
+			],
+			"props": {
+				"name": "Kiln Yard",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				3.0,
+				24.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_119",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-18.0,
+				0.0,
+				19.0
+			],
+			"props": {
+				"name": "Potter's Passage",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				20.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_120",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-25.0,
+				0.0,
+				8.0
+			],
+			"props": {
+				"name": "Potter's Steps",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				16.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_121",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-28.0,
+				0.0,
+				-2.0
+			],
+			"props": {
+				"name": "Potter's Door",
+				"role": "entrance_a"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_122",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-4.0,
+				0.0,
+				27.0
+			],
+			"props": {
+				"name": "Spice Row",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				3.0,
+				34.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_123",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				7.0
+			],
+			"props": {
+				"name": "Dogleg",
+				"role": "mid"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_124",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				-4.0
+			],
+			"props": {
+				"name": "Clock Lane",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				3.0,
+				16.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_125",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"name": "Crossing",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_126",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-13.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"name": "Weighhouse",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				26.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_127",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-28.5,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"name": "Weigh Door",
+				"role": "entrance_a"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				5.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_128",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				18.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"name": "Dyers' Cut",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				20.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_129",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				30.5,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"name": "Dyers' Door",
+				"role": "entrance_b"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				5.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_130",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				-34.0
+			],
+			"props": {
+				"name": "Garrison",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				3.0,
+				12.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_131",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				-23.0
+			],
+			"props": {
+				"name": "Garrison Lane",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				3.0,
+				10.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_132",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-27.0,
+				0.0,
+				-33.0
+			],
+			"props": {
+				"name": "Arcade",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				26.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_133",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-37.0,
+				0.0,
+				-28.0
+			],
+			"props": {
+				"name": "Arcade Turn",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_134",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				25.0,
+				0.0,
+				-33.0
+			],
+			"props": {
+				"name": "Barracks Lane",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_135",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				33.0,
+				0.0,
+				-28.0
+			],
+			"props": {
+				"name": "Barracks Turn",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_136",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				44.0,
+				0.0,
+				-8.0
+			],
+			"props": {
+				"name": "Cistern",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				28.0,
+				3.0,
+				24.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_137",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				35.0,
+				0.0,
+				-23.0
+			],
+			"props": {
+				"name": "Cistern Back",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_138",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				49.0,
+				2.5,
+				-23.0
+			],
+			"props": {
+				"name": "Overlook",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				18.0,
+				3.0,
+				6.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_139",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				25.0,
+				0.0,
+				51.0
+			],
+			"props": {
+				"name": "Tanners' Lane",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				26.0,
+				3.0,
+				8.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_140",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				36.0,
+				0.0,
+				33.5
+			],
+			"props": {
+				"name": "Culvert",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.0,
+				27.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_141",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				40.0,
+				0.0,
+				18.0
+			],
+			"props": {
+				"name": "Culvert Bend",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_142",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				44.0,
+				0.0,
+				8.5
+			],
+			"props": {
+				"name": "Culvert Mouth",
+				"role": "entrance_b"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.0,
+				15.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_143",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-44.0,
+				0.0,
+				-9.80000019073486
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Kiln plant open"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_144",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-48.5999984741211,
+				0.0,
+				-15.3999996185303
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Kiln plant safe"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_145",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				45.0,
+				0.0,
+				-5.40000009536743
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Cistern plant front"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_146",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				48.7999992370605,
+				0.0,
+				-9.39999961853027
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Cistern plant back"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_147",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-51.0,
+				0.0,
+				10.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Gate hold"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_148",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-4.0,
+				0.0,
+				12.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Dogleg hold"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_149",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				36.0,
+				0.0,
+				24.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Culvert hold"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_150",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				48.0,
+				2.5,
+				-23.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Overlook post"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_151",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-40.0,
+				0.0,
+				-23.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Yard anchor"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_152",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-51.0,
+				0.0,
+				0.0
+			],
+			"props": {
+				"kind": "utility",
+				"name": "Gate smoke"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_153",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				4.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"kind": "utility",
+				"name": "Crossing smoke"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_154",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				44.0,
+				0.0,
+				2.0
+			],
+			"props": {
+				"kind": "utility",
+				"name": "Mouth smoke"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_155",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-44.0,
+				0.0,
+				-23.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 160.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_156",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-36.5,
+				0.0,
+				-23.2000007629395
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 195.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_157",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-53.0,
+				0.0,
+				-7.59999990463257
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_158",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				48.0,
+				2.5,
+				-22.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_159",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				33.5,
+				0.0,
+				-7.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 225.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_160",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				54.0,
+				0.0,
+				-17.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 155.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_161",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-45.5999984741211,
+				0.0,
+				-12.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_162",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-39.0,
+				0.0,
+				-15.3999996185303
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_163",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				47.5999984741211,
+				0.0,
+				-9.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_164",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				39.5,
+				0.0,
+				-6.19999980926514
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_165",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-51.0,
+				0.0,
+				20.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_angle"
+		},
+		{
+			"group": "",
+			"id": "pc_166",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				-25.0,
+				1.5,
+				-1.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_angle"
+		},
+		{
+			"group": "",
+			"id": "pc_167",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				44.0,
+				0.0,
+				6.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_angle"
+		},
+		{
+			"group": "",
+			"id": "pc_168",
+			"layer": "layer_6",
+			"material": "",
+			"position": [
+				31.0,
+				0.0,
+				-15.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_angle"
+		}
+	],
+	"prefabs": [
+		{
+			"id": "pf_1",
+			"name": "Cistern corner stack",
+			"pieces": [
+				{
+					"group": "grp_1",
+					"id": "",
+					"layer": "layer_3",
+					"material": "",
+					"position": [
+						-0.599998474121094,
+						0.0,
+						0.100000023841858
+					],
+					"props": {},
+					"rotation_y": 0.0,
+					"size": [
+						2.0,
+						2.0,
+						2.0
+					],
+					"type": "crate_large"
+				},
+				{
+					"group": "grp_1",
+					"id": "",
+					"layer": "layer_3",
+					"material": "",
+					"position": [
+						1.0,
+						0.0,
+						0.5
+					],
+					"props": {},
+					"rotation_y": 0.0,
+					"size": [
+						1.20000004768372,
+						1.20000004768372,
+						1.20000004768372
+					],
+					"type": "crate"
+				},
+				{
+					"group": "grp_1",
+					"id": "",
+					"layer": "layer_3",
+					"material": "",
+					"position": [
+						-0.599998474121094,
+						2.0,
+						0.100000023841858
+					],
+					"props": {},
+					"rotation_y": 0.0,
+					"size": [
+						1.20000004768372,
+						1.20000004768372,
+						1.20000004768372
+					],
+					"type": "crate"
+				}
+			]
+		}
+	],
+	"revision": 1
+}

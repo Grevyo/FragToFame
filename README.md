@@ -204,6 +204,31 @@ practice match uses bots, so the opposing team now fights back and the scoreboar
       **Play again** restarts, **Return to Main Menu** leaves.
 - [ ] Esc during a match pauses the clock; Resume continues.
 
+### Manual test checklist (Milestone 9 — player/team database)
+
+Start from **Main menu → Career Hub** (opens the career screen when no career is loaded).
+
+- [ ] With no careers, the left card says "No careers yet". Fill in the new career form (try
+      leaving the nickname empty first: a clear error appears and nothing is created).
+- [ ] **Create career** generates a world in about a second and opens the hub; the top bar shows
+      the career name and `01 Jan Y1`.
+- [ ] **Home** greets your nickname, shows you as a free agent with a reputation matching the
+      difficulty, world counts (40 organisations, ~296 professionals) and the top organisations.
+- [ ] **Player Profile** shows your professional with perceived attributes only.
+- [ ] **Teams** lists organisations by tier; selecting one shows its info and a 5–6 player roster
+      with roles, ages, nations, perceived ratings and contract end dates. Names are original.
+- [ ] **Players**: search by nickname, filter by role, region and free agents; selecting a player
+      shows identity, contract, reputation, scouting confidence, traits and perceived attributes.
+- [ ] **Practice match vs <team>** starts a match against that organisation's starters (their
+      nicknames in the kill feed and scoreboard); a tier-1 side should feel clearly harder than an
+      amateur side.
+- [ ] Back to the main menu, quit the game, relaunch: **Career Hub → Continue** reopens the same
+      world with the same players.
+- [ ] Two careers with different seeds produce different worlds; the same seed produces the same.
+
+Saves live in `%APPDATA%\Godot\app_userdata\Frag to Fame\careers\<save>\career.db` with
+snapshots in `backups\`.
+
 ### Manual test checklist (Milestone 6 — combat and navigation AI)
 
 Start from **FPS Sandbox → Esc → Start practice match (MR3 · 5v5 with bots)**.
@@ -231,7 +256,8 @@ from spawn, so rounds often start with a long-range fight.
 addons/godot-sqlite  SQLite GDExtension (Windows + Linux x86_64 binaries only)
 src/core      App autoload (scene routing), input actions
 src/ui        Theme builder, UI helpers
-src/career    Career-world data (currently dev sample data only)
+src/career    Career database: SQLite layer (db/), repository, records, catalogues, traits,
+              world generation (generation/), saves, human career, match setups
 src/world     Shared 3D building blocks
 src/maps      Map document format, builder, validator, storage, edit controller
 src/combat    Weapons, spread/recoil, damage, health, armour, hitboxes, hitscan, shooting tally
@@ -239,7 +265,7 @@ src/rules     Competitive rules: MatchRules (format/economy data), ShopCatalog, 
 src/ai        Bot AI: navmesh baking, skills, aim model, BotController (individual combat)
 src/orchestration  MatchSetup / MatchResult contracts
 src/net       career_sync (career host) and match (in-match netcode), kept separate
-scenes/       main_menu, career_hub (+pages), fps_sandbox, creation_studio
+scenes/       main_menu, career_select, career_hub (+pages), fps_sandbox, creation_studio
 tests/        Headless test runner
 tools/        Validation script
 docs/         Vision, architecture, roadmap

@@ -65,8 +65,12 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 		player.set_team(BotSquad.TEAM_KEYS[MatchState.HOME])
 		level.build_navigation()
 		squad.spawn_bots()
-		hud.set_notice("PRACTICE · %dv%d with bots (%s) · team tactics arrive in M7" % [
-			rules.team_size, rules.team_size, skill])
+		if not setup.away_lineup.is_empty():
+			hud.set_notice("PRACTICE · vs %s · bots play from their career abilities · team tactics in M7"
+				% setup.away_team_name)
+		else:
+			hud.set_notice("PRACTICE · %dv%d with bots (%s) · team tactics arrive in M7" % [
+				rules.team_size, rules.team_size, skill])
 	else:
 		for i: int in rules.team_size:
 			state.add_player("target_%d" % (i + 1), "Target %d" % (i + 1), MatchState.AWAY)

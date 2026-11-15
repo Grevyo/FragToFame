@@ -30,6 +30,43 @@ var awareness_radius: float = 4.0
 var burst_distance: float = 14.0
 
 
+## Bot mechanics from an AI professional's simulated abilities (1–100, see CareerCatalog).
+## Each value blends between the easy and hard presets (slightly beyond hard for elite values);
+## missing abilities count as 50. Only AI players have abilities — humans are never mapped.
+static func from_abilities(abilities: Dictionary, label_text: String = "") -> BotSkill:
+	var easy := preset(&"easy")
+	var hard := preset(&"hard")
+	var skill := BotSkill.new()
+	var aim: float = _blend(abilities, ["aim"])
+	var placement: float = _blend(abilities, ["crosshair_placement", "aim"])
+	var game_sense: float = _blend(abilities, ["game_sense"])
+	var composure: float = _blend(abilities, ["composure", "consistency"])
+	skill.reaction_time = maxf(lerpf(easy.reaction_time, hard.reaction_time, _blend(abilities, ["reaction"])), 0.15)
+	skill.turn_speed = lerpf(easy.turn_speed, hard.turn_speed, _blend(abilities, ["movement", "reaction"]))
+	skill.aim_gain = lerpf(easy.aim_gain, hard.aim_gain, aim)
+	skill.initial_error = maxf(lerpf(easy.initial_error, hard.initial_error, placement), 1.5)
+	skill.error_decay = lerpf(easy.error_decay, hard.error_decay, aim)
+	skill.headshot_bias = clampf(lerpf(easy.headshot_bias, hard.headshot_bias, placement), 0.05, 0.7)
+	skill.recoil_control = clampf(lerpf(easy.recoil_control, hard.recoil_control, _blend(abilities, ["spray_control"])), 0.0, 0.92)
+	skill.fire_tolerance = maxf(lerpf(easy.fire_tolerance, hard.fire_tolerance, composure), 1.1)
+	skill.view_angle = lerpf(easy.view_angle, hard.view_angle, game_sense)
+	skill.awareness_radius = lerpf(3.0, 6.0, game_sense)
+	skill.burst_distance = lerpf(11.0, 17.0, composure)
+	var overall := 0.0
+	for value: Variant in abilities.values():
+		overall += float(value)
+	skill.label = label_text if not label_text.is_empty() else "Rated %d" % roundi(overall / maxf(abilities.size(), 1))
+	return skill
+
+
+## 0 at ability 35, 1 at 90, up to 1.12 for elite values (mean of [param keys]).
+static func _blend(abilities: Dictionary, keys: Array) -> float:
+	var total := 0.0
+	for key: Variant in keys:
+		total += float(abilities.get(key, 50))
+	return clampf((total / keys.size() - 35.0) / 55.0, 0.0, 1.12)
+
+
 static func preset(name: StringName) -> BotSkill:
 	var skill := BotSkill.new()
 	match name:

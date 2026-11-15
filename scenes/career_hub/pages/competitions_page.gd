@@ -7,7 +7,7 @@ func get_page_title() -> String:
 
 
 func build_page() -> void:
-	add_sample_notice()
+	add_sample_notice("Development sample data — competitions and tournaments arrive in Milestones 10 and 13.")
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override(&"h_separation", 18)

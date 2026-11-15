@@ -7,18 +7,20 @@ extends Node
 signal scene_changed(scene_id: StringName)
 
 const VERSION: String = "0.1.0"
-const MILESTONE: String = "Milestone 6 — Combat & Navigation AI"
+const MILESTONE: String = "Milestone 9 — Player & Team Database"
 
 const SCENE_MAIN_MENU: StringName = &"main_menu"
 const SCENE_CAREER_HUB: StringName = &"career_hub"
 const SCENE_FPS_SANDBOX: StringName = &"fps_sandbox"
 const SCENE_CREATION_STUDIO: StringName = &"creation_studio"
+const SCENE_CAREER_SELECT: StringName = &"career_select"
 
 const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_MAIN_MENU: "res://scenes/main_menu/main_menu.tscn",
 	SCENE_CAREER_HUB: "res://scenes/career_hub/career_hub.tscn",
 	SCENE_FPS_SANDBOX: "res://scenes/fps_sandbox/fps_sandbox.tscn",
 	SCENE_CREATION_STUDIO: "res://scenes/creation_studio/creation_studio.tscn",
+	SCENE_CAREER_SELECT: "res://scenes/career_select/career_select.tscn",
 }
 
 var current_scene_id: StringName = SCENE_MAIN_MENU
@@ -34,6 +36,9 @@ var pending_match_map: MapDocument = null
 var pending_match_options: Dictionary = {}
 ## The most recent match outcome produced by the FPS runtime (not yet submitted anywhere).
 var last_match_result: MatchResult = null
+## The open career (null when none is loaded). Career data stays inside its repository.
+var career: CareerSession = null
+var career_saves := CareerSaves.new()
 
 
 func _ready() -> void:
@@ -58,6 +63,54 @@ func go_to(scene_id: StringName) -> Error:
 	current_scene_id = scene_id
 	scene_changed.emit(scene_id)
 	return OK
+
+
+# --- Career ----------------------------------------------------------------------------------
+
+## Main-menu entry: the hub if a career is open, otherwise the career select screen.
+func open_career_hub() -> Error:
+	return go_to(SCENE_CAREER_HUB if has_career() else SCENE_CAREER_SELECT)
+
+
+func has_career() -> bool:
+	return career != null and career.is_ok()
+
+
+## Opens a saved career and makes it current. Returns "" or an error message.
+func load_career(save_id: String) -> String:
+	close_career()
+	var session := career_saves.open_career(save_id)
+	if not session.is_ok():
+		return session.error
+	career = session
+	return ""
+
+
+## Generates a new career world and makes it current. Returns "" or an error message.
+func new_career(save_name: String, world_seed: int, human_profile: Dictionary) -> String:
+	close_career()
+	var session := career_saves.create_career(save_name, world_seed, human_profile)
+	if not session.is_ok():
+		return session.error
+	career = session
+	return ""
+
+
+func close_career() -> void:
+	if career != null:
+		career.close()
+	career = null
+
+
+## Practice match against an organisation of the open career (bots use the players' abilities).
+func start_practice_against(org_id: String) -> Error:
+	if not has_career():
+		return ERR_UNCONFIGURED
+	var map := MapTemplates.sandbox_arena()
+	var setup := CareerMatches.practice_setup(career.repo, career.human_player_id, org_id, map.map_id)
+	if setup == null:
+		return ERR_DOES_NOT_EXIST
+	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots"})
 
 
 ## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.
@@ -113,6 +166,11 @@ func consume_pending_match() -> Array:
 	pending_match_map = null
 	pending_match_options = {}
 	return match_data
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		close_career()
 
 
 func quit_game() -> void:

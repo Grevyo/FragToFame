@@ -1,0 +1,126 @@
+class_name CareerSchema
+extends RefCounted
+## Versioned schema of the career database. The version lives in SQLite's `user_version` header;
+## each entry of [constant MIGRATIONS] upgrades version N-1 → N inside one transaction, so saves
+## from older builds are upgraded in place (after a backup) and never half-migrated.
+##
+## Stat layers are separate tables, never mixed:
+##   player_ability     true simulated abilities (AI players only; never exists for humans)
+##   player_perceived   what scouts / the public believe (every player, incl. humans)
+##   player_reputation  career standing
+##   (recorded match statistics and calculated ratings arrive with Milestone 11)
+
+const FORMAT: String = "f2f.career_db"
+const CURRENT_VERSION: int = 1
+
+const MIGRATIONS: Array[PackedStringArray] = [
+	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
+	[
+		"""CREATE TABLE meta (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		);""",
+		"""CREATE TABLE region (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL
+		);""",
+		"""CREATE TABLE nation (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			region_id TEXT NOT NULL REFERENCES region(id)
+		);""",
+		"""CREATE TABLE organisation (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			short_name TEXT NOT NULL,
+			region_id TEXT NOT NULL REFERENCES region(id),
+			tier INTEGER NOT NULL CHECK (tier BETWEEN 1 AND 4),
+			founded_day INTEGER NOT NULL,
+			colour TEXT NOT NULL,
+			active INTEGER NOT NULL DEFAULT 1
+		);""",
+		"""CREATE TABLE player (
+			id TEXT PRIMARY KEY,
+			first_name TEXT NOT NULL,
+			last_name TEXT NOT NULL,
+			nickname TEXT NOT NULL,
+			nation_id TEXT NOT NULL REFERENCES nation(id),
+			birth_day INTEGER NOT NULL,
+			preferred_role TEXT NOT NULL,
+			is_human INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'retired')),
+			created_day INTEGER NOT NULL
+		);""",
+		"CREATE INDEX player_nickname ON player(nickname COLLATE NOCASE);",
+		"""CREATE TABLE player_ability (
+			player_id TEXT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+			ability TEXT NOT NULL,
+			value INTEGER NOT NULL CHECK (value BETWEEN 1 AND 100),
+			PRIMARY KEY (player_id, ability)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE player_perceived (
+			player_id TEXT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+			ability TEXT NOT NULL,
+			value INTEGER NOT NULL CHECK (value BETWEEN 1 AND 100),
+			confidence INTEGER NOT NULL CHECK (confidence BETWEEN 0 AND 100),
+			updated_day INTEGER NOT NULL,
+			PRIMARY KEY (player_id, ability)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE player_reputation (
+			player_id TEXT PRIMARY KEY REFERENCES player(id) ON DELETE CASCADE,
+			value INTEGER NOT NULL CHECK (value BETWEEN 0 AND 100),
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE organisation_reputation (
+			organisation_id TEXT PRIMARY KEY REFERENCES organisation(id) ON DELETE CASCADE,
+			value INTEGER NOT NULL CHECK (value BETWEEN 0 AND 100),
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE player_trait (
+			player_id TEXT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+			trait_id TEXT NOT NULL,
+			strength INTEGER NOT NULL CHECK (strength BETWEEN 1 AND 3),
+			PRIMARY KEY (player_id, trait_id)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE contract (
+			id TEXT PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES player(id),
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			role TEXT NOT NULL,
+			is_substitute INTEGER NOT NULL DEFAULT 0,
+			monthly_salary INTEGER NOT NULL CHECK (monthly_salary >= 0),
+			start_day INTEGER NOT NULL,
+			end_day INTEGER NOT NULL,
+			status TEXT NOT NULL CHECK (status IN ('active', 'expired', 'terminated')),
+			CHECK (end_day > start_day)
+		);""",
+		"CREATE UNIQUE INDEX contract_one_active ON contract(player_id) WHERE status = 'active';",
+		"CREATE INDEX contract_by_organisation ON contract(organisation_id, status);",
+		"""CREATE TABLE human_profile (
+			player_id TEXT PRIMARY KEY REFERENCES player(id),
+			slot INTEGER NOT NULL UNIQUE,
+			difficulty TEXT NOT NULL,
+			created_day INTEGER NOT NULL
+		);""",
+	],
+]
+
+
+## Brings [param db] up to [constant CURRENT_VERSION]. Returns "" on success or an error.
+## Refuses databases written by a newer build (never downgrade a save).
+static func migrate(db: CareerDatabase) -> String:
+	var version := db.user_version()
+	if version > CURRENT_VERSION:
+		return "this save was made by a newer version of Frag to Fame (schema %d > %d)" % [version, CURRENT_VERSION]
+	while version < CURRENT_VERSION:
+		var statements: PackedStringArray = MIGRATIONS[version]
+		var target := version + 1
+		var ok := db.transaction(func() -> bool:
+			for sql: String in statements:
+				if not db.execute(sql):
+					return false
+			return db.set_user_version(target))
+		if not ok:
+			return "migration to schema %d failed: %s" % [target, db.last_error]
+		version = target
+	return ""

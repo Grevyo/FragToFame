@@ -78,11 +78,20 @@ if ($importErrors) {
 }
 
 Write-Host "== Headless tests ==" -ForegroundColor Cyan
-& $Godot --headless --path $project --script res://tests/run_tests.gd
+$testLog = & $Godot --headless --path $project --script res://tests/run_tests.gd 2>&1 | ForEach-Object { "$_" } | Out-String
 $testExit = $LASTEXITCODE
+Write-Host $testLog
 if ($testExit -ne 0) {
     Write-Host "Tests FAILED (exit $testExit)" -ForegroundColor Red
     exit $testExit
+}
+# A GDScript runtime error aborts the current test function without failing a check, so any
+# SCRIPT ERROR in the log fails validation (expected errors from tests use push_error instead).
+$scriptErrors = ($testLog -split "`n") | Where-Object { $_ -match 'SCRIPT ERROR' }
+if ($scriptErrors) {
+    Write-Host "Tests hit script errors:" -ForegroundColor Red
+    $scriptErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    exit 1
 }
 Write-Host "All validation steps passed." -ForegroundColor Green
 exit 0

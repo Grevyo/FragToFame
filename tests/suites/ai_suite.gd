@@ -47,6 +47,14 @@ func _test_skills() -> void:
 	var hard := BotSkill.preset(&"hard")
 	check(easy.reaction_time > normal.reaction_time and normal.reaction_time > hard.reaction_time, "reaction: easy > normal > hard")
 	check(easy.initial_error > hard.initial_error and easy.recoil_control < hard.recoil_control, "hard bots aim and control recoil better")
+	var rookie := BotSkill.from_abilities({"aim": 40, "reaction": 38, "spray_control": 35, "crosshair_placement": 42})
+	var star := BotSkill.from_abilities({"aim": 92, "reaction": 90, "spray_control": 88, "crosshair_placement": 91})
+	check(star.reaction_time < rookie.reaction_time and star.initial_error < rookie.initial_error
+		and star.recoil_control > rookie.recoil_control, "career abilities map onto bot mechanics (star beats rookie)")
+	var maxed := BotSkill.from_abilities({"aim": 100, "reaction": 100, "spray_control": 100, "crosshair_placement": 100})
+	check(maxed.reaction_time >= 0.15 and maxed.initial_error >= 1.5 and maxed.recoil_control <= 0.92,
+		"even perfect abilities keep human-like limits")
+	check(BotSkill.from_abilities({}).label.begins_with("Rated"), "missing abilities fall back to average")
 
 
 func _test_world() -> void:

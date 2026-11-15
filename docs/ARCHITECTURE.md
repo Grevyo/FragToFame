@@ -42,7 +42,7 @@ Key rules:
 5. **Two separate networks**: career sync (career host ↔ clients, low-frequency, transactional)
    and match netcode (match host ↔ match clients, real-time). They share no state or code paths.
 
-## 2. Current implementation (Milestones 1–6)
+## 2. Current implementation (Milestones 1–6, 9)
 
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
@@ -100,8 +100,9 @@ avoid per-node colour overrides.
 
 `career_hub.gd` holds a `PAGES` registry (id, title, script). Each page is a `CareerPage`
 (`VBoxContainer`) that builds itself in `build_page()`. Adding a section = add a script + a registry
-entry. Pages currently read only `DevSampleData`; they will switch to repository view-models when
-the database arrives, without changing the hub.
+entry. Since M9, Home, Player Profile, Teams and Players read the open career through
+`App.career.repo`; Competitions, Calendar and Statistics still show labelled `DevSampleData` until
+their milestones. Pages render a "no career open" card when no career is loaded.
 
 ### Networking (Milestone 2 proof)
 
@@ -223,6 +224,36 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Zones.** `MapZones` answers "inside which bombsite / buy zone?" from the map document, so the
   editor's zones are the single source of truth.
 
+### Career database (Milestone 9)
+
+```
+ career_select / Career Hub pages ──► App.career (CareerSession) ──► CareerRepository
+                                                                        │ typed records, queries
+ CareerSaves (folders, backups, restore) ─┐                             ▼
+ WorldGenerator / HumanCareer ────────────┴──────────────────────► CareerDatabase ──► godot-sqlite
+                                                                   (only SQLite user)     │
+ CareerMatches.practice_setup ──► MatchSetup (lineups + AI abilities) ──► FPS runtime     ▼
+                                                                         user://careers/<save>/career.db
+```
+
+- **One file per career** (`user://careers/<save_id>/career.db`), WAL journalling, foreign keys
+  on. Multi-row changes run in `CareerDatabase.transaction` (nested calls join the outer one; any
+  failed statement rolls everything back).
+- **Schema versioning.** `CareerSchema.MIGRATIONS[n]` upgrades n → n+1; the version is SQLite's
+  `user_version`. Opening an older save snapshots it first; a newer save is refused.
+- **Stat layers are separate tables:** `player_ability` (true, AI only — the repository refuses
+  humans), `player_perceived` (+ confidence), `player_reputation`; recorded statistics and
+  calculated ratings will be their own tables (M11).
+- **Content vs save data.** Catalogues (abilities, roles, regions, nations, traits) live in code;
+  saves store their stable IDs, so definitions can be extended without migrations.
+- **Safety.** Snapshots via `VACUUM INTO` after creation, before migrations and on demand (8 kept).
+  `open_career` runs `PRAGMA integrity_check`; restore moves the damaged file aside and copies the
+  newest snapshot in. Nothing is ever deleted except rotated old snapshots.
+- **Match boundary.** `CareerMatches` turns career data into a `MatchSetup` (lineups with AI
+  abilities). The FPS runtime maps abilities to bot mechanics (`BotSkill.from_abilities`) and
+  never opens the database. Human entries carry no abilities.
+- **Determinism.** `WorldGenerator` uses one seeded RNG and seeded IDs: same seed, same world.
+
 ### Bot AI (Milestone 6)
 
 ```
@@ -263,7 +294,7 @@ keycodes so WASD works on non-QWERTY layouts.
 
 | Module | Responsibility | Notes |
 |---|---|---|
-| Career world repository **(planned, M9)** | Typed access to players, orgs, contracts, fixtures, stats | **SQLite from the start** via the `godot-sqlite` GDExtension, behind a typed repository API (no SQL outside `src/career/`). Versioned schema + migrations. |
+| Career world repository **(M9: players, orgs, contracts, opinions)** | Typed access to players, orgs, contracts, fixtures, stats | SQLite via `godot-sqlite` behind `CareerRepository` (no SQL outside `src/career/`); fixtures (M10) and statistics (M11) to come. |
 | World progression & calendar **(planned)** | Day-by-day advancement, blocking on unresolved fixtures | Pure logic, deterministic given seed + inputs. |
 | Identity & traits **(planned)** | Stable IDs, trait library, trait-conflict rules | Traits are data (resources/JSON) with effect hooks consumed by decision systems. |
 | Competitions **(planned)** | League/cup/swiss/bracket generators, F2F Ladder | Formats data-driven (series, MR length, overtime, veto). |
@@ -277,7 +308,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Content loader **(planned)** | Official vs custom content, IDs, versions, dependencies | Saves record content manifest. |
 | Co-op career sync **(proof)** | Career host authority, client requests, calendar sync | Raw ENet message protocol; see Networking above. Calendar sync not yet. |
 | Match netcode **(proof)** | Listen server on a player's PC, player state sync | `MatchSession`; position + facing only. |
-| Persistence & backup **(partial)** | Atomic saves, rotating backups, migrations | `MapStorage` already writes temp-then-rename with a `.bak`; career saves later. |
+| Persistence & backup **(career: M9)** | Atomic saves, rotating backups, migrations | Career: SQLite transactions, `VACUUM INTO` snapshots, migrations, integrity check + restore. Maps: temp-then-rename with `.bak`. |
 
 ## 4. Data and identity rules
 
@@ -322,4 +353,11 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Navmesh max climb = one cell | Bodies have no step-up; routing over ledges stranded bots |
 | 2026-11-15 | Objective play in a thin `BotSquad`, replaced in M7 | Bot matches are playable now without pre-empting the team-tactics design |
 | 2026-11-15 | Practice defaults to bots; passive targets stay as an option | Rules tests remain deterministic; players get real opponents |
+| 2026-11-15 | One SQLite file per career, WAL, schema version in `user_version` | Simple copy/backup unit; crash-safe; migrations need no extra bookkeeping table |
+| 2026-11-15 | Only `CareerDatabase` touches SQLite; everything else uses `CareerRepository` | The add-on stays replaceable and SQL stays reviewable in one place |
+| 2026-11-15 | Trait/ability/role catalogues in code, saves store IDs | Content can grow or be rebalanced without migrating every save |
+| 2026-11-15 | Lineups with AI abilities travel in `MatchSetup` (v2) | The runtime gets what bots need without ever reading the career database |
+| 2026-11-15 | Sniper role instead of a weapon-specific role name | Keeps role names original; the vision's "AWPer" maps to `sniper` |
+| 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
+| 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

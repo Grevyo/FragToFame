@@ -17,7 +17,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started
 | 6 | Individual combat and navigation AI | 3, 4 | 🔶 awaiting manual test |
 | 7 | Tactical team AI and IGL | 5, 6, 8, 9 | ⬜ |
 | 8 | Tactical Play Creator | 3, 6 | ⬜ |
-| 9 | Persistent player/team database | 1 | ⬜ |
+| 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
 | 10 | Career fixtures and playable match integration | 5, 9 | ⬜ |
 | 11 | Detailed statistics | 5, 10 | ⬜ |
 | 12 | Career development and scouting | 9, 11 | ⬜ |
@@ -218,6 +218,48 @@ Planned scope:
 - Tests: plan selection, role assignment, economy decisions, calls → bot goals, a scene match
   where an execute happens as a group.
 
+## Milestone 9 — Persistent player/team database 🔶
+
+**Goal:** Every career is a persistent, safe SQLite world of original organisations and
+professionals that the Career Hub reads and the match layer can draw lineups from.
+
+Completion criteria:
+
+- [x] `godot-sqlite` GDExtension (MIT) installed; `CareerDatabase` is the only class that touches
+      SQLite (WAL, foreign keys, nested transactions with rollback, `VACUUM INTO` snapshots,
+      integrity check).
+- [x] `CareerSchema` v1 with migrations via `user_version`; newer saves are refused, older ones are
+      snapshotted then upgraded in one transaction.
+- [x] Schema: meta, regions, nations, organisations, players, true abilities (AI only), perceived
+      abilities with scouting confidence, player and organisation reputation, traits, contracts
+      (one active contract per player enforced), human profiles.
+- [x] `CareerRepository`: typed records and queries (organisations, rosters, lineups, player
+      search/filter/sort, stat layers, traits, contracts with history). No SQL elsewhere.
+- [x] `WorldGenerator`: deterministic per seed; 40 organisations over 4 tiers and 8 regions, 296
+      professionals with original nicknames and organisation names, role-shaped abilities,
+      hidden potential, noisy perceived values, reputation, compatible traits, contracts.
+- [x] `TraitLibrary`: 24 data-driven traits in 6 categories with conflict rules (stored and shown;
+      consumed by decision systems from M7 onward).
+- [x] Human creation (`HumanCareer`): perceived values + reputation from career difficulty, never
+      simulated abilities.
+- [x] `CareerSaves`: save folders, create/list/open, rotating backups (8), damage detection and
+      restore (damaged file kept aside).
+- [x] Career select screen (continue / new career) and a career session in `App`.
+- [x] Career Hub on real data: Home, Player Profile, Teams (rosters), new Players browser;
+      remaining sample pages are labelled with the milestone that replaces them.
+- [x] Bots from attributes: `MatchSetup` v2 carries lineups; `BotSkill.from_abilities` maps an AI
+      professional's abilities to bot mechanics; practice against any organisation's starting five.
+- [x] Validation fails on any GDScript runtime error in the test log.
+- [x] Automated tests: SQLite engine, calendar, schema/migrations, repository and layer
+      separation, generator (counts, tiers, uniqueness, determinism), saves/backups/restore,
+      career flow scenes, practice vs a real roster.
+- [ ] Manual career walkthrough (README) by the project owner.
+
+Out of scope (later): fixtures and results in the database (M10), recorded match statistics and
+ratings (M11), scouting that updates perceived values (M12), competitions (M13), calendar
+advancement, transfers, ageing and rookies (M14), co-op sync of the database (M15), deleting
+saves from the UI.
+
 ---
 
 ## Progress log
@@ -230,3 +272,4 @@ Planned scope:
 | 2026-11-15 | Milestone 4 implemented; 340 automated checks passing; awaiting manual feel test. |
 | 2026-11-15 | Milestone 5 implemented; 468 automated checks passing; awaiting manual practice-match walkthrough. |
 | 2026-11-15 | Milestone 6 implemented; 514 automated checks passing; awaiting manual 5v5 bot practice match. Order changed: M9 → M8 → M7 next. |
+| 2026-11-15 | Career database = SQLite (owner). Milestone 9 implemented; 614 automated checks passing; awaiting manual career walkthrough. |

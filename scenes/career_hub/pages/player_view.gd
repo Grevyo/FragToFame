@@ -1,0 +1,65 @@
+class_name PlayerView
+extends RefCounted
+## Shared player detail cards (profile page and the player browser). Shows the public layers
+## only: identity, contract, reputation, perceived attributes and traits. True simulated
+## abilities stay hidden — scouting (Milestone 12) is how the world learns them.
+
+
+## [param stacked] puts the cards under each other (narrow columns such as the player browser).
+static func build(parent: Control, repo: CareerRepository, player_id: String, stacked: bool = false) -> void:
+	var player := repo.get_player(player_id)
+	if player == null:
+		return
+	var today := repo.current_day()
+	var row: BoxContainer = UIFactory.vbox(18) if stacked else UIFactory.hbox(18)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(row)
+
+	var identity := UIFactory.card(row, player.display_name())
+	var contract := repo.active_contract(player.id)
+	var team := "Free agent"
+	var contract_text := "—"
+	if contract != null:
+		var org := repo.get_organisation(contract.organisation_id)
+		team = org.name if org != null else contract.organisation_id
+		contract_text = "%s%s · until %s · $%d/month" % [CareerCatalog.role_name(contract.role),
+			" (substitute)" if contract.is_substitute else "", GameDate.format(contract.end_day), contract.monthly_salary]
+	var identity_rows: Array[PackedStringArray] = [
+		PackedStringArray(["Player ID", player.id]),
+		PackedStringArray(["Age", str(player.age(today))]),
+		PackedStringArray(["Nationality", CareerCatalog.nation_name(player.nation_id)]),
+		PackedStringArray(["Preferred role", CareerCatalog.role_name(player.preferred_role)]),
+		PackedStringArray(["Team", team]),
+		PackedStringArray(["Contract", contract_text]),
+		PackedStringArray(["Type", "Human professional" if player.is_human else "AI professional"]),
+	]
+	UIFactory.key_value_grid(identity, identity_rows)
+
+	var standing := UIFactory.card(row, "Standing")
+	var reputation := repo.reputation(player.id)
+	var standing_rows: Array[PackedStringArray] = [
+		PackedStringArray(["Reputation", "%s (%d)" % [CareerCatalog.reputation_label(reputation), reputation]]),
+		PackedStringArray(["Perceived rating", str(repo.perceived_rating(player.id))]),
+		PackedStringArray(["Scouting confidence", "%d%%" % repo.perceived_confidence(player.id)]),
+		PackedStringArray(["Match statistics", "Recorded from Milestone 11"]),
+	]
+	UIFactory.key_value_grid(standing, standing_rows)
+	var trait_list := repo.traits(player.id)
+	if not trait_list.is_empty():
+		standing.add_child(HSeparator.new())
+		standing.add_child(UIFactory.label("TRAITS", &"SectionLabel"))
+		for trait_id: StringName in trait_list:
+			var line := UIFactory.label("%s %s — %s" % [TraitLibrary.trait_name(trait_id),
+				"●".repeat(trait_list[trait_id]), TraitLibrary.describe(trait_id)], &"", true)
+			standing.add_child(line)
+
+	var attributes := UIFactory.card(parent, "Perceived attributes")
+	attributes.add_child(UIFactory.label(
+		"What scouts and the esports world believe about this player — not their true ability. "
+		+ ("For human players these never change aim, recoil, movement or reaction time."
+			if player.is_human else "Low scouting confidence means these may be well off."),
+		&"MutedLabel", true))
+	var seen := repo.perceived(player.id)
+	for ability: StringName in CareerCatalog.ABILITIES:
+		if seen.has(ability):
+			UIFactory.rating_bar(attributes, CareerCatalog.ability_name(ability), seen[ability])

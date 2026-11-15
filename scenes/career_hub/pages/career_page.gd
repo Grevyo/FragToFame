@@ -18,6 +18,24 @@ func build_page() -> void:
 	pass
 
 
+## The open career, or null (pages must render without one, e.g. in tests).
+func career() -> CareerSession:
+	return App.career if App.has_career() else null
+
+
+## Shows "no career open" with a way to open one. Returns true when there is no career.
+func add_no_career_notice() -> bool:
+	if career() != null:
+		return false
+	var card := UIFactory.card(self, "No career open")
+	card.add_child(UIFactory.label("Create or continue a career to see the world's organisations and players.",
+		&"MutedLabel", true))
+	var open := UIFactory.button("Open careers", &"AccentButton")
+	open.pressed.connect(func() -> void: App.go_to(App.SCENE_CAREER_SELECT))
+	card.add_child(open)
+	return true
+
+
 ## A warning-coloured note telling the user the page shows placeholder data.
 func add_sample_notice(text: String = DevSampleData.NOTICE) -> void:
 	add_child(UIFactory.label(text, &"WarningLabel", true))

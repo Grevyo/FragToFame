@@ -20,6 +20,9 @@ var defuse_progress: Dictionary[String, float] = {}
 ## Site the attackers go for this round.
 var attack_site: String = ""
 var rng := RandomNumberGenerator.new()
+## Per-bot mechanics: from the lineup's abilities when the MatchSetup has a lineup, otherwise the
+## squad's preset.
+var skills: Dictionary[String, BotSkill] = {}
 
 var _decide_timer: float = 0.0
 var _site_positions: Dictionary[String, Vector3] = {}
@@ -32,12 +35,27 @@ func _init(owner_director: MatchDirector, skill: StringName) -> void:
 	rng.seed = hash(owner_director.state.setup.fixture_id)
 
 
-## Registers bot players with the match state (call before the match starts).
+## Registers bot players with the match state (call before the match starts). AI entries of the
+## MatchSetup lineup come first (their player IDs, nicknames and abilities); any remaining slots
+## are filled with generic callsign bots at the squad's skill preset.
 func add_players(team_index: int, count: int) -> void:
-	for i: int in count:
+	var added := 0
+	for entry: Dictionary in director.state.setup.lineup(team_index):
+		if added >= count:
+			break
+		if bool(entry.get("is_human", false)):
+			continue
+		var id := str(entry.get("player_id", ""))
+		if id.is_empty() or director.state.players.has(id):
+			continue
+		director.state.add_player(id, str(entry.get("name", id)), team_index)
+		skills[id] = BotSkill.from_abilities(entry.get("abilities", {}) as Dictionary)
+		added += 1
+	for i: int in range(added, count):
 		var id := "bot_%s_%d" % [TEAM_KEYS[team_index], i + 1]
 		var callsign := CALLSIGNS[(i + team_index * 5) % CALLSIGNS.size()]
 		director.state.add_player(id, callsign, team_index)
+		skills[id] = BotSkill.preset(skill_name)
 
 
 ## Creates a BotController for every bot player and reads the bombsites from the map.
@@ -51,7 +69,7 @@ func spawn_bots() -> void:
 		if player_state.is_human:
 			continue
 		var bot := BotController.new()
-		bot.setup(id, player_state.display_name, TEAM_KEYS[player_state.team], BotSkill.preset(skill_name),
+		bot.setup(id, player_state.display_name, TEAM_KEYS[player_state.team], skills[id] if skills.has(id) else BotSkill.preset(skill_name),
 			TEAM_COLORS[player_state.team])
 		director.level.add_child(bot)
 		bot.health.died.connect(_on_bot_died.bind(bot))

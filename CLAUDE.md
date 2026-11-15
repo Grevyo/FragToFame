@@ -39,7 +39,8 @@ Godot 4.7.2 game. These rules persist across sessions.
 addons/godot-sqlite/  SQLite GDExtension (vendor; trimmed to Windows/Linux x86_64; only src/career uses it)
 src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
-src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource)
+src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource);
+               db/ = the only SQLite code, generation/ = world generator; everything else uses CareerRepository
 src/world/     shared 3D building blocks
 src/maps/      map document format, builder, validator, storage, edit controller (no UI)
 src/combat/    weapons, spread/recoil, damage, health, hitboxes, hitscan (FPS runtime only)

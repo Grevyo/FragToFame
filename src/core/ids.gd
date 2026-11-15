@@ -13,5 +13,11 @@ static func generate(prefix: String) -> String:
 	return "%s_%s%s" % [prefix, time_hex, _crypto.generate_random_bytes(8).hex_encode()]
 
 
+## Deterministic ID from a seeded generator (world generation: same seed → same world).
+## Same shape as [method generate]; unique within one world, which is all saves require.
+static func seeded(prefix: String, rng: RandomNumberGenerator) -> String:
+	return "%s_%08x%08x%08x" % [prefix, rng.randi(), rng.randi(), rng.randi()]
+
+
 static func has_prefix(id: String, prefix: String) -> bool:
 	return id.begins_with(prefix + "_") and id.length() > prefix.length() + 1

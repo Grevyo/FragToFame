@@ -21,6 +21,31 @@ func _run() -> void:
 	current_scene.call("show_page", &"coop")
 	await _shot("02_career_hub_coop")
 
+	# Career screens use a throwaway save folder so real careers are untouched.
+	app.set("career_saves", CareerSaves.new("user://screens/careers"))
+	app.call("go_to", &"career_select")
+	await _frames(3)
+	var select := current_scene
+	(select.get("first_name_edit") as LineEdit).text = "Rowan"
+	(select.get("last_name_edit") as LineEdit).text = "Hartley"
+	(select.get("nickname_edit") as LineEdit).text = "Sable"
+	await _shot("11_career_select")
+	(select.get("seed_edit") as LineEdit).text = "77"
+	select.call("create_career")
+	await _frames(4)
+	await _shot("12_career_home")
+	current_scene.call("show_page", &"teams")
+	await _shot("13_career_teams")
+	current_scene.call("show_page", &"players")
+	await _frames(2)
+	var players: Node = current_scene.get("current_page")
+	var first_id := str((app.get("career") as CareerSession).repo.search_players({"limit": 1})[0]["id"])
+	players.call("show_player", first_id)
+	await _shot("14_career_players")
+	current_scene.call("show_page", &"profile")
+	await _shot("15_career_profile")
+	app.call("close_career")
+
 	app.call("go_to", &"creation_studio")
 	await _frames(3)
 	var studio := current_scene

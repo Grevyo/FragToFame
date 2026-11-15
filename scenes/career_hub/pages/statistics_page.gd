@@ -7,7 +7,7 @@ func get_page_title() -> String:
 
 
 func build_page() -> void:
-	add_sample_notice("Development sample data — no match events have been recorded yet.")
+	add_sample_notice("Development sample data — match statistics are recorded from Milestone 11.")
 	var s := DevSampleData.statistics_summary()
 
 	var tiles := GridContainer.new()

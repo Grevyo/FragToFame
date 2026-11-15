@@ -66,7 +66,7 @@ func _menu_button(parent: Control, text: String, handler: Callable) -> Button:
 
 
 func _on_career_pressed() -> void:
-	App.go_to(App.SCENE_CAREER_HUB)
+	App.open_career_hub()
 
 
 func _on_sandbox_pressed() -> void:

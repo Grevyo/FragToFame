@@ -9,6 +9,7 @@ const PAGES: Array[Dictionary] = [
 	{"id": &"home", "label": "Home", "script": preload("res://scenes/career_hub/pages/home_page.gd")},
 	{"id": &"profile", "label": "Player Profile", "script": preload("res://scenes/career_hub/pages/profile_page.gd")},
 	{"id": &"teams", "label": "Teams", "script": preload("res://scenes/career_hub/pages/teams_page.gd")},
+	{"id": &"players", "label": "Players", "script": preload("res://scenes/career_hub/pages/players_page.gd")},
 	{"id": &"competitions", "label": "Competitions", "script": preload("res://scenes/career_hub/pages/competitions_page.gd")},
 	{"id": &"calendar", "label": "Calendar", "script": preload("res://scenes/career_hub/pages/calendar_page.gd")},
 	{"id": &"statistics", "label": "Statistics", "script": preload("res://scenes/career_hub/pages/statistics_page.gd")},
@@ -147,12 +148,16 @@ func _build_top_bar() -> Control:
 	row.add_child(_page_title)
 	row.add_child(UIFactory.expand_spacer())
 
-	var badge := PanelContainer.new()
-	badge.theme_type_variation = &"DevBadgePanel"
-	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	badge.add_child(UIFactory.label("DEVELOPMENT SAMPLE DATA — no career database yet", &"WarningLabel"))
-	badge.tooltip_text = DevSampleData.NOTICE
-	row.add_child(badge)
+	if App.has_career():
+		var repo := App.career.repo
+		row.add_child(UIFactory.label("%s  ·  %s" % [repo.meta_value("save_name", "Career"),
+			GameDate.format(repo.current_day())], &"AccentLabel"))
+	else:
+		var badge := PanelContainer.new()
+		badge.theme_type_variation = &"DevBadgePanel"
+		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		badge.add_child(UIFactory.label("NO CAREER OPEN", &"WarningLabel"))
+		row.add_child(badge)
 	return bar
 
 

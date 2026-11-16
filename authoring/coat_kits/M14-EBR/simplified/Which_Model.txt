@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+Coat_Templates\M14-EBR\Coat_Ready.glb
+
+SHA-256: 5724ccb61ae6216bdbd8e62ebe5366342ee79f5a3f5c57d311322093d10c6f0d
+Texture size: 4096 x 4096
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

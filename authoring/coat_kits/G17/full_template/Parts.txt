@@ -1,0 +1,121 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+1: Side A | Cube.001_0 | Material
+2: Side A | Cube.001_0 | Material
+3: Side A | Cube.001_0 | Material
+4: Side B | Cube.001_0 | Material
+5: Side B | Cube.001_0 | Material
+6: Side B | Cube.001_0 | Material
+7: Upper | Cube.001_0 | Material
+8: Upper | Cube.001_0 | Material
+9: Upper | Cube.001_0 | Material
+10: Lower | Cube.001_0 | Material
+11: Lower | Cube.001_0 | Material
+12: Lower | Cube.001_0 | Material
+13: Lower | Cube.001_0 | Material
+14: End A | Cube.001_0 | Material
+15: End A | Cube.001_0 | Material
+16: End A | Cube.001_0 | Material
+17: End A | Cube.001_0 | Material
+18: End B | Cube.001_0 | Material
+19: End B | Cube.001_0 | Material
+20: End B | Cube.001_0 | Material
+21: End B | Cube.001_0 | Material
+22: End B | Cube.001_0 | Material
+23: Side A | Cube.001_1 | Material.007
+24: Side A | Cube.001_1 | Material.007
+25: Side A | Cube.001_1 | Material.007
+26: Side A | Cube.001_1 | Material.007
+27: Side B | Cube.001_1 | Material.007
+28: Side B | Cube.001_1 | Material.007
+29: Side B | Cube.001_1 | Material.007
+30: Side B | Cube.001_1 | Material.007
+31: Upper | Cube.001_1 | Material.007
+32: Upper | Cube.001_1 | Material.007
+33: Upper | Cube.001_1 | Material.007
+34: Lower | Cube.001_1 | Material.007
+35: Lower | Cube.001_1 | Material.007
+36: End A | Cube.001_1 | Material.007
+37: End A | Cube.001_1 | Material.007
+38: End A | Cube.001_1 | Material.007
+39: End B | Cube.001_1 | Material.007
+40: End B | Cube.001_1 | Material.007
+41: End B | Cube.001_1 | Material.007
+42: Side A | Cube.001_2 | Material.009
+43: Side B | Cube.001_2 | Material.009
+44: Upper | Cube.001_2 | Material.009
+45: Lower | Cube.001_2 | Material.009
+46: End A | Cube.001_2 | Material.009
+47: End B | Cube.001_2 | Material.009
+48: Side A | Cube.001_3 | Material.010
+49: Side B | Cube.001_3 | Material.010
+50: Upper | Cube.001_3 | Material.010
+51: Lower | Cube.001_3 | Material.010
+52: End A | Cube.001_3 | Material.010
+53: End B | Cube.001_3 | Material.010
+54: Side A | Cube.001_4 | Material.004
+55: Side A | Cube.001_4 | Material.004
+56: Side B | Cube.001_4 | Material.004
+57: Side B | Cube.001_4 | Material.004
+58: Upper | Cube.001_4 | Material.004
+59: Upper | Cube.001_4 | Material.004
+60: Lower | Cube.001_4 | Material.004
+61: Lower | Cube.001_4 | Material.004
+62: Lower | Cube.001_4 | Material.004
+63: End A | Cube.001_4 | Material.004
+64: End A | Cube.001_4 | Material.004
+65: End A | Cube.001_4 | Material.004
+66: End A | Cube.001_4 | Material.004
+67: End A | Cube.001_4 | Material.004
+68: End A | Cube.001_4 | Material.004
+69: End A | Cube.001_4 | Material.004
+70: End A | Cube.001_4 | Material.004
+71: End B | Cube.001_4 | Material.004
+72: End B | Cube.001_4 | Material.004
+73: End B | Cube.001_4 | Material.004
+74: End B | Cube.001_4 | Material.004
+75: End B | Cube.001_4 | Material.004
+76: End B | Cube.001_4 | Material.004
+77: End B | Cube.001_4 | Material.004
+78: End B | Cube.001_4 | Material.004
+79: End B | Cube.001_4 | Material.004
+80: Side A | Cube.001_5 | Material.006
+81: Side A | Cube.001_5 | Material.006
+82: Side B | Cube.001_5 | Material.006
+83: Side B | Cube.001_5 | Material.006
+84: End A | Cube.001_5 | Material.006
+85: End B | Cube.001_5 | Material.006
+86: Side A | Cube.001_6 | Material.005
+87: Side A | Cube.001_6 | Material.005
+88: Side B | Cube.001_6 | Material.005
+89: Side B | Cube.001_6 | Material.005
+90: Upper | Cube.001_6 | Material.005
+91: Lower | Cube.001_6 | Material.005
+92: End A | Cube.001_6 | Material.005
+93: End A | Cube.001_6 | Material.005
+94: End B | Cube.001_6 | Material.005
+95: End B | Cube.001_6 | Material.005
+96: Side A | Cube.001_7 | Material.008
+97: Side A | Cube.001_7 | Material.008
+98: Side B | Cube.001_7 | Material.008
+99: Side B | Cube.001_7 | Material.008
+100: End A | Cube.001_7 | Material.008
+101: End B | Cube.001_7 | Material.008
+102: Side A | Cube.001_8 | Material.002
+103: Side B | Cube.001_8 | Material.002
+104: End A | Cube.001_8 | Material.002
+105: Side A | Cube.001_9 | Material.003
+106: Side B | Cube.001_9 | Material.003
+107: End B | Cube.001_9 | Material.003
+108: Side A | Cube.001_10 | Material.001
+109: Side A | Cube.001_10 | Material.001
+110: Side B | Cube.001_10 | Material.001
+111: Side B | Cube.001_10 | Material.001
+112: End A | Cube.001_10 | Material.001
+113: End A | Cube.001_10 | Material.001
+114: End B | Cube.001_10 | Material.001

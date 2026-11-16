@@ -1,0 +1,142 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+1: Side A | Object_26 | Material.004
+2: Side A | Object_26 | Material.004
+3: Side A | Object_26 | Material.004
+4: Side B | Object_26 | Material.004
+5: Side B | Object_26 | Material.004
+6: Side B | Object_26 | Material.004
+7: Upper | Object_26 | Material.004
+8: Upper | Object_26 | Material.004
+9: Upper | Object_26 | Material.004
+10: Lower | Object_26 | Material.004
+11: Lower | Object_26 | Material.004
+12: Lower | Object_26 | Material.004
+13: End A | Object_26 | Material.004
+14: End A | Object_26 | Material.004
+15: End A | Object_26 | Material.004
+16: End A | Object_26 | Material.004
+17: End B | Object_26 | Material.004
+18: End B | Object_26 | Material.004
+19: End B | Object_26 | Material.004
+20: End B | Object_26 | Material.004
+21: Side A | Object_27 | Material.005
+22: Side A | Object_27 | Material.005
+23: Side A | Object_27 | Material.005
+24: Side B | Object_27 | Material.005
+25: Side B | Object_27 | Material.005
+26: Side B | Object_27 | Material.005
+27: Upper | Object_27 | Material.005
+28: Upper | Object_27 | Material.005
+29: Upper | Object_27 | Material.005
+30: Upper | Object_27 | Material.005
+31: Upper | Object_27 | Material.005
+32: Lower | Object_27 | Material.005
+33: Lower | Object_27 | Material.005
+34: Lower | Object_27 | Material.005
+35: Lower | Object_27 | Material.005
+36: Lower | Object_27 | Material.005
+37: End A | Object_27 | Material.005
+38: End A | Object_27 | Material.005
+39: End B | Object_27 | Material.005
+40: End B | Object_27 | Material.005
+41: End B | Object_27 | Material.005
+42: Side A | Object_28 | Material.006
+43: Side A | Object_28 | Material.006
+44: Side B | Object_28 | Material.006
+45: Side B | Object_28 | Material.006
+46: Upper | Object_28 | Material.006
+47: Upper | Object_28 | Material.006
+48: Lower | Object_28 | Material.006
+49: Lower | Object_28 | Material.006
+50: End A | Object_28 | Material.006
+51: End A | Object_28 | Material.006
+52: End B | Object_28 | Material.006
+53: End B | Object_28 | Material.006
+54: Side A | Object_29 | Material.007
+55: Side A | Object_29 | Material.007
+56: Side B | Object_29 | Material.007
+57: Side B | Object_29 | Material.007
+58: Upper | Object_29 | Material.007
+59: Lower | Object_29 | Material.007
+60: End A | Object_29 | Material.007
+61: End B | Object_29 | Material.007
+62: Side A | Object_30 | Material.008
+63: Side B | Object_30 | Material.008
+64: Upper | Object_30 | Material.008
+65: Lower | Object_30 | Material.008
+66: End A | Object_30 | Material.008
+67: End B | Object_30 | Material.008
+68: Side A | Object_31 | material_0
+69: Side A | Object_31 | material_0
+70: Side A | Object_31 | material_0
+71: Side B | Object_31 | material_0
+72: Side B | Object_31 | material_0
+73: Side B | Object_31 | material_0
+74: Upper | Object_31 | material_0
+75: Upper | Object_31 | material_0
+76: Upper | Object_31 | material_0
+77: Upper | Object_31 | material_0
+78: Lower | Object_31 | material_0
+79: Lower | Object_31 | material_0
+80: Lower | Object_31 | material_0
+81: End A | Object_31 | material_0
+82: End A | Object_31 | material_0
+83: End A | Object_31 | material_0
+84: End A | Object_31 | material_0
+85: End A | Object_31 | material_0
+86: End A | Object_31 | material_0
+87: End A | Object_31 | material_0
+88: End A | Object_31 | material_0
+89: End A | Object_31 | material_0
+90: End A | Object_31 | material_0
+91: End A | Object_31 | material_0
+92: End A | Object_31 | material_0
+93: End A | Object_31 | material_0
+94: End A | Object_31 | material_0
+95: End B | Object_31 | material_0
+96: End B | Object_31 | material_0
+97: End B | Object_31 | material_0
+98: End B | Object_31 | material_0
+99: End B | Object_31 | material_0
+100: End B | Object_31 | material_0
+101: End B | Object_31 | material_0
+102: End B | Object_31 | material_0
+103: End B | Object_31 | material_0
+104: End B | Object_31 | material_0
+105: End B | Object_31 | material_0
+106: End B | Object_31 | material_0
+107: End B | Object_31 | material_0
+108: End B | Object_31 | material_0
+109: Side A | Object_32 | Material.009
+110: Side B | Object_32 | Material.009
+111: Upper | Object_32 | Material.009
+112: Lower | Object_32 | Material.009
+113: End A | Object_32 | Material.009
+114: End B | Object_32 | Material.009
+115: Side A | Object_33 | Material.002
+116: Side B | Object_33 | Material.002
+117: Upper | Object_33 | Material.002
+118: Lower | Object_33 | Material.002
+119: End B | Object_33 | Material.002
+120: Side A | Object_34 | Material.003
+121: Side B | Object_34 | Material.003
+122: Upper | Object_34 | Material.003
+123: Lower | Object_34 | Material.003
+124: End A | Object_34 | Material.003
+125: Side A | Object_35 | Material.001
+126: Side A | Object_35 | Material.001
+127: Side B | Object_35 | Material.001
+128: Side B | Object_35 | Material.001
+129: Upper | Object_35 | Material.001
+130: Upper | Object_35 | Material.001
+131: Lower | Object_35 | Material.001
+132: Lower | Object_35 | Material.001
+133: End A | Object_35 | Material.001
+134: End B | Object_35 | Material.001
+135: End B | Object_35 | Material.001

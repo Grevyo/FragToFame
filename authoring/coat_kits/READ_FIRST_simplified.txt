@@ -1,0 +1,7 @@
+FRAG TO FAME  /  SIMPLIFIED COAT KITS
+
+1. Open Start_Here.png for your weapon. It shows what each mask covers on both sides.
+2. Open the layered Coat_Starter.ora in an editor that supports OpenRaster, or use Coat_BaseColor.png and the black-and-white mask PNGs in your editor. Turn on individual zone layers or use a mask to select the whole zone and add your own colour. Grey-labelled stock details are left alone. Sample_Coat.png is a ready-to-preview example with all paint zones enabled.
+3. Export a PNG at the original size. Which_Model.txt tells you which GLB takes the texture. These kits reuse the full kits and original files in Guns, except the M4A1, which includes a matching GLB to separate previously shared texture areas.
+
+This simplifies editing the major parts. For designs crossing seams, keep the full kit handy and check your art on the 3D model. Magnets remain separate.

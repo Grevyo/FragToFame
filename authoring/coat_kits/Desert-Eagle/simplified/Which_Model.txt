@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+Coat_Templates\Desert-Eagle\Coat_Ready.glb
+
+SHA-256: ecb163abea90abd6b9dad5241ce5e1e604c35f184c1496a1a9b956870a89a193
+Texture size: 2048 x 2048
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

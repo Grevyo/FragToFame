@@ -1,0 +1,494 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+1: Side A | Object_4 | finish
+2: Side B | Object_4 | finish
+3: Upper | Object_4 | finish
+4: Lower | Object_4 | finish
+5: End A | Object_4 | finish
+6: End B | Object_4 | finish
+7: Side A | Object_6 | finish_barrel
+8: Side A | Object_6 | finish_barrel
+9: Side B | Object_6 | finish_barrel
+10: Side B | Object_6 | finish_barrel
+11: Upper | Object_6 | finish_barrel
+12: Upper | Object_6 | finish_barrel
+13: Lower | Object_6 | finish_barrel
+14: Lower | Object_6 | finish_barrel
+15: End A | Object_6 | finish_barrel
+16: End B | Object_6 | finish_barrel
+17: Side A | Object_8 | finish_barrel
+18: Side A | Object_8 | finish_barrel
+19: Side B | Object_8 | finish_barrel
+20: Side B | Object_8 | finish_barrel
+21: Upper | Object_8 | finish_barrel
+22: Upper | Object_8 | finish_barrel
+23: Lower | Object_8 | finish_barrel
+24: Lower | Object_8 | finish_barrel
+25: End A | Object_8 | finish_barrel
+26: End A | Object_8 | finish_barrel
+27: End A | Object_8 | finish_barrel
+28: End A | Object_8 | finish_barrel
+29: End A | Object_8 | finish_barrel
+30: End A | Object_8 | finish_barrel
+31: End A | Object_8 | finish_barrel
+32: End B | Object_8 | finish_barrel
+33: End B | Object_8 | finish_barrel
+34: End B | Object_8 | finish_barrel
+35: End B | Object_8 | finish_barrel
+36: End B | Object_8 | finish_barrel
+37: End B | Object_8 | finish_barrel
+38: End B | Object_8 | finish_barrel
+39: Side A | Object_10 | finish
+40: Side A | Object_10 | finish
+41: Side B | Object_10 | finish
+42: Side B | Object_10 | finish
+43: Upper | Object_10 | finish
+44: Upper | Object_10 | finish
+45: Upper | Object_10 | finish
+46: Lower | Object_10 | finish
+47: Lower | Object_10 | finish
+48: Lower | Object_10 | finish
+49: End A | Object_10 | finish
+50: End A | Object_10 | finish
+51: End B | Object_10 | finish
+52: End B | Object_10 | finish
+53: End B | Object_10 | finish
+54: Side A | Object_11 | finish_bright
+55: Side B | Object_11 | finish_bright
+56: Upper | Object_11 | finish_bright
+57: Lower | Object_11 | finish_bright
+58: End A | Object_11 | finish_bright
+59: End A | Object_11 | finish_bright
+60: End A | Object_11 | finish_bright
+61: End A | Object_11 | finish_bright
+62: End A | Object_11 | finish_bright
+63: End A | Object_11 | finish_bright
+64: End A | Object_11 | finish_bright
+65: End A | Object_11 | finish_bright
+66: End A | Object_11 | finish_bright
+67: End A | Object_11 | finish_bright
+68: End A | Object_11 | finish_bright
+69: End A | Object_11 | finish_bright
+70: End A | Object_11 | finish_bright
+71: End B | Object_11 | finish_bright
+72: End B | Object_11 | finish_bright
+73: End B | Object_11 | finish_bright
+74: End B | Object_11 | finish_bright
+75: End B | Object_11 | finish_bright
+76: End B | Object_11 | finish_bright
+77: End B | Object_11 | finish_bright
+78: End B | Object_11 | finish_bright
+79: End B | Object_11 | finish_bright
+80: End B | Object_11 | finish_bright
+81: End B | Object_11 | finish_bright
+82: End B | Object_11 | finish_bright
+83: End B | Object_11 | finish_bright
+84: Side A | Object_13 | finish
+85: Side A | Object_13 | finish
+86: Side B | Object_13 | finish
+87: Side B | Object_13 | finish
+88: Side B | Object_13 | finish
+89: Upper | Object_13 | finish
+90: Upper | Object_13 | finish
+91: Lower | Object_13 | finish
+92: Lower | Object_13 | finish
+93: End A | Object_13 | finish
+94: End A | Object_13 | finish
+95: End B | Object_13 | finish
+96: End B | Object_13 | finish
+97: Side A | Object_15 | finish_slide
+98: Side A | Object_15 | finish_slide
+99: Side A | Object_15 | finish_slide
+100: Side A | Object_15 | finish_slide
+101: Side A | Object_15 | finish_slide
+102: Side B | Object_15 | finish_slide
+103: Side B | Object_15 | finish_slide
+104: Side B | Object_15 | finish_slide
+105: Side B | Object_15 | finish_slide
+106: Side B | Object_15 | finish_slide
+107: Upper | Object_15 | finish_slide
+108: Upper | Object_15 | finish_slide
+109: Upper | Object_15 | finish_slide
+110: Upper | Object_15 | finish_slide
+111: Lower | Object_15 | finish_slide
+112: Lower | Object_15 | finish_slide
+113: Lower | Object_15 | finish_slide
+114: Lower | Object_15 | finish_slide
+115: End A | Object_15 | finish_slide
+116: End A | Object_15 | finish_slide
+117: End A | Object_15 | finish_slide
+118: End A | Object_15 | finish_slide
+119: End A | Object_15 | finish_slide
+120: End A | Object_15 | finish_slide
+121: End A | Object_15 | finish_slide
+122: End A | Object_15 | finish_slide
+123: End A | Object_15 | finish_slide
+124: End A | Object_15 | finish_slide
+125: End A | Object_15 | finish_slide
+126: End B | Object_15 | finish_slide
+127: End B | Object_15 | finish_slide
+128: End B | Object_15 | finish_slide
+129: End B | Object_15 | finish_slide
+130: End B | Object_15 | finish_slide
+131: End B | Object_15 | finish_slide
+132: End B | Object_15 | finish_slide
+133: End B | Object_15 | finish_slide
+134: End B | Object_15 | finish_slide
+135: End B | Object_15 | finish_slide
+136: Side A | Object_16 | finish_bright
+137: Side B | Object_16 | finish_bright
+138: Lower | Object_16 | finish_bright
+139: End A | Object_16 | finish_bright
+140: End B | Object_16 | finish_bright
+141: End A | Object_17 | sights
+142: Side A | Object_18 | finish
+143: Side A | Object_18 | finish
+144: Side B | Object_18 | finish
+145: Side B | Object_18 | finish
+146: Upper | Object_18 | finish
+147: Lower | Object_18 | finish
+148: End A | Object_18 | finish
+149: End A | Object_18 | finish
+150: End B | Object_18 | finish
+151: End B | Object_18 | finish
+152: Side A | Object_20 | finish
+153: Side B | Object_20 | finish
+154: Side B | Object_20 | finish
+155: Upper | Object_20 | finish
+156: Upper | Object_20 | finish
+157: Lower | Object_20 | finish
+158: Lower | Object_20 | finish
+159: End A | Object_20 | finish
+160: End A | Object_20 | finish
+161: End B | Object_20 | finish
+162: Side A | Object_22 | Brass
+163: Side A | Object_22 | Brass
+164: Side B | Object_22 | Brass
+165: Side B | Object_22 | Brass
+166: Upper | Object_22 | Brass
+167: Upper | Object_22 | Brass
+168: Lower | Object_22 | Brass
+169: Lower | Object_22 | Brass
+170: End A | Object_22 | Brass
+171: End B | Object_22 | Brass
+172: End B | Object_22 | Brass
+173: Side A | Object_23 | primer
+174: Side B | Object_23 | primer
+175: Upper | Object_23 | primer
+176: Lower | Object_23 | primer
+177: End A | Object_23 | primer
+178: Side A | Object_24 | Jacket
+179: Side B | Object_24 | Jacket
+180: Upper | Object_24 | Jacket
+181: Lower | Object_24 | Jacket
+182: End B | Object_24 | Jacket
+183: Side A | Object_26 | finish_bright
+184: End A | Object_26 | finish_bright
+185: End A | Object_26 | finish_bright
+186: End A | Object_26 | finish_bright
+187: End A | Object_26 | finish_bright
+188: End A | Object_26 | finish_bright
+189: End A | Object_26 | finish_bright
+190: End A | Object_26 | finish_bright
+191: End A | Object_26 | finish_bright
+192: End A | Object_26 | finish_bright
+193: End A | Object_26 | finish_bright
+194: End A | Object_26 | finish_bright
+195: End A | Object_26 | finish_bright
+196: End A | Object_26 | finish_bright
+197: End A | Object_26 | finish_bright
+198: End A | Object_26 | finish_bright
+199: End A | Object_26 | finish_bright
+200: End A | Object_26 | finish_bright
+201: End B | Object_26 | finish_bright
+202: End B | Object_26 | finish_bright
+203: End B | Object_26 | finish_bright
+204: End B | Object_26 | finish_bright
+205: End B | Object_26 | finish_bright
+206: End B | Object_26 | finish_bright
+207: End B | Object_26 | finish_bright
+208: End B | Object_26 | finish_bright
+209: End B | Object_26 | finish_bright
+210: End B | Object_26 | finish_bright
+211: End B | Object_26 | finish_bright
+212: End B | Object_26 | finish_bright
+213: End B | Object_26 | finish_bright
+214: End B | Object_26 | finish_bright
+215: End B | Object_26 | finish_bright
+216: End B | Object_26 | finish_bright
+217: End B | Object_26 | finish_bright
+218: Side A | Object_28 | polymer_smooth
+219: Side A | Object_28 | polymer_smooth
+220: Side B | Object_28 | polymer_smooth
+221: Side B | Object_28 | polymer_smooth
+222: Upper | Object_28 | polymer_smooth
+223: Upper | Object_28 | polymer_smooth
+224: Lower | Object_28 | polymer_smooth
+225: End A | Object_28 | polymer_smooth
+226: End B | Object_28 | polymer_smooth
+227: Side A | Object_30 | finish
+228: Side A | Object_30 | finish
+229: Side B | Object_30 | finish
+230: Side B | Object_30 | finish
+231: Upper | Object_30 | finish
+232: Lower | Object_30 | finish
+233: End A | Object_30 | finish
+234: End A | Object_30 | finish
+235: End A | Object_30 | finish
+236: End B | Object_30 | finish
+237: End B | Object_30 | finish
+238: End B | Object_30 | finish
+239: Side A | Object_31 | polymer_smooth
+240: Side A | Object_31 | polymer_smooth
+241: Side B | Object_31 | polymer_smooth
+242: Side B | Object_31 | polymer_smooth
+243: Upper | Object_31 | polymer_smooth
+244: Lower | Object_31 | polymer_smooth
+245: End A | Object_31 | polymer_smooth
+246: End A | Object_31 | polymer_smooth
+247: End B | Object_31 | polymer_smooth
+248: End B | Object_31 | polymer_smooth
+249: Side A | Object_33 | polymer_rough
+250: Side A | Object_33 | polymer_rough
+251: Side B | Object_33 | polymer_rough
+252: Side B | Object_33 | polymer_rough
+253: Upper | Object_33 | polymer_rough
+254: Lower | Object_33 | polymer_rough
+255: Lower | Object_33 | polymer_rough
+256: End A | Object_33 | polymer_rough
+257: End A | Object_33 | polymer_rough
+258: End A | Object_33 | polymer_rough
+259: End B | Object_33 | polymer_rough
+260: End B | Object_33 | polymer_rough
+261: End B | Object_33 | polymer_rough
+262: Side A | Object_35 | finish
+263: Side B | Object_35 | finish
+264: Upper | Object_35 | finish
+265: Lower | Object_35 | finish
+266: End A | Object_35 | finish
+267: End B | Object_35 | finish
+268: Side A | Object_37 | finish
+269: Side B | Object_37 | finish
+270: Upper | Object_37 | finish
+271: Upper | Object_37 | finish
+272: Lower | Object_37 | finish
+273: Lower | Object_37 | finish
+274: End A | Object_37 | finish
+275: End A | Object_37 | finish
+276: End A | Object_37 | finish
+277: End A | Object_37 | finish
+278: End B | Object_37 | finish
+279: End B | Object_37 | finish
+280: End B | Object_37 | finish
+281: End B | Object_37 | finish
+282: Side A | Object_39 | finish
+283: Side A | Object_39 | finish
+284: Side A | Object_39 | finish
+285: Side B | Object_39 | finish
+286: Side B | Object_39 | finish
+287: Side B | Object_39 | finish
+288: Upper | Object_39 | finish
+289: Upper | Object_39 | finish
+290: Upper | Object_39 | finish
+291: Lower | Object_39 | finish
+292: Lower | Object_39 | finish
+293: Lower | Object_39 | finish
+294: End A | Object_39 | finish
+295: End A | Object_39 | finish
+296: End A | Object_39 | finish
+297: End A | Object_39 | finish
+298: End B | Object_39 | finish
+299: End B | Object_39 | finish
+300: End B | Object_39 | finish
+301: End B | Object_39 | finish
+302: End B | Object_39 | finish
+303: Side A | Object_41 | polymer_smooth
+304: Side A | Object_41 | polymer_smooth
+305: Side A | Object_41 | polymer_smooth
+306: Side B | Object_41 | polymer_smooth
+307: Side B | Object_41 | polymer_smooth
+308: Side B | Object_41 | polymer_smooth
+309: Upper | Object_41 | polymer_smooth
+310: Upper | Object_41 | polymer_smooth
+311: Upper | Object_41 | polymer_smooth
+312: Lower | Object_41 | polymer_smooth
+313: Lower | Object_41 | polymer_smooth
+314: Lower | Object_41 | polymer_smooth
+315: End A | Object_41 | polymer_smooth
+316: End A | Object_41 | polymer_smooth
+317: End A | Object_41 | polymer_smooth
+318: End A | Object_41 | polymer_smooth
+319: End A | Object_41 | polymer_smooth
+320: End A | Object_41 | polymer_smooth
+321: End A | Object_41 | polymer_smooth
+322: End B | Object_41 | polymer_smooth
+323: End B | Object_41 | polymer_smooth
+324: End B | Object_41 | polymer_smooth
+325: End B | Object_41 | polymer_smooth
+326: End B | Object_41 | polymer_smooth
+327: End B | Object_41 | polymer_smooth
+328: Side A | Object_42 | white
+329: Side B | Object_42 | white
+330: Side A | Object_43 | material
+331: Side B | Object_43 | material
+332: Side A | Object_44 | polymer_rough
+333: Side B | Object_44 | polymer_rough
+334: Side A | Object_45 | finish
+335: Side A | Object_45 | finish
+336: Side B | Object_45 | finish
+337: Side B | Object_45 | finish
+338: Upper | Object_45 | finish
+339: Lower | Object_45 | finish
+340: End A | Object_45 | finish
+341: End B | Object_45 | finish
+342: End B | Object_45 | finish
+343: Side A | Object_46 | finish_bright
+344: Side B | Object_46 | finish_bright
+345: Side B | Object_46 | finish_bright
+346: Side B | Object_46 | finish_bright
+347: Upper | Object_46 | finish_bright
+348: Lower | Object_46 | finish_bright
+349: End A | Object_46 | finish_bright
+350: End B | Object_46 | finish_bright
+351: Side A | Object_48 | material_12
+352: Side A | Object_48 | material_12
+353: Side A | Object_48 | material_12
+354: Side B | Object_48 | material_12
+355: Side B | Object_48 | material_12
+356: Upper | Object_48 | material_12
+357: Upper | Object_48 | material_12
+358: Upper | Object_48 | material_12
+359: Upper | Object_48 | material_12
+360: Lower | Object_48 | material_12
+361: Lower | Object_48 | material_12
+362: Lower | Object_48 | material_12
+363: Lower | Object_48 | material_12
+364: Lower | Object_48 | material_12
+365: End A | Object_48 | material_12
+366: End A | Object_48 | material_12
+367: End A | Object_48 | material_12
+368: End A | Object_48 | material_12
+369: End A | Object_48 | material_12
+370: End A | Object_48 | material_12
+371: End A | Object_48 | material_12
+372: End A | Object_48 | material_12
+373: End B | Object_48 | material_12
+374: End B | Object_48 | material_12
+375: End B | Object_48 | material_12
+376: End B | Object_48 | material_12
+377: End B | Object_48 | material_12
+378: End B | Object_48 | material_12
+379: End B | Object_48 | material_12
+380: End B | Object_48 | material_12
+381: Side A | Object_49 | polymer_smooth
+382: Side B | Object_49 | polymer_smooth
+383: Upper | Object_49 | polymer_smooth
+384: Lower | Object_49 | polymer_smooth
+385: End A | Object_49 | polymer_smooth
+386: Side A | Object_50 | translucent
+387: Side B | Object_50 | translucent
+388: Upper | Object_50 | translucent
+389: Lower | Object_50 | translucent
+390: End B | Object_50 | translucent
+391: Side A | Object_51 | reflective
+392: Side B | Object_51 | reflective
+393: Upper | Object_51 | reflective
+394: Lower | Object_51 | reflective
+395: End B | Object_51 | reflective
+396: End A | Object_53 | finish_bright
+397: End A | Object_53 | finish_bright
+398: End A | Object_53 | finish_bright
+399: End A | Object_53 | finish_bright
+400: End A | Object_53 | finish_bright
+401: End A | Object_53 | finish_bright
+402: End B | Object_53 | finish_bright
+403: End B | Object_53 | finish_bright
+404: End B | Object_53 | finish_bright
+405: End B | Object_53 | finish_bright
+406: End B | Object_53 | finish_bright
+407: End B | Object_53 | finish_bright
+408: Side A | Object_55 | finish_barrel
+409: Side A | Object_55 | finish_barrel
+410: Side B | Object_55 | finish_barrel
+411: Side B | Object_55 | finish_barrel
+412: Upper | Object_55 | finish_barrel
+413: Upper | Object_55 | finish_barrel
+414: Upper | Object_55 | finish_barrel
+415: Lower | Object_55 | finish_barrel
+416: Lower | Object_55 | finish_barrel
+417: Lower | Object_55 | finish_barrel
+418: End A | Object_55 | finish_barrel
+419: End A | Object_55 | finish_barrel
+420: End B | Object_55 | finish_barrel
+421: End B | Object_55 | finish_barrel
+422: Side A | Object_56 | rubber_o-ring
+423: Side B | Object_56 | rubber_o-ring
+424: Upper | Object_56 | rubber_o-ring
+425: Lower | Object_56 | rubber_o-ring
+426: Side A | Object_58 | material_12
+427: Side A | Object_58 | material_12
+428: Side A | Object_58 | material_12
+429: Side B | Object_58 | material_12
+430: Side B | Object_58 | material_12
+431: Side B | Object_58 | material_12
+432: Upper | Object_58 | material_12
+433: Upper | Object_58 | material_12
+434: Upper | Object_58 | material_12
+435: Upper | Object_58 | material_12
+436: Lower | Object_58 | material_12
+437: Lower | Object_58 | material_12
+438: Lower | Object_58 | material_12
+439: Lower | Object_58 | material_12
+440: Lower | Object_58 | material_12
+441: End A | Object_58 | material_12
+442: End A | Object_58 | material_12
+443: End A | Object_58 | material_12
+444: End A | Object_58 | material_12
+445: End A | Object_58 | material_12
+446: End B | Object_58 | material_12
+447: End B | Object_58 | material_12
+448: End B | Object_58 | material_12
+449: End B | Object_58 | material_12
+450: End B | Object_58 | material_12
+451: End B | Object_58 | material_12
+452: End B | Object_58 | material_12
+453: Side A | Object_59 | polymer_smooth
+454: Side A | Object_59 | polymer_smooth
+455: Side B | Object_59 | polymer_smooth
+456: Side B | Object_59 | polymer_smooth
+457: Upper | Object_59 | polymer_smooth
+458: Upper | Object_59 | polymer_smooth
+459: Lower | Object_59 | polymer_smooth
+460: Lower | Object_59 | polymer_smooth
+461: End B | Object_59 | polymer_smooth
+462: Side A | Object_60 | translucent
+463: Side B | Object_60 | translucent
+464: Upper | Object_60 | translucent
+465: Lower | Object_60 | translucent
+466: End B | Object_60 | translucent
+467: Side A | Object_61 | reflective
+468: Side B | Object_61 | reflective
+469: Upper | Object_61 | reflective
+470: Lower | Object_61 | reflective
+471: End B | Object_61 | reflective
+472: Side A | Object_62 | finish
+473: Side A | Object_62 | finish
+474: Side B | Object_62 | finish
+475: Side B | Object_62 | finish
+476: Upper | Object_62 | finish
+477: Upper | Object_62 | finish
+478: Lower | Object_62 | finish
+479: Lower | Object_62 | finish
+480: End A | Object_62 | finish
+481: End B | Object_62 | finish
+482: Side A | Object_63 | finish_bright
+483: Side A | Object_63 | finish_bright
+484: Side B | Object_63 | finish_bright
+485: Lower | Object_63 | finish_bright
+486: End A | Object_63 | finish_bright
+487: End B | Object_63 | finish_bright

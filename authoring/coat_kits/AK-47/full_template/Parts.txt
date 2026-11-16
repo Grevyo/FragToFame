@@ -1,0 +1,32 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+Cube
+Circle
+Cube.001
+Cube.002
+Circle.001
+Circle.002
+Circle.003
+Cube.003
+Cube.004
+Plane.001
+Cube.005
+Cube.006
+Cube.007
+Cube.008
+Cube.009
+Cube.010
+Circle.004
+Plane
+Circle.005
+Cube.011
+Cube.012
+Cube.013
+Circle.006
+Circle.007
+Circle.008

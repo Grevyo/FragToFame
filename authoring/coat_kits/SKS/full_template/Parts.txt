@@ -1,0 +1,49 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+sks_HG_1_LOW_blinn1_0
+sks_HG_2_LOW_blinn1_0
+sks_HG_MAIN_LOW_blinn1_0
+sks_SAFETY_LOW_blinn1_0
+sks_TB_LOW_blinn1_0
+sks_TRIGGER_LOW_blinn1_0
+sks_TH_LOW_blinn1_0
+sks_AC_LOW_blinn1_0
+sks_SC_SMALL_LOW_blinn1_0
+sks_SH_LOW_blinn1_0
+sks_SIGHT_BASE_LOW_blinn1_0
+sks_SIGHT_LOW_blinn1_0
+sks_SCYLINDER_LOW_blinn1_0
+sks_SIGHT_MAIN_LOW_blinn1_0
+sks_SIGHT_ADJUST_LOW_blinn1_0
+sks_BE_LOW_blinn1_0
+sks_HOLDER_LOW_blinn1_0
+sks_BE_CYLINDER_LOW_blinn1_0
+sks_STOCK_MAIN_LOW_blinn1_0
+sks_REAR_CLEANER_LOW_blinn1_0
+sks_STOCK_FRONT_LOW_blinn1_0
+sks_PH_LOW_blinn1_0
+sks_CH_LOW_blinn1_0
+sks_FRONT_SIGHT_LOW_blinn1_0
+sks_BP_LOW_blinn1_0
+sks_GC_LOW_blinn1_0
+sks_PISTON_LOW_blinn1_0
+sks_PH_LOW1_blinn1_0
+sks_BH_LOW_blinn1_0
+sks_RB_LOW_blinn1_0
+sks_SC_SH_LOW_blinn1_0
+sks_KNOB_2_LOW_blinn1_0
+sks_S_CYLINDER_LOW_blinn1_0
+sks_KNOB_1_LOW_blinn1_0
+sks_HINGE_HOLDER_LOW_blinn1_0
+sks_BOLT_6_LOW_blinn1_0
+sks_BC_LOW3_blinn1_0
+sks_BOLT_4_LOW_blinn1_0
+sks_BOLT_1_LOW_blinn1_0
+sks_BOLT_2_LOW_blinn1_0
+sks_BOLT_3_LOW_blinn1_0
+sks_BOLT_5_LOW_blinn1_0

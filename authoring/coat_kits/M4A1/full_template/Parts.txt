@@ -1,0 +1,14 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+Main
+Stock
+Magazine
+Hand Guard
+Barrel
+Trigger Guard
+Trigger

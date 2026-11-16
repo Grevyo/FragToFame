@@ -1,0 +1,9 @@
+FRAG TO FAME | COAT TEMPLATES
+
+Each of the ten weapon folders contains an editable stock colour PNG, a transparent paint guide, a guide preview, and a part list.
+
+1. Open Coat_BaseColor.png and add Coat_Template.png above it at full size.
+2. Paint on a new layer. Save your project with layers, hide the guide, then export the finish as a PNG.
+3. For AK-47 and SKS, use the original downloaded GLB. For the other eight, use the supplied Coat_Ready.glb. These maps will not line up with their original GLBs.
+
+Blue and orange mark the two opposite sides. The matching GLBs are for asset preparation and are not imported into the game. Treat the automatically generated layouts as starting points, especially for designs that cross seams.

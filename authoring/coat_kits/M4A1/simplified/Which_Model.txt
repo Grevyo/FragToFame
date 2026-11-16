@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+Simplified_Coat_Kits\M4A1\M4A1_Independent_Paint.glb
+
+SHA-256: d2d7a940a62888ca9e6439bb0c1ae542309660ecbcc8c3f2db53d275a86b4f45
+Texture size: 2048 x 979
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

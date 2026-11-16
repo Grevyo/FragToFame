@@ -1,0 +1,107 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+1: Side A | Object_2 | M24_1_Material_2
+2: Side A | Object_2 | M24_1_Material_2
+3: Side A | Object_2 | M24_1_Material_2
+4: Side A | Object_2 | M24_1_Material_2
+5: Side B | Object_2 | M24_1_Material_2
+6: Side B | Object_2 | M24_1_Material_2
+7: Side B | Object_2 | M24_1_Material_2
+8: Upper | Object_2 | M24_1_Material_2
+9: Upper | Object_2 | M24_1_Material_2
+10: Lower | Object_2 | M24_1_Material_2
+11: Lower | Object_2 | M24_1_Material_2
+12: End A | Object_2 | M24_1_Material_2
+13: End A | Object_2 | M24_1_Material_2
+14: End A | Object_2 | M24_1_Material_2
+15: End B | Object_2 | M24_1_Material_2
+16: End B | Object_2 | M24_1_Material_2
+17: End B | Object_2 | M24_1_Material_2
+18: Side A | Object_3 | M24_1_Material_4
+19: Side B | Object_3 | M24_1_Material_4
+20: Upper | Object_3 | M24_1_Material_4
+21: Lower | Object_3 | M24_1_Material_4
+22: End A | Object_3 | M24_1_Material_4
+23: End B | Object_3 | M24_1_Material_4
+24: Side A | Object_4 | 7.6251mm_Round_1_Material_1
+25: Side A | Object_4 | 7.6251mm_Round_1_Material_1
+26: Side A | Object_4 | 7.6251mm_Round_1_Material_1
+27: Side B | Object_4 | 7.6251mm_Round_1_Material_1
+28: Side B | Object_4 | 7.6251mm_Round_1_Material_1
+29: Side B | Object_4 | 7.6251mm_Round_1_Material_1
+30: Upper | Object_4 | 7.6251mm_Round_1_Material_1
+31: Upper | Object_4 | 7.6251mm_Round_1_Material_1
+32: Upper | Object_4 | 7.6251mm_Round_1_Material_1
+33: Lower | Object_4 | 7.6251mm_Round_1_Material_1
+34: Lower | Object_4 | 7.6251mm_Round_1_Material_1
+35: Lower | Object_4 | 7.6251mm_Round_1_Material_1
+36: End A | Object_4 | 7.6251mm_Round_1_Material_1
+37: End A | Object_4 | 7.6251mm_Round_1_Material_1
+38: End A | Object_4 | 7.6251mm_Round_1_Material_1
+39: End B | Object_4 | 7.6251mm_Round_1_Material_1
+40: End B | Object_4 | 7.6251mm_Round_1_Material_1
+41: Side A | Object_5 | 7.6251mm_Round_1_Material_2
+42: Side B | Object_5 | 7.6251mm_Round_1_Material_2
+43: Upper | Object_5 | 7.6251mm_Round_1_Material_2
+44: Lower | Object_5 | 7.6251mm_Round_1_Material_2
+45: End A | Object_5 | 7.6251mm_Round_1_Material_2
+46: End B | Object_5 | 7.6251mm_Round_1_Material_2
+47: Side A | Object_6 | M24_1_Material_1
+48: Side A | Object_6 | M24_1_Material_1
+49: Side A | Object_6 | M24_1_Material_1
+50: Side A | Object_6 | M24_1_Material_1
+51: Side B | Object_6 | M24_1_Material_1
+52: Side B | Object_6 | M24_1_Material_1
+53: Side B | Object_6 | M24_1_Material_1
+54: Side B | Object_6 | M24_1_Material_1
+55: Side B | Object_6 | M24_1_Material_1
+56: Upper | Object_6 | M24_1_Material_1
+57: Upper | Object_6 | M24_1_Material_1
+58: Upper | Object_6 | M24_1_Material_1
+59: Upper | Object_6 | M24_1_Material_1
+60: Upper | Object_6 | M24_1_Material_1
+61: Lower | Object_6 | M24_1_Material_1
+62: Lower | Object_6 | M24_1_Material_1
+63: Lower | Object_6 | M24_1_Material_1
+64: Lower | Object_6 | M24_1_Material_1
+65: End A | Object_6 | M24_1_Material_1
+66: End A | Object_6 | M24_1_Material_1
+67: End A | Object_6 | M24_1_Material_1
+68: End A | Object_6 | M24_1_Material_1
+69: End A | Object_6 | M24_1_Material_1
+70: End A | Object_6 | M24_1_Material_1
+71: End A | Object_6 | M24_1_Material_1
+72: End A | Object_6 | M24_1_Material_1
+73: End A | Object_6 | M24_1_Material_1
+74: End A | Object_6 | M24_1_Material_1
+75: End B | Object_6 | M24_1_Material_1
+76: End B | Object_6 | M24_1_Material_1
+77: End B | Object_6 | M24_1_Material_1
+78: End B | Object_6 | M24_1_Material_1
+79: End B | Object_6 | M24_1_Material_1
+80: End B | Object_6 | M24_1_Material_1
+81: End B | Object_6 | M24_1_Material_1
+82: End B | Object_6 | M24_1_Material_1
+83: End B | Object_6 | M24_1_Material_1
+84: End B | Object_6 | M24_1_Material_1
+85: Side A | Object_7 | M24_1_Material_3
+86: Side A | Object_7 | M24_1_Material_3
+87: Side B | Object_7 | M24_1_Material_3
+88: Side B | Object_7 | M24_1_Material_3
+89: Upper | Object_7 | M24_1_Material_3
+90: Upper | Object_7 | M24_1_Material_3
+91: Upper | Object_7 | M24_1_Material_3
+92: Upper | Object_7 | M24_1_Material_3
+93: Lower | Object_7 | M24_1_Material_3
+94: Lower | Object_7 | M24_1_Material_3
+95: Lower | Object_7 | M24_1_Material_3
+96: Lower | Object_7 | M24_1_Material_3
+97: End A | Object_7 | M24_1_Material_3
+98: End A | Object_7 | M24_1_Material_3
+99: End B | Object_7 | M24_1_Material_3
+100: End B | Object_7 | M24_1_Material_3

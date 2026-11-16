@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+Coat_Templates\Mk23-SOCOM\Coat_Ready.glb
+
+SHA-256: 00ece36b170a6cdd7d4aa7583a1eb31d774e58e6779c29b64abb5fc01b4134f8
+Texture size: 2048 x 2048
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

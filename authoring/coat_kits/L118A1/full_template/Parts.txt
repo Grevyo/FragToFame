@@ -1,0 +1,277 @@
+Side A: RGB (105, 201, 250)
+Side B: RGB (255, 155, 110)
+Upper: RGB (125, 215, 169)
+Lower: RGB (201, 163, 248)
+End A: RGB (250, 206, 112)
+End B: RGB (235, 147, 205)
+
+1: Side A | Object_12 | Material.003
+2: Side A | Object_12 | Material.003
+3: Side B | Object_12 | Material.003
+4: Side B | Object_12 | Material.003
+5: Upper | Object_12 | Material.003
+6: Upper | Object_12 | Material.003
+7: Lower | Object_12 | Material.003
+8: Lower | Object_12 | Material.003
+9: End A | Object_12 | Material.003
+10: End A | Object_12 | Material.003
+11: End A | Object_12 | Material.003
+12: End A | Object_12 | Material.003
+13: End A | Object_12 | Material.003
+14: End A | Object_12 | Material.003
+15: End B | Object_12 | Material.003
+16: End B | Object_12 | Material.003
+17: End B | Object_12 | Material.003
+18: End B | Object_12 | Material.003
+19: End B | Object_12 | Material.003
+20: Side A | Object_13 | Material.008
+21: Side B | Object_13 | Material.008
+22: Upper | Object_13 | Material.008
+23: Upper | Object_13 | Material.008
+24: Upper | Object_13 | Material.008
+25: Lower | Object_13 | Material.008
+26: Lower | Object_13 | Material.008
+27: Lower | Object_13 | Material.008
+28: End A | Object_13 | Material.008
+29: End A | Object_13 | Material.008
+30: End B | Object_13 | Material.008
+31: End B | Object_13 | Material.008
+32: End B | Object_13 | Material.008
+33: Side A | Object_14 | Material.004
+34: Side A | Object_14 | Material.004
+35: Side A | Object_14 | Material.004
+36: Side B | Object_14 | Material.004
+37: Side B | Object_14 | Material.004
+38: Side B | Object_14 | Material.004
+39: Upper | Object_14 | Material.004
+40: Upper | Object_14 | Material.004
+41: Upper | Object_14 | Material.004
+42: Upper | Object_14 | Material.004
+43: Upper | Object_14 | Material.004
+44: Upper | Object_14 | Material.004
+45: Lower | Object_14 | Material.004
+46: Lower | Object_14 | Material.004
+47: Lower | Object_14 | Material.004
+48: Lower | Object_14 | Material.004
+49: End A | Object_14 | Material.004
+50: End A | Object_14 | Material.004
+51: End A | Object_14 | Material.004
+52: End A | Object_14 | Material.004
+53: End A | Object_14 | Material.004
+54: End A | Object_14 | Material.004
+55: End A | Object_14 | Material.004
+56: End A | Object_14 | Material.004
+57: End A | Object_14 | Material.004
+58: End A | Object_14 | Material.004
+59: End A | Object_14 | Material.004
+60: End A | Object_14 | Material.004
+61: End A | Object_14 | Material.004
+62: End A | Object_14 | Material.004
+63: End A | Object_14 | Material.004
+64: End A | Object_14 | Material.004
+65: End A | Object_14 | Material.004
+66: End A | Object_14 | Material.004
+67: End B | Object_14 | Material.004
+68: End B | Object_14 | Material.004
+69: End B | Object_14 | Material.004
+70: End B | Object_14 | Material.004
+71: End B | Object_14 | Material.004
+72: End B | Object_14 | Material.004
+73: End B | Object_14 | Material.004
+74: End B | Object_14 | Material.004
+75: End B | Object_14 | Material.004
+76: End B | Object_14 | Material.004
+77: End B | Object_14 | Material.004
+78: End B | Object_14 | Material.004
+79: End B | Object_14 | Material.004
+80: End B | Object_14 | Material.004
+81: End B | Object_14 | Material.004
+82: End B | Object_14 | Material.004
+83: End B | Object_14 | Material.004
+84: End B | Object_14 | Material.004
+85: Side A | Object_15 | Material.010
+86: Side A | Object_15 | Material.010
+87: Side A | Object_15 | Material.010
+88: Side B | Object_15 | Material.010
+89: Side B | Object_15 | Material.010
+90: Side B | Object_15 | Material.010
+91: Upper | Object_15 | Material.010
+92: Upper | Object_15 | Material.010
+93: Lower | Object_15 | Material.010
+94: Lower | Object_15 | Material.010
+95: Lower | Object_15 | Material.010
+96: End A | Object_15 | Material.010
+97: End A | Object_15 | Material.010
+98: End A | Object_15 | Material.010
+99: End B | Object_15 | Material.010
+100: End B | Object_15 | Material.010
+101: End B | Object_15 | Material.010
+102: Side A | Object_16 | Material.005
+103: Side A | Object_16 | Material.005
+104: Side B | Object_16 | Material.005
+105: Side B | Object_16 | Material.005
+106: Upper | Object_16 | Material.005
+107: Upper | Object_16 | Material.005
+108: Upper | Object_16 | Material.005
+109: Lower | Object_16 | Material.005
+110: Lower | Object_16 | Material.005
+111: End A | Object_16 | Material.005
+112: End A | Object_16 | Material.005
+113: End B | Object_16 | Material.005
+114: End B | Object_16 | Material.005
+115: Side A | Object_17 | material_0
+116: Side B | Object_17 | material_0
+117: Upper | Object_17 | material_0
+118: Lower | Object_17 | material_0
+119: End A | Object_17 | material_0
+120: End B | Object_17 | material_0
+121: Side A | Object_18 | Material.009
+122: Side A | Object_18 | Material.009
+123: Side B | Object_18 | Material.009
+124: Side B | Object_18 | Material.009
+125: Upper | Object_18 | Material.009
+126: Upper | Object_18 | Material.009
+127: Lower | Object_18 | Material.009
+128: Lower | Object_18 | Material.009
+129: End A | Object_18 | Material.009
+130: End A | Object_18 | Material.009
+131: End A | Object_18 | Material.009
+132: End A | Object_18 | Material.009
+133: End A | Object_18 | Material.009
+134: End B | Object_18 | Material.009
+135: End B | Object_18 | Material.009
+136: End B | Object_18 | Material.009
+137: End B | Object_18 | Material.009
+138: End B | Object_18 | Material.009
+139: Side A | Object_19 | Material.007
+140: Side A | Object_19 | Material.007
+141: Side B | Object_19 | Material.007
+142: Side B | Object_19 | Material.007
+143: Upper | Object_19 | Material.007
+144: Lower | Object_19 | Material.007
+145: End A | Object_19 | Material.007
+146: End B | Object_19 | Material.007
+147: Side A | Object_20 | Material
+148: Side A | Object_20 | Material
+149: Side B | Object_20 | Material
+150: Side B | Object_20 | Material
+151: Upper | Object_20 | Material
+152: Upper | Object_20 | Material
+153: Upper | Object_20 | Material
+154: Upper | Object_20 | Material
+155: Upper | Object_20 | Material
+156: Upper | Object_20 | Material
+157: Lower | Object_20 | Material
+158: Lower | Object_20 | Material
+159: Lower | Object_20 | Material
+160: Lower | Object_20 | Material
+161: Lower | Object_20 | Material
+162: End A | Object_20 | Material
+163: End A | Object_20 | Material
+164: End B | Object_20 | Material
+165: End B | Object_20 | Material
+166: Side A | Object_21 | Material.002
+167: Side B | Object_21 | Material.002
+168: Upper | Object_21 | Material.002
+169: Upper | Object_21 | Material.002
+170: Lower | Object_21 | Material.002
+171: Lower | Object_21 | Material.002
+172: End B | Object_21 | Material.002
+173: Side A | Object_22 | Material.001
+174: Side B | Object_22 | Material.001
+175: Upper | Object_22 | Material.001
+176: Upper | Object_22 | Material.001
+177: Upper | Object_22 | Material.001
+178: Lower | Object_22 | Material.001
+179: Lower | Object_22 | Material.001
+180: Lower | Object_22 | Material.001
+181: End A | Object_22 | Material.001
+182: Side A | Cylinder.000_Material.026_0 | Material.026
+183: Side A | Cylinder.000_Material.026_0 | Material.026
+184: Side B | Cylinder.000_Material.026_0 | Material.026
+185: Side B | Cylinder.000_Material.026_0 | Material.026
+186: Upper | Cylinder.000_Material.026_0 | Material.026
+187: Upper | Cylinder.000_Material.026_0 | Material.026
+188: Lower | Cylinder.000_Material.026_0 | Material.026
+189: Lower | Cylinder.000_Material.026_0 | Material.026
+190: End A | Cylinder.000_Material.026_0 | Material.026
+191: End A | Cylinder.000_Material.026_0 | Material.026
+192: End B | Cylinder.000_Material.026_0 | Material.026
+193: End B | Cylinder.000_Material.026_0 | Material.026
+194: Side A | Cylinder.000_Material.024_0 | Material.024
+195: Side A | Cylinder.000_Material.024_0 | Material.024
+196: Side B | Cylinder.000_Material.024_0 | Material.024
+197: Side B | Cylinder.000_Material.024_0 | Material.024
+198: Upper | Cylinder.000_Material.024_0 | Material.024
+199: Upper | Cylinder.000_Material.024_0 | Material.024
+200: Lower | Cylinder.000_Material.024_0 | Material.024
+201: Lower | Cylinder.000_Material.024_0 | Material.024
+202: Lower | Cylinder.000_Material.024_0 | Material.024
+203: End A | Cylinder.000_Material.024_0 | Material.024
+204: End B | Cylinder.000_Material.024_0 | Material.024
+205: Side A | Cylinder.000_Material.023_0 | Material.023
+206: Side B | Cylinder.000_Material.023_0 | Material.023
+207: Upper | Cylinder.000_Material.023_0 | Material.023
+208: Lower | Cylinder.000_Material.023_0 | Material.023
+209: End A | Cylinder.000_Material.023_0 | Material.023
+210: End A | Cylinder.000_Material.023_0 | Material.023
+211: End B | Cylinder.000_Material.023_0 | Material.023
+212: End B | Cylinder.000_Material.023_0 | Material.023
+213: Side A | Cylinder.000_Material.022_0 | Material.022
+214: Side B | Cylinder.000_Material.022_0 | Material.022
+215: Upper | Cylinder.000_Material.022_0 | Material.022
+216: Upper | Cylinder.000_Material.022_0 | Material.022
+217: Lower | Cylinder.000_Material.022_0 | Material.022
+218: Lower | Cylinder.000_Material.022_0 | Material.022
+219: End A | Cylinder.000_Material.022_0 | Material.022
+220: End A | Cylinder.000_Material.022_0 | Material.022
+221: End A | Cylinder.000_Material.022_0 | Material.022
+222: End A | Cylinder.000_Material.022_0 | Material.022
+223: End B | Cylinder.000_Material.022_0 | Material.022
+224: End B | Cylinder.000_Material.022_0 | Material.022
+225: End B | Cylinder.000_Material.022_0 | Material.022
+226: End B | Cylinder.000_Material.022_0 | Material.022
+227: Side A | Cylinder.000_Material.021_0 | Material.021
+228: Side A | Cylinder.000_Material.021_0 | Material.021
+229: Side A | Cylinder.000_Material.021_0 | Material.021
+230: Side A | Cylinder.000_Material.021_0 | Material.021
+231: Side B | Cylinder.000_Material.021_0 | Material.021
+232: Side B | Cylinder.000_Material.021_0 | Material.021
+233: Side B | Cylinder.000_Material.021_0 | Material.021
+234: Upper | Cylinder.000_Material.021_0 | Material.021
+235: Upper | Cylinder.000_Material.021_0 | Material.021
+236: Upper | Cylinder.000_Material.021_0 | Material.021
+237: Lower | Cylinder.000_Material.021_0 | Material.021
+238: Lower | Cylinder.000_Material.021_0 | Material.021
+239: Lower | Cylinder.000_Material.021_0 | Material.021
+240: End A | Cylinder.000_Material.021_0 | Material.021
+241: End A | Cylinder.000_Material.021_0 | Material.021
+242: End A | Cylinder.000_Material.021_0 | Material.021
+243: End A | Cylinder.000_Material.021_0 | Material.021
+244: End A | Cylinder.000_Material.021_0 | Material.021
+245: End A | Cylinder.000_Material.021_0 | Material.021
+246: End B | Cylinder.000_Material.021_0 | Material.021
+247: End B | Cylinder.000_Material.021_0 | Material.021
+248: End B | Cylinder.000_Material.021_0 | Material.021
+249: End B | Cylinder.000_Material.021_0 | Material.021
+250: End B | Cylinder.000_Material.021_0 | Material.021
+251: End B | Cylinder.000_Material.021_0 | Material.021
+252: Side A | Cylinder.000_Material.020_0 | Material.020
+253: Side B | Cylinder.000_Material.020_0 | Material.020
+254: Upper | Cylinder.000_Material.020_0 | Material.020
+255: Lower | Cylinder.000_Material.020_0 | Material.020
+256: End A | Cylinder.000_Material.020_0 | Material.020
+257: End B | Cylinder.000_Material.020_0 | Material.020
+258: End A | Cylinder.000_Material.019_0 | Material.019
+259: End B | Cylinder.000_Material.019_0 | Material.019
+260: Side A | Cylinder.000_Material.018_0 | Material.018
+261: Side A | Cylinder.000_Material.018_0 | Material.018
+262: Side B | Cylinder.000_Material.018_0 | Material.018
+263: Side B | Cylinder.000_Material.018_0 | Material.018
+264: Upper | Cylinder.000_Material.018_0 | Material.018
+265: Upper | Cylinder.000_Material.018_0 | Material.018
+266: Lower | Cylinder.000_Material.018_0 | Material.018
+267: Lower | Cylinder.000_Material.018_0 | Material.018
+268: End A | Cylinder.000_Material.018_0 | Material.018
+269: End A | Cylinder.000_Material.018_0 | Material.018
+270: End B | Cylinder.000_Material.018_0 | Material.018

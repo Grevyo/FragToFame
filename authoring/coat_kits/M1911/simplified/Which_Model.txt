@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+Coat_Templates\M1911\Coat_Ready.glb
+
+SHA-256: b14090a7e7d1902a0c6607dffa3e662ae8ae2bad1492842f65df65b3d9cfc025
+Texture size: 2048 x 2048
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

@@ -1,0 +1,7 @@
+Use this model from your Guns folder:
+AK47.glb
+
+SHA-256: 87d47b02b07953a533f2c6455db70aaa13113a1633b292c3b5c06a112e007f14
+Texture size: 1024 x 1024
+
+Start_Here.png shows the sample Coat rendered on the two sides. The numbered zones match the mask PNGs. Stock details stay stock in the sample. Use the masks to paint. For artwork across seams use the full UV guide or paint on the 3D model, then export the flat colour PNG. These starter files share the exact UV mapping of the listed model.

@@ -42,7 +42,7 @@ func _run_steps(state: WeaponState, steps: int, trigger: bool, motion: ShooterMo
 
 func _test_catalog() -> void:
 	section("Weapon catalog")
-	check(WeaponCatalog.ids().size() == 3, "three sandbox weapons defined")
+	check(WeaponCatalog.ids().size() == 13, "three development weapons and ten modelled weapons are defined")
 	var slots: Dictionary[int, bool] = {}
 	for id: StringName in WeaponCatalog.ids():
 		var d := WeaponCatalog.get_definition(id)

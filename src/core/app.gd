@@ -16,6 +16,7 @@ const SCENE_CREATION_STUDIO: StringName = &"creation_studio"
 const SCENE_CAREER_SELECT: StringName = &"career_select"
 const SCENE_MAP_SELECT: StringName = &"map_select"
 const SCENE_CONTROLS: StringName = &"controls"
+const SCENE_ARMOURY: StringName = &"armoury"
 
 const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_MAIN_MENU: "res://scenes/main_menu/main_menu.tscn",
@@ -25,6 +26,7 @@ const SCENE_PATHS: Dictionary[StringName, String] = {
 	SCENE_CAREER_SELECT: "res://scenes/career_select/career_select.tscn",
 	SCENE_MAP_SELECT: "res://scenes/map_select/map_select.tscn",
 	SCENE_CONTROLS: "res://scenes/settings/controls_screen.tscn",
+	SCENE_ARMOURY: "res://scenes/armoury/armoury.tscn",
 }
 
 ## Emitted after the open career moves to a later day.

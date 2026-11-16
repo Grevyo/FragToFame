@@ -32,6 +32,7 @@ func _ready() -> void:
 	hud.join_match_requested.connect(_on_join_match_requested)
 	hud.leave_match_requested.connect(func() -> void: match_session.leave("left"))
 	hud.practice_match_requested.connect(_on_practice_match_requested)
+	hud.sandbox_weapons_chosen.connect(set_sandbox_weapons)
 	match_session.local_body = player
 	match_session.session_ended.connect(_on_session_ended)
 	effects.bind(player.weapons, player.camera)
@@ -128,6 +129,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(InputActions.PAUSE_MENU) and match_director != null and match_director.handle_escape():
 		get_viewport().set_input_as_handled()
 		return
+	if event.is_action_pressed(InputActions.INSPECT) and not is_paused and not _match_owns_mouse():
+		effects.inspect()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed(InputActions.PAUSE_MENU):
 		if is_paused:
 			resume()
@@ -161,6 +166,15 @@ func _process(delta: float) -> void:
 			respawn_player()
 		else:
 			hud.set_death_state(_respawn_left, _death_cause)
+
+
+## Free roam only: carry the chosen primary and secondary (plus the development SMG in slot 3).
+func set_sandbox_weapons(primary: StringName, secondary: StringName) -> bool:
+	if match_director != null or WeaponCatalog.get_definition(primary) == null or WeaponCatalog.get_definition(secondary) == null:
+		return false
+	player.weapons.set_loadout([primary, secondary, WeaponCatalog.WASP_SMG])
+	player.weapons.weapon_switched.emit(player.weapons.current())
+	return true
 
 
 func respawn_player() -> void:

@@ -10,6 +10,7 @@ signal host_match_requested(port: int)
 signal join_match_requested(address: String, port: int)
 signal leave_match_requested
 signal practice_match_requested
+signal sandbox_weapons_chosen(primary: StringName, secondary: StringName)
 
 var pause_overlay: Control
 var resume_button: Button
@@ -17,6 +18,12 @@ var main_menu_button: Button
 var editor_button: Button
 var practice_button: Button
 var controls_button: Button
+## Free-roam weapon choice (hidden during matches).
+var primary_option: OptionButton
+var secondary_option: OptionButton
+var _primary_ids: Array[StringName] = []
+var _secondary_ids: Array[StringName] = []
+var _weapon_row: Control
 ## The Controls screen while it is open over the pause menu (null otherwise).
 var controls_screen: ControlsScreen = null
 ## Map choice for a new practice match: the loaded map, an official map or the dev arena.
@@ -100,10 +107,21 @@ func set_mode(title: String, playtest: bool, in_match: bool = false, career_fixt
 	editor_button.visible = playtest
 	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 · 5v5 with bots)"
 	map_option.visible = not in_match
+	_weapon_row.visible = not in_match
 	_network_section.visible = not career_fixture
 	if career_fixture:
 		practice_button.text = "Restart fixture"
 		main_menu_button.text = "Return to Career Hub"
+
+
+## Selects the sandbox weapons by ID and applies them. Returns false for an ID that is not offered.
+func choose_sandbox_weapons(primary: StringName, secondary: StringName) -> bool:
+	if not _primary_ids.has(primary) or not _secondary_ids.has(secondary):
+		return false
+	primary_option.select(_primary_ids.find(primary))
+	secondary_option.select(_secondary_ids.find(secondary))
+	sandbox_weapons_chosen.emit(primary, secondary)
+	return true
 
 
 ## Opens the Controls screen over the pause menu.
@@ -419,6 +437,24 @@ func _build_pause_overlay() -> void:
 	practice_button = UIFactory.button("Start practice match (MR3 · 5v5 with bots)")
 	practice_button.pressed.connect(practice_match_requested.emit)
 	column.add_child(practice_button)
+	_weapon_row = UIFactory.hbox(8)
+	primary_option = OptionButton.new()
+	secondary_option = OptionButton.new()
+	for id: StringName in WeaponCatalog.ids():
+		var definition := WeaponCatalog.get_definition(id)
+		if definition.category == WeaponDefinition.CATEGORY_SECONDARY:
+			secondary_option.add_item(definition.display_name)
+			_secondary_ids.append(id)
+		elif definition.slot == 1:
+			primary_option.add_item(definition.display_name)
+			_primary_ids.append(id)
+	for option: OptionButton in [primary_option, secondary_option]:
+		option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		option.tooltip_text = "Weapon to carry in the sandbox"
+		option.item_selected.connect(func(_index: int) -> void:
+			sandbox_weapons_chosen.emit(_primary_ids[primary_option.selected], _secondary_ids[secondary_option.selected]))
+		_weapon_row.add_child(option)
+	column.add_child(_weapon_row)
 	controls_button = UIFactory.button("Controls")
 	controls_button.pressed.connect(open_controls)
 	column.add_child(controls_button)

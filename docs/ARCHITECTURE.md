@@ -47,7 +47,11 @@ Key rules:
 ```
 project.godot                 Forward+, typed-GDScript warnings, App autoload
 icon.svg
+assets/weapons/, assets/magnets/   Runtime weapon models, Coat zone masks and Magnet artwork
+authoring/coat_kits/           Coat kits and templates for artists (.gdignore: never imported or exported)
+data/weapons/, data/coats/     Magnet slot data; official Coat records
 src/
+  cosmetics/                  WeaponModels, WeaponVisual, CoatLibrary, MagnetCatalog, CosmeticProfile
   core/app.gd                 Autoload "App": scene routing, app-wide setup (theme, input)
 src/core/input_actions.gd       InputActions: action names + default bindings, registered at boot
   core/ids.gd                 Ids: stable "<prefix>_<time><random>" string IDs
@@ -467,6 +471,55 @@ Cup brackets, promotion and relegation, and the F2F Universal Ladder remain plan
 - **No career coupling.** Bots receive a `BotSkill`; later the career will map professionals'
   simulated abilities to skills when building a `MatchSetup` — the FPS runtime never reads them.
 
+### Weapons, Coats and Magnets
+
+Terminology used everywhere, including the UI: a **Coat** is a weapon finish (camo/skin); a
+**Magnet** is a weapon sticker.
+
+```
+ assets/weapons/<id>/model.glb ─► WeaponVisual ─► first-person viewmodel (WeaponEffects)
+ WeaponModels (orientation, size,      │        ─► inspection (F) and the Armoury preview
+   Coat layout, zones, slot layout)    ├─ apply_coat(texture)   replaces albedo on painted surfaces
+ data/weapons/magnet_slots.json ───────┴─ set_magnet(slot, id)  one Decal per slot, on top
+ CoatLibrary   official res://data/coats/coats.json + player user://coats/*.coat.json
+ MagnetCatalog res://assets/magnets/<id>.png (26)
+ CosmeticProfile  user://profile/cosmetics.json  ◄── Armoury (draft, Save)
+```
+
+- **Two layers per weapon.** `WeaponCatalog` keeps gameplay numbers; `WeaponModels` keeps
+  presentation (model, how to turn and scale it into weapon space, Coat texture size, kit,
+  zones, slot layout, credit). Nothing in `src/cosmetics` affects how a weapon shoots.
+- **Weapon space.** Barrel along −Z, up +Y, left side −X, centred, true length in metres.
+  `WeaponVisual` computes the fit once per weapon; skinned models are measured through their
+  skeleton. Parts a source file lays out beside the gun can be hidden or aligned (`hide`, `align`).
+- **Factory finish.** Each model keeps its own materials and textures. A Coat duplicates the
+  factory material and swaps only its albedo texture; removing the Coat restores the factory
+  material object. An empty Coat ID always means factory.
+- **Coats are data.** A Coat is a PNG in the weapon's Coat layout plus a record
+  (`f2f.coats` v1: id, name, weapon, rarity, texture, source, unlock). Official records live in
+  `res://data/coats/coats.json` (empty today), player Coats in `user://coats`. Adding one needs
+  no code. A Coat only fits the weapon it names, and its texture must match the layout size.
+- **Kit conversion.** The simplified kits export a full-size PNG in the layout of the model
+  shipped in `assets/weapons` (the model each kit's `Which_Model.txt` names), so an export is
+  used as-is by `CoatLibrary.import_png`. The kits' zone masks ship in
+  `assets/weapons/<id>/zones`; `CoatLibrary.compose` paints zones (flat colour or artwork) over
+  a base image through those masks, which is the basis for in-game painting later.
+- **Magnets.** Five slots per weapon. The layout (side, position along and up the weapon, size)
+  is authored in `WeaponModels`; `tools/build_magnet_slots.gd` projects each onto the mesh and
+  stores the surface point and the Coat UV under it. At runtime each slot is a `Decal` that
+  projects in from its side, so a Magnet follows the surface, sits on top of any Coat and is
+  never baked into one. Decals and weapon meshes share a render layer so Magnets never mark the
+  world. A fixed matt, non-metallic ORM keeps Magnets readable on bare metal.
+- **Customisation.** `CosmeticProfile` (`f2f.cosmetics` v1) stores, per weapon, the Coat ID and
+  five Magnet IDs. It belongs to the player, not to a career, so the career database is not
+  involved. Stale entries load as factory finish / empty slot. The Armoury edits a draft and
+  writes on Save.
+- **Authoring vs runtime.** `authoring/coat_kits` holds the kits and templates (with a
+  `.gdignore`, so Godot neither imports nor exports them). `tools/import_weapon_assets.py`
+  copies everything from the source folders and can be re-run.
+- **Not yet:** shipped Coats, in-game painting, unlocks, drops, rarity effects, inventory.
+  The records already carry rarity and unlock fields, and `is_unlocked` is the single gate.
+
 ### Input
 
 `InputActions.DEFINITIONS` lists every action with its label, Controls-screen group, context
@@ -575,4 +628,9 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Kilnmarket authored by a session script that drives the Creation Studio scene (`tools/author_kilnmarket.gd`) | A headless agent cannot click; this uses only editor operations and leaves a rebuildable record. To be replaced by hand edits in the editor as the map is iterated |
 | 2026-11-15 | User bindings stored as strings per action and applied to `InputMap`; conflicts scoped by context | Gameplay code keeps using action names; game and editor can reuse keys |
 | 2026-11-15 | Esc is locked to the pause menu | A player can never bind themselves out of the menus |
+| 2026-11-16 | Third-party weapon models (CC BY 4.0) and real weapon names, at the owner's direction | Supersedes "all content original" for weapons only; attribution in CREDITS.md. Two models have no recorded licence (open item) |
+| 2026-11-16 | Magnets are decals on fixed slots, not texture edits | Independent of Coats, work on any future Coat, cheap to add and remove |
+| 2026-11-16 | A Coat swaps albedo only and must match the kit's layout size | Kits export exactly what the game loads; factory normal/roughness maps stay |
+| 2026-11-16 | Cosmetics saved in a player profile file, not the career database | A look follows the player across careers and modes; no schema change |
+| 2026-11-16 | The ten modelled weapons are added beside the three development weapons | Existing tests, saves and bot buying keep working; retiring the placeholders is the owner's call |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

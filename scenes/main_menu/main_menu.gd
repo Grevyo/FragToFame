@@ -5,6 +5,7 @@ var career_button: Button
 var sandbox_button: Button
 var studio_button: Button
 var controls_button: Button
+var armoury_button: Button
 var quit_button: Button
 
 
@@ -48,6 +49,7 @@ func _build() -> void:
 	career_button = _menu_button(column, "Career Hub", _on_career_pressed)
 	sandbox_button = _menu_button(column, "FPS Sandbox", _on_sandbox_pressed)
 	studio_button = _menu_button(column, "Creation Studio", _on_studio_pressed)
+	armoury_button = _menu_button(column, "Armoury", func() -> void: App.go_to(App.SCENE_ARMOURY))
 	controls_button = _menu_button(column, "Controls", func() -> void: App.go_to(App.SCENE_CONTROLS))
 	quit_button = _menu_button(column, "Quit", _on_quit_pressed)
 

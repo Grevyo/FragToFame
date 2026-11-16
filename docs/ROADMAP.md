@@ -470,4 +470,5 @@ Planned scope:
 | 2026-11-15 | M13: day-by-day calendar with simulated AI series and calendar conflicts. Godot 4.7.2 validation passed 886 checks. |
 | 2026-11-15 | M16 first slice: map creator tools (multi-select, clipboard, prefabs, gizmos, snapping, measuring, top view, 54-piece catalogue, materials, lighting, autosave, layers), AI support (navmesh analysis, timings, areas, anchors, hints, tactic compatibility) and the first official map, Kilnmarket. Godot 4.7.2 validation passed 1203 checks. Manual editor and map walkthrough remains open. |
 | 2026-11-15 | FPS Sandbox map select, a Controls screen (remapping, up to four bindings per action, saved) and sandbox noclip (V). Owner request, outside the milestone list. |
+| 2026-11-16 | Weapons, Coats and Magnets (owner request): ten modelled weapons in first person with inspection, Coat infrastructure for the simplified kits (no Coats shipped), 26 Magnets on five slots per weapon, Armoury screen, saved customisation. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

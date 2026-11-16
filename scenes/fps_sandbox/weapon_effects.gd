@@ -8,10 +8,14 @@ const IMPACT_LIFETIME: float = 12.0
 const TRACER_LIFETIME: float = 0.06
 const VIEWMODEL_REST := Vector3(0.17, -0.17, -0.3)
 const VIEWMODEL_SCALE: float = 0.62
+## Seconds a weapon inspection takes (shows the left side, then the right, then returns).
+const INSPECT_TIME: float = 3.2
 
 var weapons: WeaponController
 var viewmodel: Node3D
 var impact_count: int = 0
+## The modelled weapon in hand (null while a development weapon without a model is held).
+var weapon_visual: WeaponVisual = null
 
 var _camera: Camera3D
 var _gun_root: Node3D
@@ -20,6 +24,7 @@ var _flash_light: OmniLight3D
 var _flash_mesh: MeshInstance3D
 var _flash_left: float = 0.0
 var _kick: float = 0.0
+var _inspect_left: float = 0.0
 var _impacts: Array[Node3D] = []
 var _tracer_material := StandardMaterial3D.new()
 var _impact_material := StandardMaterial3D.new()
@@ -58,6 +63,9 @@ func _process(delta: float) -> void:
 		lower = maxf(lower, weapons.draw_remaining / state.definition.draw_time)
 	viewmodel.position = VIEWMODEL_REST + Vector3(0, -0.18 * lower, 0.06 * _kick)
 	viewmodel.rotation_degrees = Vector3(4.0 * _kick - 35.0 * lower, 0, 0)
+	if _inspect_left > 0.0:
+		_inspect_left = 0.0 if lower > 0.0 else maxf(_inspect_left - delta, 0.0)
+		_apply_inspect_pose(1.0 - _inspect_left / INSPECT_TIME)
 	if _flash_left > 0.0:
 		_flash_left -= delta
 		var on := _flash_left > 0.0
@@ -65,13 +73,47 @@ func _process(delta: float) -> void:
 		_flash_mesh.visible = on
 
 
+## Starts the weapon inspection (turns the weapon to show both sides). Returns false when there
+## is nothing to inspect or the weapon is busy.
+func inspect() -> bool:
+	var state := weapons.current() if weapons != null else null
+	if state == null or state.is_reloading() or weapons.draw_remaining > 0.0:
+		return false
+	_inspect_left = INSPECT_TIME
+	return true
+
+
+func is_inspecting() -> bool:
+	return _inspect_left > 0.0
+
+
+## Inspection pose at [param progress] 0..1: bring the weapon to the middle of the view, turn
+## it to show its left side, then its right side, then return.
+func _apply_inspect_pose(progress: float) -> void:
+	var blend := smoothstep(0.0, 0.15, progress) * (1.0 - smoothstep(0.85, 1.0, progress))
+	var turn := sin(clampf((progress - 0.1) / 0.8, 0.0, 1.0) * TAU)
+	viewmodel.position = viewmodel.position.lerp(Vector3(0.02, -0.1, -0.42), blend)
+	viewmodel.rotation_degrees += Vector3(8.0, -75.0 * turn, 12.0 * turn) * blend
+
+
+## Re-applies the saved Coat and Magnets to the weapon in hand (after a change in the Armoury).
+func refresh_cosmetics() -> void:
+	if weapon_visual != null:
+		weapon_visual.apply_loadout(CosmeticProfile.current().loadout(weapon_visual.weapon_id))
+
+
 func _build_gun() -> void:
 	if _gun_root != null:
 		_gun_root.queue_free()
 	_gun_root = Node3D.new()
 	viewmodel.add_child(_gun_root)
+	weapon_visual = null
+	_inspect_left = 0.0
 	var state := weapons.current()
 	var id := state.definition.id if state != null else &""
+	if WeaponModels.has_model(id):
+		_build_modelled_gun(id)
+		return
 	var length := 0.55
 	var color := Color("2b2f36")
 	match id:
@@ -86,8 +128,27 @@ func _build_gun() -> void:
 	_part(Vector3(0.02, 0.02, 0.12), Vector3(0, 0.0, -length - 0.06), Color("15171a"))
 	if id != WeaponCatalog.KESTREL_PISTOL:
 		_part(Vector3(0.05, 0.14, 0.05), Vector3(0, -0.11, -length * 0.55), Color("ff6a2a").darkened(0.35))
+	_add_muzzle(Vector3(0, 0, -length - 0.14))
+
+
+## A modelled weapon at true size, wearing the player's Coat and Magnets.
+func _build_modelled_gun(id: StringName) -> void:
+	_gun_root.scale = Vector3.ONE / VIEWMODEL_SCALE  # The viewmodel node is scaled for the old boxes.
+	weapon_visual = WeaponVisual.new()
+	_gun_root.add_child(weapon_visual)
+	weapon_visual.setup(id)
+	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(id))
+	var length := weapon_visual.size.z
+	# Long guns sit with the butt just behind the view; pistols are held out in front.
+	var centre_z := 0.36 - length / 2.0 if length > 0.5 else 0.08 - length / 2.0
+	var view: Vector3 = WeaponModels.info(id).get("view_offset", Vector3.ZERO)
+	weapon_visual.position = Vector3(0, -weapon_visual.size.y * 0.22, centre_z) + view
+	_add_muzzle(weapon_visual.position + Vector3(0, weapon_visual.size.y * 0.3, -length / 2.0 - 0.02))
+
+
+func _add_muzzle(at: Vector3) -> void:
 	_muzzle = Node3D.new()
-	_muzzle.position = Vector3(0, 0, -length - 0.14)
+	_muzzle.position = at
 	_gun_root.add_child(_muzzle)
 	_flash_light = OmniLight3D.new()
 	_flash_light.light_color = Color(1.0, 0.75, 0.4)
@@ -122,6 +183,7 @@ func _part(size: Vector3, local_position: Vector3, color: Color) -> void:
 
 func _on_shot_fired(_origin: Vector3, end_position: Vector3, result: Hitscan.Result) -> void:
 	_kick = 1.0
+	_inspect_left = 0.0
 	_flash_left = 0.045
 	var start := _muzzle.global_position if _muzzle != null else _origin
 	_spawn_tracer(start, end_position)

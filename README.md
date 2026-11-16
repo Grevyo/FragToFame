@@ -414,6 +414,23 @@ Kilnmarket (official map):
 - [ ] In the FPS Sandbox press **V**: fly through walls with WASD, Space up, Ctrl down, Shift
       faster. Press V again to drop. In a practice match V does nothing.
 
+### Manual test checklist (Weapons, Coats and Magnets)
+
+- [ ] **Main menu → Armoury**. Step through all ten weapons: each shows its factory finish.
+      Drag to turn the weapon and use the wheel to zoom.
+- [ ] Pick a slot, click a Magnet, and check it sits on the weapon where the ring is. Fill all
+      five slots with different Magnets, remove one, then **Save customisation**.
+- [ ] Quit, relaunch, open the Armoury: the Magnets are still there.
+- [ ] The Coat list shows only **Factory finish**. Export a PNG from a simplified kit at its
+      original size and use **Import a Coat PNG made with the kit…**: it appears in the list
+      and on the weapon, with the Magnets still on top.
+- [ ] **FPS Sandbox → Esc**: choose a primary and a secondary from the two weapon lists. Keys
+      1 and 2 switch between them. Check each of the ten in first person.
+- [ ] Press **F** to inspect: the weapon turns to show both sides with your Magnets.
+- [ ] Fire, reload and switch weapons with each one. In a practice match, buy them (B).
+- [ ] Judge the first-person position of each weapon and the Magnet slot positions and sizes;
+      note any weapon whose slots should move.
+
 ## Project layout
 
 ```

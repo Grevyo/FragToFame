@@ -19,7 +19,10 @@ Godot 4.7.2 game. These rules persist across sessions.
 - Prefer native Godot features. No major plugins/GDExtensions without written justification in
   `docs/ARCHITECTURE.md` (decisions log). No paid services. No cloud AI at runtime.
 - All content must be original. Never import Counter-Strike, LIGA or other copyrighted assets,
-  names, maps or logos.
+  names, maps or logos. Exception (owner, 2026-11-16): the weapon models are third-party CC BY
+  work with real weapon names; keep `CREDITS.md` accurate when weapons change.
+- Player-facing words: **Coats** (weapon finishes) and **Magnets** (weapon stickers). Do not
+  create Coat or Magnet artwork; the owner supplies it.
 
 ## Architecture rules (non-negotiable)
 
@@ -37,6 +40,9 @@ Godot 4.7.2 game. These rules persist across sessions.
 
 ```
 addons/godot-sqlite/  SQLite GDExtension (vendor; trimmed to Windows/Linux x86_64; only src/career uses it)
+assets/        runtime weapon models, Coat zone masks, Magnet artwork (copied by tools/import_weapon_assets.py)
+authoring/     Coat kits and templates for artists (.gdignore; never in builds)
+src/cosmetics/ weapon models, Coats, Magnets and the player's customisation (presentation only)
 src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
 src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource);

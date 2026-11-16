@@ -126,7 +126,7 @@ func timing(label: String, group: String = "") -> Dictionary:
 func timing_text() -> String:
 	if timings.is_empty():
 		return "No route timings: place spawns, bombsites and callout areas with a timing role."
-	var lines: Array[String] = ["Route timings (shortest path; pistol/SMG %.2f m/s, rifle %.2f m/s)" % [
+	var lines: Array[String] = ["Route timings (shortest path; G17 %.2f m/s, AK-47 %.2f m/s)" % [
 		MapSnapping.RUN_SPEED, MapSnapping.RUN_SPEED * MapSnapping.RIFLE_MOBILITY]]
 	var group := ""
 	for entry: Dictionary in timings:
@@ -138,7 +138,7 @@ func timing_text() -> String:
 			continue
 		var spread := "" if is_equal_approx(float(entry["length_min"]), float(entry["length_max"])) \
 			else "  (spawns %.1f–%.1f m)" % [float(entry["length_min"]), float(entry["length_max"])]
-		lines.append("  %s — %.1f m · %.1f s · rifle %.1f s%s" % [entry["label"], float(entry["length_min"]),
+		lines.append("  %s — %.1f m · %.1f s · AK-47 %.1f s%s" % [entry["label"], float(entry["length_min"]),
 			float(entry["seconds"]), float(entry["seconds_rifle"]), spread])
 	return "\n".join(lines)
 

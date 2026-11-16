@@ -70,8 +70,7 @@ func _build_latest_weapons(counts: Dictionary) -> void:
 	var rows: Array[PackedStringArray] = []
 	for id: String in weapons:
 		var stats := weapons[id] as Dictionary
-		var definition := WeaponCatalog.get_definition(StringName(id))
-		var label := definition.display_name if definition != null else id
+		var label := WeaponCatalog.recorded_name(StringName(id))
 		rows.append(PackedStringArray([label, str(stats["shots"]), str(stats["hits"]), str(stats["kills"])]))
 	UIFactory.table(card, PackedStringArray(["Weapon", "Shots", "Hits", "Kills"]), rows)
 

@@ -8,6 +8,7 @@ signal buy_menu_closed
 signal main_menu_requested
 signal play_again_requested
 
+var practice_shop_only: bool = false
 var buy_panel: Control
 var end_panel: Control
 var main_menu_button: Button
@@ -34,6 +35,9 @@ var _end_detail: Label
 
 func _ready() -> void:
 	layer = 2
+	if practice_shop_only:
+		_build_buy_panel()
+		return
 	_build_scoreboard()
 	_build_money()
 	_build_center()
@@ -106,7 +110,8 @@ func show_buy_menu(entries: Array[Dictionary], money: int, message: String = "")
 		child.queue_free()
 	for entry: Dictionary in entries:
 		var row := UIFactory.hbox(10)
-		var b := UIFactory.button("%s   $%d" % [entry["name"], entry["price"]])
+		var label := str(entry["name"]) if practice_shop_only else "%s   $%d" % [entry["name"], entry["price"]]
+		var b := UIFactory.button(label)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.disabled = not bool(entry["enabled"])
@@ -117,7 +122,7 @@ func show_buy_menu(entries: Array[Dictionary], money: int, message: String = "")
 		note.custom_minimum_size.x = 120
 		row.add_child(note)
 		_buy_list.add_child(row)
-	_buy_money.text = "Money: $%d" % money
+	_buy_money.text = "Free equipment" if practice_shop_only else "Money: $%d" % money
 	_buy_message.text = message
 	buy_panel.visible = true
 

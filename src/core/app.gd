@@ -40,7 +40,7 @@ var playtest_map: MapDocument = null
 var sandbox_map: MapDocument = null
 ## Editor state preserved across a playtest so unsaved work is not lost. Consumed by the studio.
 var editor_session: Dictionary = {}
-## Playtest choices from the editor: {"team": "attack" | "defence", "spawn": index}.
+## Playtest choices from the editor: starting team, spawn and whether to run a bot match.
 var playtest_options: Dictionary = {}
 ## Match the FPS runtime should run when it next loads (consumed by the runtime).
 var pending_match_setup: MatchSetup = null
@@ -218,7 +218,7 @@ func start_playtest(doc: MapDocument, session: Dictionary, options: Dictionary =
 	playtest_map = doc
 	playtest_options = options
 	editor_session = session
-	return go_to(SCENE_FPS_SANDBOX)
+	return start_playtest_with_bots() if bool(options.get("bots", false)) else go_to(SCENE_FPS_SANDBOX)
 
 
 ## Opens the FPS Sandbox on [param doc] (free roam; chosen on the map select screen).
@@ -236,11 +236,23 @@ func is_playtesting() -> bool:
 
 func end_playtest() -> Error:
 	playtest_map = null
+	playtest_options = {}
 	return go_to(SCENE_CREATION_STUDIO)
 
 
+## Starts or restarts a bot match on the current editor snapshot.
+func start_playtest_with_bots() -> Error:
+	if playtest_map == null:
+		return ERR_UNCONFIGURED
+	return start_practice_match(playtest_map, &"normal", {
+		"editor_playtest": true,
+		"playtest_team": playtest_options.get("team", "attack"),
+		"playtest_spawn": playtest_options.get("spawn", 0),
+	})
+
+
 ## Starts a local practice match (MR3, 5v5 with bot teammates and opponents) on [param doc], or the sandbox arena.
-func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal") -> Error:
+func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal", options: Dictionary = {}) -> Error:
 	var map := doc if doc != null else MapTemplates.sandbox_arena()
 	var setup := MatchSetup.new()
 	setup.fixture_id = Ids.generate("practice")
@@ -251,7 +263,9 @@ func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal"
 	setup.away_team_name = "Practice Bots"
 	setup.max_rounds = 3
 	setup.map_id = map.map_id
-	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots", "skill": String(skill)})
+	var match_options := {"opponents": "bots", "skill": String(skill)}
+	match_options.merge(options)
+	return start_match(setup, MatchRules.practice(setup.max_rounds), map, match_options)
 
 
 ## Opens the FPS runtime to play [param setup] under [param rules] on [param map].
@@ -263,7 +277,8 @@ func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument, options
 	pending_match_setup = setup
 	pending_match_rules = rules
 	pending_match_map = map
-	playtest_map = null
+	if not bool(options.get("editor_playtest", false)):
+		playtest_map = null
 	var error := go_to(SCENE_FPS_SANDBOX)
 	if error != OK:
 		consume_pending_match()

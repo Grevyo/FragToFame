@@ -91,12 +91,12 @@ var events: Array[Dictionary] = []
 
 
 ## [param match_setup] is the contract from orchestration; its MR value overrides the rules'.
-func _init(match_setup: MatchSetup, match_rules: MatchRules) -> void:
+func _init(match_setup: MatchSetup, match_rules: MatchRules, home_side: StringName = MatchRules.SIDE_ATTACK) -> void:
 	setup = match_setup
 	rules = match_rules
 	rules.max_rounds = maxi(setup.max_rounds, 1)
-	teams.append(_make_team(setup.home_team_id, setup.home_team_name, MatchRules.SIDE_ATTACK))
-	teams.append(_make_team(setup.away_team_id, setup.away_team_name, MatchRules.SIDE_DEFENCE))
+	teams.append(_make_team(setup.home_team_id, setup.home_team_name, home_side))
+	teams.append(_make_team(setup.away_team_id, setup.away_team_name, MatchRules.other_side(home_side)))
 
 
 static func _make_team(id: String, display_name: String, side: StringName) -> TeamState:
@@ -291,7 +291,7 @@ func record_kill(victim_id: String, killer_id: String, weapon_id: StringName, he
 	var reward := 0
 	if killer != null and killer != victim and killer.team != victim.team:
 		killer.kills += 1
-		reward = ShopCatalog.kill_reward(weapon_id)
+		reward = ShopCatalog.KILL_REWARD
 		_add_money(killer, reward)
 	_log("kill", {"victim": victim_id, "killer": killer_id, "weapon": String(weapon_id),
 		"headshot": headshot, "reward": reward,

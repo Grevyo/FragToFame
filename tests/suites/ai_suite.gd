@@ -20,6 +20,7 @@ func run() -> void:
 	_test_aim_model()
 	_test_skills()
 	await _test_movement_parity()
+	await _test_sandbox_bots()
 	await _test_world()
 
 
@@ -80,8 +81,8 @@ func _test_movement_parity() -> void:
 	player.set_spawn(p_start, 0.0)
 	player.respawn()
 	bot.respawn_at(b_start, 0.0)
-	player.weapons.set_loadout([WeaponCatalog.VANTA_RIFLE])
-	bot.weapons.set_loadout([WeaponCatalog.VANTA_RIFLE])
+	player.weapons.set_loadout([WeaponCatalog.AK47])
+	bot.weapons.set_loadout([WeaponCatalog.AK47])
 	await wait_physics_frames(15)
 
 	player.scripted_move = Vector2.RIGHT
@@ -133,6 +134,23 @@ func _test_movement_parity() -> void:
 	await wait_physics_frames(27)
 	check(_same_movement(player, bot) and bot.is_on_floor() and bot.movement.stamina > 0.0,
 		"landing and its stamina cost match")
+
+	await wait_physics_frames(60)
+	var run_speed := player.current_max_speed()
+	player.scripted_jump = true
+	bot.request_jump()
+	await wait_physics_frames(2)
+	for i: int in 60:
+		if player.is_on_floor():
+			break
+		await wait_physics_frames(1)
+	player.scripted_jump = true
+	bot.request_jump()
+	await wait_physics_frames(2)
+	check(not player.is_on_floor() and _same_movement(player, bot)
+		and is_equal_approx(player.horizontal_speed(), run_speed),
+		"the same landing-timed jump preserves rifle momentum for both combatants")
+
 	bot.respawn_at(b_start, 0.0)
 	check(bot.movement.stamina == 0.0 and bot.velocity == Vector3.ZERO and not bot.is_crouched(),
 		"bot respawn clears locomotion state")
@@ -143,6 +161,48 @@ func _same_movement(player: FirstPersonController, bot: BotController) -> bool:
 	return (player.velocity.is_equal_approx(bot.velocity)
 		and absf(player.global_position.y - bot.global_position.y) < 0.001
 		and is_equal_approx(player.movement.stamina, bot.movement.stamina))
+
+
+func _test_sandbox_bots() -> void:
+	section("Free-roam sandbox bots")
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	var hud := sandbox.get_node("Hud") as SandboxHud
+	var level := sandbox.get_node("Level") as SandboxLevel
+	var player := sandbox.get_node("Player") as FirstPersonController
+	var roster := sandbox.get_node("SandboxBots")
+	var bots := roster.get("bots") as Array[BotController]
+	check(bots.is_empty() and hud.remove_bots_button.disabled and level.navigation_region == null,
+		"the sandbox starts empty and only bakes navigation when needed")
+	sandbox.call("pause")
+	hud.add_bot_button.pressed.emit()
+	hud.add_bot_button.pressed.emit()
+	await wait_physics_frames(8)
+	check(bots.size() == 2 and not hud.remove_bots_button.disabled and level.navigation_region != null,
+		"the pause menu adds two bots without starting a practice match")
+	if bots.size() != 2:
+		await despawn(sandbox)
+		return
+	var first := bots[0]
+	var start := first.global_position
+	check(not first.can_process() and start.distance_to(bots[1].global_position) > 0.7,
+		"paused bots stay put and occupy separate spawns")
+	check(first.enemies == [player.health] and player.health.is_enemy_of(first.team),
+		"bots use the human as their opponent")
+	sandbox.call("resume")
+	check(await wait_until(func() -> bool: return first.global_position.distance_to(start) > 1.0),
+		"bots use map navigation to move toward the human")
+	first.health.kill()
+	check(not first.visible and not first.is_alive(), "a killed sandbox bot disappears")
+	check(await wait_until(func() -> bool: return first.is_alive(), 4.0) and first.visible,
+		"the bot respawns in free roam without a round restart")
+	sandbox.call("pause")
+	hud.remove_bots_button.pressed.emit()
+	await wait_physics_frames(2)
+	check(bots.is_empty() and roster.get_child_count() == 0 and hud.remove_bots_button.disabled,
+		"Remove All clears the bots and updates the menu")
+	await despawn(sandbox)
 
 
 func _test_world() -> void:

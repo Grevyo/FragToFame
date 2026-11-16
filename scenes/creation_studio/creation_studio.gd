@@ -2,14 +2,18 @@ extends Node3D
 ## Creation Studio — Map Creator.
 ##
 ## Wires the MapEditController (data + undo), MapEditorView (3D), StudioUI (2D), the gizmo and the
-## editor camera together and implements the Select, Place and Measure tools. Every edit is a
+## editor camera together and implements the Select, Place, Draw and Measure tools. Every edit is a
 ## public method here or on the controller, so the same operations the mouse and keyboard perform
 ## can be driven and tested without a window.
 
 const GROUND_PLANE_NORMAL: Vector3 = Vector3.UP
-const GHOST_COLOR: Color = Color(1.0, 0.42, 0.16, 0.35)
+const GHOST_COLOR: Color = Color(1.0, 0.42, 0.16, 0.65)
+## Render-only offsets keep the grid and snap marker above coplanar floor surfaces.
+const GRID_LIFT: float = 0.004
+const CURSOR_LIFT: float = 0.012
 const MESSAGE_SECONDS: float = 5.0
 const AUTOSAVE_SECONDS: float = 45.0
+const NAVMESH_REFRESH_DELAY: float = 0.35
 const BOX_SELECT_MIN_PIXELS: float = 6.0
 ## New lights are placed this far above the clicked surface.
 const LIGHT_PLACE_HEIGHT: float = 2.4
@@ -35,6 +39,7 @@ var official_source: bool = false
 var active_layer: String = MapDocument.DEFAULT_LAYER
 var playtest_team: String = "attack"
 var playtest_spawn: int = 0
+var playtest_with_bots: bool = false
 var measure_points: Array[Vector3] = []
 var measure_result: Dictionary = {}
 ## Latest navigation analysis (navmesh overlay, validation and timings); null until requested.
@@ -55,10 +60,17 @@ var _box_active: bool = false
 var _box_start: Vector2 = Vector2.ZERO
 var _box_rect: ReferenceRect
 var _hover_point: Variant = null
-var _ghost_half_height: float = 0.5
+var _draw_start: Variant = null
+var _surface_points := PackedVector3Array()
+var _surface_outline := MeshInstance3D.new()
+var _surface_hover: Variant = null
+var _place_preview: Node3D
+var _ghost_material := StandardMaterial3D.new()
+var _draw_box := MeshInstance3D.new()
 var _message: String = ""
 var _message_until: int = 0
 var _autosave_left: float = AUTOSAVE_SECONDS
+var _navmesh_refresh_left: float = 0.0
 var _autosaved_version: int = -1
 var _default_sun: Transform3D
 var _default_sun_energy: float = 1.0
@@ -67,7 +79,7 @@ var _default_ambient: Array = []
 @onready var camera: EditorFlyCamera = $EditorCamera
 @onready var grid: EditorGrid = $Grid
 @onready var cursor: MeshInstance3D = $Cursor
-@onready var ghost: MeshInstance3D = $Ghost
+@onready var ghost: Node3D = $Ghost
 @onready var view: MapEditorView = $MapView
 @onready var ui: StudioUI = $UI/StudioUI
 @onready var sun: DirectionalLight3D = $Sun
@@ -75,6 +87,22 @@ var _default_ambient: Array = []
 
 
 func _ready() -> void:
+	_ghost_material.albedo_color = GHOST_COLOR
+	_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_ghost_material.emission_enabled = true
+	_ghost_material.emission = GHOST_COLOR
+	_ghost_material.emission_energy_multiplier = 0.35
+	_draw_box.mesh = BoxMesh.new()
+	_draw_box.material_override = _ghost_material
+	_draw_box.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_draw_box.hide()
+	ghost.add_child(_draw_box)
+	var outline_material := StandardMaterial3D.new()
+	outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	outline_material.albedo_color = Color(1.0, 0.58, 0.24)
+	_surface_outline.material_override = outline_material
+	_surface_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_surface_outline)
 	var environment := world_environment.environment
 	_default_sun = sun.transform
 	_default_sun_energy = sun.light_energy
@@ -95,12 +123,17 @@ func _ready() -> void:
 	controller.history_changed.connect(_refresh_history)
 	controller.selection_changed.connect(func(_id: String) -> void: _refresh_inspector())
 	controller.piece_changed.connect(_on_piece_changed)
+	controller.piece_added.connect(_invalidate_navigation)
+	controller.piece_removed.connect(_invalidate_navigation)
 	controller.document_replaced.connect(_on_document_replaced)
 	controller.document_state_changed.connect(_on_document_state_changed)
+	_build_snap_marker()
 	_set_snap(ui.current_snap())
 	_set_tool(StudioUI.Tool.SELECT)
 	_on_document_replaced()
-	if not restored:
+	if restored and controller.is_dirty():
+		_autosaved_version = -1
+	elif not restored:
 		_offer_recovery()
 
 
@@ -113,16 +146,18 @@ func _restore_session_if_any() -> bool:
 		return false
 	var session := App.editor_session
 	App.editor_session = {}
-	var doc := MapDocument.from_dict(session.get("document", {}) as Dictionary)
-	if doc == null:
+	var restored_controller := session.get("controller") as MapEditController
+	if restored_controller == null:
 		return false
-	controller.set_document(doc)
+	controller = restored_controller
 	current_path = str(session.get("path", ""))
 	official_source = bool(session.get("official", false))
 	playtest_team = str(session.get("team", "attack"))
 	playtest_spawn = int(session.get("spawn", 0))
-	if bool(session.get("dirty", false)):
-		controller.version = 1  # Keep the "unsaved changes" state across the playtest.
+	playtest_with_bots = bool(session.get("with_bots", false))
+	ui.bot_playtest_check.set_pressed_no_signal(playtest_with_bots)
+	active_layer = str(session.get("active_layer", MapDocument.DEFAULT_LAYER))
+	ui.navmesh_check.set_pressed_no_signal(bool(session.get("show_navmesh", false)))
 	var camera_transform: Variant = session.get("camera", null)
 	if camera_transform is Transform3D:
 		camera.set_view(camera_transform as Transform3D)
@@ -164,13 +199,13 @@ func _on_action(action: StringName, value: Variant) -> void:
 		&"overhead":
 			set_overhead(bool(value))
 		&"navmesh":
+			ui.navmesh_check.set_pressed_no_signal(bool(value))
 			if bool(value):
 				refresh_navmesh()
 			else:
 				view.set_overlay(null)
 		&"navmesh_refresh":
 			refresh_navmesh()
-			ui.navmesh_check.set_pressed_no_signal(true)
 		&"timings":
 			show_timings()
 		&"playtest_team":
@@ -179,6 +214,8 @@ func _on_action(action: StringName, value: Variant) -> void:
 			_refresh_spawn_options()
 		&"playtest_spawn":
 			playtest_spawn = int(value)
+		&"playtest_bots":
+			playtest_with_bots = bool(value)
 		&"copy":
 			copy_selection()
 		&"paste":
@@ -193,6 +230,8 @@ func _on_action(action: StringName, value: Variant) -> void:
 		&"ungroup":
 			controller.ungroup_selection()
 			_refresh_inspector()
+		&"edit_brush":
+			_open_brush_editor(str(value))
 		&"material":
 			controller.set_selection_material(str(value))
 		&"layer_assign":
@@ -377,7 +416,7 @@ func validation_report() -> Dictionary:
 	report.erase("analysis")
 	tactic_issues = TacticCompatibility.scan(tactic_storage, controller.document, analysis)
 	report["tactic_warnings"] = TacticCompatibility.texts(tactic_issues)
-	if view.has_overlay() and analysis != null:
+	if ui.navmesh_check.button_pressed and analysis != null:
 		view.set_overlay(analysis.overlay_mesh())
 	return report
 
@@ -403,13 +442,34 @@ func _show_validation() -> void:
 
 
 ## Bakes the navmesh with the bot agent settings and shows it over the map.
-func refresh_navmesh() -> MapAnalysis:
+func refresh_navmesh(show_message: bool = true) -> MapAnalysis:
 	analysis = MapAnalysis.analyse(controller.document, self)
+	ui.navmesh_check.set_pressed_no_signal(true)
 	view.set_overlay(analysis.overlay_mesh())
-	flash("Navmesh: %d polygons baked in %d ms (agent radius %.1f m, height %.1f m, climb %.1f m, slope %d°)" % [
-		analysis.polygon_count(), analysis.bake_msec, NavigationBuilder.AGENT_RADIUS, NavigationBuilder.AGENT_HEIGHT,
-		NavigationBuilder.AGENT_MAX_CLIMB, int(NavigationBuilder.AGENT_MAX_SLOPE)])
+	if show_message:
+		flash("Navmesh: %d polygons baked in %d ms (agent radius %.1f m, height %.1f m, climb %.1f m, slope %d°)" % [
+			analysis.polygon_count(), analysis.bake_msec, NavigationBuilder.AGENT_RADIUS, NavigationBuilder.AGENT_HEIGHT,
+			NavigationBuilder.AGENT_MAX_CLIMB, int(NavigationBuilder.AGENT_MAX_SLOPE)])
 	return analysis
+
+
+## Every geometry edit, including an undo or a live transform, invalidates the current bake.
+func _invalidate_navigation(_piece_id: String = "") -> void:
+	analysis = null
+	_navmesh_refresh_left = NAVMESH_REFRESH_DELAY
+	if view.has_overlay():
+		view.set_overlay(null)
+
+
+func _update_navigation_overlay(delta: float) -> void:
+	if not ui.navmesh_check.button_pressed or view.has_overlay() or _drag_active or not _gizmo_handle.is_empty():
+		return
+	_navmesh_refresh_left -= delta
+	if _navmesh_refresh_left <= 0.0:
+		if analysis == null:
+			refresh_navmesh(false)
+		else:
+			view.set_overlay(analysis.overlay_mesh())
 
 
 func show_timings() -> String:
@@ -436,6 +496,7 @@ func _report_tactic_issues() -> void:
 ## Launches the FPS runtime on a copy of the current document, as [param team] from spawn
 ## [param spawn_index] (defaults: the toolbar choices). Returns false if blocked.
 func playtest(team: String = "", spawn_index: int = -1) -> bool:
+	_cancel_drag()
 	var report := MapValidator.validate(controller.document)
 	var errors: Array[String] = report["errors"]
 	if not errors.is_empty():
@@ -447,16 +508,23 @@ func playtest(team: String = "", spawn_index: int = -1) -> bool:
 		playtest_spawn = spawn_index
 	if camera.overhead:
 		camera.set_overhead(false)
-	App.start_playtest(controller.document.duplicate_document(), {
-		"document": controller.document.to_dict(),
+	var options := {"team": playtest_team, "spawn": playtest_spawn}
+	if playtest_with_bots:
+		options["bots"] = true
+	var error := App.start_playtest(controller.document.duplicate_document(), {
+		"controller": controller,
 		"path": current_path,
-		"dirty": controller.is_dirty(),
+		"active_layer": active_layer,
+		"show_navmesh": ui.navmesh_check.button_pressed,
 		"camera": camera.global_transform,
 		"official": official_source,
 		"team": playtest_team,
 		"spawn": playtest_spawn,
-	}, {"team": playtest_team, "spawn": playtest_spawn})
-	return true
+		"with_bots": playtest_with_bots,
+	}, options)
+	if error != OK:
+		flash("Could not open the playtest.")
+	return error == OK
 
 
 ## Uses the saved (or official) revision so every tactic is bound to a known map.
@@ -504,6 +572,9 @@ func _set_tool(new_tool: StudioUI.Tool) -> void:
 		place_prefab_id = ""
 	if tool != StudioUI.Tool.MEASURE:
 		clear_measure()
+	_draw_box.visible = not _draw_piece_type().is_empty()
+	if _place_preview != null:
+		_place_preview.visible = tool == StudioUI.Tool.PLACE
 	ui.set_active_tool(tool, place_type if place_prefab_id.is_empty() else "")
 	_refresh_status()
 
@@ -523,8 +594,7 @@ func select_prefab(prefab_id: String) -> bool:
 		return false
 	place_prefab_id = prefab_id
 	place_rotation = 0.0
-	tool = StudioUI.Tool.PLACE
-	ui.set_active_tool(tool, "")
+	_set_tool(StudioUI.Tool.PLACE)
 	controller.select("")
 	_update_ghost_mesh()
 	return true
@@ -533,7 +603,6 @@ func select_prefab(prefab_id: String) -> bool:
 func _set_snap(size: float) -> void:
 	snap_size = size
 	grid.snap_size = size
-	cursor.scale = Vector3(size, 1.0, size)
 	_refresh_status()
 
 
@@ -551,12 +620,15 @@ func set_overhead(enabled: bool) -> void:
 
 
 func _on_piece_changed(piece_id: String) -> void:
+	_invalidate_navigation(piece_id)
 	if piece_id == controller.selected_id and controller.selection.size() == 1:
 		ui.update_inspector_values(controller.selected_piece())
 
 
 func _on_document_replaced() -> void:
-	analysis = null
+	_cancel_draw()
+	_cancel_surface()
+	_invalidate_navigation()
 	tactic_issues = []
 	measure_points.clear()
 	if controller.document.layer(active_layer).is_empty():
@@ -595,29 +667,42 @@ func _apply_lighting() -> void:
 	MapLighting.apply(controller.document.lighting, sun, environment)
 
 
-## World point where a new piece would be placed for the given screen position, or null.
-## With snap-to-surface on it stacks on top of solid pieces; otherwise (or over empty space) it
-## uses the build plane at [member build_level].
+## Snapped grid intersection at the clicked height. Surface snapping uses a solid top only
+## when the snapped intersection still lies on that surface.
 func placement_point(screen_position: Vector2, exclude: Array[String] = []) -> Variant:
-	var origin := camera.project_ray_origin(screen_position)
-	var direction := camera.project_ray_normal(screen_position)
-	var y := build_level
 	if snap_surface:
+		var origin := camera.project_ray_origin(screen_position)
+		var direction := camera.project_ray_normal(screen_position)
 		var hit := view.pick(origin, direction, true, exclude)
 		if not hit.is_empty():
 			var aabb: AABB = hit["aabb"]
 			var point: Vector3 = hit["point"]
 			if is_equal_approx(point.y, aabb.end.y):
-				y = aabb.end.y
-	var plane := Plane(GROUND_PLANE_NORMAL, y)
-	var ground: Variant = plane.intersects_ray(origin, direction)
-	if ground == null:
-		return null
-	var g := ground as Vector3
-	return Vector3(snappedf(g.x, snap_size), y, snappedf(g.z, snap_size))
+				var snapped := MapSnapping.snap_position(point, snap_size)
+				var piece := controller.document.get_piece(str(hit["piece_id"]))
+				var local := MapDocument.piece_transform(piece).affine_inverse() * snapped
+				var half := (piece["size"] as Vector3) / 2.0
+				if absf(local.x) <= half.x + 0.001 and absf(local.z) <= half.z + 0.001:
+					return snapped
+	return _snapped_point_on_plane(screen_position, build_level)
 
 
-## Places the current piece type or prefab at [param world_position] (already snapped).
+func _snapped_point_on_plane(screen_position: Vector2, height: float) -> Variant:
+	var point: Variant = _point_on_plane(screen_position, height)
+	return MapSnapping.snap_position(point as Vector3, snap_size) if point != null else null
+
+
+func _placement_base(anchor: Vector3, height: float) -> Vector3:
+	if not place_prefab_id.is_empty():
+		return anchor
+	if PieceCatalog.kind(place_type) == "light":
+		anchor.y += LIGHT_PLACE_HEIGHT
+	else:
+		anchor.y = MapSnapping.piece_base_y(place_type, anchor.y, height)
+	return anchor
+
+
+## Places the current piece type or prefab at a snapped [param world_position] anchor.
 ## Returns the new piece's ID (the first piece's for a prefab).
 func place_at(world_position: Vector3) -> String:
 	if not place_prefab_id.is_empty():
@@ -625,12 +710,213 @@ func place_at(world_position: Vector3) -> String:
 		if not ids.is_empty():
 			controller.update_pieces(_on_active_layer(controller.selected_pieces()), "Place on layer")
 		return ids[0] if not ids.is_empty() else ""
-	var position_value := world_position
-	if PieceCatalog.kind(place_type) == "light":
-		position_value.y += LIGHT_PLACE_HEIGHT
-	var piece := MapDocument.make_piece(place_type, position_value, place_rotation)
+	var height := PieceCatalog.default_size(place_type).y
+	var piece := MapDocument.make_piece(place_type, _placement_base(world_position, height), place_rotation)
 	piece["layer"] = active_layer
 	return controller.add_piece(piece)
+
+
+func _draw_piece_type() -> String:
+	match tool:
+		StudioUI.Tool.DRAW_FLOOR:
+			return "floor"
+		StudioUI.Tool.DRAW_WALL:
+			return "wall"
+		StudioUI.Tool.DRAW_BLOCK:
+			return "block"
+	return ""
+
+
+func _draw_layer_is_editable() -> bool:
+	return controller.document.is_layer_visible(active_layer) and not controller.document.is_layer_locked(active_layer)
+
+
+func _begin_draw(screen_position: Vector2) -> void:
+	if not _draw_layer_is_editable():
+		flash("Choose a visible, unlocked layer to draw on.")
+		return
+	_draw_start = placement_point(screen_position)
+
+
+## Locks the starting elevation so dragging across existing geometry keeps the brush level.
+func _cursor_anchor(screen_position: Vector2) -> Variant:
+	if _draw_start != null:
+		return _snapped_point_on_plane(screen_position, (_draw_start as Vector3).y)
+	return placement_point(screen_position)
+
+
+func _draw_piece_at(screen_position: Vector2) -> Dictionary:
+	if _draw_start == null:
+		return {}
+	var endpoint: Variant = _cursor_anchor(screen_position)
+	if endpoint == null:
+		return {}
+	var dimensions := ui.draw_dimensions(tool)
+	return MapSnapping.drawn_piece(_draw_piece_type(), _draw_start as Vector3, endpoint as Vector3, dimensions.x, dimensions.y)
+
+
+func _finish_draw(screen_position: Vector2) -> void:
+	var piece := _draw_piece_at(screen_position)
+	_cancel_draw()
+	if piece.is_empty() or not _draw_layer_is_editable():
+		return
+	piece["layer"] = active_layer
+	controller.add_pieces([piece], "Draw %s" % str(piece["type"]))
+
+
+func _cancel_draw() -> void:
+	if _draw_start != null:
+		_draw_start = null
+		ghost.hide()
+
+
+func _preview_draw(screen_position: Vector2) -> void:
+	var piece := _draw_piece_at(screen_position)
+	ghost.visible = not piece.is_empty()
+	if piece.is_empty():
+		return
+	var size := piece["size"] as Vector3
+	(_draw_box.mesh as BoxMesh).size = size
+	_draw_box.position.y = size.y * 0.5 + CURSOR_LIFT
+	ghost.position = piece["position"]
+	ghost.rotation_degrees.y = float(piece["rotation_y"])
+	ui.set_cursor_text("%s  %s × %s × %s m" % [PieceCatalog.label(str(piece["type"])),
+		StudioUI.format_number(size.x), StudioUI.format_number(size.y), StudioUI.format_number(size.z)])
+
+
+## Builds a brush through the normal editor history. Vertices and faces are local map geometry.
+func draw_brush(vertices: Array, faces: Array, two_sided: bool = false, piece_id: String = "") -> String:
+	var piece := BrushGeometry.piece(vertices, faces, two_sided)
+	if piece.is_empty():
+		return ""
+	var mesh := BrushGeometry.mesh(piece["size"], piece["props"])
+	if mesh == null:
+		return ""
+	if piece_id.is_empty():
+		if not _draw_layer_is_editable():
+			return ""
+		piece["layer"] = active_layer
+		return controller.add_piece(piece)
+	var existing := controller.document.get_piece(piece_id)
+	if existing.is_empty() or not view.is_pickable(existing) or str(existing["type"]) != "mesh_brush":
+		return ""
+	for key: String in ["id", "layer", "group", "material"]:
+		piece[key] = existing[key]
+	controller.update_piece(piece, "Edit brush geometry")
+	return piece_id
+
+
+## Adds a measured set of brush shapes on the active layer as one editor operation.
+func draw_brushes(rows: Array) -> Array[String]:
+	if not _draw_layer_is_editable():
+		return []
+	var pieces: Array[Dictionary] = []
+	for row: Variant in rows:
+		if not row is Dictionary or not row.get("vertices") is Array or not row.get("faces") is Array:
+			return []
+		var material := str(row.get("material", ""))
+		if not material.is_empty() and not MapMaterials.has_material(material):
+			return []
+		var piece := BrushGeometry.piece(row["vertices"], row["faces"], row.get("two_sided", false) == true)
+		if piece.is_empty():
+			return []
+		piece["layer"] = active_layer
+		piece["material"] = material
+		pieces.append(piece)
+	return controller.add_pieces(pieces, "Draw brushes")
+
+
+func _open_brush_editor(piece_id: String) -> void:
+	var initial := {"vertices": [[0, 0, 0], [4, 0, 0], [4, 1, 4], [0, 1, 4]],
+		"faces": [0, 1, 2, 0, 2, 3], "two_sided": false}
+	var piece := controller.document.get_piece(piece_id)
+	if not piece.is_empty():
+		var props: Dictionary = piece["props"]
+		var transform := MapDocument.piece_transform(piece)
+		var vertices: Array = []
+		for point: Vector3 in BrushGeometry.local_points(piece["size"], props):
+			var world := transform * point
+			vertices.append([world.x, world.y, world.z])
+		initial = {"vertices": vertices, "faces": props["faces"], "two_sided": props["two_sided"]}
+	var dialog := AcceptDialog.new()
+	dialog.title = "Brush geometry"
+	dialog.dialog_hide_on_ok = false
+	var content := UIFactory.vbox(8)
+	dialog.add_child(content)
+	content.add_child(UIFactory.label("Vertices use map coordinates in metres. Each face is three zero-based vertex indices, clockwise from the visible side.", &"MutedLabel", true))
+	var input := TextEdit.new()
+	input.custom_minimum_size = Vector2(560, 310)
+	input.text = JSON.stringify(initial, "\t")
+	content.add_child(input)
+	var error := UIFactory.label("", &"WarningLabel", true)
+	content.add_child(error)
+	dialog.confirmed.connect(func() -> void:
+		var values: Variant = JSON.parse_string(input.text)
+		if not values is Dictionary or not values.get("vertices") is Array or not values.get("faces") is Array:
+			error.text = "Enter a JSON object with vertices and faces."
+			return
+		if draw_brush(values["vertices"], values["faces"], values.get("two_sided", false) == true, piece_id).is_empty():
+			error.text = "Check the geometry and make sure the target layer is visible and unlocked."
+			return
+		dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered()
+
+
+## Commits one polygon through the same document and history used by the other drawing tools.
+func draw_surface(points: PackedVector3Array, thickness: float = 0.2) -> String:
+	if not _draw_layer_is_editable():
+		flash("Choose a visible, unlocked layer to draw on.")
+		return ""
+	var piece := PolygonSurface.piece(points, thickness)
+	if piece.is_empty():
+		flash("A surface needs at least three corners with an outline that does not cross itself.")
+		return ""
+	piece["layer"] = active_layer
+	return controller.add_piece(piece)
+
+
+func _add_surface_corner(button: InputEventMouseButton) -> void:
+	if not _draw_layer_is_editable():
+		flash("Choose a visible, unlocked layer to draw on.")
+		return
+	var point: Variant = _surface_point_at(button.position, button.alt_pressed)
+	if point == null or (not _surface_points.is_empty() and _surface_points[-1].is_equal_approx(point as Vector3)):
+		return
+	if _surface_points.size() >= PolygonSurface.MAX_POINTS:
+		flash("Finish this surface before adding more corners.")
+		return
+	_surface_points.append(point)
+	_refresh_surface_outline(null)
+
+
+func _surface_point_at(screen_position: Vector2, force_grid: bool) -> Variant:
+	return _snapped_point_on_plane(screen_position, build_level) if force_grid else placement_point(screen_position)
+
+
+func _cancel_surface() -> void:
+	_surface_points.clear()
+	_surface_hover = null
+	_surface_outline.mesh = null
+
+
+func _refresh_surface_outline(hover: Variant) -> void:
+	_surface_hover = hover
+	var points := _surface_points.duplicate()
+	if hover != null and points.size() < PolygonSurface.MAX_POINTS:
+		points.append(hover)
+	if points.size() < 2:
+		_surface_outline.mesh = null
+		return
+	var outline := ImmediateMesh.new()
+	outline.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+	for point: Vector3 in points:
+		outline.surface_add_vertex(point + Vector3.UP * CURSOR_LIFT)
+	if points.size() > 2:
+		outline.surface_add_vertex(points[0] + Vector3.UP * CURSOR_LIFT)
+	outline.surface_end()
+	_surface_outline.mesh = outline
 
 
 func _on_active_layer(pieces: Array[Dictionary]) -> Array[Dictionary]:
@@ -814,20 +1100,29 @@ func _process(delta: float) -> void:
 	if tactic_editor != null:
 		return
 	var mouse := get_viewport().get_mouse_position()
-	_hover_point = null if camera.is_looking else placement_point(mouse)
-	cursor.visible = _hover_point != null and tool != StudioUI.Tool.PLACE
-	ghost.visible = _hover_point != null and tool == StudioUI.Tool.PLACE
+	_hover_point = null if camera.is_looking else _cursor_anchor(mouse)
+	cursor.visible = _hover_point != null
+	if _draw_start == null or camera.is_looking:
+		ghost.visible = _hover_point != null and tool == StudioUI.Tool.PLACE
 	if _hover_point != null:
 		var p := _hover_point as Vector3
-		cursor.position = p + Vector3(0, 0.011, 0)
-		ghost.position = p + Vector3(0, _ghost_half_height, 0)
-		ghost.rotation_degrees.y = place_rotation
+		_update_snap_marker(p)
+		if tool == StudioUI.Tool.PLACE:
+			_update_place_ghost(p)
 		ui.set_cursor_text("Cursor  x %s  y %s  z %s%s" % [StudioUI.format_number(p.x), StudioUI.format_number(p.y),
 			StudioUI.format_number(p.z), _area_suffix(p)])
 	else:
 		ui.set_cursor_text("Cursor —")
-	grid.position.y = build_level
+	if _draw_start != null and not camera.is_looking:
+		_preview_draw(mouse)
+	if tool == StudioUI.Tool.DRAW_SURFACE and not _surface_points.is_empty():
+		var hover: Variant = null if camera.is_looking or get_viewport().gui_get_hovered_control() != null \
+			else _surface_point_at(mouse, Input.is_key_pressed(KEY_ALT))
+		if hover != _surface_hover:
+			_refresh_surface_outline(hover)
+	grid.position.y = build_level + GRID_LIFT
 	_update_gizmo()
+	_update_navigation_overlay(delta)
 	_autosave_left -= delta
 	if _autosave_left <= 0.0:
 		if controller.version != _autosaved_version:
@@ -839,6 +1134,20 @@ func _process(delta: float) -> void:
 func _area_suffix(point: Vector3) -> String:
 	var area := MapTactical.area_name_at(controller.document, point)
 	return "" if area.is_empty() else "   ·   %s" % area
+
+
+## Capture the end of a stroke even on a panel, where GUI events bypass _unhandled_input.
+func _input(event: InputEvent) -> void:
+	if _draw_start == null:
+		return
+	var button := event as InputEventMouseButton
+	if button == null or button.button_index != MOUSE_BUTTON_LEFT or button.pressed:
+		return
+	if camera.is_looking or get_viewport().gui_get_hovered_control() != null:
+		_cancel_draw()
+	else:
+		_finish_draw(button.position)
+	get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -877,6 +1186,12 @@ func _on_left_press(button: InputEventMouseButton) -> void:
 		return
 	var screen_position := button.position
 	match tool:
+		StudioUI.Tool.DRAW_SURFACE:
+			_add_surface_corner(button)
+			return
+		StudioUI.Tool.DRAW_FLOOR, StudioUI.Tool.DRAW_WALL, StudioUI.Tool.DRAW_BLOCK:
+			_begin_draw(screen_position)
+			return
 		StudioUI.Tool.PLACE:
 			var point: Variant = placement_point(screen_position)
 			if point != null:
@@ -970,6 +1285,8 @@ func _end_drag() -> void:
 
 
 func _cancel_drag() -> void:
+	_cancel_draw()
+	_cancel_surface()
 	if _drag_active:
 		_drag_active = false
 		controller.cancel_previews(_drag_before)
@@ -1029,6 +1346,19 @@ func _handle_key(key: InputEventKey) -> bool:
 			_set_tool(StudioUI.Tool.SELECT)
 		KEY_2:
 			_on_piece_type_selected(place_type)
+		KEY_3:
+			_set_tool(StudioUI.Tool.DRAW_FLOOR)
+		KEY_4:
+			_set_tool(StudioUI.Tool.DRAW_WALL)
+		KEY_5:
+			_set_tool(StudioUI.Tool.DRAW_BLOCK)
+		KEY_6:
+			_set_tool(StudioUI.Tool.DRAW_SURFACE)
+		KEY_ENTER, KEY_KP_ENTER:
+			if tool != StudioUI.Tool.DRAW_SURFACE:
+				return false
+			if not draw_surface(_surface_points).is_empty():
+				_cancel_surface()
 		KEY_M:
 			_set_tool(StudioUI.Tool.MEASURE)
 		KEY_G:
@@ -1040,19 +1370,26 @@ func _handle_key(key: InputEventKey) -> bool:
 		KEY_TAB:
 			set_overhead(not camera.overhead)
 		KEY_ESCAPE:
-			if _drag_active or not _gizmo_handle.is_empty() or _box_active:
+			if not _surface_points.is_empty():
+				_cancel_surface()
+			elif _drag_active or not _gizmo_handle.is_empty() or _box_active or _draw_start != null:
 				_cancel_drag()
 			elif tool != StudioUI.Tool.SELECT:
 				_set_tool(StudioUI.Tool.SELECT)
 			else:
 				controller.select("")
-		KEY_DELETE, KEY_BACKSPACE:
+		KEY_BACKSPACE:
+			if tool != StudioUI.Tool.DRAW_SURFACE:
+				controller.delete_selection()
+			elif not _surface_points.is_empty():
+				_surface_points.remove_at(_surface_points.size() - 1)
+				_refresh_surface_outline(null)
+		KEY_DELETE:
 			controller.delete_selection()
 		KEY_R:
 			var step := -angle_snap if key.shift_pressed else angle_snap
 			if tool == StudioUI.Tool.PLACE:
 				place_rotation = MapDocument.normalise_rotation(place_rotation + step)
-				_update_ghost_mesh()
 			else:
 				rotate_selection(step)
 		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_PAGEUP, KEY_PAGEDOWN:
@@ -1085,21 +1422,37 @@ func _nudge(code: Key) -> void:
 		build_level += offset.y
 
 
+func _build_snap_marker() -> void:
+	var marker := ImmediateMesh.new()
+	marker.surface_begin(Mesh.PRIMITIVE_LINES)
+	for point: Vector3 in [Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+		marker.surface_add_vertex(point)
+	marker.surface_end()
+	cursor.mesh = marker
+
+
+func _update_snap_marker(point: Vector3) -> void:
+	cursor.position = point + Vector3.UP * CURSOR_LIFT
+	var reach := camera.size * 0.011 if camera.overhead else camera.global_position.distance_to(point) * 0.014
+	cursor.scale = Vector3.ONE * maxf(reach, 0.05)
+
+
+func _update_place_ghost(anchor: Vector3) -> void:
+	ghost.position = _placement_base(anchor, PieceCatalog.default_size(place_type).y)
+	ghost.rotation_degrees.y = place_rotation
+
+
 func _update_ghost_mesh() -> void:
-	var size := PieceCatalog.default_size(place_type)
-	if not place_prefab_id.is_empty():
-		var pieces: Array[Dictionary] = []
+	if _place_preview != null:
+		_place_preview.free()
+	var pieces: Array[Dictionary] = []
+	if place_prefab_id.is_empty():
+		pieces.append(MapDocument.make_piece(place_type, Vector3.ZERO))
+	else:
 		pieces.assign(MapPrefabs.find(controller.document, place_prefab_id).get("pieces", []) as Array)
-		size = MapSnapping.bounds(pieces).size
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	ghost.mesh = mesh
-	var material := StandardMaterial3D.new()
-	material.albedo_color = GHOST_COLOR
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ghost.material_override = material
-	_ghost_half_height = size.y / 2.0  # Pieces use a bottom-centre origin; the box mesh is centred.
+	_place_preview = MapBuilder.build_preview(pieces, _ghost_material)
+	_place_preview.position.y = CURSOR_LIFT
+	ghost.add_child(_place_preview)
 
 
 # --- refresh ------------------------------------------------------------------------------------
@@ -1107,6 +1460,7 @@ func _update_ghost_mesh() -> void:
 func _refresh_history() -> void:
 	ui.set_history_state(controller.can_undo(), controller.can_redo(), controller.is_dirty(),
 		controller.document.name, controller.undo_action_name())
+	ui.update_texture_choice(controller.selected_pieces())
 
 
 func _refresh_inspector() -> void:
@@ -1123,6 +1477,11 @@ func _refresh_layers() -> void:
 
 func _refresh_prefabs() -> void:
 	ui.show_prefabs(MapPrefabs.all(controller.document))
+	if not place_prefab_id.is_empty():
+		if MapPrefabs.find(controller.document, place_prefab_id).is_empty():
+			_set_tool(StudioUI.Tool.SELECT)
+		else:
+			_update_ghost_mesh()
 
 
 func _refresh_spawn_options() -> void:
@@ -1146,9 +1505,14 @@ func _refresh_status() -> void:
 		var what := PieceCatalog.label(place_type) if place_prefab_id.is_empty() \
 			else str(MapPrefabs.find(controller.document, place_prefab_id).get("name", "prefab"))
 		tool_text = "Place %s (R rotates, %s°)" % [what, StudioUI.format_number(place_rotation)]
+	elif tool == StudioUI.Tool.DRAW_SURFACE:
+		tool_text = "Surface (%d corners) · Enter finish · Alt use grid height" % _surface_points.size()
+	elif not _draw_piece_type().is_empty():
+		tool_text = "Draw %s (drag on the grid)" % _draw_piece_type()
 	var p := camera.position
 	ui.set_status("%s   ·   %d pieces   ·   Grid %s m   ·   Angle %d°   ·   Build height %s m   ·   Camera %.0f, %.0f, %.0f   ·   %s" % [
 		tool_text, controller.document.pieces.size(), StudioUI.format_number(snap_size), int(angle_snap),
 		StudioUI.format_number(build_level), p.x, p.y, p.z,
 		"TOP VIEW" if camera.overhead else ("LOOKING (RMB held)" if camera.is_looking else "Hold RMB to fly"),
-	] + ("   ·   " + _message if Time.get_ticks_msec() < _message_until else ""))
+	] + ("   ·   Updating navmesh…" if ui.navmesh_check.button_pressed and analysis == null else "")
+		+ ("   ·   " + _message if Time.get_ticks_msec() < _message_until else ""))

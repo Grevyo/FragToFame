@@ -250,7 +250,7 @@ func _finish_for_team(director: MatchDirector, winner: int) -> void:
 	for round_index: int in state.setup.rounds_to_win():
 		state.tick(state.rules.freeze_time + 0.1)
 		for victim: String in state.teams[1 - winner].player_ids:
-			state.record_kill(victim, killer, WeaponCatalog.VANTA_RIFLE, false)
+			state.record_kill(victim, killer, WeaponCatalog.AK47, false)
 		state.tick(state.rules.round_end_delay + 0.1)
 
 

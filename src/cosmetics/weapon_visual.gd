@@ -20,7 +20,7 @@ var coat_id: String = ""
 ## Magnet ID per slot ("" = empty), always five entries.
 var magnets: Array[String] = ["", "", "", "", ""]
 
-var _pivot: Node3D
+var _weapon_root: Node3D
 var _model: Node3D
 var _factory: Array[Array] = []  # [mesh instance, surface index, factory material]
 var _decals: Array[Decal] = []
@@ -34,31 +34,44 @@ static var _orm: Texture2D = null
 
 ## Builds the model for [param id]. Returns false when the weapon has no model.
 func setup(id: StringName) -> bool:
-	weapon_id = id
-	if _pivot != null:
-		_pivot.queue_free()
+	# Decals share a render layer with every weapon mesh. Detach the outgoing model and its
+	# decals together before the replacement enters that layer.
+	if _weapon_root != null:
+		remove_child(_weapon_root)
+		_weapon_root.queue_free()
+	_weapon_root = null
+	_model = null
+	_markers = null
 	_factory.clear()
 	_decals.clear()
+	magnets.fill("")
+	coat_id = ""
+	size = Vector3.ZERO
+	weapon_id = id
+
 	var scene := load(WeaponModels.model_path(id)) as PackedScene if WeaponModels.has_model(id) else null
 	if scene == null:
 		return false
-	_pivot = Node3D.new()
-	_pivot.name = "Pivot"
-	add_child(_pivot)
+	_weapon_root = Node3D.new()
+	_weapon_root.name = "Weapon"
+	add_child(_weapon_root)
+	var pivot := Node3D.new()
+	pivot.name = "Pivot"
+	_weapon_root.add_child(pivot)
 	_model = scene.instantiate() as Node3D
-	_pivot.add_child(_model)
+	pivot.add_child(_model)
 	_remove_extras(_model)
 	var info := WeaponModels.info(id)
 	_arrange_parts(info)
 	if not _fit_cache.has(id):
 		var euler: Vector3 = info["rotation"]
 		var turn := Basis.from_euler(Vector3(deg_to_rad(euler.x), deg_to_rad(euler.y), deg_to_rad(euler.z)))
-		_pivot.basis = turn
+		pivot.basis = turn
 		var bounds := merged_bounds(_model, self)
 		var scale_factor := float(info["length"]) / maxf(bounds.size.z, 0.0001)
 		_fit_cache[id] = [turn.scaled(Vector3.ONE * scale_factor), -bounds.get_center() * scale_factor, bounds.size * scale_factor]
-	_pivot.basis = _fit_cache[id][0]
-	_pivot.position = _fit_cache[id][1]
+	pivot.basis = _fit_cache[id][0]
+	pivot.position = _fit_cache[id][1]
 	size = _fit_cache[id][2]
 	for node: Node in _model.find_children("*", "MeshInstance3D", true, false):
 		var instance := node as MeshInstance3D
@@ -140,12 +153,13 @@ func decal(slot: int) -> Decal:
 ## Shows a small marker on every Magnet slot (Armoury slot picking and developer checks).
 func show_slot_markers(on: bool, highlighted: int = -1) -> void:
 	if _markers != null:
+		_weapon_root.remove_child(_markers)
 		_markers.queue_free()
 		_markers = null
-	if not on:
+	if not on or _weapon_root == null:
 		return
 	_markers = Node3D.new()
-	add_child(_markers)
+	_weapon_root.add_child(_markers)
 	var slots := WeaponModels.slots(weapon_id)
 	for i: int in slots.size():
 		var material := StandardMaterial3D.new()
@@ -319,10 +333,8 @@ func _build_decals() -> void:
 		item.upper_fade = 0.0
 		item.lower_fade = 0.0
 		item.visible = false
-		add_child(item)
+		_weapon_root.add_child(item)
 		_decals.append(item)
-	for slot: int in _decals.size():
-		set_magnet(slot, magnets[slot])
 
 
 ## Magnets are printed vinyl: matt and non-metallic whatever they are stuck to. Without this a

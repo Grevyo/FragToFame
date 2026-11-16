@@ -16,9 +16,6 @@ const FULL_ARMOUR: int = 100
 
 ## Display order of the buy menu.
 const ITEMS: Dictionary[StringName, Dictionary] = {
-	WeaponCatalog.VANTA_RIFLE: {"name": "VK-12 Vanta rifle", "price": 2800, "kind": KIND_WEAPON},
-	WeaponCatalog.WASP_SMG: {"name": "M-5 Wasp SMG", "price": 1250, "kind": KIND_WEAPON},
-	WeaponCatalog.KESTREL_PISTOL: {"name": "P-4 Kestrel pistol", "price": 200, "kind": KIND_WEAPON},
 	WeaponCatalog.AK47: {"name": "AK-47", "price": 2700, "kind": KIND_WEAPON},
 	WeaponCatalog.M4A1: {"name": "M4A1", "price": 3000, "kind": KIND_WEAPON},
 	WeaponCatalog.SKS: {"name": "SKS", "price": 1900, "kind": KIND_WEAPON},
@@ -34,13 +31,8 @@ const ITEMS: Dictionary[StringName, Dictionary] = {
 	DEFUSE_KIT: {"name": "Defuse kit (defence)", "price": 400, "kind": KIND_KIT, "side": "defence"},
 }
 
-## Money for killing an enemy, by weapon. Cheaper weapons pay more.
-const KILL_REWARDS: Dictionary[StringName, int] = {
-	WeaponCatalog.VANTA_RIFLE: 300,
-	WeaponCatalog.WASP_SMG: 550,
-	WeaponCatalog.KESTREL_PISTOL: 300,
-}
-const DEFAULT_KILL_REWARD: int = 300
+## Money for killing an enemy.
+const KILL_REWARD: int = 300
 
 
 static func has_item(id: StringName) -> bool:
@@ -69,7 +61,3 @@ static func kind(id: StringName) -> StringName:
 ## Side restriction ("attack" / "defence"), or empty when anyone may buy it.
 static func side_restriction(id: StringName) -> StringName:
 	return StringName(str(ITEMS.get(id, {}).get("side", "")))
-
-
-static func kill_reward(weapon_id: StringName) -> int:
-	return KILL_REWARDS.get(weapon_id, DEFAULT_KILL_REWARD)

@@ -17,6 +17,9 @@ func run() -> void:
 	_test_controller()
 	await _test_builder_geometry()
 	await _test_studio_editing()
+	await _test_placement_palette()
+	await _test_studio_layout()
+	await _test_surface_drawing()
 	await _test_playtest_round_trip()
 
 
@@ -234,6 +237,132 @@ func _test_studio_editing() -> void:
 	check(ctl.document.pieces.size() > 20, "opening a template replaces the document")
 	check(studio.call("load_map", path) and ctl.document.index_of(id) >= 0, "re-opening the saved file restores the edit")
 	_wipe_dir(TEST_DIR)
+	await despawn(studio)
+
+
+func _test_placement_palette() -> void:
+	section("Creation Studio placement palette")
+	var studio := spawn_scene("res://scenes/creation_studio/creation_studio.tscn")
+	if studio == null:
+		return
+	var ui := studio.get_node("UI/StudioUI") as StudioUI
+	var shelf: Button = ui.get("_palette_buttons")["market_shelf"]
+	var props := shelf.get_parent() as VBoxContainer
+	var header := props.get_parent().get_child(props.get_index() - 1) as Button
+	check(not props.visible and shelf.icon == null, "Props starts collapsed and defers thumbnail creation")
+	header.button_pressed = true
+	check(props.visible and shelf.icon is ViewportTexture, "expanding Props shows an actual 3D thumbnail")
+	shelf.pressed.emit()
+	var preview := studio.get("_place_preview") as Node3D
+	check(preview.get_child_count() > 1 and preview.find_children("*", "CollisionObject3D", true, false).is_empty(),
+		"the shelf preview has individual mesh parts and cannot affect picking")
+	studio.call("_handle_key", _key(KEY_R))
+	var anchor := Vector3(6, 0, -3)
+	studio.call("_update_place_ghost", anchor)
+	var ghost := studio.get_node("Ghost") as Node3D
+	var id: String = studio.call("place_at", anchor)
+	var ctl := studio.get("controller") as MapEditController
+	check(ghost.position == ctl.document.get_piece(id)["position"] and
+		is_equal_approx(ghost.rotation_degrees.y, float(ctl.document.get_piece(id)["rotation_y"])),
+		"the highlight and placed shelf share the same snap position and rotation")
+	header.button_pressed = false
+	check(not props.visible and shelf.button_pressed, "collapsing a category keeps its piece armed")
+	studio.call("select_prefab", "stock_doorway")
+	preview = studio.get("_place_preview") as Node3D
+	check(preview.get_child_count() > 3, "the doorway prefab preview shows its opening and flanking walls")
+	await despawn(studio)
+
+
+func _test_studio_layout() -> void:
+	section("Creation Studio dock layout")
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1600, 900)
+	tree.root.add_child(viewport)
+	var ui := StudioUI.new()
+	viewport.add_child(ui)
+	var doc := MapDocument.create("Long map title ".repeat(10))
+	ui.show_inspector({}, doc, "user://maps/" + "long_map_filename_".repeat(12) + ".f2fmap.json")
+	ui.set_history_state(false, false, true, doc.name, "")
+	await wait_frames(4)
+	var piece: Button = ui.get("_palette_buttons")["market_shelf"]
+	var scroll := piece.find_parent("*ScrollContainer*") as ScrollContainer
+	check(scroll != null and not scroll.is_ancestor_of(ui.select_tool_button),
+		"editing tools are outside the scrolling Pieces palette")
+	check(viewport.get_visible_rect().encloses(ui.main_menu_button.get_global_rect()),
+		"the menu stays inside the normal editor viewport")
+	ui.set_active_tool(StudioUI.Tool.DRAW_WALL, "")
+	viewport.size = Vector2i(1050, 760)
+	await wait_frames(6)
+	var inspector := ui.get("_inspector") as Control
+	var visible_area := viewport.get_visible_rect()
+	check(ui.main_menu_button.global_position.y > ui.save_button.global_position.y, "top commands wrap onto another row at narrow widths")
+	check(visible_area.encloses(ui.main_menu_button.get_global_rect())
+		and visible_area.encloses(ui.playtest_button.get_global_rect())
+		and visible_area.encloses(ui.navmesh_check.get_global_rect()),
+		"menu, playtest and options stay reachable inside the viewport")
+	check(inspector.get_global_rect().end.x <= visible_area.end.x,
+		"a long file path does not push the inspector off-screen")
+	check(scroll != null and scroll.size.y >= 120.0, "the Pieces palette has room to scroll with wall settings open")
+	await despawn(viewport)
+
+
+func _test_surface_drawing() -> void:
+	section("Creation Studio polygon surfaces")
+	var studio := spawn_scene("res://scenes/creation_studio/creation_studio.tscn")
+	if studio == null:
+		return
+	var ctl := studio.get("controller") as MapEditController
+	var camera := studio.get_node("EditorCamera") as EditorFlyCamera
+	var view := studio.get_node("MapView") as MapEditorView
+	studio.call("set_overhead", true)
+	studio.call("_handle_key", _key(KEY_6))
+	var points := PackedVector3Array([
+		Vector3(20, 0, 0), Vector3(24, 1, 0), Vector3(24, 1, 2),
+		Vector3(22, 0.5, 2), Vector3(22, 0.5, 4), Vector3(20, 0, 4),
+	])
+	studio.call("_set_snap", 0.5)
+	for point: Vector3 in points:
+		studio.set("build_level", point.y)
+		var click := InputEventMouseButton.new()
+		click.alt_pressed = true
+		click.position = camera.unproject_position(point)
+		studio.call("_on_left_press", click)
+	studio.call("_handle_key", _key(KEY_ENTER))
+	var id := ctl.selected_id
+	var piece := ctl.document.get_piece(id)
+	check(piece.get("type") == "drawn_surface" and (studio.get("_surface_points") as PackedVector3Array).is_empty(),
+		"clicking corners at different build heights creates one surface")
+	studio.call("_handle_key", _key(KEY_BACKSPACE))
+	check(not ctl.document.get_piece(id).is_empty(), "Backspace on an empty outline leaves the placed surface alone")
+	await wait_physics_frames(2)
+	var collider := view.node_for(id)
+	check(collider != null and collider.find_children("*", "CollisionShape3D", true, false).size() == 1,
+		"the drawn surface has physical collision")
+	var sloped_hit := view.pick(Vector3(23, 8, 1), Vector3.DOWN)
+	var notch_hit := view.pick(Vector3(23, 8, 3), Vector3.DOWN)
+	check(not sloped_hit.is_empty() and is_equal_approx((sloped_hit["point"] as Vector3).y, 0.75)
+		and notch_hit.is_empty(), "collision follows the slope and leaves a concave notch open")
+	var runtime := MapBuilder.build_piece(piece, MapBuilder.Mode.RUNTIME)
+	runtime.position.x += 20.0
+	tree.root.add_child(runtime)
+	await wait_physics_frames(2)
+	var space := runtime.get_world_3d().direct_space_state
+	var ray := PhysicsRayQueryParameters3D.create(Vector3(43, 8, 1), Vector3(43, -2, 1))
+	var ground := space.intersect_ray(ray)
+	check(not ground.is_empty() and is_equal_approx((ground["position"] as Vector3).y, 0.75),
+		"the runtime uses the same sloped floor")
+	await despawn(runtime)
+	var copy := MapDocument.from_json(ctl.document.to_json())
+	check(copy != null and PolygonSurface.is_valid(copy.get_piece(id).get("props", {})),
+		"the polygon and its elevations survive saving")
+	check(ctl.undo() and ctl.document.get_piece(id).is_empty() and ctl.redo(), "one undo removes the entire surface")
+	var crossing := PackedVector3Array([points[0], points[2], points[1], points[5]])
+	check(PolygonSurface.piece(crossing, 0.2).is_empty(), "crossing outlines are rejected")
+	var door_size := Vector3(4, 3, 0.4)
+	var defaults := PieceShapes.parts("double_door", door_size, {})
+	var swung := PieceShapes.parts("double_door", door_size, {"left_swing": -90.0, "right_swing": 90.0})
+	check((defaults[-2]["pos"] as Vector3).z < 0.0 and (swung[-2]["pos"] as Vector3).z > 0.0
+		and defaults[-1] == swung[-1], "each door leaf can be reversed independently of the other")
 	await despawn(studio)
 
 

@@ -29,6 +29,11 @@ var _walking: bool = false
 var _airborne: bool = false
 ## Vertical speed at the end of the last airborne tick (the landing impact speed).
 var _fall_speed: float = 0.0
+var _jump_in_progress: bool = false
+var _landing_momentum: Vector2 = Vector2.ZERO
+var _landing_age: float = INF
+var _air_jump_press_age: float = INF
+var _consecutive_hops: int = 0
 var _capsule: CapsuleShape3D
 
 
@@ -46,35 +51,60 @@ func _reset_movement() -> void:
 	movement.reset()
 	_airborne = false
 	_fall_speed = 0.0
+	_clear_jump_chain()
 	_apply_crouch_shape()
 
 
 ## Intent is horizontal in world space. The movement model owns speed and acceleration.
-func _step_movement(direction: Vector2, walking: bool, jump_pressed: bool, delta: float) -> void:
+func _step_movement(direction: Vector2, walking: bool, jump_pressed: bool, delta: float,
+		can_jump: bool) -> void:
 	_walking = walking
+	if not can_jump:
+		_clear_jump_chain()
 	_update_crouch(delta)
-	_move(direction.normalized(), jump_pressed, delta)
+	_move(direction.normalized(), jump_pressed and can_jump, delta)
 	weapons.motion.speed = accuracy_speed()
 	weapons.motion.airborne = not is_on_floor()
 	weapons.motion.crouched = is_crouched()
 
 
-## One tick of body movement. A jump needs a fresh press while grounded (holding the key does
-## not chain jumps) and the take-off tick already counts as airborne, so it keeps its momentum.
+## A fresh press close to touchdown can carry the previous jump's momentum into the next one.
 func _move(wish_dir: Vector2, jump_pressed: bool, delta: float) -> void:
 	movement.recover(delta)
-	var jumping := jump_pressed and is_on_floor()
-	var grounded := is_on_floor() and not jumping
-
+	var on_floor := is_on_floor()
 	var limit := current_max_speed()
+	var can_hop := on_floor and _landing_age <= PlayerMovement.HOP_TIMING_WINDOW \
+		and _can_bunny_hop(_landing_momentum, limit)
+	var hop := can_hop \
+		and (jump_pressed or _air_jump_press_age <= PlayerMovement.HOP_TIMING_WINDOW)
+	var jumping := on_floor and (jump_pressed or hop)
+	var grounded := on_floor and not jumping
+
 	var horizontal := Vector2(velocity.x, velocity.z)
+	if hop:
+		horizontal = _landing_momentum
+		_consecutive_hops += 1
+	elif on_floor and (jumping or not can_hop):
+		_clear_jump_chain()
+	if jumping:
+		_landing_age = INF
+		_landing_momentum = Vector2.ZERO
+		_air_jump_press_age = INF
+	elif not on_floor and jump_pressed:
+		_air_jump_press_age = 0.0
 	if grounded:
 		horizontal = movement.ground_step(horizontal, wish_dir, limit, delta)
 		velocity.y = 0.0
 	else:
-		horizontal = movement.air_step(horizontal, wish_dir, limit, delta)
+		var wish_factor := PlayerMovement.HOP_AIR_WISH_FACTOR if _consecutive_hops > 0 else 1.0
+		horizontal = movement.air_step(horizontal, wish_dir, limit, delta, wish_factor)
+		var air_factor := minf(PlayerMovement.NORMAL_AIR_SPEED_FACTOR
+			+ PlayerMovement.HOP_SPEED_FACTOR_STEP * _consecutive_hops, PlayerMovement.MAX_HOP_SPEED_FACTOR)
+		var air_cap := movement.run_speed * weapon_mobility() * air_factor
+		horizontal = horizontal.limit_length(air_cap)
 		if jumping:
 			velocity.y = movement.jump()
+			_jump_in_progress = true
 		# Gravity is applied half before and half after the move, so the jump arc (height and
 		# hang time) does not depend on the physics tick rate.
 		velocity.y -= movement.gravity * delta * 0.5
@@ -85,23 +115,50 @@ func _move(wish_dir: Vector2, jump_pressed: bool, delta: float) -> void:
 
 	move_and_slide()
 
+	_air_jump_press_age += delta
+	_landing_age += delta
 	if is_on_floor():
 		if _airborne:
 			_land()
+		elif is_on_wall() or wish_dir.dot(_landing_momentum) < 0.0:
+			_clear_jump_chain()
 		_airborne = false
 	else:
+		if grounded:
+			_clear_jump_chain()
 		velocity.y -= movement.gravity * delta * 0.5
 		_fall_speed = maxf(-velocity.y, 0.0)
 		_airborne = true
 
 
-## Landing costs stamina in proportion to the impact speed and caps the speed at once.
+## Save collision-resolved momentum for a timed hop and apply the normal landing slowdown.
 func _land() -> void:
 	movement.land(_fall_speed)
-	var capped := movement.cap_ground_speed(Vector2(velocity.x, velocity.z), current_max_speed())
+	var horizontal := Vector2(velocity.x, velocity.z)
+	var limit := current_max_speed()
+	if _jump_in_progress and _can_bunny_hop(horizontal, limit):
+		_landing_momentum = horizontal
+		_landing_age = 0.0
+	else:
+		_clear_jump_chain()
+	_jump_in_progress = false
+	var capped := movement.cap_ground_speed(horizontal, limit)
 	velocity.x = capped.x
 	velocity.z = capped.y
 	_fall_speed = 0.0
+
+
+func _can_bunny_hop(momentum: Vector2, run_limit: float) -> bool:
+	return not _walking and not wants_crouch and is_zero_approx(crouch_amount) \
+		and momentum.length_squared() >= pow(run_limit * PlayerMovement.HOP_MIN_SPEED_FACTOR, 2.0)
+
+
+func _clear_jump_chain() -> void:
+	_jump_in_progress = false
+	_landing_momentum = Vector2.ZERO
+	_landing_age = INF
+	_air_jump_press_age = INF
+	_consecutive_hops = 0
 
 
 ## Ground speed limit for the current stance (before any stamina slowdown). Crouching lowers

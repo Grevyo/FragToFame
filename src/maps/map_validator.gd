@@ -42,7 +42,11 @@ static func validate(doc: MapDocument) -> Dictionary:
 			errors.append("%s uses unknown material '%s'." % [id, material])
 		if doc.layer(str(piece.get("layer", MapDocument.DEFAULT_LAYER))).is_empty():
 			errors.append("%s is on a layer that does not exist." % id)
-		if PieceCatalog.is_solid(type):
+		if type == "drawn_surface" and not PolygonSurface.is_valid(piece["props"] as Dictionary):
+			errors.append("%s has an invalid surface outline." % id)
+		elif type == "mesh_brush" and BrushGeometry.mesh(size, piece["props"]) == null:
+			errors.append("%s has invalid brush geometry." % id)
+		elif PieceCatalog.is_solid(type):
 			solid_count += 1
 		match type:
 			"spawn_attack":

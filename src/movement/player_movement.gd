@@ -15,6 +15,15 @@ extends RefCounted
 
 ## The single conversion between reference units and Godot metres.
 const METRES_PER_UNIT: float = 0.0254
+## Timing is measured in simulation seconds either side of touchdown.
+const HOP_TIMING_WINDOW: float = 0.025
+const NORMAL_AIR_SPEED_FACTOR: float = 1.06
+const HOP_SPEED_FACTOR_STEP: float = 0.16
+const MAX_HOP_SPEED_FACTOR: float = 2.0
+## A chain rewards steering by allowing a stronger perpendicular air strafe.
+const HOP_AIR_WISH_FACTOR: float = 1.5
+## A hop must carry at least this fraction of running speed into and out of the landing.
+const HOP_MIN_SPEED_FACTOR: float = 0.85
 
 ## [measured] Unencumbered run speed: 250 u/s (reference with the melee weapon out). The weapon in
 ## hand scales it through [member WeaponDefinition.mobility] (rifle 0.86 = the measured 215 u/s);
@@ -119,9 +128,11 @@ func ground_step(velocity: Vector2, wish_dir: Vector2, speed_limit: float, delta
 
 
 ## One airborne tick: no friction; acceleration only towards the small air wish speed.
-func air_step(velocity: Vector2, wish_dir: Vector2, speed_limit: float, delta: float) -> Vector2:
+func air_step(velocity: Vector2, wish_dir: Vector2, speed_limit: float, delta: float,
+		wish_speed_factor: float = 1.0) -> Vector2:
 	var scaled := speed_limit * speed_scale()
-	return accelerate(velocity, wish_dir, minf(scaled, air_wish_speed), air_accelerate * scaled * delta)
+	return accelerate(velocity, wish_dir, minf(scaled, air_wish_speed * wish_speed_factor),
+		air_accelerate * scaled * delta)
 
 
 func apply_friction(velocity: Vector2, delta: float) -> Vector2:

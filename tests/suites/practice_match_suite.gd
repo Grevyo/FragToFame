@@ -11,6 +11,7 @@ func suite_name() -> String:
 
 
 func run() -> void:
+	await _test_free_roam_shop()
 	var app := tree.root.get_node("App")
 	var setup := MatchSetup.new()
 	setup.fixture_id = "practice_test"
@@ -53,7 +54,10 @@ func run() -> void:
 	check(director.combatants.size() == 2, "two passive combatants spawned")
 	check(state.phase == MatchState.Phase.FREEZE and state.round_number == 1, "round 1 freeze time")
 	check(player.frozen, "player is frozen during freeze time")
-	check(player.weapons.loadout_ids() == [WeaponCatalog.KESTREL_PISTOL], "player starts with the pistol only")
+	check(player.weapons.loadout_ids() == [WeaponCatalog.G17], "player starts with the G17 only")
+	var effects := sandbox.get_node("Effects") as WeaponEffects
+	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == WeaponCatalog.G17,
+		"the G17 model matches the starting match loadout")
 	check(director.human_side() == MatchRules.SIDE_ATTACK and state.bomb_carrier_id == MatchDirector.HUMAN_ID,
 		"player attacks first and carries the bomb")
 	var defence_spawn := level.spawn_points("defence")[0][0] as Vector3
@@ -66,7 +70,7 @@ func run() -> void:
 	check(director.is_buy_menu_open() and director.hud.buy_buttons().size() == ShopCatalog.item_ids().size(),
 		"buy menu lists every shop item")
 	check(director.try_buy(ShopCatalog.ARMOUR_VEST) == "" and player.health.armour == 100, "buying a vest equips armour")
-	check(director.try_buy(WeaponCatalog.VANTA_RIFLE) == "not enough money", "cannot afford the rifle on round 1")
+	check(director.try_buy(WeaponCatalog.AK47) == "not enough money", "cannot afford the rifle on round 1")
 	director.close_buy_menu()
 	player.input_enabled = false
 	check(not director.is_buy_menu_open(), "buy menu closes")
@@ -81,7 +85,7 @@ func run() -> void:
 		return event.get("type") == "shot" and event.get("player") == MatchDirector.HUMAN_ID)
 	check(fired, "actual weapon fire is captured before damage")
 	for dummy: TargetDummy in director.combatants.values():
-		_shoot(dummy.health, WeaponCatalog.KESTREL_PISTOL)
+		_shoot(dummy.health, WeaponCatalog.G17)
 	check(state.phase == MatchState.Phase.ROUND_END and state.teams[MatchState.HOME].score == 1,
 		"eliminating the defenders wins round 1")
 	check(director.hud.banner_text().contains("ATTACKERS WIN"), "round result banner shown")
@@ -152,3 +156,33 @@ func _shoot(target: Health, weapon: StringName) -> void:
 	info.weapon_id = weapon
 	info.source_id = MatchDirector.HUMAN_ID
 	target.apply_damage(info)
+
+
+func _test_free_roam_shop() -> void:
+	section("Sandbox free-roam buy menu")
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	var player := sandbox.get_node("Player") as FirstPersonController
+	var level := sandbox.get_node("Level") as SandboxLevel
+	player.global_position = Vector3(21.0, 0.1, 14.0)
+	check(not MapZones.is_in_buy_zone(level.document, "attack", player.global_position),
+		"the free-roam shop test starts outside the buy zone")
+	var buy := InputEventAction.new()
+	buy.action = InputActions.BUY_MENU
+	buy.pressed = true
+	sandbox.call("_unhandled_input", buy)
+	var shop := sandbox.get("_sandbox_shop") as MatchHud
+	check(shop != null and shop.is_buy_menu_open() and not player.input_enabled,
+		"the Buy key opens the free-roam shop away from spawn")
+	if shop != null:
+		shop.item_chosen.emit(WeaponCatalog.M4A1)
+		check(player.weapons.current().definition.id == WeaponCatalog.M4A1 and player.weapons.has_weapon(WeaponCatalog.G17),
+			"taking a weapon equips it and keeps the secondary")
+		var escape := InputEventAction.new()
+		escape.action = InputActions.PAUSE_MENU
+		escape.pressed = true
+		sandbox.call("_unhandled_input", escape)
+		check(not shop.is_buy_menu_open() and player.input_enabled and not bool(sandbox.get("is_paused")),
+			"Escape closes the shop and resumes movement")
+	await despawn(sandbox)

@@ -23,7 +23,6 @@ const RELOAD: StringName = &"reload"
 const CROUCH: StringName = &"crouch"
 const WEAPON_1: StringName = &"weapon_1"
 const WEAPON_2: StringName = &"weapon_2"
-const WEAPON_3: StringName = &"weapon_3"
 const WEAPON_NEXT: StringName = &"weapon_next"
 const WEAPON_PREVIOUS: StringName = &"weapon_previous"
 const INTERACT: StringName = &"interact"
@@ -48,7 +47,6 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"id": RELOAD, "label": "Reload", "group": "Combat", "context": "game", "defaults": ["key:82"]},
 	{"id": WEAPON_1, "label": "Primary weapon", "group": "Combat", "context": "game", "defaults": ["key:49"]},
 	{"id": WEAPON_2, "label": "Secondary weapon", "group": "Combat", "context": "game", "defaults": ["key:50"]},
-	{"id": WEAPON_3, "label": "Third weapon slot", "group": "Combat", "context": "game", "defaults": ["key:51"]},
 	{"id": WEAPON_NEXT, "label": "Next weapon", "group": "Combat", "context": "game", "defaults": ["mouse:5"]},
 	{"id": WEAPON_PREVIOUS, "label": "Previous weapon", "group": "Combat", "context": "game", "defaults": ["mouse:4"]},
 	{"id": INSPECT, "label": "Inspect weapon", "group": "Combat", "context": "game", "defaults": ["key:70"]},

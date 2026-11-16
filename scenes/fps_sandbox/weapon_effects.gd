@@ -7,17 +7,15 @@ const MAX_IMPACTS: int = 80
 const IMPACT_LIFETIME: float = 12.0
 const TRACER_LIFETIME: float = 0.06
 const VIEWMODEL_REST := Vector3(0.17, -0.17, -0.3)
-const VIEWMODEL_SCALE: float = 0.62
 ## Seconds a weapon inspection takes (shows the left side, then the right, then returns).
 const INSPECT_TIME: float = 3.2
 
 var weapons: WeaponController
 var viewmodel: Node3D
 var impact_count: int = 0
-## The modelled weapon in hand (null while a development weapon without a model is held).
+## The modelled weapon in hand (null when there is no visible weapon).
 var weapon_visual: WeaponVisual = null
 
-var _camera: Camera3D
 var _gun_root: Node3D
 var _muzzle: Node3D
 var _flash_light: OmniLight3D
@@ -40,11 +38,9 @@ func _ready() -> void:
 
 func bind(controller: WeaponController, camera: Camera3D) -> void:
 	weapons = controller
-	_camera = camera
 	viewmodel = Node3D.new()
 	viewmodel.name = "Viewmodel"
 	viewmodel.position = VIEWMODEL_REST
-	viewmodel.scale = Vector3.ONE * VIEWMODEL_SCALE
 	camera.add_child(viewmodel)
 	weapons.shot_fired.connect(_on_shot_fired)
 	weapons.weapon_switched.connect(func(_s: WeaponState) -> void: _build_gun())
@@ -77,7 +73,7 @@ func _process(delta: float) -> void:
 ## is nothing to inspect or the weapon is busy.
 func inspect() -> bool:
 	var state := weapons.current() if weapons != null else null
-	if state == null or state.is_reloading() or weapons.draw_remaining > 0.0:
+	if weapon_visual == null or state == null or state.is_reloading() or weapons.draw_remaining > 0.0:
 		return false
 	_inspect_left = INSPECT_TIME
 	return true
@@ -104,39 +100,24 @@ func refresh_cosmetics() -> void:
 
 func _build_gun() -> void:
 	if _gun_root != null:
+		viewmodel.remove_child(_gun_root)
 		_gun_root.queue_free()
 	_gun_root = Node3D.new()
 	viewmodel.add_child(_gun_root)
 	weapon_visual = null
+	_muzzle = null
+	_flash_left = 0.0
 	_inspect_left = 0.0
 	var state := weapons.current()
-	var id := state.definition.id if state != null else &""
-	if WeaponModels.has_model(id):
-		_build_modelled_gun(id)
+	if state == null:
 		return
-	var length := 0.55
-	var color := Color("2b2f36")
-	match id:
-		WeaponCatalog.KESTREL_PISTOL:
-			length = 0.22
-			color = Color("3a3f47")
-		WeaponCatalog.WASP_SMG:
-			length = 0.38
-			color = Color("33363c")
-	_part(Vector3(0.06, 0.09, length), Vector3(0, 0, -length / 2.0), color)
-	_part(Vector3(0.05, 0.12, 0.06), Vector3(0, -0.09, -0.05), color.darkened(0.2))
-	_part(Vector3(0.02, 0.02, 0.12), Vector3(0, 0.0, -length - 0.06), Color("15171a"))
-	if id != WeaponCatalog.KESTREL_PISTOL:
-		_part(Vector3(0.05, 0.14, 0.05), Vector3(0, -0.11, -length * 0.55), Color("ff6a2a").darkened(0.35))
-	_add_muzzle(Vector3(0, 0, -length - 0.14))
-
-
-## A modelled weapon at true size, wearing the player's Coat and Magnets.
-func _build_modelled_gun(id: StringName) -> void:
-	_gun_root.scale = Vector3.ONE / VIEWMODEL_SCALE  # The viewmodel node is scaled for the old boxes.
-	weapon_visual = WeaponVisual.new()
-	_gun_root.add_child(weapon_visual)
-	weapon_visual.setup(id)
+	var id := state.definition.id
+	var visual := WeaponVisual.new()
+	_gun_root.add_child(visual)
+	if not visual.setup(id):
+		visual.queue_free()
+		return
+	weapon_visual = visual
 	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(id))
 	var length := weapon_visual.size.z
 	# Long guns sit with the butt just behind the view; pistols are held out in front.
@@ -167,24 +148,11 @@ func _add_muzzle(at: Vector3) -> void:
 	_muzzle.add_child(_flash_mesh)
 
 
-func _part(size: Vector3, local_position: Vector3, color: Color) -> void:
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.6
-	var part := MeshInstance3D.new()
-	part.mesh = mesh
-	part.material_override = material
-	part.position = local_position
-	part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_gun_root.add_child(part)
-
-
 func _on_shot_fired(_origin: Vector3, end_position: Vector3, result: Hitscan.Result) -> void:
 	_kick = 1.0
 	_inspect_left = 0.0
-	_flash_left = 0.045
+	if _muzzle != null:
+		_flash_left = 0.045
 	var start := _muzzle.global_position if _muzzle != null else _origin
 	_spawn_tracer(start, end_position)
 	if result.hit and result.hitbox == null:

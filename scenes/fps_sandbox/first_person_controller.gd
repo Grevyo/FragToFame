@@ -83,8 +83,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		weapons.select_slot(1)
 	elif event.is_action_pressed(InputActions.WEAPON_2):
 		weapons.select_slot(2)
-	elif event.is_action_pressed(InputActions.WEAPON_3):
-		weapons.select_slot(3)
 	elif event.is_action_pressed(InputActions.WEAPON_NEXT):
 		weapons.cycle(1)
 	elif event.is_action_pressed(InputActions.WEAPON_PREVIOUS):
@@ -109,6 +107,7 @@ func set_noclip(enabled: bool) -> bool:
 	velocity = Vector3.ZERO
 	_airborne = false
 	_fall_speed = 0.0
+	_clear_jump_chain()
 	return true
 
 
@@ -136,6 +135,7 @@ func _physics_process(delta: float) -> void:
 	var input_dir := Vector2.ZERO
 	var jump_pressed := false
 	var walking := false
+	var can_jump := alive and not frozen and (not input_enabled or _accepts_input())
 	if noclip and (not alive or not noclip_allowed):
 		set_noclip(false)
 	if noclip:
@@ -171,7 +171,7 @@ func _physics_process(delta: float) -> void:
 		walking = scripted_walk
 	scripted_jump = false
 	var wish := transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
-	_step_movement(Vector2(wish.x, wish.z), walking, jump_pressed, delta)
+	_step_movement(Vector2(wish.x, wish.z), walking, jump_pressed, delta, can_jump)
 
 	if global_position.y < kill_height and alive:
 		health.kill(DamageInfo.world(health.current))
@@ -189,6 +189,7 @@ func set_spawn(feet_position: Vector3, yaw: float) -> void:
 	rotation = Vector3(0, yaw, 0)
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
+	_clear_jump_chain()
 	_spawn_transform = global_transform
 
 

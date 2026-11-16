@@ -13,6 +13,11 @@ static func snap_position(position: Vector3, grid: float) -> Vector3:
 	return Vector3(snappedf(position.x, grid), position.y, snappedf(position.z, grid)) if grid > 0.0 else position
 
 
+## Converts an editor placement plane into the bottom-centre height stored by MapDocument.
+static func piece_base_y(type: String, plane_y: float, height: float) -> float:
+	return plane_y - height if type in PieceCatalog.FLOOR_SLAB_TYPES else plane_y
+
+
 static func snap_angle(degrees: float, step: float) -> float:
 	return MapDocument.normalise_rotation(snappedf(degrees, step) if step > 0.0 else degrees)
 
@@ -105,8 +110,27 @@ static func edge_offset(doc: MapDocument, box: AABB, exclude: Array[String], thr
 	return offset
 
 
+## Forms ordinary map pieces from two snapped points. A floor meets the drawing plane
+## at its top; walls and blocks rise from it. A wall's local X axis follows the stroke.
+static func drawn_piece(type: String, start: Vector3, end: Vector3, height: float, thickness: float) -> Dictionary:
+	var span := Vector2(end.x - start.x, end.z - start.z)
+	var centre := Vector3((start.x + end.x) * 0.5, start.y, (start.z + end.z) * 0.5)
+	var minimum := MapValidator.MIN_SIZE
+	if not span.is_finite() or not centre.is_finite() or not is_finite(height) or height < minimum:
+		return {}
+	if type == "wall":
+		if span.length() < minimum or not is_finite(thickness) or thickness < minimum:
+			return {}
+		var yaw := rad_to_deg(atan2(-span.y, span.x))
+		return MapDocument.make_piece(type, centre, yaw, Vector3(span.length(), height, thickness))
+	if type not in ["floor", "block"] or minf(absf(span.x), absf(span.y)) < minimum:
+		return {}
+	centre.y = piece_base_y(type, centre.y, height)
+	return MapDocument.make_piece(type, centre, 0.0, Vector3(absf(span.x), height, absf(span.y)))
+
+
 ## Distance readout between two points: straight line, horizontal run, height change and the
-## time to run the horizontal distance with a pistol/SMG and with the rifle.
+## time to run the horizontal distance with the G17 and AK-47.
 static func measure(from: Vector3, to: Vector3) -> Dictionary:
 	var flat := Vector2(to.x - from.x, to.z - from.z).length()
 	return {
@@ -119,6 +143,6 @@ static func measure(from: Vector3, to: Vector3) -> Dictionary:
 
 
 static func measure_text(result: Dictionary) -> String:
-	return "%.2f m  ·  flat %.2f m  ·  height %+.2f m  ·  %.1f s run (%.1f s rifle)" % [
+	return "%.2f m  ·  flat %.2f m  ·  height %+.2f m  ·  %.1f s run (%.1f s with AK-47)" % [
 		float(result["distance"]), float(result["horizontal"]), float(result["height"]),
 		float(result["seconds"]), float(result["seconds_rifle"])]

@@ -211,7 +211,7 @@ func _physics_process(delta: float) -> void:
 	if health.is_dead:
 		velocity.x = 0.0
 		velocity.z = 0.0
-		_step_movement(Vector2.ZERO, false, false, delta)
+		_step_movement(Vector2.ZERO, false, false, delta, false)
 		return
 	_perceive(delta)
 	var move_dir := Vector3.ZERO
@@ -227,7 +227,7 @@ func _physics_process(delta: float) -> void:
 	weapons.trigger = want_fire and can_move
 	var direction := Vector2(move_dir.x, move_dir.z) if can_move else Vector2.ZERO
 	var walking := can_move and (walk_requested or target != null)
-	_step_movement(direction, walking, jump_pressed and can_move, delta)
+	_step_movement(direction, walking, jump_pressed, delta, can_move)
 	_maybe_reload()
 
 

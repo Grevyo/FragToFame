@@ -1,6 +1,6 @@
 class_name PieceCatalog
 extends RefCounted
-## Every piece type the map editor can place. Official and community maps use the same catalog.
+## Piece types understood by the map builder. Official and community maps use the same catalog.
 ##
 ## kind:
 ##   "block"     solid box              "ramp"   solid wedge rising toward local -Z
@@ -40,6 +40,8 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"block": {"label": "Block", "kind": "block", "size": Vector3(2, 2, 2), "color": Color("6b7480"), "resizable": true, "group": "Structure"},
 	"pillar": {"label": "Pillar", "kind": "block", "size": Vector3(0.8, 3, 0.8), "color": Color("5b6370"), "resizable": true, "group": "Structure"},
 	"column": {"label": "Round column", "kind": "compound", "size": Vector3(0.8, 3.5, 0.8), "color": Color("a58a66"), "resizable": true, "group": "Structure", "material": "sandstone"},
+	"drawn_surface": {"label": "Drawn surface", "kind": "surface", "size": Vector3.ONE, "color": Color("a58a66"), "resizable": true, "group": "", "walkable": true},
+	"mesh_brush": {"label": "Mesh brush", "kind": "surface", "size": Vector3.ONE, "color": Color("a58a66"), "resizable": true, "group": ""},
 	# --- Openings --------------------------------------------------------------------------------
 	"doorway": {"label": "Doorway", "kind": "compound", "size": Vector3(3, 3, 0.4), "color": Color("c8a878"), "resizable": true, "group": "Openings", "material": "adobe"},
 	"double_door": {"label": "Double doors (open)", "kind": "compound", "size": Vector3(4, 3, 0.4), "color": Color("c8a878"), "resizable": true, "group": "Openings", "material": "adobe"},
@@ -60,6 +62,18 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"well": {"label": "Cistern well", "kind": "compound", "size": Vector3(3, 1.0, 3), "color": Color("a58a66"), "resizable": true, "group": "Props", "material": "sandstone"},
 	"kiln": {"label": "Kiln", "kind": "compound", "size": Vector3(2.4, 2.6, 2.4), "color": Color("9a5a3c"), "resizable": true, "group": "Props", "material": "mud_brick"},
 	"awning": {"label": "Awning", "kind": "compound", "size": Vector3(3, 2.8, 2), "color": Color("b84a3a"), "resizable": true, "group": "Props", "material": "cloth_red"},
+	"pottery_jar": {"label": "Lidded pottery jar", "kind": "compound", "size": Vector3(0.8, 0.94, 0.8),
+		"color": Color("a85035"), "resizable": true, "group": "Props", "material": "fired_clay"},
+	"coopered_barrel": {"label": "Hooped timber barrel", "kind": "compound", "size": Vector3(0.82, 1.03, 0.82),
+		"color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"braced_crate": {"label": "Braced shipping crate", "kind": "compound", "size": Vector3(1.45, 1.1, 1.15),
+		"color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"stone_bench": {"label": "Stone workbench", "kind": "compound", "size": Vector3(1.7, 0.95, 0.74),
+		"color": Color("bdb69f"), "resizable": true, "group": "Props", "material": "limestone"},
+	"market_shelf": {"label": "Market shelf", "kind": "compound", "size": Vector3(1.45, 1.85, 0.52),
+		"color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"stone_trough": {"label": "Stone trough", "kind": "compound", "size": Vector3(1.9, 0.65, 0.86),
+		"color": Color("bdb69f"), "resizable": true, "group": "Props", "material": "limestone"},
 	# --- Cover (sightline blockers) --------------------------------------------------------------
 	"low_cover": {"label": "Low cover", "kind": "block", "size": Vector3(3, 1.1, 0.4), "color": Color("5b6370"), "resizable": true, "group": "Cover"},
 	"sandbag_wall": {"label": "Sandbag wall", "kind": "compound", "size": Vector3(3, 1.1, 0.8), "color": Color("a8946a"), "resizable": true, "group": "Cover", "material": "burlap"},
@@ -89,7 +103,14 @@ const TYPES: Dictionary[String, Dictionary] = {
 
 const GROUP_ORDER: Array[String] = ["Structure", "Openings", "Slopes", "Props", "Cover", "Vehicles", "Lights",
 	"Gameplay", "Tactics", "Training"]
-const SOLID_KINDS: Array[String] = ["block", "ramp", "stairs", "compound"]
+const SOLID_KINDS: Array[String] = ["block", "ramp", "stairs", "compound", "surface"]
+## Level slabs are placed by their walking surface. Raised platforms and ramps use their base.
+const FLOOR_SLAB_TYPES: Array[String] = ["floor", "floor_sand", "floor_paved", "floor_tile", "floor_planks"]
+## Kept for saved maps and prefabs. New pieces choose their finish in the inspector.
+const MATERIAL_VARIANTS: Array[String] = [
+	"floor_sand", "floor_paved", "floor_tile", "floor_planks",
+	"wall_adobe", "wall_plaster", "wall_stone", "ramp_earth", "stairs_stone",
+]
 
 
 static func has_type(type: String) -> bool:
@@ -133,9 +154,9 @@ static func is_walkable(type: String) -> bool:
 	return bool(info(type).get("walkable", false))
 
 
-static func types_in_group(group: String) -> Array[String]:
+static func palette_types_in_group(group: String) -> Array[String]:
 	var list: Array[String] = []
 	for type: String in TYPES:
-		if TYPES[type]["group"] == group:
+		if TYPES[type]["group"] == group and type not in MATERIAL_VARIANTS:
 			list.append(type)
 	return list

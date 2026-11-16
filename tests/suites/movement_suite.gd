@@ -88,7 +88,7 @@ func _test_ground_model() -> void:
 	check(_near(_units(crouch[31]), 32.25, 0.02) and _near(_units(crouch[139]), 85.0, 0.01),
 		"crouch: %.2f u/s after 0.5 s, tops out at %.1f u/s (recorded 32.25, 85)" % [_units(crouch[31]), _units(crouch[139])])
 	var rifle := PlayerMovement.new()
-	var rifle_speed := rifle.max_speed(false, 0.0, WeaponCatalog.get_definition(WeaponCatalog.VANTA_RIFLE).mobility)
+	var rifle_speed := rifle.max_speed(false, 0.0, WeaponCatalog.get_definition(WeaponCatalog.AK47).mobility)
 	check(_near(_units(rifle_speed), 215.0, 0.01), "the rifle's mobility gives a 215 u/s run (recorded 215)")
 	var rifle_accel := _ground_series(rifle, 0.0, 1.0, 16, rifle_speed)
 	check(_near(_units(rifle_accel[0]), 18.48, 0.02) and _near(_units(rifle_accel[15]), 163.47, 0.02),
@@ -309,6 +309,7 @@ func _test_controller() -> void:
 	check(_near(_units(_speed()), 85.0, 0.1) and _player.is_crouched(), "crouch speed %.1f u/s (reference 85)" % _units(_speed()))
 
 	await _test_controller_jumps(dt)
+	await _test_bunny_hop_chain()
 	await _test_controller_world(dt)
 	await despawn(sandbox)
 
@@ -316,7 +317,7 @@ func _test_controller() -> void:
 ## Rifle in hand (the spawn weapon): the recorded 215 u/s figures.
 func _test_controller_rifle(dt: float) -> void:
 	await _reset()
-	check(_player.weapons.current().definition.id == WeaponCatalog.VANTA_RIFLE, "player starts with the rifle")
+	check(_player.weapons.current().definition.id == WeaponCatalog.AK47, "player starts with the rifle")
 	await wait_physics_frames(1)
 	_player.scripted_move = FORWARD
 	await _ticks(roundi(0.25 / dt))
@@ -344,10 +345,10 @@ func _test_controller_rifle(dt: float) -> void:
 	while not _player.is_on_floor():
 		await _ticks(1)
 	check(_near(_units(_speed()), 159.15, 5.0), "rifle landing speed %.1f u/s (reference 159.2)" % _units(_speed()))
-	_player.weapons.select_slot(3)
+	_player.weapons.select_slot(2)
 	_player.scripted_move = FORWARD
 	await _ticks(roundi(1.5 / dt))
-	check(_near(_units(_speed()), 250.0, 0.01), "switching to the SMG raises the run to %.1f u/s" % _units(_speed()))
+	check(_near(_units(_speed()), 250.0, 0.01), "switching to the G17 raises the run to %.1f u/s" % _units(_speed()))
 
 
 func _test_controller_jumps(dt: float) -> void:
@@ -382,17 +383,50 @@ func _test_controller_jumps(dt: float) -> void:
 	check(is_equal_approx(slowest_air, run), "a running jump keeps its full take-off speed in the air with no input")
 	check(_near(_units(_speed()), 185.06, 6.0), "landing cuts speed to %.1f u/s (reference 185.1 = 74%%)" % _units(_speed()))
 
-	# Chained jump right after landing is lower and no faster.
-	_player.scripted_move = FORWARD
+	# A fresh press on the first grounded tick keeps the running momentum.
 	floor_y = _player.global_position.y
 	_player.scripted_jump = true
 	peak = 0.0
 	await _ticks(2)
+	var hop_takeoff_speed := _speed()
 	while not _player.is_on_floor():
 		peak = maxf(peak, _player.global_position.y - floor_y)
 		await _ticks(1)
-	check(_near(_units(peak), 42.24, 3.0), "an immediate second jump only reaches %.1f u (reference 42.2 u)" % _units(peak))
-	check(_units(_speed()) < 190.0, "and chained jumps do not regain speed (%.1f u/s; reference 185)" % _units(_speed()))
+	check(_near(_units(peak), 42.24, 3.0), "an immediate second jump still peaks at %.1f u (reference 42.2 u)" % _units(peak))
+	check(is_equal_approx(hop_takeoff_speed, run), "a timed hop carries the previous jump's momentum with no free acceleration")
+	_player.scripted_jump = true
+	await _ticks(2)
+	check(not _player.is_on_floor() and is_equal_approx(_speed(), run),
+		"another correctly timed press continues the chain without gaining speed")
+
+	# Turning into an air strafe can gain speed. A press too early is discarded, and a
+	# late press still jumps but gets the ordinary landing slowdown.
+	await _reset()
+	_player.scripted_move = FORWARD
+	await _ticks(roundi(1.0 / dt))
+	_player.scripted_jump = true
+	await _ticks(2)
+	_player.scripted_jump = true
+	var fastest := _speed()
+	for i: int in 24:
+		var velocity := Vector2(_player.velocity.x, _player.velocity.z)
+		var strafe := velocity.normalized().rotated(PI / 2.0 - 0.04)
+		var local := _player.basis.inverse() * Vector3(strafe.x, 0.0, strafe.y)
+		_player.scripted_move = Vector2(local.x, local.z)
+		await _ticks(1)
+		fastest = maxf(fastest, _speed())
+	check(is_equal_approx(fastest, run * 1.06), "turning with an air strafe gains at most 6%% (%.2f m/s)" % fastest)
+	_player.scripted_move = Vector2.ZERO
+	for i: int in 60:
+		if _player.is_on_floor():
+			break
+		await _ticks(1)
+	await _ticks(ceili(PlayerMovement.HOP_TIMING_WINDOW / dt))
+	check(_player.is_on_floor(), "pressing early in the air does not queue another jump")
+	_player.scripted_jump = true
+	await _ticks(2)
+	check(not _player.is_on_floor() and _speed() < run * 0.85,
+		"jumping outside the timing window takes off with the normal landing slowdown")
 
 	# Air strafe without turning.
 	await _reset()
@@ -418,6 +452,93 @@ func _test_controller_jumps(dt: float) -> void:
 	check(_near(_units(peak), 66.0, 2.0), "crouch-jump lifts the feet to %.1f u / %.2f m (reference 66.0 u)" % [_units(peak), peak])
 	check(_player.is_crouched() and is_equal_approx(_player.current_height(), FirstPersonController.CROUCH_HEIGHT),
 		"landing from a crouch-jump stays crouched with the collider in sync")
+
+
+func _test_bunny_hop_chain() -> void:
+	section("Bunny-hop timing and AK speed cap")
+	# Open space for repeated strafes, without walls or obstacles cutting the chain short.
+	var ground := StaticBody3D.new()
+	var collider := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(250, 1, 250)
+	collider.shape = shape
+	ground.add_child(collider)
+	ground.collision_layer = Hitscan.LAYER_WORLD
+	ground.position = Vector3(500, -0.5, 0)
+	tree.root.add_child(ground)
+	var start := Vector3(500, 0, 0)
+	_player.weapons.select_slot(1)
+	var ak_speed := _player.movement.run_speed * _player.weapon_mobility()
+	var original_rate := Engine.physics_ticks_per_second
+	for rate: int in [60, 120]:
+		Engine.physics_ticks_per_second = rate
+		var dt := 1.0 / rate
+		for delay: float in [0.017, 0.042]:
+			await _reset(start, 0.0)
+			_player.scripted_move = FORWARD
+			await _ticks(rate)
+			_player.scripted_jump = true
+			await _ticks(2)
+			while not _player.is_on_floor():
+				await _ticks(1)
+			_player.scripted_move = Vector2.ZERO
+			await _ticks(roundi(delay / dt))
+			_player.scripted_jump = true
+			await _ticks(2)
+			var kept_momentum := is_equal_approx(_speed(), ak_speed)
+			check(not _player.is_on_floor() and kept_momentum == (delay < PlayerMovement.HOP_TIMING_WINDOW),
+				"%d Hz: a press %.0f ms after touchdown %s momentum" % [
+					rate, 1000.0 * roundi(delay / dt) * dt, "keeps" if kept_momentum else "loses"])
+		await _reset(start, 0.0)
+		var floor_y := _player.global_position.y
+		_player.scripted_move = FORWARD
+		await _ticks(rate)
+		_player.scripted_jump = true
+		await _ticks(2)
+		var buffered := false
+		for i: int in rate:
+			if _player.is_on_floor():
+				break
+			var next_y := _player.global_position.y + (_player.velocity.y - _player.movement.gravity * dt * 0.5) * dt
+			if not buffered and next_y <= floor_y:
+				_player.scripted_jump = true
+				buffered = true
+			await _ticks(1)
+		await _ticks(2)
+		check(buffered and not _player.is_on_floor() and _player.velocity.y > 0.0
+			and is_equal_approx(_speed(), ak_speed), "%d Hz: a press just before touchdown chains" % rate)
+	Engine.physics_ticks_per_second = original_rate
+	var dt := 1.0 / original_rate
+
+	await _reset(start, 0.0)
+	_player.scripted_move = FORWARD
+	await _ticks(original_rate)
+	var fastest := 0.0
+	for jump_index: int in 10:
+		_player.scripted_jump = true
+		await _ticks(2)
+		for i: int in 75:
+			if _player.is_on_floor():
+				break
+			fastest = maxf(fastest, _speed())
+			var model := _player.movement
+			var wish_cap := model.air_wish_speed * (PlayerMovement.HOP_AIR_WISH_FACTOR if jump_index > 0 else 1.0)
+			var accelerate_amount := model.air_accelerate * ak_speed * model.speed_scale() * dt
+			var projection := maxf(wish_cap - accelerate_amount, 0.0)
+			var horizontal := Vector2(_player.velocity.x, _player.velocity.z)
+			var strafe := horizontal.normalized().rotated(acos(clampf(projection / _speed(), 0.0, 1.0)))
+			_player.scripted_move = Vector2(strafe.x, strafe.y)
+			await _ticks(1)
+		_player.scripted_move = Vector2.ZERO
+	check(fastest >= 1.99 * ak_speed and fastest <= 2.001 * ak_speed,
+		"well-steered AK hops reach and respect the 2× cap (%.2f m/s)" % fastest)
+	await _ticks(4)
+	_player.scripted_jump = true
+	await _ticks(2)
+	check(not _player.is_on_floor() and _speed() < ak_speed,
+		"a missed landing clears the earned speed for the next jump")
+	_player.weapons.select_slot(2)
+	await despawn(ground)
 
 
 func _test_controller_world(dt: float) -> void:

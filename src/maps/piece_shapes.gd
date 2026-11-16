@@ -39,6 +39,18 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 			return _kiln(size)
 		"awning":
 			return _awning(size)
+		"pottery_jar":
+			return _pottery_jar(size)
+		"coopered_barrel":
+			return _coopered_barrel(size)
+		"braced_crate":
+			return _braced_crate(size)
+		"stone_bench":
+			return _stone_bench(size)
+		"market_shelf":
+			return _market_shelf(size)
+		"stone_trough":
+			return _stone_trough(size)
 		"sandbag_wall":
 			return _sandbags(size)
 		"market_stall":
@@ -60,6 +72,93 @@ static func _box(size: Vector3, pos: Vector3, mat: String = "", rot: Vector3 = V
 
 static func _cyl(diameter: float, height: float, pos: Vector3, mat: String = "", rot: Vector3 = Vector3.ZERO) -> Dictionary:
 	return {"shape": "cylinder", "size": Vector3(diameter, height, diameter), "pos": pos, "rot": rot, "mat": mat}
+
+
+## Builds a turned profile from (fractional height, radius as a fraction of the widest point).
+static func _turned_body(size: Vector3, profile: Array[Vector2]) -> Array[Dictionary]:
+	var diameter := minf(size.x, size.z)
+	var sections: Array[Dictionary] = []
+	for index: int in profile.size() - 1:
+		var bottom := profile[index]
+		var top := profile[index + 1]
+		var part := _cyl(diameter, (top.x - bottom.x) * size.y,
+			Vector3(0.0, (bottom.x + top.x) * size.y / 2.0, 0.0))
+		part["bottom_radius_scale"] = bottom.y
+		part["top_radius_scale"] = top.y
+		sections.append(part)
+	return sections
+
+
+static func _pottery_jar(size: Vector3) -> Array[Dictionary]:
+	var sections := _turned_body(size, [
+		Vector2(0.0, 0.55), Vector2(0.09, 0.62), Vector2(0.45, 1.0),
+		Vector2(0.66, 0.92), Vector2(0.83, 0.48), Vector2(0.91, 0.48),
+		Vector2(0.94, 0.61), Vector2(0.98, 0.49), Vector2(1.0, 0.18),
+	])
+	sections.append(_cyl(minf(size.x, size.z) * 0.56, size.y * 0.034,
+		Vector3(0.0, size.y * 0.88, 0.0), "mud_brick"))
+	return sections
+
+
+static func _coopered_barrel(size: Vector3) -> Array[Dictionary]:
+	var sections := _turned_body(size, [
+		Vector2(0.0, 0.79), Vector2(0.19, 0.89), Vector2(0.44, 1.0),
+		Vector2(0.56, 1.0), Vector2(0.81, 0.89), Vector2(1.0, 0.79),
+	])
+	for band_height: float in [0.17, 0.83]:
+		sections.append(_cyl(minf(size.x, size.z) * 0.92, size.y * 0.055,
+			Vector3(0.0, size.y * band_height, 0.0), "metal_dark"))
+	return sections
+
+
+static func _braced_crate(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = [_box(size * Vector3(0.94, 0.98, 0.92), Vector3(0, size.y * 0.49, 0))]
+	var diagonal := Vector2(size.x * 0.76, size.y * 0.68)
+	for side: float in [-1.0, 1.0]:
+		var z := size.z * 0.478 * side
+		parts.append(_box(Vector3(diagonal.length(), size.y * 0.12, size.z * 0.044),
+			Vector3(0, size.y * 0.5, z), "wood_dark", Vector3(0, 0, rad_to_deg(diagonal.angle()) * side)))
+		for rail: float in [0.13, 0.87]:
+			parts.append(_box(Vector3(size.x * 0.95, size.y * 0.12, size.z * 0.044),
+				Vector3(0, size.y * rail, z), "wood_dark"))
+	return parts
+
+
+static func _stone_bench(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = [_box(Vector3(size.x, size.y * 0.15, size.z), Vector3(0, size.y * 0.925, 0))]
+	for side: float in [-1.0, 1.0]:
+		parts.append(_box(Vector3(size.x * 0.14, size.y * 0.85, size.z * 0.72),
+			Vector3(side * size.x * 0.36, size.y * 0.425, 0.0)))
+	parts.append(_box(Vector3(size.x * 0.76, size.y * 0.12, size.z * 0.2),
+		Vector3(0.0, size.y * 0.35, 0.0), "wood_dark"))
+	return parts
+
+
+static func _market_shelf(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = []
+	for shelf: float in [0.17, 0.52, 0.87]:
+		parts.append(_box(Vector3(size.x, size.y * 0.048, size.z),
+			Vector3(0.0, size.y * shelf, 0.0)))
+	for x_side: float in [-1.0, 1.0]:
+		for z_side: float in [-1.0, 1.0]:
+			parts.append(_box(Vector3(size.x * 0.055, size.y, size.z * 0.13),
+				Vector3(x_side * size.x * 0.46, size.y * 0.5, z_side * size.z * 0.42), "wood_dark"))
+	parts.append(_box(Vector3(size.x * 0.87, size.y * 0.055, size.z * 0.08),
+		Vector3(0.0, size.y * 0.31, size.z * 0.45), "wood_dark"))
+	return parts
+
+
+static func _stone_trough(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = [_box(Vector3(size.x, size.y * 0.32, size.z), Vector3(0.0, size.y * 0.16, 0.0))]
+	var y := size.y * 0.66
+	var wall_height := size.y * 0.68
+	var wall_depth := minf(size.x, size.z) * 0.15
+	for side: float in [-1.0, 1.0]:
+		parts.append(_box(Vector3(size.x, wall_height, wall_depth),
+			Vector3(0.0, y, side * (size.z - wall_depth) / 2.0)))
+		parts.append(_box(Vector3(wall_depth, wall_height, size.z - wall_depth * 2.0),
+			Vector3(side * (size.x - wall_depth) / 2.0, y, 0.0), "sandstone"))
+	return parts
 
 
 static func _opening_width(size: Vector3, props: Dictionary, fallback: float) -> float:
@@ -87,10 +186,16 @@ static func _double_door(size: Vector3, props: Dictionary) -> Array[Dictionary]:
 	var width := _opening_width(size, props, 2.4)
 	var top := _opening_height(size, props, 2.4)
 	var list := _opening(size, width, top, 0.0)
-	# Two leaves standing open at right angles to the wall, on its -Z side.
+	# Zero closes a leaf toward the centre, positive angles open toward local -Z.
 	var leaf := width / 2.0
-	for side: float in [-1.0, 1.0]:
-		list.append(_box(Vector3(0.08, top, leaf), Vector3(side * (width / 2.0 + 0.04), top / 2.0, -(size.z / 2.0 + leaf / 2.0)), "wood_dark"))
+	var angles: Array[float] = [float(props.get("left_swing", 90.0)), float(props.get("right_swing", 90.0))]
+	for i: int in angles.size():
+		var side := float(i * 2 - 1)
+		var swing := clampf(angles[i], -180.0, 180.0)
+		var yaw := side * (90.0 - swing)
+		var hinge := Vector3(side * (width / 2.0 + 0.04), top / 2.0, -size.z / 2.0)
+		var centre := hinge + (Vector3.FORWARD * (leaf / 2.0)).rotated(Vector3.UP, deg_to_rad(yaw))
+		list.append(_box(Vector3(0.08, top, leaf), centre, "wood_dark", Vector3(0, yaw, 0)))
 	return list
 
 

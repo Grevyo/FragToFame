@@ -16,6 +16,7 @@ func run() -> void:
 	_wipe(TEST_DIR)
 	_test_format()
 	_test_catalogue()
+	_test_detailed_materials()
 	_test_snapping()
 	_test_controller_groups()
 	_test_clipboard_and_prefabs()
@@ -25,8 +26,12 @@ func run() -> void:
 	await _test_collision_matches_visuals()
 	await _test_analysis()
 	await _test_studio_tools()
+	await _test_draw_tools()
+	await _test_snap_placement()
+	await _test_geometry_palette_and_textures()
 	await _test_tactic_compatibility()
 	await _test_playtest_options()
+	await _test_draw_navmesh_bot_playtest()
 	_wipe(TEST_DIR)
 
 
@@ -189,6 +194,34 @@ func _test_catalogue() -> void:
 	var tilted := _arena()
 	tilted.add_piece(_piece("crate", Vector3(2, 0, 2), Vector3.ZERO, 30.0))
 	check((MapValidator.validate(tilted)["errors"] as Array).is_empty(), "the validator accepts free rotation")
+
+
+func _test_detailed_materials() -> void:
+	section("Detailed map materials")
+	var detailed: Array[String] = ["sandstone", "stone_paving", "cobblestone", "limewash", "limestone", "fired_clay",
+		"weathered_wood", "brass"]
+	var valid := true
+	for id: String in detailed:
+		var finish := MapMaterials.material(id)
+		if finish == null or not finish.normal_enabled or finish.normal_texture == null:
+			valid = false
+			continue
+		var colour := finish.albedo_texture.get_image()
+		var normals := finish.normal_texture.get_image()
+		var swatch := MapMaterials.swatch(id)
+		var tile_size := Vector2i(MapMaterials.TEXTURE_SIZE, MapMaterials.TEXTURE_SIZE)
+		valid = valid and colour.get_size() == tile_size and normals.get_size() == tile_size
+		valid = valid and colour.has_mipmaps() and normals.has_mipmaps() and finish.uv1_world_triplanar
+		valid = valid and swatch.get_size() == Vector2(MapMaterials.SWATCH_SIZE, MapMaterials.SWATCH_SIZE)
+	check(valid, "upgraded and new materials have shared world-aligned colour and normal maps plus compact swatches")
+	var masonry := MapMaterials.material("sandstone")
+	var albedo := masonry.albedo_texture.get_image()
+	var relief := masonry.normal_texture.get_image()
+	check(albedo.get_pixel(31, 1).get_luminance() < albedo.get_pixel(31, 16).get_luminance() - 0.08
+		and absf(relief.get_pixel(31, 2).g - 0.5) > 0.03,
+		"brick mortar is visibly darker and has a normal gradient along its edge")
+	check(MapMaterials.material("brass").metallic > 0.5 and MapMaterials.material("brass").roughness < masonry.roughness,
+		"brass and stone use different lighting responses")
 
 
 func _test_snapping() -> void:
@@ -471,7 +504,15 @@ func _test_collision_matches_visuals() -> void:
 	for type: String in PieceCatalog.TYPES:
 		if not PieceCatalog.is_solid(type):
 			continue
-		var node := MapBuilder.build_piece(_piece(type, Vector3(x, 0, 0)), MapBuilder.Mode.RUNTIME)
+		var piece := _piece(type, Vector3(x, 0, 0))
+		if type == "drawn_surface":
+			piece = PolygonSurface.piece(PackedVector3Array([
+				Vector3(x, 0, 0), Vector3(x + 4, 1, 0), Vector3(x + 4, 1, 4), Vector3(x, 0, 4),
+			]), 0.2)
+		elif type == "mesh_brush":
+			piece = BrushGeometry.piece([[x, 0, 0], [x + 4, 0, 0], [x + 4, 2, 4], [x, 2, 4]],
+				[0, 1, 2, 0, 2, 3])
+		var node := MapBuilder.build_piece(piece, MapBuilder.Mode.RUNTIME)
 		world.add_child(node)
 		x += 12.0
 		var meshes := node.find_children("*", "MeshInstance3D", true, false)
@@ -485,10 +526,18 @@ func _test_collision_matches_visuals() -> void:
 				if mesh is BoxMesh:
 					ok = ok and shape is BoxShape3D and (shape as BoxShape3D).size.is_equal_approx((mesh as BoxMesh).size)
 				elif mesh is CylinderMesh:
-					ok = ok and shape is CylinderShape3D and is_equal_approx((shape as CylinderShape3D).radius, (mesh as CylinderMesh).top_radius) \
-						and is_equal_approx((shape as CylinderShape3D).height, (mesh as CylinderMesh).height)
+					var cylinder := mesh as CylinderMesh
+					if is_equal_approx(cylinder.top_radius, cylinder.bottom_radius):
+						ok = ok and shape is CylinderShape3D and is_equal_approx((shape as CylinderShape3D).radius, cylinder.top_radius) \
+							and is_equal_approx((shape as CylinderShape3D).height, cylinder.height)
+					else:
+						ok = ok and shape is ConvexPolygonShape3D and (shape as ConvexPolygonShape3D).points.size() >= 32
 				else:
 					ok = false
+		elif PieceCatalog.kind(type) == "surface" and ok:
+			var mesh := (meshes[0] as MeshInstance3D).mesh
+			var shape := (shapes[0] as CollisionShape3D).shape as ConcavePolygonShape3D
+			ok = shape != null and shape.get_faces() == mesh.get_faces()
 		if not ok:
 			mismatched.append(type)
 	check(mismatched.is_empty(), "each visible part has a collider of the same shape and size (%s)" % ", ".join(mismatched))
@@ -497,9 +546,24 @@ func _test_collision_matches_visuals() -> void:
 	var door := MapBuilder.build_piece(_piece("doorway", Vector3(0, 0, 40), Vector3(3, 3, 0.4)), MapBuilder.Mode.RUNTIME)
 	var stairs := MapBuilder.build_piece(_piece("stairs_stone", Vector3(20, 0, 40), Vector3(3, 1.5, 4)), MapBuilder.Mode.RUNTIME)
 	var barrel := MapBuilder.build_piece(_piece("barrel", Vector3(40, 0, 40)), MapBuilder.Mode.RUNTIME)
-	for node: Node3D in [door, stairs, barrel]:
+	var trough := MapBuilder.build_piece(_piece("stone_trough", Vector3(60, 0, 40)), MapBuilder.Mode.RUNTIME)
+	var shelf := MapBuilder.build_piece(_piece("market_shelf", Vector3(80, 0, 40)), MapBuilder.Mode.RUNTIME)
+	var jar := MapBuilder.build_piece(_piece("pottery_jar", Vector3(100, 0, 40)), MapBuilder.Mode.RUNTIME)
+	for node: Node3D in [door, stairs, barrel, trough, shelf, jar]:
 		world.add_child(node)
 	await wait_physics_frames(2)
+	var basin := _ray(space, Vector3(60, 2, 40), Vector3(60, -1, 40))
+	var rim := _ray(space, Vector3(60.9, 2, 40), Vector3(60.9, -1, 40))
+	check(not basin.is_empty() and not rim.is_empty()
+		and is_equal_approx((basin["position"] as Vector3).y, 0.208)
+		and is_equal_approx((rim["position"] as Vector3).y, 0.65),
+		"the trough has an inset basin and a solid rim")
+	check(_ray(space, Vector3(80, 0.72, 42), Vector3(80, 0.72, 38)).is_empty()
+		and not _ray(space, Vector3(80, 0.962, 42), Vector3(80, 0.962, 38)).is_empty(),
+		"the shelf openings pass rays while a board blocks them")
+	check(not _ray(space, Vector3(99.4, 0.423, 40), Vector3(100.6, 0.423, 40)).is_empty()
+		and _ray(space, Vector3(100.32, 0.82, 42), Vector3(100.32, 0.82, 38)).is_empty(),
+		"the jar has a solid belly and tapered clearance around the neck")
 	check(_ray(space, Vector3(0, 1.2, 43), Vector3(0, 1.2, 37)).is_empty(), "a shot passes through the doorway opening")
 	check(not _ray(space, Vector3(1.2, 1.2, 43), Vector3(1.2, 1.2, 37)).is_empty()
 		and not _ray(space, Vector3(0, 2.7, 43), Vector3(0, 2.7, 37)).is_empty(), "the jamb and the lintel stop a shot")
@@ -548,7 +612,7 @@ func _test_analysis() -> void:
 	check(not rotation.is_empty() and absf(float(rotation["length_min"]) - 20.0) < 0.8, "timing: rotation between the sites")
 	check(not clean.timing("West Door (entrance A) ↔ East Door (entrance B)", "Crossings").is_empty(), "timing: crossing between entrances")
 	var text := clean.timing_text()
-	check(text.contains("Rotations:") and text.contains("Centre (mid)") and text.contains("rifle"), "the readout lists every route")
+	check(text.contains("Rotations:") and text.contains("Centre (mid)") and text.contains("AK-47"), "the readout lists every route")
 	var overlay := clean.overlay_mesh()
 	check(overlay.get_surface_count() == 1 and overlay.surface_get_array_len(0) >= 3, "the navmesh overlay mesh is built from the baked polygons")
 
@@ -867,6 +931,217 @@ func _test_studio_tools() -> void:
 	await despawn(studio)
 
 
+func _test_draw_tools() -> void:
+	section("Creation Studio: draw geometry")
+	var studio := spawn_scene(STUDIO)
+	if studio == null:
+		return
+	await wait_frames(2)
+	var ui := studio.get_node("UI/StudioUI") as StudioUI
+	var camera := studio.get_node("EditorCamera") as EditorFlyCamera
+	var ghost := studio.get_node("Ghost") as Node3D
+	var ctl := studio.get("controller") as MapEditController
+	studio.set("storage", MapStorage.new(TEST_DIR.path_join("draw")))
+	studio.set("snap_surface", false)
+	studio.set("build_level", 2.0)
+	studio.call("_set_snap", 0.5)
+	studio.call("set_overhead", true)
+	var start := camera.unproject_position(Vector3(-3.48, 2.0, 2.04))
+	var end := camera.unproject_position(Vector3(4.13, 2.0, -2.88))
+	var base_count := ctl.document.pieces.size()
+	var layer := ctl.add_layer("Drawn geometry")
+	studio.set("active_layer", layer)
+	ui.tool_selected.emit(StudioUI.Tool.DRAW_FLOOR)
+	var press := InputEventMouseButton.new()
+	press.pressed = true
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.position = start
+	studio.call("_on_left_press", press)
+	studio.call("_preview_draw", end)
+	var draw_mesh := studio.get("_draw_box") as MeshInstance3D
+	check(ghost.visible and draw_mesh.visible and (draw_mesh.mesh as BoxMesh).size.is_equal_approx(Vector3(7.5, 0.2, 5.0))
+		and ctl.document.pieces.size() == base_count, "dragging previews the exact snapped footprint before committing")
+	studio.call("_finish_draw", end)
+	var floor_id := ctl.selected_id
+	var floor := ctl.document.get_piece(floor_id)
+	check(floor.get("type") == "floor" and floor.get("layer") == layer
+		and (floor.get("position", Vector3.ZERO) as Vector3).is_equal_approx(Vector3(0.25, 1.8, -0.5))
+		and not ghost.visible, "the new floor finishes flush with the draw plane on the active layer")
+	check(ctl.undo() and ctl.document.pieces.size() == base_count and ctl.redo()
+		and ctl.document.get_piece(floor_id) == floor, "one undo and redo remove and restore the entire stroke")
+
+	studio.call("_handle_key", _key(KEY_4))
+	var draw_heights := ui.get("_draw_heights") as Dictionary
+	(draw_heights[StudioUI.Tool.DRAW_WALL] as SpinBox).value = 4.0
+	(ui.get("_wall_thickness") as SpinBox).value = 0.5
+	studio.call("_begin_draw", camera.unproject_position(Vector3(0, 2, 0)))
+	studio.call("_finish_draw", camera.unproject_position(Vector3(3, 2, -4)))
+	var wall_id := ctl.selected_id
+	var wall := ctl.document.get_piece(wall_id)
+	var wall_size := wall.get("size", Vector3.ZERO) as Vector3
+	var wall_direction := Vector3.RIGHT.rotated(Vector3.UP, deg_to_rad(float(wall.get("rotation_y", 0.0))))
+	check(wall.get("type") == "wall" and wall_size.is_equal_approx(Vector3(5.0, 4.0, 0.5))
+		and wall_direction.distance_to(Vector3(0.6, 0.0, -0.8)) < 0.0001,
+		"diagonal walls follow both endpoints and use the configured height and depth")
+
+	studio.call("_handle_key", _key(KEY_5))
+	studio.call("_begin_draw", start)
+	studio.call("_finish_draw", start)
+	check(ctl.document.pieces.size() == base_count + 2, "a click without a footprint creates no block")
+	studio.call("_begin_draw", start)
+	studio.call("_handle_key", _key(KEY_ESCAPE))
+	studio.call("_finish_draw", end)
+	check(ctl.document.pieces.size() == base_count + 2 and studio.get("tool") == StudioUI.Tool.DRAW_BLOCK,
+		"Escape cancels the stroke and keeps the drawing tool armed")
+	ctl.set_layer_field(layer, "locked", true)
+	studio.call("_begin_draw", start)
+	studio.call("_finish_draw", end)
+	check(ctl.document.pieces.size() == base_count + 2, "drawing respects a locked layer")
+	ctl.set_layer_field(layer, "locked", false)
+	studio.call("_begin_draw", start)
+	studio.call("_finish_draw", end)
+	var block := ctl.selected_piece()
+	check(block.get("type") == "block" and is_equal_approx((block.get("position", Vector3.ZERO) as Vector3).y, 2.0),
+		"a solid block rises from the drawing plane")
+
+	var saved := int(studio.call("save_map")) == OK
+	var storage := studio.get("storage") as MapStorage
+	var reopened := storage.load_path(str(studio.get("current_path")))
+	check(saved and reopened != null and reopened.get_piece(floor_id) == floor and reopened.get_piece(wall_id) == wall,
+		"drawn pieces save as ordinary map geometry and reopen with the same dimensions")
+	if reopened != null:
+		var runtime_wall := MapBuilder.build_piece(reopened.get_piece(wall_id), MapBuilder.Mode.RUNTIME)
+		var shape_node := runtime_wall.find_children("*", "CollisionShape3D", true, false)[0] as CollisionShape3D
+		check((shape_node.shape as BoxShape3D).size.is_equal_approx(wall_size),
+			"the FPS runtime builds matching solid collision for a drawn wall")
+		runtime_wall.free()
+	await despawn(studio)
+
+
+func _test_snap_placement() -> void:
+	section("Creation Studio: snap marker and floor levels")
+	var studio := spawn_scene(STUDIO)
+	if studio == null:
+		return
+	await wait_frames(2)
+	var ctl := studio.get("controller") as MapEditController
+	var camera := studio.get_node("EditorCamera") as EditorFlyCamera
+	var ui := studio.get_node("UI/StudioUI") as StudioUI
+	var cursor := studio.get_node("Cursor") as MeshInstance3D
+	var ghost := studio.get_node("Ghost") as Node3D
+	var doc := MapDocument.create("Snap placement")
+	doc.add_piece(_piece("block", Vector3.ZERO, Vector3(1.4, 2.0, 1.4)))
+	ctl.set_document(doc)
+	studio.call("set_overhead", true)
+	studio.call("_set_snap", 1.0)
+	var surface := camera.unproject_position(Vector3(0.1, 2.0, -0.1))
+	var edge := camera.unproject_position(Vector3(0.63, 2.0, 0.0))
+	var hover: Variant = studio.call("_cursor_anchor", surface)
+	studio.call("_update_snap_marker", hover)
+	check(hover == Vector3(0.0, 2.0, 0.0) and cursor.mesh is ImmediateMesh
+		and is_zero_approx(cursor.position.x) and is_zero_approx(cursor.position.z),
+		"the marker is centred on the exact snapped grid intersection")
+	check(studio.call("placement_point", edge) == Vector3(1.0, 0.0, 0.0),
+		"a snapped point outside the clicked surface falls back to the grid height")
+
+	ui.tool_selected.emit(StudioUI.Tool.DRAW_FLOOR)
+	studio.call("_begin_draw", surface)
+	var far := camera.unproject_position(Vector3(3.0, 0.0, -4.0))
+	var endpoint: Variant = studio.call("_cursor_anchor", far)
+	var drawn := studio.call("_draw_piece_at", far) as Dictionary
+	var drawn_box := MapDocument.piece_aabb(drawn)
+	check(endpoint == Vector3(3.0, 2.0, -4.0)
+		and studio.call("placement_point", far) == Vector3(3.0, 0.0, -4.0)
+		and is_equal_approx(drawn_box.end.y, 2.0),
+		"the drag marker and drawn floor stay on the same starting elevation")
+	studio.call("_finish_draw", far)
+
+	var all_slabs_flush := true
+	var anchor := Vector3(8.0, 4.0, -8.0)
+	for type: String in ["floor", "floor_sand", "floor_paved", "floor_tile", "floor_planks"]:
+		ui.piece_type_selected.emit(type)
+		studio.call("_update_place_ghost", anchor)
+		var id: String = studio.call("place_at", anchor)
+		var slab := MapDocument.piece_aabb(ctl.document.get_piece(id))
+		var preview := studio.get("_place_preview") as Node3D
+		var mesh := preview.get_child(0) as MeshInstance3D
+		# Measure the actual mesh at the snapped base, excluding the render-only lift.
+		var preview_top := ghost.position.y + mesh.position.y + mesh.get_aabb().end.y
+		all_slabs_flush = all_slabs_flush and is_equal_approx(slab.end.y, anchor.y) \
+			and is_equal_approx(preview_top, slab.end.y)
+	check(all_slabs_flush, "every palette floor has the same flush surface as its preview and the draw tool")
+
+	ui.piece_type_selected.emit("platform")
+	var platform: String = studio.call("place_at", anchor)
+	check(is_equal_approx(MapDocument.piece_aabb(ctl.document.get_piece(platform)).position.y, anchor.y),
+		"raised platforms place by their base")
+	await despawn(studio)
+
+
+func _test_geometry_palette_and_textures() -> void:
+	section("Creation Studio: geometry palette and post-placement textures")
+	var studio := spawn_scene(STUDIO)
+	if studio == null:
+		return
+	await wait_frames(2)
+	var ui := studio.get_node("UI/StudioUI") as StudioUI
+	var ctl := studio.get("controller") as MapEditController
+	var view := studio.get_node("MapView") as MapEditorView
+	var palette := ui.get("_palette_buttons") as Dictionary
+	var variants_hidden := true
+	for type: String in PieceCatalog.MATERIAL_VARIANTS:
+		variants_hidden = variants_hidden and not palette.has(type) and PieceCatalog.has_type(type)
+	check(variants_hidden and palette.has("floor") and palette.has("wall") and palette.has("ramp")
+		and palette.has("stairs") and palette.has("wall_window") and palette.has("wall_half"),
+		"the palette offers canonical shapes and retains distinct pieces and size presets")
+
+	(palette["floor"] as Button).pressed.emit()
+	var floor_id: String = studio.call("place_at", Vector3(2, 0, 2))
+	(palette["wall"] as Button).pressed.emit()
+	var wall_id: String = studio.call("place_at", Vector3(2, 0, 4))
+	ctl.select(floor_id)
+	var option := ui.find_child("TextureChoice", true, false) as OptionButton
+	var paving := MapMaterials.ids().find("stone_paving") + 1
+	check(option != null and option.get_item_metadata(paving) == "stone_paving"
+		and option.get_item_icon(paving) == MapMaterials.swatch("stone_paving"),
+		"the placed Floor offers a finish picker with texture swatches")
+	if option == null:
+		await despawn(studio)
+		return
+	var fingerprint := ctl.document.content_fingerprint()
+	option.item_selected.emit(paving)
+	var floor_mesh := view.node_for(floor_id).get_node("Body/Mesh") as MeshInstance3D
+	check(ctl.document.get_piece(floor_id).get("material") == "stone_paving"
+		and floor_mesh.material_override == MapMaterials.material("stone_paving")
+		and option.selected == paving and ctl.document.content_fingerprint() == fingerprint,
+		"changing texture updates the placed floor without changing gameplay geometry")
+
+	ctl.select_many([floor_id, wall_id])
+	option = ui.find_child("TextureChoice", true, false) as OptionButton
+	check(option.get_item_text(option.selected) == "Mixed textures", "the picker shows when selected pieces have different finishes")
+	var plaster := MapMaterials.ids().find("plaster_white") + 1
+	option.item_selected.emit(plaster)
+	check(ctl.document.get_piece(floor_id).get("material") == "plaster_white"
+		and ctl.document.get_piece(wall_id).get("material") == "plaster_white" and option.selected == plaster,
+		"one texture choice updates both placed pieces")
+	check(ctl.undo() and ctl.document.get_piece(floor_id).get("material") == "stone_paving"
+		and ctl.document.get_piece(wall_id).get("material") == ""
+		and option.get_item_text(option.selected) == "Mixed textures",
+		"undo restores both previous textures and the picker reflects the difference")
+	check(ctl.redo() and option.selected == plaster, "redo restores the applied texture in the picker")
+
+	var legacy := ctl.add_piece(_piece("floor_tile", Vector3(10, -0.2, 0)))
+	var reopened := ctl.document.duplicate_document()
+	var legacy_node := MapBuilder.build_piece(reopened.get_piece(legacy), MapBuilder.Mode.RUNTIME)
+	var legacy_mesh := legacy_node.get_node("Body/Mesh") as MeshInstance3D
+	check(reopened.get_piece(legacy).get("type") == "floor_tile"
+		and legacy_mesh.material_override == MapMaterials.material("tile_terracotta")
+		and reopened.get_piece(floor_id).get("material") == "plaster_white",
+		"new finishes round trip and older floor types keep their original appearance")
+	legacy_node.free()
+	await despawn(studio)
+
+
 func _edited(piece: Dictionary, position: Vector3, rotation: float) -> Dictionary:
 	piece["position"] = position
 	piece["rotation_y"] = rotation
@@ -1020,5 +1295,109 @@ func _test_playtest_options() -> void:
 	await wait_frames(3)
 	(tree.current_scene.get("controller") as MapEditController).mark_saved()
 	App.playtest_options = {}
+	App.go_to(App.SCENE_MAIN_MENU)
+	await wait_frames(3)
+
+
+func _test_draw_navmesh_bot_playtest() -> void:
+	section("Draw geometry → navmesh → bot playtest")
+	App.go_to(App.SCENE_CREATION_STUDIO)
+	await wait_frames(3)
+	var studio := tree.current_scene
+	var ui := studio.get_node("UI/StudioUI") as StudioUI
+	ui.confirm_dialog.hide()
+	var ctl := studio.get("controller") as MapEditController
+	var view := studio.get_node("MapView") as MapEditorView
+	var camera := studio.get_node("EditorCamera") as EditorFlyCamera
+	var doc := _arena("Bot playtest draft")
+	for x: float in [-6.0, -3.0, 3.0, 6.0]:
+		doc.add_piece(_piece("spawn_attack", Vector3(x, 0, 12)))
+		doc.add_piece(_piece("spawn_defence", Vector3(x, 0, -12), Vector3.ZERO, 180.0))
+	var hold_position := Vector3(10, 0, -10)
+	doc.add_piece(_piece("ai_hold", hold_position, Vector3.ZERO, 0.0, {"site": "B"}))
+	ctl.set_document(doc)
+	ui.navmesh_check.button_pressed = true
+	var from := Vector3(0, 0, 12)
+	var to := Vector3(0, 0, -12)
+	var original := studio.get("analysis") as MapAnalysis
+	var direct := original.path_length(from, to)
+	check(view.has_overlay() and absf(direct - 24.0) < 0.5, "bots start with a direct route across the open floor")
+
+	studio.call("set_overhead", true)
+	ui.tool_selected.emit(StudioUI.Tool.DRAW_WALL)
+	studio.call("_begin_draw", camera.unproject_position(Vector3(-8, 0, 0)))
+	studio.call("_finish_draw", camera.unproject_position(Vector3(8, 0, 0)))
+	var wall_id := ctl.selected_id
+	check(not view.has_overlay() and studio.get("analysis") == null, "drawing a wall immediately hides the stale overlay")
+	var refreshed := await wait_until(func() -> bool: return view.has_overlay(), 2.0)
+	var with_wall := studio.get("analysis") as MapAnalysis
+	var detour := with_wall.path_length(from, to) if refreshed and with_wall != null else -1.0
+	check(detour > direct + 3.0, "the overlay rebuilds and the wall forces a bot detour")
+	ctl.undo()
+	await wait_until(func() -> bool: return view.has_overlay(), 2.0)
+	var undone := studio.get("analysis") as MapAnalysis
+	check(undone != null and absf(undone.path_length(from, to) - direct) < 0.5,
+		"undo reopens the direct route")
+	ctl.redo()
+	await wait_until(func() -> bool: return view.has_overlay(), 2.0)
+	var redone := studio.get("analysis") as MapAnalysis
+	check(redone != null and detour > 0.0 and absf(redone.path_length(from, to) - detour) < 0.5,
+		"redo restores the detour")
+
+	studio.call("_on_action", &"playtest_team", "defence")
+	studio.call("_on_action", &"playtest_spawn", 1)
+	ui.bot_playtest_check.button_pressed = true
+	ui.playtest_button.pressed.emit()
+	await wait_frames(3)
+	var runtime := tree.current_scene
+	var director := runtime.get("match_director") as MatchDirector
+	check(director != null and director.squad != null and director.squad.bots.size() == 9
+		and director.document.get_piece(wall_id).get("type") == "wall" and App.is_playtesting(),
+		"Playtest starts a 5v5 bot match on the unsaved geometry")
+	if director == null or director.squad == null:
+		App.end_playtest()
+		await wait_frames(3)
+		return
+	await wait_physics_frames(12)
+	check(director.human_side() == MatchRules.SIDE_DEFENCE
+		and director.player.global_position.distance_to(Vector3(-6, 0, -12)) < 0.5
+		and director.squad.bots["bot_home_1"].global_position.distance_to(director.player.global_position) > 2.0,
+		"the chosen defender spawn is reserved for the human")
+	var runtime_map := director.level.navigation_region.get_navigation_map()
+	var runtime_route := NavigationBuilder.path_length(runtime_map, from, to)
+	check(runtime_route > direct + 3.0 and absf(runtime_route - detour) < 0.5,
+		"the runtime bots use the same detour shown in the editor")
+	director.state.tick(director.state.rules.freeze_time + 0.01)
+	director.squad.physics_update(0.3)
+	var uses_hold := director.squad.bots.values().any(func(bot: BotController) -> bool:
+		return (director.state.side_of(bot.bot_id) == MatchRules.SIDE_DEFENCE
+			and bot.goal_position.distance_to(hold_position) < 0.5))
+	check(uses_hold, "a defender uses the hold point authored in the draft")
+
+	var pause_hud := runtime.get_node("Hud") as SandboxHud
+	check(pause_hud.editor_button.visible and director.hud.main_menu_button.text == "Return to Creation Studio",
+		"the pause and match-end screens both point back to the editor")
+	runtime.call("_on_practice_match_requested")
+	await wait_frames(3)
+	runtime = tree.current_scene
+	director = runtime.get("match_director") as MatchDirector
+	check(director != null and App.is_playtesting() and director.document.get_piece(wall_id).get("type") == "wall",
+		"restarting the bot match retains the unsaved map and editor session")
+	(runtime.get_node("Hud") as SandboxHud).editor_button.pressed.emit()
+	await wait_frames(3)
+	var restored := tree.current_scene
+	var restored_ctl := restored.get("controller") as MapEditController
+	check(App.current_scene_id == App.SCENE_CREATION_STUDIO and restored_ctl != null and restored_ctl.is_dirty()
+		and restored_ctl.document.get_piece(wall_id).get("type") == "wall"
+		and (restored.get_node("UI/StudioUI") as StudioUI).bot_playtest_check.button_pressed,
+		"returning restores the unsaved wall and remembers the bot playtest setting")
+	if restored_ctl != null:
+		var restored_view := restored.get_node("MapView") as MapEditorView
+		check(await wait_until(func() -> bool: return restored_view.has_overlay(), 2.0),
+			"returning restores the navmesh display")
+		check(restored_ctl.undo() and restored_ctl.document.get_piece(wall_id).is_empty()
+			and restored_ctl.redo() and restored_ctl.document.get_piece(wall_id).get("type") == "wall",
+			"the original draw stroke can still be undone and redone after the match")
+		restored_ctl.mark_saved()
 	App.go_to(App.SCENE_MAIN_MENU)
 	await wait_frames(3)

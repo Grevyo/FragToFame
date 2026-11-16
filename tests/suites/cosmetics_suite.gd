@@ -78,6 +78,17 @@ func _test_catalogues() -> void:
 		shop_ok = shop_ok and ShopCatalog.has_item(id) and ShopCatalog.price(id) > 0 and ShopCatalog.kind(id) == ShopCatalog.KIND_WEAPON
 	check(gameplay_ok, "each has a gameplay definition in the existing WeaponCatalog")
 	check(shop_ok, "each can be bought through the existing shop")
+	var shop_weapon_count := 0
+	for id: StringName in ShopCatalog.item_ids():
+		if ShopCatalog.kind(id) == ShopCatalog.KIND_WEAPON:
+			shop_weapon_count += 1
+	check(shop_weapon_count == EXPECTED_WEAPONS.size() and WeaponCatalog.ids().size() == EXPECTED_WEAPONS.size(),
+		"the match shop and weapon catalogue contain only the ten modelled weapons")
+	var retired_ok := true
+	for id: StringName in WeaponCatalog.RETIRED_NAMES:
+		retired_ok = retired_ok and not ShopCatalog.has_item(id) and WeaponCatalog.get_definition(id) == null \
+			and WeaponCatalog.recorded_name(id) == WeaponCatalog.RETIRED_NAMES[id]
+	check(retired_ok, "retired weapon IDs resolve to old names in career history only")
 	check(WeaponCatalog.get_definition(&"wpn_ak47").display_name == "AK-47" and WeaponCatalog.get_definition(&"wpn_g17").slot == 2
 		and not WeaponCatalog.get_definition(&"wpn_l118a1").is_automatic(), "names, slots and fire modes are set")
 	var data_ok := true
@@ -306,6 +317,7 @@ func _test_armoury() -> void:
 	check(armoury.slot_buttons.size() == 5 and armoury.magnet_buttons.size() == 26, "it offers five Magnet slots and all 26 Magnets")
 	check(armoury.coat_list.item_count == 1 and armoury.coat_list.get_item_text(0) == "Factory finish",
 		"the Coat list shows only the factory finish: no fabricated Coats")
+	_test_armoury_magnet_switch(armoury)
 	check(armoury.select_weapon(&"wpn_m4a1") and armoury.visual.weapon_id == &"wpn_m4a1" and not armoury.select_weapon(&"wpn_wasp_smg"),
 		"selecting a weapon shows it")
 	armoury.select_slot(3)
@@ -358,6 +370,26 @@ func _test_armoury() -> void:
 	await wait_frames(3)
 
 
+func _test_armoury_magnet_switch(armoury: Armoury) -> void:
+	armoury.select_slot(0)
+	armoury.set_magnet("mag_ace")
+	var ak_decal := armoury.visual.decal(0)
+	armoury.select_weapon(WeaponCatalog.M4A1)
+	var m4_decals := armoury.visual.find_children("*", "Decal", true, false)
+	check(not ak_decal.is_inside_tree() and m4_decals.size() == WeaponModels.SLOT_COUNT
+		and m4_decals.all(func(node: Node) -> bool: return not (node as Decal).visible),
+		"switching from a decorated AK-47 to an empty M4A1 immediately removes all old decals")
+	armoury.set_magnet("mag_red_fox")
+	armoury.select_weapon(WeaponCatalog.AK47)
+	check(armoury.visual.decal(0).visible and armoury.visual.magnets[0] == "mag_ace",
+		"the AK-47 retains its own draft Magnet after switching back")
+	armoury.select_weapon(WeaponCatalog.M4A1)
+	var m4_returned := armoury.visual.find_children("*", "Decal", true, false)
+	check(armoury.visual.magnets[0] == "mag_red_fox" and m4_returned.size() == WeaponModels.SLOT_COUNT,
+		"the M4A1 retains its own draft Magnet and repeated switches keep exactly five decals")
+	armoury.revert()
+
+
 func _test_first_person() -> void:
 	section("First person and inspection")
 	var profile := CosmeticProfile.current()
@@ -370,9 +402,15 @@ func _test_first_person() -> void:
 	var effects := sandbox.get_node("Effects") as WeaponEffects
 	var hud := sandbox.get_node("Hud") as SandboxHud
 	player.input_enabled = false
-	check(effects.weapon_visual == null, "the development rifle still uses its placeholder viewmodel")
-	check(hud.choose_sandbox_weapons(&"wpn_ak47", &"wpn_g17") and player.weapons.loadout_ids().slice(0, 2) == [&"wpn_ak47", &"wpn_g17"],
-		"the sandbox pause menu equips a modelled primary and secondary")
+	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == WeaponCatalog.AK47
+		and player.weapons.loadout_ids() == [WeaponCatalog.AK47, WeaponCatalog.G17],
+		"the sandbox starts with a modelled AK-47 and G17")
+	check(hud.choose_sandbox_weapons(&"wpn_m4a1", &"wpn_m1911") and player.weapons.loadout_ids() == [&"wpn_m4a1", &"wpn_m1911"],
+		"the sandbox pause menu equips only the selected primary and secondary")
+	check(not bool(sandbox.call("set_sandbox_weapons", WeaponCatalog.G17, WeaponCatalog.AK47))
+		and player.weapons.loadout_ids() == [WeaponCatalog.M4A1, WeaponCatalog.M1911],
+		"the sandbox refuses swapped categories and retains the loadout")
+	hud.choose_sandbox_weapons(WeaponCatalog.AK47, WeaponCatalog.G17)
 	await wait_frames(2)
 	var view := effects.weapon_visual
 	check(view != null and view.weapon_id == &"wpn_ak47" and view.is_inside_tree() and effects.viewmodel.is_ancestor_of(view),

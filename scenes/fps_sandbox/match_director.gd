@@ -41,6 +41,8 @@ var paused: bool = false
 var last_buy_message: String = ""
 
 var _last_safe_position: Vector3 = Vector3.ZERO
+var _starting_side: StringName = MatchRules.SIDE_ATTACK
+var _starting_spawn: int = 0
 
 
 func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: FirstPersonController,
@@ -55,7 +57,11 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	add_child(hud)
 	hud.item_chosen.connect(func(id: StringName) -> void: try_buy(id))
 	hud.buy_menu_closed.connect(close_buy_menu)
-	state = MatchState.new(setup, rules)
+	if bool(options.get("editor_playtest", false)):
+		if options.get("playtest_team") == "defence":
+			_starting_side = MatchRules.SIDE_DEFENCE
+		_starting_spawn = int(options.get("playtest_spawn", 0))
+	state = MatchState.new(setup, rules, _starting_side)
 	for member: Dictionary in setup.home_lineup:
 		if bool(member.get("is_human", false)):
 			local_player_id = str(member["player_id"])
@@ -106,6 +112,11 @@ func human() -> MatchState.PlayerState:
 
 func human_side() -> StringName:
 	return state.side_of(local_player_id)
+
+
+## The chosen editor spawn applies to the starting side. Its bot teammates use the other spawns.
+func human_spawn_index(spawn_count: int) -> int:
+	return clampi(_starting_spawn, 0, spawn_count - 1) if human_side() == _starting_side else 0
 
 
 func feet_position() -> Vector3:
@@ -315,7 +326,8 @@ func _on_round_started(round_number: int) -> void:
 
 func _place_human() -> void:
 	var me := human()
-	var spawn := level.spawn_points(String(human_side()))[0]
+	var spawns := level.spawn_points(String(human_side()))
+	var spawn := spawns[human_spawn_index(spawns.size())]
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
 	player.respawn()
 	player.weapons.set_loadout(me.loadout())

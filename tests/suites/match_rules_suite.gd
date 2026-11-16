@@ -58,13 +58,13 @@ func _win_round(state: MatchState, team_index: int) -> void:
 		_go_live(state)
 	var killer: String = state.teams[team_index].player_ids[0]
 	for id: String in state.teams[1 - team_index].player_ids:
-		state.record_kill(id, killer, WeaponCatalog.VANTA_RIFLE, false)
+		state.record_kill(id, killer, WeaponCatalog.AK47, false)
 	_finish_round_end(state)
 
 
 func _test_armour() -> void:
 	section("Armour")
-	var rifle := WeaponCatalog.get_definition(WeaponCatalog.VANTA_RIFLE)
+	var rifle := WeaponCatalog.get_definition(WeaponCatalog.AK47)
 	check(DamageModel.armour_split(34, rifle.armour_penetration, DamageModel.ZONE_CHEST, 0, false) == [34, 0],
 		"no armour: full damage")
 	var chest := DamageModel.armour_split(34, rifle.armour_penetration, DamageModel.ZONE_CHEST, 100, false)
@@ -73,7 +73,7 @@ func _test_armour() -> void:
 		"vest without helmet does not protect the head")
 	check(DamageModel.armour_split(136, rifle.armour_penetration, DamageModel.ZONE_HEAD, 100, true)[0] == 106,
 		"helmet reduces a rifle headshot to 106 (still lethal)")
-	var pistol := WeaponCatalog.get_definition(WeaponCatalog.KESTREL_PISTOL)
+	var pistol := WeaponCatalog.get_definition(WeaponCatalog.G17)
 	check(DamageModel.armour_split(120, pistol.armour_penetration, DamageModel.ZONE_HEAD, 100, true)[0] == 60,
 		"helmet saves you from a pistol headshot")
 	check(DamageModel.armour_split(26, rifle.armour_penetration, DamageModel.ZONE_LEGS, 100, true)[1] == 0,
@@ -96,11 +96,11 @@ func _test_weapon_loadout_api() -> void:
 	section("Weapon loadout")
 	var weapons := WeaponController.new()
 	weapons.set_loadout([WeaponCatalog.DEFAULT_SECONDARY])
-	check(weapons.loadout_ids() == [WeaponCatalog.KESTREL_PISTOL], "match loadout starts with the sidearm")
-	check(weapons.give_weapon(WeaponCatalog.WASP_SMG) and weapons.current().definition.id == WeaponCatalog.WASP_SMG,
+	check(weapons.loadout_ids() == [WeaponCatalog.G17], "match loadout starts with the sidearm")
+	check(weapons.give_weapon(WeaponCatalog.SKS) and weapons.current().definition.id == WeaponCatalog.SKS,
 		"buying a primary equips it")
-	weapons.give_weapon(WeaponCatalog.VANTA_RIFLE)
-	check(weapons.loadout_ids() == [WeaponCatalog.VANTA_RIFLE, WeaponCatalog.KESTREL_PISTOL],
+	weapons.give_weapon(WeaponCatalog.AK47)
+	check(weapons.loadout_ids() == [WeaponCatalog.AK47, WeaponCatalog.G17],
 		"a new primary replaces the old one (rifle, pistol)")
 	check(weapons.draw_remaining > 0.0, "newly given weapon has a draw time")
 	check(not weapons.give_weapon(&"nope"), "unknown weapon is rejected")
@@ -115,8 +115,8 @@ func _test_round_flow_and_timers() -> void:
 	check(state.phase == MatchState.Phase.FREEZE and state.round_number == 1, "round 1 starts in freeze time")
 	check(state.teams[MatchState.HOME].side == MatchRules.SIDE_ATTACK, "home attacks first")
 	check(state.bomb_carrier_id == HUMAN, "the human attacker carries the bomb")
-	check(state.get_player(HUMAN).loadout() == [WeaponCatalog.KESTREL_PISTOL], "everyone starts with a pistol")
-	check(not state.record_kill("a1", HUMAN, WeaponCatalog.KESTREL_PISTOL, false), "no kills during freeze time")
+	check(state.get_player(HUMAN).loadout() == [WeaponCatalog.G17], "everyone starts with a pistol")
+	check(not state.record_kill("a1", HUMAN, WeaponCatalog.G17, false), "no kills during freeze time")
 	_go_live(state)
 	check(state.phase == MatchState.Phase.LIVE, "freeze ends and the round goes live")
 	state.tick(state.rules.round_time)
@@ -127,18 +127,18 @@ func _test_round_flow_and_timers() -> void:
 	check(state.phase == MatchState.Phase.FREEZE and state.round_number == 2, "next round starts after the delay")
 
 	_go_live(state)
-	state.record_kill("a1", HUMAN, WeaponCatalog.KESTREL_PISTOL, true)
+	state.record_kill("a1", HUMAN, WeaponCatalog.G17, true)
 	check(state.phase == MatchState.Phase.LIVE, "round continues while both teams have players")
-	state.record_kill("a2", "h2", WeaponCatalog.KESTREL_PISTOL, false)
+	state.record_kill("a2", "h2", WeaponCatalog.G17, false)
 	check(state.phase == MatchState.Phase.ROUND_END and state.last_round_winner == MatchState.HOME
 		and state.last_round_reason == MatchRules.REASON_ELIMINATION, "eliminating the defence wins for attack")
 	check(state.get_player(HUMAN).kills == 1 and state.get_player("a1").deaths == 1, "kills and deaths counted")
-	check(state.record_kill("a1", HUMAN, WeaponCatalog.KESTREL_PISTOL, false) == false,
+	check(state.record_kill("a1", HUMAN, WeaponCatalog.G17, false) == false,
 		"kills on already-dead players are ignored")
 	_finish_round_end(state)
 
 	_go_live(state)
-	state.record_kill(HUMAN, "a1", WeaponCatalog.KESTREL_PISTOL, false)
+	state.record_kill(HUMAN, "a1", WeaponCatalog.G17, false)
 	state.record_kill("h2", "", &"", false)
 	check(state.last_round_winner == MatchState.AWAY and state.last_round_reason == MatchRules.REASON_ELIMINATION,
 		"eliminating the attack (no plant) wins for defence; world deaths count")
@@ -151,7 +151,7 @@ func _test_economy_and_buying() -> void:
 	var human := state.get_player(HUMAN)
 	check(human.money == state.rules.start_money, "everyone starts with the start money")
 	check(state.can_buy(HUMAN), "buying allowed in freeze time")
-	check(state.buy(HUMAN, WeaponCatalog.VANTA_RIFLE) == "not enough money", "cannot buy what you cannot afford")
+	check(state.buy(HUMAN, WeaponCatalog.AK47) == "not enough money", "cannot buy what you cannot afford")
 	check(state.buy(HUMAN, ShopCatalog.ARMOUR_VEST) == "" and human.armour == 100 and human.money == 250,
 		"vest bought: 900 − 650 = 250")
 	check(state.buy(HUMAN, ShopCatalog.ARMOUR_VEST) == "already owned", "cannot buy the same armour twice")
@@ -161,25 +161,25 @@ func _test_economy_and_buying() -> void:
 	check(is_equal_approx(state.defuse_duration("a1"), state.rules.defuse_time_with_kit), "kit shortens the defuse")
 	_go_live(state)
 	state.tick(state.rules.buy_time + 0.01)
-	check(not state.can_buy(HUMAN) and state.buy(HUMAN, WeaponCatalog.KESTREL_PISTOL) == "buying is closed",
+	check(not state.can_buy(HUMAN) and state.buy(HUMAN, WeaponCatalog.G17) == "buying is closed",
 		"buy window closes after the buy time")
 
 	# Kill rewards and round rewards.
 	var before := human.money
-	state.record_kill("a1", HUMAN, WeaponCatalog.WASP_SMG, false)
-	check(human.money == before + ShopCatalog.kill_reward(WeaponCatalog.WASP_SMG), "SMG kill pays its reward")
+	state.record_kill("a1", HUMAN, WeaponCatalog.SKS, false)
+	check(human.money == before + ShopCatalog.KILL_REWARD, "SKS kill pays the weapon reward")
 	var h2_money := state.get_player("h2").money
 	state.record_kill("h2", "h2", &"", false)
 	check(state.get_player("h2").money == h2_money, "suicides pay nothing")
 	var a2_money := state.get_player("a2").money
 	var human_money := human.money
-	state.record_kill("a2", HUMAN, WeaponCatalog.KESTREL_PISTOL, false)
+	state.record_kill("a2", HUMAN, WeaponCatalog.G17, false)
 	check(human.money == human_money + 300 + state.rules.win_rewards[MatchRules.REASON_ELIMINATION],
 		"winners get the elimination reward")
 	check(state.get_player("a2").money == a2_money + state.rules.loss_bonus[0], "losers get the first loss bonus")
 	_finish_round_end(state)
 	check(human.armour == 100, "surviving keeps armour")
-	check(state.get_player("h2").armour == 0 and state.get_player("h2").loadout() == [WeaponCatalog.KESTREL_PISTOL],
+	check(state.get_player("h2").armour == 0 and state.get_player("h2").loadout() == [WeaponCatalog.G17],
 		"dying loses gear")
 	check(not state.get_player("a1").has_kit, "dead defender loses the kit")
 
@@ -191,13 +191,13 @@ func _test_economy_and_buying() -> void:
 	var a1_before := a1.money
 	_go_live(state)
 	for id: String in ["a1", "a2"]:
-		state.record_kill(id, HUMAN, WeaponCatalog.KESTREL_PISTOL, false)
+		state.record_kill(id, HUMAN, WeaponCatalog.G17, false)
 	check(a1.money == a1_before + state.rules.loss_bonus_for(3), "third loss pays the third bonus")
 	check(state.rules.loss_bonus_for(99) == state.rules.loss_bonus[state.rules.loss_bonus.size() - 1], "loss bonus caps")
 	_finish_round_end(state)
 	_go_live(state)
 	human.money = state.rules.max_money - 10
-	state.record_kill("a1", HUMAN, WeaponCatalog.KESTREL_PISTOL, false)
+	state.record_kill("a1", HUMAN, WeaponCatalog.G17, false)
 	check(human.money == state.rules.max_money, "money is capped")
 
 
@@ -216,8 +216,8 @@ func _test_bomb() -> void:
 	check(not state.plant_bomb(HUMAN, Vector3.ZERO), "cannot plant twice")
 	state.tick(2.0)
 	check(state.phase == MatchState.Phase.LIVE, "the round clock no longer matters once planted")
-	state.record_kill(HUMAN, "a1", WeaponCatalog.KESTREL_PISTOL, false)
-	state.record_kill("h2", "a1", WeaponCatalog.KESTREL_PISTOL, false)
+	state.record_kill(HUMAN, "a1", WeaponCatalog.G17, false)
+	state.record_kill("h2", "a1", WeaponCatalog.G17, false)
 	check(state.phase == MatchState.Phase.LIVE, "eliminating attackers after the plant does not end the round")
 	check(not state.defuse_bomb(HUMAN), "attackers cannot defuse")
 	check(state.defuse_bomb("a1") and state.last_round_reason == MatchRules.REASON_DEFUSED
@@ -232,7 +232,7 @@ func _test_bomb() -> void:
 	_finish_round_end(state)
 
 	_go_live(state)
-	state.record_kill(HUMAN, "a1", WeaponCatalog.KESTREL_PISTOL, false, Vector3(5, 0, 5))
+	state.record_kill(HUMAN, "a1", WeaponCatalog.G17, false, Vector3(5, 0, 5))
 	check(state.is_bomb_dropped and state.bomb_carrier_id == "" and state.bomb_position == Vector3(5, 0, 5),
 		"carrier death drops the bomb where they died")
 	check(not state.pick_up_bomb("a1"), "defenders cannot pick up the bomb")
@@ -300,9 +300,9 @@ func _test_event_log() -> void:
 	var state := _make_match(1)
 	state.start()
 	_go_live(state)
-	state.buy(HUMAN, WeaponCatalog.KESTREL_PISTOL)
+	state.buy(HUMAN, WeaponCatalog.G17)
 	state.plant_bomb(HUMAN, Vector3.ZERO)
-	state.record_kill("a1", HUMAN, WeaponCatalog.KESTREL_PISTOL, true)
+	state.record_kill("a1", HUMAN, WeaponCatalog.G17, true)
 	var types: Array[String] = []
 	for entry: Dictionary in state.events:
 		types.append(str(entry["type"]))

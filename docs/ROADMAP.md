@@ -106,7 +106,7 @@ baking, tactical markers beyond spawns/sites, map sharing.
 
 Completion criteria:
 
-- [x] Three original weapons (VK-12 Vanta rifle, P-4 Kestrel pistol, M-5 Wasp SMG) defined as data
+- [x] Ten modelled weapons defined as data
       in `WeaponCatalog`: damage, fire rate, magazine/reserve, reload/draw time, falloff, spread,
       bloom, fixed recoil pattern, recovery.
 - [x] `WeaponState`: pure, deterministic (seeded) simulation of cadence, semi/auto, ammo, reload,
@@ -187,7 +187,7 @@ Completion criteria:
       reload behind basic cover, search the last known position, navigation to goals, watch points.
 - [x] Bots never target teammates; damage still respects `friendly_fire`.
 - [x] `BotSquad` in practice matches: default practice is 5v5 (you + 4 bot teammates vs 5 bots).
-      Bots buy (rifle/SMG + armour, kits on defence), spawn per side, attack one site per round,
+      Bots buy (AK-47 or SKS + armour, kits on defence), spawn per side, attack one site per round,
       the carrier plants, a dropped bomb is recovered, defenders hold both sites, retake and defuse.
       Passive targets remain available as an option (used by the rules tests).
 - [x] Kill feed for every match elimination; bot kills feed the same `MatchState` event log.
@@ -388,15 +388,19 @@ Gaps against building a full competitive map:
       AI hints, callout areas, tactical anchors, map content version and tactic compatibility.
 - [x] Stage C: first official map (Kilnmarket) authored through the Creation Studio, validated,
       selectable for practice, tactics and career fixtures.
+- [x] Direct geometry tools for drawing snapped floor and block footprints or wall segments
+      with size controls, live previews and a single undo step per stroke.
+- [x] Refresh the visible bot navmesh after edits, undo and redo. Run a bot match straight from
+      the unsaved map with the chosen side and spawn, then return to the same draft.
 - [ ] Owner walkthrough of the editor checklist and the map (README).
 - [ ] Remaining official maps (4–6 more).
 
 ### Kilnmarket — route timings (2026-11-15, map content version 1)
 
 From the editor's timing readout: shortest navmesh path from the nearest spawn, at the measured
-6.35 m/s (pistol/SMG) and 5.46 m/s (rifle, mobility 0.86). Acceleration is not modelled.
+6.35 m/s (G17) and 5.46 m/s (AK-47, mobility 0.86). Acceleration is not modelled.
 
-| Route | Length | Pistol/SMG | Rifle |
+| Route | Length | G17 | AK-47 |
 |---|---|---|---|
 | Attackers → Kiln Gate (long A approach) | 88.6 m | 13.9 s | 16.2 s |
 | Attackers → Potter's Door (short A route) | 70.5 m | 11.1 s | 12.9 s |

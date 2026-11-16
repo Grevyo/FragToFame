@@ -46,6 +46,8 @@ func set_loadout(weapon_ids: Array[StringName]) -> void:
 			weapons.append(WeaponState.new(definition))
 	current_index = 0
 	draw_remaining = 0.0
+	_apply_punch()
+	weapon_switched.emit(current())
 
 
 ## Weapon IDs currently carried, in loadout order.

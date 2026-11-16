@@ -14,13 +14,12 @@ ambient_light_color = Color(0.55, 0.6, 0.68, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
 
-[sub_resource type="BoxMesh" id="CursorMesh_1"]
-size = Vector3(1, 0.02, 1)
-
 [sub_resource type="StandardMaterial3D" id="CursorMaterial_1"]
 transparency = 1
 shading_mode = 0
-albedo_color = Color(1, 0.42, 0.16, 0.45)
+albedo_color = Color(1, 0.6, 0.25, 1)
+no_depth_test = true
+render_priority = 2
 
 [node name="CreationStudio" type="Node3D"]
 script = ExtResource("1_studio")
@@ -40,15 +39,15 @@ script = ExtResource("2_camera")
 script = ExtResource("3_grid")
 
 [node name="Cursor" type="MeshInstance3D" parent="."]
-mesh = SubResource("CursorMesh_1")
-surface_material_override/0 = SubResource("CursorMaterial_1")
+visible = false
+cast_shadow = 0
+material_override = SubResource("CursorMaterial_1")
 
 [node name="MapView" type="Node3D" parent="."]
 script = ExtResource("4_view")
 
-[node name="Ghost" type="MeshInstance3D" parent="."]
+[node name="Ghost" type="Node3D" parent="."]
 visible = false
-cast_shadow = 0
 
 [node name="UI" type="CanvasLayer" parent="."]
 

@@ -11,6 +11,8 @@ signal join_match_requested(address: String, port: int)
 signal leave_match_requested
 signal practice_match_requested
 signal sandbox_weapons_chosen(primary: StringName, secondary: StringName)
+signal add_bot_requested
+signal remove_bots_requested
 
 var pause_overlay: Control
 var resume_button: Button
@@ -18,6 +20,10 @@ var main_menu_button: Button
 var editor_button: Button
 var practice_button: Button
 var controls_button: Button
+var add_bot_button: Button
+var remove_bots_button: Button
+var _bots_row: HBoxContainer
+var _bot_count_label: Label
 ## Free-roam weapon choice (hidden during matches).
 var primary_option: OptionButton
 var secondary_option: OptionButton
@@ -106,9 +112,11 @@ func set_mode(title: String, playtest: bool, in_match: bool = false, career_fixt
 	_title_label.text = title
 	editor_button.visible = playtest
 	practice_button.text = "Restart practice match" if in_match else "Start practice match (MR3 · 5v5 with bots)"
-	map_option.visible = not in_match
+	map_option.visible = not in_match and not playtest
 	_weapon_row.visible = not in_match
-	_network_section.visible = not career_fixture
+	_bots_row.visible = not in_match
+	main_menu_button.visible = not (playtest and in_match)
+	_network_section.visible = not career_fixture and not playtest
 	if career_fixture:
 		practice_button.text = "Restart fixture"
 		main_menu_button.text = "Return to Career Hub"
@@ -251,6 +259,13 @@ func set_network_state(active: bool, status_text: String, badge_text: String) ->
 	leave_button.disabled = not active
 	address_edit.editable = not active
 	port_edit.editable = not active
+	_bots_row.visible = not active and _weapon_row.visible
+
+
+func set_sandbox_bot_count(count: int, at_capacity: bool) -> void:
+	_bot_count_label.text = "Bots  %d" % count
+	add_bot_button.disabled = at_capacity
+	remove_bots_button.disabled = count == 0
 
 
 func _port_value() -> int:
@@ -275,7 +290,7 @@ func _build_hint() -> void:
 	_title_label = UIFactory.label("FPS SANDBOX", &"AccentLabel")
 	column.add_child(_title_label)
 	column.add_child(UIFactory.label("WASD move · Mouse look · Space jump · Shift walk · Ctrl/C crouch", &"MutedLabel"))
-	column.add_child(UIFactory.label("LMB fire · R reload · 1 rifle · 2 pistol · 3 SMG · wheel switch", &"MutedLabel"))
+	column.add_child(UIFactory.label("LMB fire · R reload · 1 primary · 2 secondary · wheel switch", &"MutedLabel"))
 	column.add_child(UIFactory.label("Matches: B buy · hold E plant / defuse", &"MutedLabel"))
 	column.add_child(UIFactory.label("Esc pause / release mouse · Click to recapture", &"MutedLabel"))
 	_hint_panel.add_child(column)
@@ -437,6 +452,18 @@ func _build_pause_overlay() -> void:
 	practice_button = UIFactory.button("Start practice match (MR3 · 5v5 with bots)")
 	practice_button.pressed.connect(practice_match_requested.emit)
 	column.add_child(practice_button)
+	_bots_row = UIFactory.hbox(8)
+	_bot_count_label = UIFactory.label("", &"MutedLabel")
+	_bot_count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_bots_row.add_child(_bot_count_label)
+	add_bot_button = UIFactory.button("Add Bot")
+	add_bot_button.pressed.connect(add_bot_requested.emit)
+	_bots_row.add_child(add_bot_button)
+	remove_bots_button = UIFactory.button("Remove All")
+	remove_bots_button.pressed.connect(remove_bots_requested.emit)
+	_bots_row.add_child(remove_bots_button)
+	column.add_child(_bots_row)
+	set_sandbox_bot_count(0, false)
 	_weapon_row = UIFactory.hbox(8)
 	primary_option = OptionButton.new()
 	secondary_option = OptionButton.new()

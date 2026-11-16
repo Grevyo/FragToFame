@@ -98,12 +98,14 @@ func on_round_started() -> void:
 	for team_index: int in 2:
 		var side := state.teams[team_index].side
 		var spawns := director.level.spawn_points(String(side))
-		var slot := 1 if team_index == MatchState.HOME else 0
+		var is_home := team_index == MatchState.HOME
+		var first_spawn := director.human_spawn_index(spawns.size()) if is_home else 0
+		var slot := 1 if is_home else 0
 		for id: String in state.teams[team_index].player_ids:
 			if not bots.has(id):
 				continue
 			_buy(id)
-			var spawn := spawns[slot % spawns.size()]
+			var spawn := spawns[(first_spawn + slot) % spawns.size()]
 			var offset := Vector3(0.9 * floorf(float(slot) / spawns.size()), 0, 0)
 			slot += 1
 			var bot := bots[id]
@@ -220,16 +222,16 @@ func _update_bomb_actions(delta: float) -> void:
 			state.defuse_bomb(id)
 
 
-## Simple economy: rifle when affordable with armour, SMG as a cheaper option, then armour,
+## Simple economy: AK-47 when affordable with armour, SKS as a cheaper option, then armour,
 ## then a kit for defenders with money to spare.
 func _buy(id: String) -> void:
 	var state := director.state
 	var me := state.get_player(id)
 	if me.primary == &"":
-		if me.money >= ShopCatalog.price(WeaponCatalog.VANTA_RIFLE) + ShopCatalog.price(ShopCatalog.ARMOUR_VEST):
-			state.buy(id, WeaponCatalog.VANTA_RIFLE)
-		elif me.money >= ShopCatalog.price(WeaponCatalog.WASP_SMG) + ShopCatalog.price(ShopCatalog.ARMOUR_VEST):
-			state.buy(id, WeaponCatalog.WASP_SMG)
+		if me.money >= ShopCatalog.price(WeaponCatalog.AK47) + ShopCatalog.price(ShopCatalog.ARMOUR_VEST):
+			state.buy(id, WeaponCatalog.AK47)
+		elif me.money >= ShopCatalog.price(WeaponCatalog.SKS) + ShopCatalog.price(ShopCatalog.ARMOUR_VEST):
+			state.buy(id, WeaponCatalog.SKS)
 	if me.armour < ShopCatalog.FULL_ARMOUR or not me.helmet:
 		if me.money >= ShopCatalog.price(ShopCatalog.ARMOUR_VEST_HELMET):
 			state.buy(id, ShopCatalog.ARMOUR_VEST_HELMET)

@@ -3,6 +3,8 @@ extends Node3D
 ## respawn state, records training stats, and wires the HUD to the player, the weapons and the
 ## local match network session.
 
+const SandboxBots := preload("res://scenes/fps_sandbox/sandbox_bots.gd")
+
 @onready var player: FirstPersonController = $Player
 @onready var hud: SandboxHud = $Hud
 @onready var match_session: MatchSession = $MatchSession
@@ -22,6 +24,8 @@ var _respawn_left: float = -1.0
 var _death_cause: String = ""
 var _last_network_message: String = ""
 var _match_options: Dictionary = {}
+var _sandbox_shop: MatchHud
+var _sandbox_bots: SandboxBots
 
 
 func _ready() -> void:
@@ -64,6 +68,15 @@ func _load_level() -> void:
 	player.noclip_allowed = true  # Free roam only; a match never allows it.
 	hud.set_mode("PLAYTEST · %s · %s spawn %d" % [doc.name, team, spawns.find(spawn) + 1] if playtest
 		else "FPS SANDBOX · %s" % doc.name, playtest)
+	_sandbox_bots = SandboxBots.new(level, player, team)
+	_sandbox_bots.roster_changed.connect(hud.set_sandbox_bot_count)
+	_sandbox_bots.spawn_failed.connect(func() -> void: hud.set_pause_message("No clear bot spawn on this map."))
+	add_child(_sandbox_bots)
+	hud.add_bot_requested.connect(func() -> void:
+		if not match_session.is_active():
+			hud.set_pause_message("")
+			_sandbox_bots.request_add())
+	hud.remove_bots_requested.connect(_sandbox_bots.clear)
 
 
 func _start_match() -> void:
@@ -78,8 +91,9 @@ func _start_match() -> void:
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
 	player.weapons.set_loadout([WeaponCatalog.DEFAULT_SECONDARY])
 	var career_fixture := _is_career_fixture()
-	var heading := "CAREER FIXTURE" if career_fixture else "PRACTICE MATCH"
-	hud.set_mode("%s · %s" % [heading, doc.name], false, true, career_fixture)
+	var editor_playtest := App.is_playtesting()
+	var heading := "CAREER FIXTURE" if career_fixture else ("BOT PLAYTEST" if editor_playtest else "PRACTICE MATCH")
+	hud.set_mode("%s · %s" % [heading, doc.name], editor_playtest, true, career_fixture)
 	match_director = MatchDirector.new()
 	match_director.name = "MatchDirector"
 	add_child(match_director)
@@ -87,6 +101,8 @@ func _start_match() -> void:
 	match_director.hud.main_menu_requested.connect(_on_main_menu_requested)
 	match_director.hud.play_again_requested.connect(_on_practice_match_requested)
 	match_director.hud.set_career_fixture(career_fixture)
+	if editor_playtest:
+		match_director.hud.main_menu_button.text = "Return to Creation Studio"
 	match_director.match_finished.connect(_on_match_finished)
 
 
@@ -101,14 +117,17 @@ func _on_match_finished(result: MatchResult) -> void:
 		match_director.hud.set_result_message(message)
 
 
-## True while the match UI (buy menu, final screen) needs a free mouse cursor.
-func _match_owns_mouse() -> bool:
-	return match_director != null and (match_director.is_buy_menu_open()
-		or match_director.state.phase == MatchState.Phase.MATCH_END)
+## True while a shop or the match-end screen needs a free mouse cursor.
+func _overlay_owns_mouse() -> bool:
+	return (_sandbox_shop != null and _sandbox_shop.is_buy_menu_open()) or (match_director != null
+		and (match_director.is_buy_menu_open() or match_director.state.phase == MatchState.Phase.MATCH_END))
 
 
 func _on_practice_match_requested() -> void:
 	match_session.leave("starting practice match")
+	if App.is_playtesting():
+		App.start_playtest_with_bots()
+		return
 	if match_director == null:
 		var map_id := hud.selected_practice_map_id()
 		var chosen := level.document if map_id.is_empty() else App.map_by_id(map_id)
@@ -126,10 +145,20 @@ func _on_practice_match_requested() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if match_director == null and not is_paused:
+		var shop_open := _sandbox_shop != null and _sandbox_shop.is_buy_menu_open()
+		if shop_open and (event.is_action_pressed(InputActions.PAUSE_MENU) or event.is_action_pressed(InputActions.BUY_MENU)):
+			_close_sandbox_shop()
+			get_viewport().set_input_as_handled()
+			return
+		if not shop_open and not player.health.is_dead and event.is_action_pressed(InputActions.BUY_MENU):
+			_show_sandbox_shop()
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed(InputActions.PAUSE_MENU) and match_director != null and match_director.handle_escape():
 		get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed(InputActions.INSPECT) and not is_paused and not _match_owns_mouse():
+	if event.is_action_pressed(InputActions.INSPECT) and not is_paused and not _overlay_owns_mouse():
 		effects.inspect()
 		get_viewport().set_input_as_handled()
 		return
@@ -142,7 +171,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	# Recapture after the mouse was freed without pausing (e.g. window focus loss).
 	var click := event as InputEventMouseButton
-	if click != null and click.pressed and not is_paused and not _match_owns_mouse() \
+	if click != null and click.pressed and not is_paused and not _overlay_owns_mouse() \
 			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
@@ -168,13 +197,56 @@ func _process(delta: float) -> void:
 			hud.set_death_state(_respawn_left, _death_cause)
 
 
-## Free roam only: carry the chosen primary and secondary (plus the development SMG in slot 3).
+## Free roam only: carry the chosen primary and secondary.
 func set_sandbox_weapons(primary: StringName, secondary: StringName) -> bool:
-	if match_director != null or WeaponCatalog.get_definition(primary) == null or WeaponCatalog.get_definition(secondary) == null:
+	if match_director != null:
 		return false
-	player.weapons.set_loadout([primary, secondary, WeaponCatalog.WASP_SMG])
-	player.weapons.weapon_switched.emit(player.weapons.current())
+	var primary_definition := WeaponCatalog.get_definition(primary)
+	var secondary_definition := WeaponCatalog.get_definition(secondary)
+	if primary_definition == null or primary_definition.category != WeaponDefinition.CATEGORY_PRIMARY:
+		return false
+	if secondary_definition == null or secondary_definition.category != WeaponDefinition.CATEGORY_SECONDARY:
+		return false
+	player.weapons.set_loadout([primary, secondary])
 	return true
+
+
+func _show_sandbox_shop(message: String = "") -> void:
+	if _sandbox_shop == null:
+		_sandbox_shop = MatchHud.new()
+		_sandbox_shop.practice_shop_only = true
+		_sandbox_shop.buy_menu_closed.connect(_close_sandbox_shop)
+		_sandbox_shop.item_chosen.connect(_take_sandbox_item)
+		add_child(_sandbox_shop)
+	var entries: Array[Dictionary] = []
+	for id: StringName in ShopCatalog.item_ids():
+		if ShopCatalog.kind(id) != ShopCatalog.KIND_KIT:
+			entries.append({"id": id, "name": ShopCatalog.display_name(id), "enabled": true})
+	player.input_enabled = false
+	player.weapons.trigger = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_sandbox_shop.show_buy_menu(entries, 0, message)
+
+
+func _take_sandbox_item(id: StringName) -> void:
+	match ShopCatalog.kind(id):
+		ShopCatalog.KIND_WEAPON:
+			player.weapons.give_weapon(id)
+		ShopCatalog.KIND_ARMOUR:
+			player.health.armour = ShopCatalog.FULL_ARMOUR
+			player.health.has_helmet = player.health.has_helmet or id == ShopCatalog.ARMOUR_VEST_HELMET
+		_:
+			return
+	_show_sandbox_shop("Equipped %s" % ShopCatalog.display_name(id))
+
+
+func _close_sandbox_shop() -> void:
+	if _sandbox_shop == null or not _sandbox_shop.is_buy_menu_open():
+		return
+	_sandbox_shop.hide_buy_menu()
+	if not is_paused:
+		player.input_enabled = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func respawn_player() -> void:
@@ -211,24 +283,33 @@ func _on_shot_fired(_origin: Vector3, _end: Vector3, _result: Hitscan.Result) ->
 	tally.record_shot()
 
 
-func _on_target_hit(info: DamageInfo, _target: Health, killed: bool) -> void:
+func _on_target_hit(info: DamageInfo, target: Health, killed: bool) -> void:
 	tally.record_hit(info, killed)
 	hud.show_hit_marker(info.is_headshot(), killed)
 	if killed and match_director == null:
 		var weapon := WeaponCatalog.get_definition(info.weapon_id)
-		hud.push_feed("You  [%s%s]  Target dummy  · %.0f m" % [
-			weapon.display_name if weapon != null else "?", " · HEADSHOT" if info.is_headshot() else "", info.distance])
+		var bot_name := _sandbox_bots.display_name_for(target.owner_id)
+		hud.push_feed("You  [%s%s]  %s  · %.0f m" % [
+			weapon.display_name if weapon != null else "?", " · HEADSHOT" if info.is_headshot() else "",
+			bot_name if not bot_name.is_empty() else "Target dummy", info.distance])
 
 
 func _on_player_died(info: DamageInfo) -> void:
 	if match_director != null:
 		return
+	_close_sandbox_shop()
 	_death_cause = "Fell out of the world" if info.cause == DamageInfo.CAUSE_WORLD else "Killed"
+	var bot_name := _sandbox_bots.display_name_for(info.source_id)
+	if not bot_name.is_empty():
+		_death_cause = "Killed by %s" % bot_name
 	_respawn_left = respawn_delay
 	hud.set_death_state(_respawn_left, _death_cause)
 
 
 func pause() -> void:
+	_close_sandbox_shop()
+	if _sandbox_bots != null:
+		_sandbox_bots.set_paused(true)
 	if match_director != null:
 		match_director.close_buy_menu()
 		match_director.paused = true
@@ -242,6 +323,8 @@ func pause() -> void:
 
 
 func resume() -> void:
+	if _sandbox_bots != null:
+		_sandbox_bots.set_paused(false)
 	if match_director != null:
 		match_director.paused = false
 		level.process_mode = Node.PROCESS_MODE_INHERIT
@@ -257,7 +340,10 @@ func resume() -> void:
 
 
 func _on_main_menu_requested() -> void:
-	match_session.leave("returned to main menu")
+	match_session.leave("left the FPS runtime")
+	if match_director != null and App.is_playtesting():
+		App.end_playtest()
+		return
 	App.playtest_map = null
 	if _is_career_fixture():
 		App.open_career_hub()
@@ -273,6 +359,8 @@ func _on_return_to_editor() -> void:
 func _on_host_match_requested(port: int) -> void:
 	var err := match_session.host(port)
 	if err == OK:
+		if _sandbox_bots != null:
+			_sandbox_bots.clear()
 		_last_network_message = "Hosting on port %d" % port
 	else:
 		_last_network_message = "Could not host on port %d (error %d)" % [port, err]
@@ -281,6 +369,8 @@ func _on_host_match_requested(port: int) -> void:
 func _on_join_match_requested(address: String, port: int) -> void:
 	var err := match_session.join(address, port)
 	if err == OK:
+		if _sandbox_bots != null:
+			_sandbox_bots.clear()
 		_last_network_message = "Connecting to %s:%d..." % [address, port]
 	else:
 		_last_network_message = "Could not start connection (error %d)" % err

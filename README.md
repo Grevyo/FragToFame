@@ -39,7 +39,7 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | Ctrl or C (hold) | Crouch (slower, more accurate; you stay crouched under low ceilings) |
 | Left click | Fire (or recapture the mouse if it was released) |
 | R | Reload |
-| 1 / 2 / 3 · mouse wheel | VK-12 Vanta rifle / P-4 Kestrel pistol / M-5 Wasp SMG · cycle |
+| 1 / 2 · mouse wheel | Primary / secondary · cycle (AK-47 and G17 in the sandbox by default) |
 | B | Buy menu (practice match, in your buy zone during the buy window) |
 | E (hold) | Plant the bomb on a bombsite / defuse a planted bomb (practice match) |
 
@@ -47,7 +47,7 @@ Practice matches are 5v5: you + 4 bot teammates (orange) vs 5 bots (teal), norma
 
 | Esc | Pause menu / release mouse (Esc again resumes; closes the buy menu first) |
 
-Weapons, numbers and names are original development values and will be tuned.
+The ten weapon models use the game's own balance values. See CREDITS.md for model attributions.
 
 **Creation Studio**
 
@@ -197,12 +197,14 @@ Ports: career sync **24560**, match **24570** (UDP).
 - [ ] Crouch lowers the view and slows you down. To check ceilings, place a block in the studio
       raised 1.3 m (PgUp) over open floor, playtest, crouch under it and release: you stay crouched.
 - [ ] Movement (debug line shows speed in m/s and u/s): with the rifle you top out at 215 u/s,
-      with the pistol/SMG 250 u/s; Shift-walk 130, crouch 85 (pistol). Releasing a key coasts to a
+      with the G17 250 u/s; Shift-walk 130, crouch 85 (G17). Releasing a key coasts to a
       stop in about 0.4 s; tapping the opposite key (counter-strafe) stops you about three times
       faster. Holding forward + strafe is no faster than one key.
-- [ ] Jumping: a fresh jump clears about 1.4 m; jumping again straight after landing is lower and
-      landing briefly slows you. Crouching mid-air (crouch-jump) clears a slightly taller ledge.
-      Holding jump does not bunny-hop.
+- [ ] Jumping: a fresh jump clears about 1.4 m and crouching mid-air clears a slightly taller
+      ledge. At running pace, tap jump again within 25 ms either side of touchdown to carry
+      momentum. Holding jump will not repeat it. An ordinary jump caps at 106% of the held
+      weapon's run speed. Chained hops gradually raise the cap to 200%, with sustained air
+      strafing needed to gain speed.
 - [ ] Bots move the same way: in a bot practice match they accelerate, stop, crouch and slow down
       when engaging (walk speed) like you do; none glides faster than you with the same weapon.
 - [ ] Jump off the arena (or fly off in a playtest map without walls): the ELIMINATED overlay
@@ -282,7 +284,7 @@ Start from **FPS Sandbox → Esc → Start practice match (MR3 · 5v5 with bots)
 - [ ] Teammate bots never shoot you; kills appear in the kill feed with weapon and headshot tag.
 - [ ] As attacker, die with the bomb: a teammate bot picks it up and plants on a site.
 - [ ] On defence, after a plant, bots go to the bomb and defuse when they see no enemy.
-- [ ] Bots buy rifles/SMGs and armour when they can afford them (watch round 2+).
+- [ ] Bots buy an AK-47 or SKS and armour when they can afford them (watch round 2+).
 - [ ] The match finishes with VICTORY / DEFEAT as before.
 
 Known limits: bots do not coordinate as a team yet (M7), there is no audio so bots cannot hear
@@ -360,22 +362,51 @@ Editor (Creation Studio, start from **Open → Sandbox Arena** or a blank map):
       Save a selection as a prefab, save the map, reopen: the prefab is still listed.
 - [ ] **G / T / X** gizmos: drag the axis handles and the rotate ring. Change **Grid** and
       **Angle** and confirm drags and **R** follow them.
+- [ ] Hover near a grid corner. The cross marks the same snapped point used when you place or
+      start drawing. Place a floor from the palette and draw a floor beside it. Both walking
+      surfaces should meet the grid height. With **Snap to surface** on, both can match a
+      raised surface; turn it off to use the build grid.
 - [ ] With **Snap to surface** on, place a crate on a block. With **Snap to edge** on, drag a
       wall near another and watch it close the gap.
+- [ ] In **Top view**, use **Draw floor (3)** and **Draw block (5)** to drag rectangular
+      footprints. Use **Draw wall (4)** to drag between two endpoints, including a diagonal.
+      Change thickness or height in the palette. Check that each drag previews its dimensions
+      and takes one undo. Press **Esc** mid-drag to cancel.
+- [ ] Use **Tools → Surface (6)** to click the corners of an irregular floor. Raise or lower the
+      build grid with **PgUp / PgDn** and hold **Alt** when clicking to use that height. Press
+      **Enter** to finish, **Backspace** to remove a corner, or **Esc** to cancel. Walk up the
+      slope in playtest and verify that its cutouts stay open.
+- [ ] Open **Tools → Brush** to enter a mesh in map coordinates. Select the brush and use
+      **Edit brush geometry** in the Inspector to change it. Save, reopen, and check that its
+      rendering and collision match in playtest.
+- [ ] Place double doors and change **Left leaf swing** and **Right leaf swing** independently in
+      the Inspector. Check the opening from both sides in playtest.
 - [ ] Select one piece and type exact position, rotation and size in the inspector. Select
       several and use the group position and **Apply rotation** fields.
 - [ ] **M**, click two points: the line shows distance, height and run time. **Tab** toggles the
       top view; right-drag pans and the wheel zooms.
 - [ ] Place pieces from every palette group. Walk into doorways, arches, vehicles and stalls in
       a playtest and check that what you see is what blocks you and your shots.
-- [ ] Change a piece's material. With nothing selected, change the sun direction and height,
-      and place a lamp in a roofed area.
+- [ ] Place a **Floor** and a **Wall** from the geometry palette. Select a piece and choose
+      a finish under **Texture** in the Inspector. Select both, apply a different finish,
+      and undo. Reopen a saved map with the original textured floor or wall types to check
+      that they still render.
+- [ ] Place the lidded jar, hooped barrel, braced crate, workbench, shelf and trough from
+      **Props**. Apply **Fired clay**, **Weathered timber** or **Cut limestone** with the texture
+      picker. Check the surface detail near a light and verify the shelf gaps in playtest.
+- [ ] With nothing selected, change the sun direction and height, and place a lamp in a roofed area.
 - [ ] Add a layer, move pieces to it, hide it and lock it. Hidden pieces still exist in a playtest.
 - [ ] Edit without saving, wait a minute, close the game from the task manager, relaunch and
       open the studio: it offers to recover the work.
 - [ ] Choose **Defence** and **Spawn 3**, then **Playtest**: you start there. Return to the editor.
-- [ ] Tick **Navmesh**: green is where bots can go. Build a platform with no stairs and
-      **Validate**: it is reported as bot-unpathable or unreachable. **Timings** lists routes.
+- [ ] Tick **Navmesh**. Draw a wall through an open route, then undo and redo it. The overlay
+      should update after each edit. Green is where bots can go from a spawn.
+- [ ] Build a platform with no stairs and **Validate**. It is reported as bot-unpathable or
+      unreachable. **Timings** lists routes based on the latest layout.
+- [ ] Tick **Bots** next to **Playtest**. Pick a team and spawn, then play an unsaved draft
+      against bots. Check that they route around drawn geometry and defenders use a placed
+      hold point. Restart the match, then choose **Return to Creation Studio** and check
+      that the draft and navmesh overlay return. Undo and redo the wall again.
 - [ ] Place callout areas, tactical anchors and AI hints. In a playtest the HUD (bottom left)
       names the area you stand in.
 - [ ] In **Tactics**, click near an anchor: the waypoint snaps to it and the list shows the area

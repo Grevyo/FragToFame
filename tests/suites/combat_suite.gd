@@ -24,11 +24,11 @@ func run() -> void:
 
 
 func _rifle() -> WeaponDefinition:
-	return WeaponCatalog.get_definition(WeaponCatalog.VANTA_RIFLE)
+	return WeaponCatalog.get_definition(WeaponCatalog.AK47)
 
 
 func _pistol() -> WeaponDefinition:
-	return WeaponCatalog.get_definition(WeaponCatalog.KESTREL_PISTOL)
+	return WeaponCatalog.get_definition(WeaponCatalog.G17)
 
 
 ## Runs [param steps] fixed steps; returns all shot offsets.
@@ -42,7 +42,7 @@ func _run_steps(state: WeaponState, steps: int, trigger: bool, motion: ShooterMo
 
 func _test_catalog() -> void:
 	section("Weapon catalog")
-	check(WeaponCatalog.ids().size() == 13, "three development weapons and ten modelled weapons are defined")
+	check(WeaponCatalog.ids().size() == 10, "only the ten modelled weapons are active")
 	var slots: Dictionary[int, bool] = {}
 	for id: StringName in WeaponCatalog.ids():
 		var d := WeaponCatalog.get_definition(id)
@@ -52,26 +52,25 @@ func _test_catalog() -> void:
 		if d.is_automatic():
 			check(d.recoil_pattern.size() >= d.magazine_size, "'%s' pattern covers a full magazine" % id)
 		check(d.damage > 0.0 and d.fire_interval > 0.0 and d.magazine_size > 0, "'%s' has sane stats" % id)
-	check(slots.size() == 3, "each weapon uses its own slot")
+	check(slots.has(1) and slots.has(2) and slots.size() == 2, "every weapon uses the primary or secondary slot")
 	check(WeaponCatalog.get_definition(&"nope") == null, "unknown weapon id returns null")
-	check(WeaponCatalog.get_definition(WeaponCatalog.VANTA_RIFLE) == _rifle(), "definitions are cached/shared")
+	check(WeaponCatalog.get_definition(WeaponCatalog.AK47) == _rifle(), "definitions are cached/shared")
 	check(is_equal_approx(_rifle().rounds_per_minute(), 600.0), "rifle fires 600 rpm")
 
 
 func _test_damage_model() -> void:
 	section("Damage model")
 	var rifle := _rifle()
-	check(DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 0.0) == 34, "rifle chest at 0 m = 34")
-	check(DamageModel.damage_for(rifle, DamageModel.ZONE_HEAD, 0.0) == 136, "rifle head at 0 m = 136 (one-shot)")
-	check(DamageModel.damage_for(rifle, DamageModel.ZONE_LEGS, 0.0) == 26, "rifle legs at 0 m = 26")
+	check(DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 0.0) == 36, "AK-47 chest at 0 m = 36")
+	check(DamageModel.damage_for(rifle, DamageModel.ZONE_HEAD, 0.0) == 144, "AK-47 head at 0 m = 144 (one-shot)")
+	check(DamageModel.damage_for(rifle, DamageModel.ZONE_LEGS, 0.0) == 27, "AK-47 legs at 0 m = 27")
 	check(DamageModel.damage_for(rifle, DamageModel.ZONE_STOMACH, 0.0) > DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 0.0),
 		"stomach hits harder than chest")
-	check(DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 20.0) == 32, "rifle chest at 20 m = 32 (falloff)")
+	check(DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 20.0) == 34, "AK-47 chest at 20 m = 34 (falloff)")
 	check(DamageModel.damage_for(_pistol(), DamageModel.ZONE_HEAD, 0.0) >= 100, "pistol headshot is lethal up close")
-	var smg := WeaponCatalog.get_definition(WeaponCatalog.WASP_SMG)
-	check(DamageModel.damage_for(smg, DamageModel.ZONE_CHEST, 40.0) < DamageModel.damage_for(rifle, DamageModel.ZONE_CHEST, 40.0),
-		"SMG loses more damage at range than the rifle")
-	check(DamageModel.damage_for(smg, DamageModel.ZONE_LEGS, 10000.0) >= 1, "damage never drops below 1")
+	check(DamageModel.falloff(_pistol(), 40.0) < DamageModel.falloff(rifle, 40.0),
+		"G17 loses a larger share of its damage at range than the AK-47")
+	check(DamageModel.damage_for(_pistol(), DamageModel.ZONE_LEGS, 10000.0) >= 1, "damage never drops below 1")
 
 
 func _test_fire_cadence() -> void:
@@ -140,8 +139,8 @@ func _test_spread() -> void:
 		"running > walking > standing spread")
 	check(rifle.current_spread(crouched) < rifle.current_spread(still), "crouching tightens spread")
 	check(rifle.current_spread(air) > rifle.current_spread(running), "airborne is least accurate")
-	var smg := WeaponState.new(WeaponCatalog.get_definition(WeaponCatalog.WASP_SMG))
-	check(smg.current_spread(running) < rifle.current_spread(running), "SMG is more accurate on the move than the rifle")
+	var m4 := WeaponState.new(WeaponCatalog.get_definition(WeaponCatalog.M4A1))
+	check(m4.current_spread(running) < rifle.current_spread(running), "M4A1 is more accurate on the move than the AK-47")
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -256,7 +255,7 @@ func _test_sandbox_combat() -> void:
 	check(effects.viewmodel != null and effects.viewmodel.get_parent() == player.camera, "viewmodel attached to the camera")
 	player.input_enabled = false
 	var weapons := player.weapons
-	check(weapons.current().definition.id == WeaponCatalog.VANTA_RIFLE, "player starts with the rifle")
+	check(weapons.current().definition.id == WeaponCatalog.AK47, "player starts with the rifle")
 
 	var dummy := level.dummies[0]
 	dummy.respawn_delay = 0.4
@@ -290,7 +289,7 @@ func _test_sandbox_combat() -> void:
 	await _fire_one(weapons)
 	check(effects.impact_count == impacts_before + 1 and tally.hits == hits_before, "wall shot leaves an impact mark, no hit")
 
-	check(weapons.select_slot(2) and weapons.current().definition.id == WeaponCatalog.KESTREL_PISTOL, "slot 2 selects the pistol")
+	check(weapons.select_slot(2) and weapons.current().definition.id == WeaponCatalog.G17, "slot 2 selects the pistol")
 	weapons.trigger = true
 	await wait_physics_frames(2)
 	weapons.trigger = false

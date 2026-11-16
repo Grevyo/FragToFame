@@ -168,10 +168,34 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Editing.** All edits go through `MapEditController`, which records before/after piece states in
   Godot's `UndoRedo`. Drags preview without history and commit as one step. The controller emits
   per-piece signals; `MapEditorView` rebuilds only the affected piece.
+- **Draw tools.** The first point establishes a height and the second fixes the snapped footprint
+  or wall direction. The ghost uses the same dimensions committed to the document. A stroke adds
+  one ordinary floor, wall or block to the active layer, so the existing builder handles collision
+  and the file format needs no new geometry. The navmesh overlay invalidates on piece edits,
+  including undo and redo, and rebakes once the active drag or a burst of edits ends.
+  The snap marker uses the same intersection as placement and follows the locked plane mid-drag.
+  Drawn floors and palette floor slabs align their walking surface to the anchor, with their
+  thickness stored below it. Other structural pieces place by their base.
+- **Drawn surfaces.** Creation Studio can author a simple polygon with a different elevation at each
+  corner. The document stores its outline relative to its bounds so the normal placement, sizing
+  and material tools still work. The builder uses one triangulated surface for rendering,
+  collision and navigation baking.
+- **Mesh brushes.** Numeric vertex and face editing covers irregular walls, ceilings and terrain
+  when the procedural pieces cannot express the shape. Brush coordinates are stored relative to
+  the bounds and use the same editor transforms, history, materials and navigation bake as other
+  solid pieces.
+- **Placement previews.** The palette groups collapse independently and render thumbnails from the
+  same mesh geometry as the 3D placement highlight. Preview nodes contain meshes only and never
+  enter the document or physics queries.
+- **Textures.** The palette offers geometry; the Inspector applies materials to placed solid
+  pieces. Former material variants remain valid in saved maps and prefabs. Compound pieces keep
+  their fixed trim materials while the selected texture changes their main surfaces.
 - **Playtest.** The studio validates, then calls `App.start_playtest(doc, session)`. The FPS scene
-  builds `App.playtest_map` instead of the default arena; "Return to editor" calls
-  `App.end_playtest()` and the studio restores the session (document, path, dirty flag, camera).
-  The runtime still only receives a document; it never reaches into the editor.
+  builds `App.playtest_map` instead of the default arena. Enabling **Bots** starts a standard
+  practice match on that snapshot with the selected starting side and spawn. Restarts reuse
+  the snapshot. `App.end_playtest()` restores the editor controller with its undo history, plus
+  the map path, active layer, overlay setting and camera.
+  The runtime receives the map document and match options through App.
 
 ### Map creator tools, AI support and official maps (Milestone 16)
 
@@ -192,12 +216,13 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Content version.** `MapDocument.content_fingerprint()` hashes only what changes play: solid
   geometry and gameplay pieces with their props. `MapStorage.save` raises `content_version` only
   when that hash changes, so renames, materials, lights and layers never flag tactics.
-- **Catalogue.** 54 piece types in ten palette groups. `block`, `ramp`, `stairs` and `compound`
-  are solid; `PieceShapes.parts()` describes compound pieces (doorways, arches, vehicles, stalls)
-  as boxes and cylinders, and `MapBuilder` makes one mesh and one identical collider per part.
-  Stairs are visual steps over a solid wedge collider. `walkable` marks floor-like types.
-- **Materials and lighting.** `MapMaterials` is an original palette of textures generated in code
-  and mapped in world space. A piece's material falls back to its type default, then to the dev
+- **Catalogue.** `block`, `ramp`, `stairs` and `compound` pieces are solid.
+  `PieceShapes.parts()` describes compound pieces as boxes, cylinders and tapered sections.
+  `MapBuilder` pairs each mesh with matching collision. A tapered section uses its convex mesh
+  silhouette. Stairs are visual steps over a solid wedge. `walkable` marks floor-like types.
+- **Materials and lighting.** `MapMaterials` generates and caches original 128 px albedo and
+  normal maps with mipmaps. World-space mapping keeps repeats aligned across neighbouring pieces.
+  The Inspector uses 32 px swatches. A piece's material falls back to its type default, then to the dev
   checker. `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
   empty settings leave the scene defaults. `light_lamp` and `light_spot` pieces emit in both.
 - **Editing.** Every edit is a list of piece before/after states recorded as one undo step:
@@ -488,7 +513,9 @@ Terminology used everywhere, including the UI: a **Coat** is a weapon finish (ca
 
 - **Two layers per weapon.** `WeaponCatalog` keeps gameplay numbers; `WeaponModels` keeps
   presentation (model, how to turn and scale it into weapon space, Coat texture size, kit,
-  zones, slot layout, credit). Nothing in `src/cosmetics` affects how a weapon shoots.
+  zones, slot layout, credit). Nothing in `src/cosmetics` affects how a weapon shoots. The sandbox
+  starts with an AK-47 and G17. Matches start with a G17; bots buy an AK-47 or SKS.
+  Career statistics resolve retired weapon IDs to their original labels.
 - **Weapon space.** Barrel along −Z, up +Y, left side −X, centred, true length in metres.
   `WeaponVisual` computes the fit once per weapon; skinned models are measured through their
   skeleton. Parts a source file lays out beside the gun can be hidden or aligned (`hide`, `align`).
@@ -632,5 +659,5 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-16 | Magnets are decals on fixed slots, not texture edits | Independent of Coats, work on any future Coat, cheap to add and remove |
 | 2026-11-16 | A Coat swaps albedo only and must match the kit's layout size | Kits export exactly what the game loads; factory normal/roughness maps stay |
 | 2026-11-16 | Cosmetics saved in a player profile file, not the career database | A look follows the player across careers and modes; no schema change |
-| 2026-11-16 | The ten modelled weapons are added beside the three development weapons | Existing tests, saves and bot buying keep working; retiring the placeholders is the owner's call |
+| 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |

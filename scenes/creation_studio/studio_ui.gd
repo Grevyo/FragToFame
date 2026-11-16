@@ -25,7 +25,7 @@ signal template_chosen(template_id: String)
 ## The scene controller documents the full list in its _on_action.
 signal action_requested(action: StringName, value: Variant)
 
-enum Tool { SELECT, PLACE, MEASURE }
+enum Tool { SELECT, PLACE, MEASURE, DRAW_FLOOR, DRAW_WALL, DRAW_BLOCK, DRAW_SURFACE }
 
 const SNAP_SIZES: Array[float] = [0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
 const DEFAULT_SNAP_INDEX: int = 3
@@ -47,6 +47,7 @@ var angle_option: OptionButton
 var gizmo_option: OptionButton
 var team_option: OptionButton
 var spawn_option: OptionButton
+var bot_playtest_check: CheckBox
 var surface_check: CheckBox
 var edge_check: CheckBox
 var overhead_check: CheckBox
@@ -61,10 +62,15 @@ var _title_label: Label
 var _status_label: Label
 var _cursor_label: Label
 var _inspector: VBoxContainer
+var _texture_choice: OptionButton
 var _layer_list: VBoxContainer
 var _prefab_list: VBoxContainer
 var _prefab_name: LineEdit
 var _palette_buttons: Dictionary[String, Button] = {}
+var _draw_buttons: Dictionary[int, Button] = {}
+var _draw_settings: Dictionary[int, Control] = {}
+var _draw_heights: Dictionary[int, SpinBox] = {}
+var _wall_thickness: SpinBox
 var _tool_group := ButtonGroup.new()
 var _open_list: VBoxContainer
 var _editing_piece: Dictionary = {}
@@ -85,7 +91,11 @@ func _ready() -> void:
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(middle)
-	middle.add_child(_build_palette())
+	var left_dock := UIFactory.vbox(4)
+	left_dock.custom_minimum_size.x = 248
+	middle.add_child(left_dock)
+	left_dock.add_child(_build_tools_panel())
+	left_dock.add_child(_build_palette())
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -103,6 +113,7 @@ func set_history_state(can_undo: bool, can_redo: bool, dirty: bool, map_name: St
 	redo_button.disabled = not can_redo
 	undo_button.tooltip_text = "Undo %s (Ctrl+Z)" % undo_name if can_undo else "Nothing to undo"
 	_title_label.text = "%s%s" % [map_name, "  •  unsaved changes" if dirty else ""]
+	_title_label.tooltip_text = _title_label.text
 
 
 func set_status(text: String) -> void:
@@ -111,10 +122,15 @@ func set_status(text: String) -> void:
 
 func set_cursor_text(text: String) -> void:
 	_cursor_label.text = text
+	_cursor_label.tooltip_text = text
 
 
 func set_active_tool(tool: Tool, piece_type: String) -> void:
-	if tool == Tool.SELECT:
+	for draw_tool: int in _draw_settings:
+		_draw_settings[draw_tool].visible = draw_tool == tool
+	if _draw_buttons.has(tool):
+		_draw_buttons[tool].set_pressed_no_signal(true)
+	elif tool == Tool.SELECT:
 		select_tool_button.set_pressed_no_signal(true)
 	elif tool == Tool.MEASURE:
 		measure_tool_button.set_pressed_no_signal(true)
@@ -123,6 +139,11 @@ func set_active_tool(tool: Tool, piece_type: String) -> void:
 	else:
 		for button: BaseButton in _tool_group.get_buttons():
 			button.set_pressed_no_signal(false)
+
+
+## Height or floor thickness, and the depth of a wall, in metres.
+func draw_dimensions(tool: Tool) -> Vector2:
+	return Vector2(_draw_heights[tool].value, _wall_thickness.value) if _draw_heights.has(tool) else Vector2.ZERO
 
 
 func current_snap() -> float:
@@ -239,7 +260,8 @@ func show_layers(doc: MapDocument, active_layer: String, counts: Dictionary) -> 
 		row.add_child(active)
 		var name_label := UIFactory.label("%s (%d)" % [entry["name"], int(counts.get(id, 0))])
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_label.tooltip_text = name_label.text
 		row.add_child(name_label)
 		row.add_child(_layer_toggle("Show", bool(entry["visible"]), "Show or hide in the editor only",
 			func(on: bool) -> void: action_requested.emit(&"layer_visible", [id, on])))
@@ -263,7 +285,7 @@ func show_prefabs(prefabs: Array[Dictionary]) -> void:
 		var row := UIFactory.hbox(2)
 		var place := UIFactory.button(str(entry["name"]), &"SidebarButton")
 		place.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		place.clip_text = true
+		place.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		place.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		place.focus_mode = Control.FOCUS_NONE
 		place.tooltip_text = "Place this prefab as one unit (%d pieces)" % (entry["pieces"] as Array).size()
@@ -276,6 +298,9 @@ func show_prefabs(prefabs: Array[Dictionary]) -> void:
 			remove.pressed.connect(func() -> void: action_requested.emit(&"prefab_delete", id))
 			row.add_child(remove)
 		_prefab_list.add_child(row)
+		var pieces: Array[Dictionary] = []
+		pieces.assign(entry["pieces"] as Array)
+		_bind_palette_icon(place, pieces)
 
 
 func is_editing_text() -> bool:
@@ -288,67 +313,82 @@ func is_editing_text() -> bool:
 func _build_top_bar() -> Control:
 	var bar := PanelContainer.new()
 	bar.theme_type_variation = &"TopBarPanel"
-	var row := UIFactory.hbox(8)
-	bar.add_child(row)
-	row.add_child(UIFactory.label("CREATION STUDIO", &"LogoLabel"))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override(&"h_separation", 8)
+	bar.add_child(flow)
+	var title := _toolbar_group(flow)
+	title.add_child(UIFactory.label("CREATION STUDIO", &"LogoLabel"))
 	_title_label = UIFactory.label("", &"MutedLabel")
 	_title_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_title_label.custom_minimum_size.x = 220
-	_title_label.clip_text = true
-	row.add_child(_title_label)
-	row.add_child(UIFactory.expand_spacer())
+	_title_label.custom_minimum_size.x = 160
+	_title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.add_child(_title_label)
 
-	_toolbar_button(row, "New", new_requested.emit, "Start a new map (Ctrl+N)")
-	_toolbar_button(row, "Open", open_requested.emit, "Open a saved, official or recovered map (Ctrl+O)")
-	save_button = _toolbar_button(row, "Save", save_requested.emit, "Save to user://maps (Ctrl+S)")
-	undo_button = _toolbar_button(row, "Undo", undo_requested.emit, "Undo (Ctrl+Z)")
-	redo_button = _toolbar_button(row, "Redo", redo_requested.emit, "Redo (Ctrl+Y / Ctrl+Shift+Z)")
-	_toolbar_button(row, "Validate", validate_requested.emit, "Check structure, reachability and route timings")
-	_toolbar_button(row, "Timings", func() -> void: action_requested.emit(&"timings", null), "Route timing readout from the baked navmesh")
-	team_option = _option(row, ["Attack", "Defence"], 0, "Team to playtest as",
+	var file := _toolbar_group(flow)
+	_toolbar_button(file, "New", new_requested.emit, "Start a new map (Ctrl+N)")
+	_toolbar_button(file, "Open", open_requested.emit, "Open a saved, official or recovered map (Ctrl+O)")
+	save_button = _toolbar_button(file, "Save", save_requested.emit, "Save to user://maps (Ctrl+S)")
+	undo_button = _toolbar_button(file, "Undo", undo_requested.emit, "Undo (Ctrl+Z)")
+	redo_button = _toolbar_button(file, "Redo", redo_requested.emit, "Redo (Ctrl+Y / Ctrl+Shift+Z)")
+	_toolbar_button(flow, "Validate", validate_requested.emit, "Check structure, reachability and route timings")
+	_toolbar_button(flow, "Timings", func() -> void: action_requested.emit(&"timings", null), "Route timing readout from the baked navmesh")
+	var play := _toolbar_group(flow)
+	team_option = _option(play, ["Attack", "Defence"], 0, "Team to playtest as",
 		func(index: int) -> void: action_requested.emit(&"playtest_team", TEAMS[index]))
-	spawn_option = _option(row, ["Spawn 1"], 0, "Spawn to playtest from",
+	spawn_option = _option(play, ["Spawn 1"], 0, "Spawn to playtest from",
 		func(index: int) -> void: action_requested.emit(&"playtest_spawn", index))
-	playtest_button = _toolbar_button(row, "▶ Playtest", playtest_requested.emit, "Play this map in first person (F5)")
+	bot_playtest_check = _check(play, "Bots", false, "Play a 5v5 bot match on the current map (including unsaved edits)", &"playtest_bots")
+	playtest_button = _toolbar_button(play, "▶ Playtest", playtest_requested.emit, "Play this map in first person (F5)")
 	playtest_button.theme_type_variation = &"AccentButton"
-	_toolbar_button(row, "Tactics", tactics_requested.emit, "Author five-player routes for the saved map")
-	_toolbar_button(row, "View (F)", reset_view_requested.emit, "Reset camera view")
-	main_menu_button = _toolbar_button(row, "◂ Menu", main_menu_requested.emit, "Return to the main menu")
+	_toolbar_button(flow, "Tactics", tactics_requested.emit, "Author five-player routes for the saved map")
+	_toolbar_button(flow, "View (F)", reset_view_requested.emit, "Reset camera view")
+	main_menu_button = _toolbar_button(flow, "◂ Menu", main_menu_requested.emit, "Return to the main menu")
 	return bar
 
 
 func _build_options_bar() -> Control:
 	var bar := PanelContainer.new()
 	bar.theme_type_variation = &"TopBarPanel"
-	var row := UIFactory.hbox(8)
-	bar.add_child(row)
-	_caption(row, "Gizmo")
-	gizmo_option = _option(row, GIZMO_MODES, 0, "Transform gizmo: move (G), rotate (T), scale (X)",
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override(&"h_separation", 8)
+	bar.add_child(flow)
+	var gizmo := _toolbar_group(flow)
+	_caption(gizmo, "Gizmo")
+	gizmo_option = _option(gizmo, GIZMO_MODES, 0, "Transform gizmo: move (G), rotate (T), scale (X)",
 		func(index: int) -> void: action_requested.emit(&"gizmo_mode", index))
-	_caption(row, "Grid")
+	var snapping := _toolbar_group(flow)
+	_caption(snapping, "Grid")
 	var snap_names: Array[String] = []
 	for size: float in SNAP_SIZES:
 		snap_names.append("%s m" % format_number(size))
-	snap_option = _option(row, snap_names, DEFAULT_SNAP_INDEX, "Grid size for placing, moving and scaling",
+	snap_option = _option(snapping, snap_names, DEFAULT_SNAP_INDEX, "Grid size for placing, moving and scaling",
 		func(index: int) -> void: snap_changed.emit(SNAP_SIZES[index]))
-	_caption(row, "Angle")
+	_caption(snapping, "Angle")
 	var angle_names: Array[String] = []
 	for angle: float in ANGLE_SNAPS:
 		angle_names.append("%d°" % int(angle))
-	angle_option = _option(row, angle_names, DEFAULT_ANGLE_INDEX, "Angle snap for R and the rotate gizmo",
+	angle_option = _option(snapping, angle_names, DEFAULT_ANGLE_INDEX, "Angle snap for R and the rotate gizmo",
 		func(index: int) -> void: action_requested.emit(&"angle_snap", ANGLE_SNAPS[index]))
-	surface_check = _check(row, "Snap to surface", true, "Placed and moved pieces sit on the surface under them", &"snap_surface")
-	edge_check = _check(row, "Snap to edge", false, "Moved pieces snap flush to nearby piece edges", &"snap_edge")
-	overhead_check = _check(row, "Top view", false, "Overhead orthographic view (Tab)", &"overhead")
-	navmesh_check = _check(row, "Navmesh", false, "Show the navmesh bots will use (baked on demand)", &"navmesh")
-	_toolbar_button(row, "Refresh navmesh", func() -> void: action_requested.emit(&"navmesh_refresh", null),
+	surface_check = _check(snapping, "Snap to surface", true, "Use the surface height under the snapped point instead of the build grid", &"snap_surface")
+	edge_check = _check(snapping, "Snap to edge", false, "Moved pieces snap flush to nearby piece edges", &"snap_edge")
+	var view := _toolbar_group(flow)
+	overhead_check = _check(view, "Top view", false, "Overhead orthographic view (Tab)", &"overhead")
+	navmesh_check = _check(view, "Navmesh", false, "Show the navmesh bots will use (baked on demand)", &"navmesh")
+	_toolbar_button(view, "Refresh navmesh", func() -> void: action_requested.emit(&"navmesh_refresh", null),
 		"Re-bake the navmesh preview after edits")
-	row.add_child(UIFactory.expand_spacer())
-	_toolbar_button(row, "Copy", func() -> void: action_requested.emit(&"copy", null), "Copy selection (Ctrl+C)")
-	_toolbar_button(row, "Paste", func() -> void: action_requested.emit(&"paste", null), "Paste at the cursor, also into another map (Ctrl+V)")
-	_toolbar_button(row, "Group", func() -> void: action_requested.emit(&"group", null), "Group selection (Ctrl+G)")
-	_toolbar_button(row, "Ungroup", func() -> void: action_requested.emit(&"ungroup", null), "Ungroup selection (Ctrl+Shift+G)")
+	var edits := _toolbar_group(flow)
+	_toolbar_button(edits, "Copy", func() -> void: action_requested.emit(&"copy", null), "Copy selection (Ctrl+C)")
+	_toolbar_button(edits, "Paste", func() -> void: action_requested.emit(&"paste", null), "Paste at the cursor, also into another map (Ctrl+V)")
+	_toolbar_button(edits, "Group", func() -> void: action_requested.emit(&"group", null), "Group selection (Ctrl+G)")
+	_toolbar_button(edits, "Ungroup", func() -> void: action_requested.emit(&"ungroup", null), "Ungroup selection (Ctrl+Shift+G)")
 	return bar
+
+
+func _toolbar_group(parent: HFlowContainer) -> HBoxContainer:
+	var group := UIFactory.hbox(6)
+	group.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	parent.add_child(group)
+	return group
 
 
 func _caption(parent: Control, text: String) -> void:
@@ -392,56 +432,22 @@ func _toolbar_button(parent: Control, text: String, handler: Callable, tooltip: 
 func _open_button(text: String, handler: Callable) -> Button:
 	var b := UIFactory.button(text)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.tooltip_text = text
 	b.pressed.connect(func() -> void:
 		open_panel.visible = false
 		handler.call())
 	return b
 
 
-func _build_palette() -> Control:
+func _build_tools_panel() -> Control:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"SidebarPanel"
-	panel.custom_minimum_size.x = 220
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	panel.add_child(scroll)
 	var column := UIFactory.vbox(2)
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(column)
-
-	column.add_child(_padded_label("TOOLS", &"SectionLabel"))
-	select_tool_button = _palette_button(column, "Select / move  (1)")
-	select_tool_button.pressed.connect(func() -> void: tool_selected.emit(Tool.SELECT))
-	select_tool_button.set_pressed_no_signal(true)
-	measure_tool_button = _palette_button(column, "Measure  (M)")
-	measure_tool_button.tooltip_text = "Click two points: distance, height and run time"
-	measure_tool_button.pressed.connect(func() -> void: tool_selected.emit(Tool.MEASURE))
-
-	for group: String in PieceCatalog.GROUP_ORDER:
-		column.add_child(_padded_label(group.to_upper(), &"SectionLabel"))
-		for type: String in PieceCatalog.types_in_group(group):
-			var b := _palette_button(column, PieceCatalog.label(type))
-			b.tooltip_text = "Place %s (click in the viewport)" % PieceCatalog.label(type)
-			b.pressed.connect(func() -> void: piece_type_selected.emit(type))
-			_palette_buttons[type] = b
-
-	column.add_child(_padded_label("PREFABS", &"SectionLabel"))
-	_prefab_list = UIFactory.vbox(2)
-	column.add_child(_prefab_list)
-	_prefab_name = LineEdit.new()
-	_prefab_name.placeholder_text = "New prefab name"
-	column.add_child(_prefab_name)
-	var save_prefab := UIFactory.button("Save selection as prefab")
-	save_prefab.focus_mode = Control.FOCUS_NONE
-	save_prefab.tooltip_text = "Stores the selected pieces in this map as a reusable prefab"
-	save_prefab.pressed.connect(func() -> void:
-		action_requested.emit(&"prefab_save", _prefab_name.text)
-		_prefab_name.clear())
-	column.add_child(save_prefab)
-
-	column.add_child(_padded_label("SHORTCUTS", &"SectionLabel"))
-	for line: String in [
+	panel.add_child(column)
+	var shortcuts: PackedStringArray = [
 		"LMB  select / place / drag",
+		"6  draw surface · Enter finish · Backspace remove corner",
 		"Shift+LMB  add or remove",
 		"Drag on empty space  box select",
 		"Alt+LMB  one piece of a group",
@@ -457,15 +463,194 @@ func _build_palette() -> Control:
 		"Tab  top view · M  measure",
 		"Ctrl+S  save · F5  playtest",
 		"Esc  select tool / deselect",
-	]:
-		column.add_child(_padded_label(line, &"MutedLabel"))
+	]
+	var help := UIFactory.button("?")
+	help.tooltip_text = "Show the editor keyboard and mouse shortcuts"
+	help.focus_mode = Control.FOCUS_NONE
+	help.pressed.connect(func() -> void: show_message("Map Creator shortcuts", "\n".join(shortcuts)))
+	var actions := UIFactory.hbox(4)
+	var brush := _toolbar_button(actions, "Brush", func() -> void: action_requested.emit(&"edit_brush", ""), "Create geometry with measured vertices and faces")
+	brush.focus_mode = Control.FOCUS_NONE
+	actions.add_child(help)
+	var tools := _palette_section(column, "Tools", true, actions)
+	var buttons := GridContainer.new()
+	buttons.columns = 2
+	tools.add_child(buttons)
+	select_tool_button = _palette_button(buttons, "Select")
+	select_tool_button.tooltip_text = "Select and move pieces (1)"
+	select_tool_button.pressed.connect(func() -> void: tool_selected.emit(Tool.SELECT))
+	select_tool_button.set_pressed_no_signal(true)
+	measure_tool_button = _palette_button(buttons, "Measure")
+	measure_tool_button.tooltip_text = "Measure distance, height and run time between two points (M)"
+	measure_tool_button.pressed.connect(func() -> void: tool_selected.emit(Tool.MEASURE))
+
+	_add_draw_tool(buttons, tools, Tool.DRAW_FLOOR, "Floor", "Thickness (m)", PieceCatalog.default_size("floor").y,
+		"Drag a rectangle. The floor surface sits flush with the starting plane (3).")
+	_add_draw_tool(buttons, tools, Tool.DRAW_WALL, "Wall", "Height (m)", PieceCatalog.default_size("wall").y,
+		"Drag from one end of the wall to the other, including diagonally (4).")
+	_add_draw_tool(buttons, tools, Tool.DRAW_BLOCK, "Block", "Height (m)", PieceCatalog.default_size("block").y,
+		"Drag a rectangular footprint for a solid block (5).")
+
+	var surface := _palette_button(buttons, "Surface")
+	surface.tooltip_text = "Click corners at their elevations. Enter finishes, Backspace removes a corner (6)."
+	surface.pressed.connect(func() -> void: tool_selected.emit(Tool.DRAW_SURFACE))
+	_draw_buttons[Tool.DRAW_SURFACE] = surface
+
 	return panel
+
+
+func _build_palette() -> Control:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"SidebarPanel"
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var content := UIFactory.vbox(2)
+	panel.add_child(content)
+	content.add_child(_padded_label("PIECES", &"SectionLabel"))
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content.add_child(scroll)
+	var column := UIFactory.vbox(2)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(column)
+
+	for group: String in PieceCatalog.GROUP_ORDER:
+		var items := _palette_section(column, group)
+		for type: String in PieceCatalog.palette_types_in_group(group):
+			var b := _palette_button(items, PieceCatalog.label(type))
+			_bind_palette_icon(b, [MapDocument.make_piece(type, Vector3.ZERO)])
+			b.tooltip_text = "Place %s (click in the viewport)" % PieceCatalog.label(type)
+			b.pressed.connect(func() -> void: piece_type_selected.emit(type))
+			_palette_buttons[type] = b
+
+	var prefabs := _palette_section(column, "Prefabs")
+	_prefab_list = UIFactory.vbox(2)
+	prefabs.add_child(_prefab_list)
+	_prefab_name = LineEdit.new()
+	_prefab_name.placeholder_text = "New prefab name"
+	prefabs.add_child(_prefab_name)
+	var save_prefab := UIFactory.button("Save selection as prefab")
+	save_prefab.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	save_prefab.focus_mode = Control.FOCUS_NONE
+	save_prefab.tooltip_text = "Stores the selected pieces in this map as a reusable prefab"
+	save_prefab.pressed.connect(func() -> void:
+		action_requested.emit(&"prefab_save", _prefab_name.text)
+		_prefab_name.clear())
+	prefabs.add_child(save_prefab)
+
+	return panel
+
+
+func _palette_section(parent: VBoxContainer, title: String, expanded: bool = false, action: Control = null) -> VBoxContainer:
+	var header := UIFactory.button(("▾  " if expanded else "▸  ") + title, &"SidebarButton")
+	header.toggle_mode = true
+	header.button_pressed = expanded
+	header.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.focus_mode = Control.FOCUS_NONE
+	if action == null:
+		parent.add_child(header)
+	else:
+		var row := UIFactory.hbox(4)
+		parent.add_child(row)
+		header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(header)
+		row.add_child(action)
+	var content := UIFactory.vbox(2)
+	content.visible = expanded
+	parent.add_child(content)
+	header.toggled.connect(func(open: bool) -> void:
+		header.text = ("▾  " if open else "▸  ") + title
+		content.visible = open)
+	return content
+
+
+func _bind_palette_icon(button: Button, pieces: Array[Dictionary]) -> void:
+	button.add_theme_constant_override(&"icon_max_width", 28)
+	button.visibility_changed.connect(_show_palette_icon.bind(button, pieces))
+	_show_palette_icon(button, pieces)
+
+
+func _show_palette_icon(button: Button, pieces: Array[Dictionary]) -> void:
+	if button.icon != null or not button.is_visible_in_tree():
+		return
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(56, 56)
+	viewport.own_world_3d = true
+	viewport.transparent_bg = true
+	viewport.gui_disable_input = true
+	button.add_child(viewport)
+
+	var geometry := MapBuilder.build_preview(pieces)
+	viewport.add_child(geometry)
+	var bounds := AABB()
+	var first := true
+	for child: Node in geometry.get_children():
+		var mesh := child as MeshInstance3D
+		var box: AABB = mesh.transform * mesh.get_aabb()
+		bounds = box if first else bounds.merge(box)
+		first = false
+	var centre := bounds.get_center()
+	var reach := maxf(bounds.size.length(), 0.1)
+	var eye := Vector3(0.8, 0.65, 1.0).normalized()
+	var camera := Camera3D.new()
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.position = centre + eye * reach * 2.0
+	camera.far = reach * 4.0
+	viewport.add_child(camera)
+	camera.look_at(centre)
+	# Fit the projected mesh bounds to the square, including thin pieces such as floors.
+	var span := 0.0
+	for i: int in 8:
+		var corner := bounds.get_endpoint(i) - centre
+		var extent := maxf(absf(corner.dot(camera.basis.x)), absf(corner.dot(camera.basis.y)))
+		span = maxf(span, extent)
+	camera.size = maxf(2.35 * span, 0.1)
+	camera.environment = Environment.new()
+	camera.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	camera.environment.ambient_light_color = Color.WHITE
+	camera.environment.ambient_light_energy = 0.65
+
+	var key := DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-50.0, 25.0, 0.0)
+	viewport.add_child(key)
+	button.icon = viewport.get_texture()
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+func _add_draw_tool(buttons: GridContainer, column: VBoxContainer, tool: Tool, title: String, dimension: String,
+		value: float, tooltip: String) -> void:
+	var button := _palette_button(buttons, title)
+	button.tooltip_text = tooltip
+	button.pressed.connect(func() -> void: tool_selected.emit(tool))
+	_draw_buttons[tool] = button
+	var settings := UIFactory.hbox(6)
+	var height_column := UIFactory.vbox(3)
+	height_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	height_column.add_child(UIFactory.label(dimension, &"MutedLabel"))
+	settings.add_child(height_column)
+	var height := _spin(value, MapValidator.MIN_SIZE, 100.0, 0.05)
+	height.allow_greater = false
+	height_column.add_child(height)
+	_draw_heights[tool] = height
+	if tool == Tool.DRAW_WALL:
+		var depth_column := UIFactory.vbox(3)
+		depth_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		depth_column.add_child(UIFactory.label("Depth (m)", &"MutedLabel"))
+		settings.add_child(depth_column)
+		_wall_thickness = _spin(PieceCatalog.default_size("wall").z, MapValidator.MIN_SIZE, 10.0, 0.05)
+		_wall_thickness.allow_greater = false
+		depth_column.add_child(_wall_thickness)
+	settings.hide()
+	_draw_settings[tool] = settings
+	column.add_child(settings)
 
 
 func _palette_button(parent: Control, text: String) -> Button:
 	var b := UIFactory.button(text, &"SidebarButton")
 	b.toggle_mode = true
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	b.button_group = _tool_group
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_NONE
 	parent.add_child(b)
@@ -517,6 +702,7 @@ func _build_inspector_panel() -> Control:
 	column.add_child(layer_row)
 	column.add_child(HSeparator.new())
 	_cursor_label = UIFactory.label("Cursor —", &"MutedLabel")
+	_cursor_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	column.add_child(_cursor_label)
 	return panel
 
@@ -587,6 +773,7 @@ func _build_dialogs() -> void:
 # --- inspector forms ----------------------------------------------------------------------------
 
 func _clear_inspector() -> void:
+	_texture_choice = null
 	_fields.clear()
 	for child: Node in _inspector.get_children():
 		_inspector.remove_child(child)
@@ -611,7 +798,12 @@ func _build_map_properties(doc: MapDocument, file_path: String) -> void:
 		PackedStringArray(["Content version", str(doc.content_version)]),
 		PackedStringArray(["File", file_path if not file_path.is_empty() else "not saved yet"]),
 	]
-	UIFactory.key_value_grid(_inspector, info)
+	var grid := UIFactory.key_value_grid(_inspector, info)
+	for i: int in info.size():
+		var value := grid.get_child(i * 2 + 1) as Label
+		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		value.tooltip_text = value.text
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	_inspector.add_child(UIFactory.label("LIGHTING", &"SectionLabel"))
 	var settings := MapLighting.normalised(doc.lighting)
@@ -635,6 +827,7 @@ func _build_map_properties(doc: MapDocument, file_path: String) -> void:
 
 func _build_selection_properties(selection: Array[Dictionary], doc: MapDocument) -> void:
 	_inspector.add_child(UIFactory.label("%d pieces selected" % selection.size(), &"CardTitleLabel"))
+	_texture_field(selection)
 	var pivot := MapSnapping.pivot(selection)
 	_inspector.add_child(UIFactory.label("GROUP POSITION (pivot)", &"SectionLabel"))
 	var row := UIFactory.hbox(6)
@@ -651,7 +844,6 @@ func _build_selection_properties(selection: Array[Dictionary], doc: MapDocument)
 	var apply_turn := UIFactory.button("Apply rotation")
 	apply_turn.pressed.connect(func() -> void: action_requested.emit(&"group_rotate", turn.value))
 	_inspector.add_child(apply_turn)
-	_material_field("")
 	_layer_field(doc, "")
 	for entry: Array in [["Duplicate (Ctrl+D)", &"duplicate"], ["Delete (Del)", &"delete"],
 			["Group (Ctrl+G)", &"group"], ["Ungroup", &"ungroup"]]:
@@ -667,6 +859,7 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 	_inspector.add_child(UIFactory.label(PieceCatalog.label(type), &"CardTitleLabel"))
 	var group := str(piece.get("group", ""))
 	_inspector.add_child(UIFactory.label("%s  ·  %s%s" % [piece["id"], kind, "  ·  " + group if not group.is_empty() else ""], &"MutedLabel"))
+	_texture_field([piece])
 	var p: Vector3 = piece["position"]
 	_inspector.add_child(UIFactory.label("POSITION (bottom centre)", &"SectionLabel"))
 	_vector_row(["pos_x", "pos_y", "pos_z"], p, -256.0, 256.0)
@@ -678,8 +871,6 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 	if PieceCatalog.is_resizable(type):
 		_inspector.add_child(UIFactory.label("SIZE (width · height · depth)", &"SectionLabel"))
 		_vector_row(["size_x", "size_y", "size_z"], piece["size"] as Vector3, MapValidator.MIN_SIZE, 128.0)
-	if PieceCatalog.is_solid(type):
-		_material_field(str(piece.get("material", "")))
 	_layer_field(doc, str(piece.get("layer", MapDocument.DEFAULT_LAYER)))
 
 	var props: Dictionary = piece.get("props", {})
@@ -705,29 +896,70 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 			_text_prop("Colour (hex)", "color", str(props.get("color", "ffffff")))
 			if type == "light_spot":
 				_number_prop("Cone angle (°)", "angle", float(props.get("angle", 40.0)), 5.0, 85.0, 1.0)
+		"mesh_brush":
+			_toolbar_button(_inspector, "Edit brush geometry", func() -> void: action_requested.emit(&"edit_brush", str(piece["id"])),
+				"Edit the vertices and faces of this brush")
 		"doorway", "double_door", "arch", "wall_window":
 			_number_prop("Opening width (m)", "opening_width", float(props.get("opening_width", 1.4)), PieceShapes.MIN_OPENING, 16.0, 0.1)
 			_number_prop("Opening height (m)", "opening_height", float(props.get("opening_height", 2.2)), 1.0, 16.0, 0.1)
 			if type == "wall_window":
 				_number_prop("Sill height (m)", "sill_height", float(props.get("sill_height", 1.0)), 0.2, 8.0, 0.1)
+			elif type == "double_door":
+				_number_prop("Left leaf swing (°)", "left_swing", float(props.get("left_swing", 90.0)), -180.0, 180.0, 1.0)
+				_number_prop("Right leaf swing (°)", "right_swing", float(props.get("right_swing", 90.0)), -180.0, 180.0, 1.0)
 
 
-func _material_field(current: String) -> void:
-	_inspector.add_child(UIFactory.label("MATERIAL", &"SectionLabel"))
-	var ids := MapMaterials.ids()
+func _texture_field(selection: Array[Dictionary]) -> void:
+	var solids := selection.filter(func(piece: Dictionary) -> bool: return PieceCatalog.is_solid(str(piece["type"])))
+	if solids.is_empty():
+		return
+	_inspector.add_child(UIFactory.label("TEXTURE", &"SectionLabel"))
+	var default_label := "Piece default"
+	if solids.size() == 1:
+		var finish := PieceCatalog.default_material(str(solids[0]["type"]))
+		default_label += " · " + (MapMaterials.label(finish) if not finish.is_empty() else "Checker")
 	var option := OptionButton.new()
-	option.add_item("Piece default")
-	for id: String in ids:
-		option.add_item(MapMaterials.label(id))
-	option.select(ids.find(current) + 1)
+	option.name = "TextureChoice"
+	option.add_item(default_label)
+	option.set_item_metadata(0, "")
+	for id: String in MapMaterials.ids():
+		option.add_icon_item(MapMaterials.swatch(id), MapMaterials.label(id))
+		option.set_item_metadata(option.item_count - 1, id)
+	if solids.size() > 1:
+		option.add_item("Mixed textures")
+		option.set_item_disabled(option.item_count - 1, true)
 	option.item_selected.connect(func(index: int) -> void:
-		action_requested.emit(&"material", "" if index == 0 else ids[index - 1]))
+		var finish: Variant = option.get_item_metadata(index)
+		if finish is String:
+			action_requested.emit(&"material", finish))
 	_inspector.add_child(option)
+	_texture_choice = option
+	update_texture_choice(selection)
+
+
+## Refreshes the selection after an edit, undo or redo without replacing the open inspector.
+func update_texture_choice(selection: Array[Dictionary]) -> void:
+	if _texture_choice == null:
+		return
+	var materials: Dictionary[String, bool] = {}
+	for piece: Dictionary in selection:
+		if PieceCatalog.is_solid(str(piece["type"])):
+			materials[str(piece.get("material", ""))] = true
+	if materials.size() > 1:
+		_texture_choice.select(_texture_choice.item_count - 1)
+	elif materials.size() == 1:
+		var current: String = materials.keys()[0]
+		for index: int in _texture_choice.item_count:
+			if _texture_choice.get_item_metadata(index) == current:
+				_texture_choice.select(index)
+				return
 
 
 func _layer_field(doc: MapDocument, current: String) -> void:
 	_inspector.add_child(UIFactory.label("LAYER", &"SectionLabel"))
 	var option := OptionButton.new()
+	option.fit_to_longest_item = false
+	option.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if current.is_empty():
 		option.add_item("(move selection to…)")
 	for entry: Dictionary in doc.layers:

@@ -129,7 +129,10 @@ func pick(origin: Vector3, direction: Vector3, solid_only: bool = false, exclude
 		var xform := MapDocument.piece_transform(piece)
 		var inverse := xform.affine_inverse()
 		var local_origin := inverse * origin
-		var hit: Variant = box.intersects_segment(local_origin, local_origin + inverse.basis * direction * PICK_DISTANCE)
+		var local_end := local_origin + inverse.basis * direction * PICK_DISTANCE
+		var hit: Variant = box.intersects_segment(local_origin, local_end)
+		if hit != null and PieceCatalog.kind(type) == "surface":
+			hit = _pick_surface_mesh(str(piece["id"]), local_origin, local_end)
 		if hit == null:
 			continue
 		var point := xform * (hit as Vector3)
@@ -141,6 +144,24 @@ func pick(origin: Vector3, direction: Vector3, solid_only: bool = false, exclude
 			best_distance = distance
 			best = {"piece_id": piece["id"], "point": point, "aabb": MapDocument.piece_aabb(piece)}
 	return best
+
+
+func _pick_surface_mesh(id: String, start: Vector3, end: Vector3) -> Variant:
+	var node := node_for(id)
+	if node == null:
+		return null
+	var faces: PackedVector3Array = node.get_meta(&"pick_faces", PackedVector3Array())
+	var nearest: Variant = null
+	var nearest_distance := INF
+	for i: int in range(0, faces.size(), 3):
+		var hit: Variant = Geometry3D.segment_intersects_triangle(start, end, faces[i], faces[i + 1], faces[i + 2])
+		if hit == null:
+			continue
+		var distance := start.distance_squared_to(hit)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = hit
+	return nearest
 
 
 ## IDs of pickable pieces whose centre projects inside the screen rectangle (box select).

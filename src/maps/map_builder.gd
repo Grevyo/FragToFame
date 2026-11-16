@@ -44,6 +44,9 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 			var parts := PieceShapes.parts(type, size, props)
 			for i: int in parts.size():
 				_add_part(holder, parts[i], surface, "Part%d" % i)
+		"surface":
+			var mesh := BrushGeometry.mesh(size, props) if type == "mesh_brush" else PolygonSurface.build_mesh(size, props)
+			holder = _drawn_surface(mesh, surface, mode)
 		"ramp":
 			holder = _ramp(size, surface)
 		"stairs":
@@ -75,6 +78,30 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 	return holder
 
 
+## Meshes for editor previews. Keep each part's local transform, with no physics, lights or labels.
+static func build_preview(pieces: Array[Dictionary], override: Material = null) -> Node3D:
+	var root := Node3D.new()
+	for piece: Dictionary in pieces:
+		var source := build_piece(piece, Mode.EDITOR)
+		if source == null:
+			continue
+		for child: Node in source.find_children("*", "MeshInstance3D", true, false):
+			var original := child as MeshInstance3D
+			var local := original.transform
+			var parent := original.get_parent_node_3d()
+			while parent != source:
+				local = parent.transform * local
+				parent = parent.get_parent_node_3d()
+			var visual := MeshInstance3D.new()
+			visual.mesh = original.mesh
+			visual.material_override = override if override != null else original.material_override
+			visual.transform = source.transform * local
+			visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(visual)
+		source.free()
+	return root
+
+
 ## One solid part: a StaticBody3D holding a mesh and a collider of exactly the same shape.
 static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_name: String) -> void:
 	var body := StaticBody3D.new()
@@ -86,16 +113,19 @@ static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_
 	var shape: Shape3D
 	if part["shape"] == "cylinder":
 		var cylinder := CylinderMesh.new()
-		cylinder.top_radius = size.x / 2.0
-		cylinder.bottom_radius = size.x / 2.0
+		cylinder.top_radius = size.x * 0.5 * float(part.get("top_radius_scale", 1.0))
+		cylinder.bottom_radius = size.x * 0.5 * float(part.get("bottom_radius_scale", 1.0))
 		cylinder.height = size.y
 		cylinder.radial_segments = 16
 		cylinder.rings = 1
 		mesh = cylinder
-		var cylinder_shape := CylinderShape3D.new()
-		cylinder_shape.radius = size.x / 2.0
-		cylinder_shape.height = size.y
-		shape = cylinder_shape
+		if is_equal_approx(cylinder.top_radius, cylinder.bottom_radius):
+			var cylinder_shape := CylinderShape3D.new()
+			cylinder_shape.radius = cylinder.top_radius
+			cylinder_shape.height = size.y
+			shape = cylinder_shape
+		else:
+			shape = cylinder.create_convex_shape()
 	else:
 		var box := BoxMesh.new()
 		box.size = size
@@ -114,6 +144,25 @@ static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_
 	collision.shape = shape
 	body.add_child(collision)
 	parent.add_child(body)
+
+
+## Uses the same triangulated solid in the editor and runtime.
+static func _drawn_surface(mesh: ArrayMesh, material: Material, mode: Mode) -> Node3D:
+	var root := Node3D.new()
+	if mesh == null:
+		return root
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = material
+	if mode == Mode.EDITOR:
+		root.set_meta(&"pick_faces", mesh.get_faces())
+	var body := StaticBody3D.new()
+	var collision := CollisionShape3D.new()
+	collision.shape = mesh.create_trimesh_shape()
+	body.add_child(instance)
+	body.add_child(collision)
+	root.add_child(body)
+	return root
 
 
 ## A wedge rising toward local -Z: mesh and (optionally) a convex collider of the same shape.

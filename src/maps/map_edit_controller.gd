@@ -358,6 +358,8 @@ func set_selection_layer(layer_id: String) -> bool:
 
 ## Applies a palette material ("" = each type's default) to every solid piece selected.
 func set_selection_material(material_id: String) -> bool:
+	if not material_id.is_empty() and not MapMaterials.has_material(material_id):
+		return false
 	var afters: Array[Dictionary] = []
 	for piece: Dictionary in selected_pieces():
 		if PieceCatalog.is_solid(str(piece["type"])):

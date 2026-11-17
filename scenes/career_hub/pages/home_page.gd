@@ -34,6 +34,7 @@ func build_page() -> void:
 	var team := "Free agent"
 	if contract != null:
 		team = "%s (%s)" % [repo.get_organisation(contract.organisation_id).name, CareerCatalog.role_name(contract.role)]
+		status_card.add_child(link("My team", &"my_team", {}))
 	var reputation := repo.reputation(me.id) if me != null else 0
 	var profile := repo.human_profile(me.id) if me != null else {}
 	var status_rows: Array[PackedStringArray] = [
@@ -62,16 +63,17 @@ func build_page() -> void:
 	UIFactory.key_value_grid(world_card, world_rows)
 
 	var news := UIFactory.card(self, "Latest news")
-	CareerNewsPage.add_stories(news, repo.news(5, WorldSimulation.NOTABLE),
-		"No notable news yet. Use Next day or Continue on the Calendar.")
+	story_table(news, repo.news(5, WorldSimulation.NOTABLE), "No notable news yet. Press Continue (top right).")
+	news.add_child(link("All news", &"news", {}))
 
 	var top := UIFactory.card(self, "Top organisations")
-	var rows: Array[PackedStringArray] = []
+	var rows: Array[Array] = []
 	for entry: Dictionary in repo.organisations().slice(0, 6):
 		var org := entry["organisation"] as CareerRecords.OrganisationRecord
-		rows.append(PackedStringArray([org.name, CareerCatalog.region_name(org.region_id),
-			CareerCatalog.tier_name(org.tier), str(entry["reputation"])]))
-	UIFactory.table(top, PackedStringArray(["Organisation", "Region", "Tier", "Reputation"]), rows)
+		rows.append([cell_team(org.id, org.name), CareerCatalog.region_name(org.region_id),
+			CareerCatalog.tier_name(org.tier), str(entry["reputation"])])
+	link_table(top, PackedStringArray(["Organisation", "Region", "Tier", "Reputation"]), rows)
+	top.add_child(link("All teams", &"teams", {}))
 
 
 func _refresh_fixture_card() -> void:

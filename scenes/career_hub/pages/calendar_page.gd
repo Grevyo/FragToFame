@@ -47,7 +47,7 @@ func build_page() -> void:
 	day_card.add_child(status_label)
 
 	var news_card := UIFactory.card(self, "World news")
-	CareerNewsPage.add_stories(news_card, repo.news(NEWS_SHOWN), "No news yet. Move the calendar on.")
+	story_table(news_card, repo.news(NEWS_SHOWN), "No news yet. Move the calendar on.")
 
 	_series_card("Series this week", repo.league_fixtures_between(today, today + WEEK - 1))
 	_series_card("Recent results", repo.league_fixtures_between(today - WEEK, today - 1))
@@ -101,13 +101,14 @@ func _series_card(title: String, fixtures: Array[Dictionary]) -> void:
 	if fixtures.is_empty():
 		card.add_child(UIFactory.label("No league series on these days.", &"MutedLabel"))
 		return
-	var rows: Array[PackedStringArray] = []
+	var rows: Array[Array] = []
 	for fixture: Dictionary in fixtures:
-		var score := "Scheduled" if fixture["home_maps"] == null else "%d – %d" % [
+		var score := "Preview" if fixture["home_maps"] == null else "%d – %d" % [
 			int(fixture["home_maps"]), int(fixture["away_maps"])]
-		rows.append(PackedStringArray([GameDate.format(int(fixture["scheduled_day"])), str(fixture["competition_name"]),
-			"%s vs %s" % [fixture["home_name"], fixture["away_name"]], score, map_summary(int(fixture["id"]))]))
-	UIFactory.table(card, PackedStringArray(["Date", "Competition", "Series", "Maps", "Map scores · MVP"]), rows)
+		rows.append([GameDate.format(int(fixture["scheduled_day"])), str(fixture["competition_name"]),
+			cell_team(str(fixture["home_id"]), str(fixture["home_name"])), cell_team(str(fixture["away_id"]), str(fixture["away_name"])),
+			cell_link(score, &"series", {"series_id": int(fixture["id"])}), map_summary(int(fixture["id"]))])
+	link_table(card, PackedStringArray(["Date", "Competition", "Home", "Away", "Maps", "Map scores · MVP"]), rows)
 
 
 ## "9–6, 7–9, 12–10 · MVP Vex" for a simulated series ("" when it was not simulated).

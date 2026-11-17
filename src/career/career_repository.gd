@@ -1155,3 +1155,73 @@ func top_performers(competition_id: String, year: int, min_maps: int, limit: int
 		JOIN player p ON p.id = s.player_id LEFT JOIN organisation o ON o.id = s.organisation_id
 		WHERE f.competition_id = ? AND f.season_year = ?
 		GROUP BY s.player_id HAVING COUNT(*) >= ? ORDER BY rating DESC LIMIT ?;""", [competition_id, year, min_maps, limit])
+
+
+# --- Hub navigation views ----------------------------------------------------------------------
+
+## An organisation's series (league and cup), newest first, with names and competition.
+func organisation_series(org_id: String, limit: int = 20, upcoming: bool = false) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, c.name AS competition_name, c.kind, h.name AS home_name, a.name AS away_name
+		FROM league_fixture f JOIN competition c ON c.id = f.competition_id
+		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id
+		WHERE (f.home_id = ? OR f.away_id = ?) AND %s
+		ORDER BY f.scheduled_day %s, f.id LIMIT ?;""" % ["f.home_maps IS NULL" if upcoming else "f.home_maps IS NOT NULL",
+		"ASC" if upcoming else "DESC"], [org_id, org_id, limit])
+
+
+## One series with its competition and both organisations' names, or {}.
+func series_detail(series_id: int) -> Dictionary:
+	return db.row("""SELECT f.*, s.best_of, c.name AS competition_name, c.kind, c.tier, h.name AS home_name, a.name AS away_name
+		FROM league_fixture f JOIN league_season s ON s.competition_id = f.competition_id AND s.season_year = f.season_year
+		JOIN competition c ON c.id = f.competition_id
+		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id WHERE f.id = ?;""", [series_id])
+
+
+## Every player line of a simulated series with nicknames (map order, best rating first).
+func series_lines(series_id: int) -> Array[Dictionary]:
+	return db.rows("""SELECT s.*, p.nickname FROM sim_player_map s JOIN player p ON p.id = s.player_id
+		WHERE s.league_fixture_id = ? ORDER BY s.map_number, s.organisation_id, s.rating DESC;""", [series_id])
+
+
+## A player's simulated maps, newest first, with the series, competition and opponent.
+func player_lines(player_id: String, limit: int = 30) -> Array[Dictionary]:
+	return db.rows("""SELECT s.*, f.id AS series_id, c.name AS competition_name,
+			CASE WHEN f.home_id = s.organisation_id THEN a.name ELSE h.name END AS opponent_name,
+			CASE WHEN f.home_id = s.organisation_id THEN f.away_id ELSE f.home_id END AS opponent_id,
+			m.home_rounds, m.away_rounds, m.map_id, (f.home_id = s.organisation_id) AS at_home
+		FROM sim_player_map s LEFT JOIN league_fixture f ON f.id = s.league_fixture_id
+		LEFT JOIN competition c ON c.id = f.competition_id
+		LEFT JOIN organisation h ON h.id = f.home_id LEFT JOIN organisation a ON a.id = f.away_id
+		LEFT JOIN sim_map m ON m.league_fixture_id = s.league_fixture_id AND m.map_number = s.map_number
+		WHERE s.player_id = ? ORDER BY s.day DESC, s.id DESC LIMIT ?;""", [player_id, limit])
+
+
+## News about a player or an organisation, newest first.
+func news_about(player_id: String, org_id: String, limit: int = 20) -> Array[Dictionary]:
+	return db.rows("""SELECT * FROM world_news WHERE (? <> '' AND player_id = ?) OR (? <> '' AND organisation_id = ?)
+		ORDER BY day DESC, id DESC LIMIT ?;""", [player_id, player_id, org_id, org_id, limit])
+
+
+## An organisation's final placings in every completed season, newest first.
+func organisation_records(org_id: String) -> Array[Dictionary]:
+	return db.rows("""SELECT r.*, c.name AS competition_name, c.kind FROM league_record r
+		JOIN competition c ON c.id = r.competition_id WHERE r.organisation_id = ?
+		ORDER BY r.season_year DESC, c.tier, c.name;""", [org_id])
+
+
+## A player's simulated record per map: maps, wins, average rating, kills and deaths.
+func player_map_stats(player_id: String) -> Array[Dictionary]:
+	return db.rows("""SELECT m.map_id, COUNT(*) AS maps, SUM(s.won) AS won, AVG(s.rating) AS rating,
+			SUM(s.kills) AS kills, SUM(s.deaths) AS deaths, SUM(s.rounds) AS rounds
+		FROM sim_player_map s JOIN sim_map m ON m.league_fixture_id = s.league_fixture_id AND m.map_number = s.map_number
+		WHERE s.player_id = ? GROUP BY m.map_id ORDER BY maps DESC;""", [player_id])
+
+
+## Players whose nickname or name matches [param text] (the compare picker): id, nickname, org.
+func find_players(text: String, limit: int = 12) -> Array[Dictionary]:
+	var pattern := "%" + text.strip_edges() + "%"
+	return db.rows("""SELECT p.id, p.nickname, o.short_name AS org FROM player p
+		LEFT JOIN contract c ON c.player_id = p.id AND c.status = 'active'
+		LEFT JOIN organisation o ON o.id = c.organisation_id
+		WHERE p.nickname LIKE ? OR (p.first_name || ' ' || p.last_name) LIKE ?
+		ORDER BY p.nickname LIMIT ?;""", [pattern, pattern, limit])

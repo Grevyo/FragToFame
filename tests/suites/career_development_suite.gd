@@ -63,10 +63,9 @@ func _check_career(app: Node) -> void:
 	opinions[&"aim"] = actual - 12 if actual > 20 else actual + 12
 	var prior := opinions[&"aim"]
 	repo.set_perceived(subject_id, opinions, 30, repo.current_day())
-	hub.call("show_page", &"players")
-	var page := hub.get("current_page") as CareerPlayersPage
-	page.show_player(subject_id)
-	var scout := _button(page.detail, "Scout player")
+	hub.call("navigate", &"player", {"player_id": subject_id})
+	var page := hub.get("current_page") as CareerPlayerPage
+	var scout := _button(page.scouting_card, "Scout player")
 	check(scout != null, "an AI player's profile offers scouting")
 	if scout == null:
 		return

@@ -102,6 +102,13 @@ static func _build_buttons(theme: Theme) -> void:
 	theme.set_color(&"font_color", &"SidebarButton", TEXT_MUTED)
 	theme.set_font_size(&"font_size", &"SidebarButton", 17)
 
+	# Clickable names in tables and cards (players, teams, competitions, matches).
+	theme.set_type_variation(&"NavLink", &"LinkButton")
+	theme.set_color(&"font_color", &"NavLink", ACCENT_ALT)
+	theme.set_color(&"font_hover_color", &"NavLink", ACCENT)
+	theme.set_color(&"font_pressed_color", &"NavLink", ACCENT)
+	theme.set_color(&"font_focus_color", &"NavLink", ACCENT_ALT)
+
 	# Prominent action button.
 	theme.set_type_variation(&"AccentButton", &"Button")
 	_apply_button_states(theme, &"AccentButton",

@@ -59,9 +59,61 @@ func run() -> void:
 	hub.call("show_page", &"teams")
 	await wait_frames(1)
 	var teams := hub.get("current_page") as CareerTeamsPage
-	check(teams.org_list.get_child_count() >= 40, "Teams lists every organisation (%d rows)" % teams.org_list.get_child_count())
+	check(teams.org_count >= 40, "Teams lists every organisation (%d)" % teams.org_count)
 	var top_org := session.repo.organisations()[0]["organisation"] as CareerRecords.OrganisationRecord
-	check(teams.selected_org_id == top_org.id and _text_of(teams.detail).contains(top_org.name), "the top organisation's roster is shown")
+	var team_link := _link(teams, top_org.name)
+	check(team_link != null, "every organisation name is a link")
+	if team_link != null:
+		team_link.pressed.emit()
+		await wait_frames(1)
+	var team_page := hub.get("current_page") as CareerTeamPage
+	check(hub.get("current_page_id") == &"team" and team_page != null and team_page.get_page_title() == top_org.name,
+		"clicking a team opens its team page")
+	var squad_tab := _button(team_page, "Squad")
+	if squad_tab != null:
+		squad_tab.pressed.emit()
+		await wait_frames(1)
+	var squad_page := hub.get("current_page") as CareerPage
+	var star := session.repo.roster(top_org.id)[0]["player"] as CareerRecords.PlayerRecord
+	check(squad_page.args.get("tab") == "squad" and _text_of(squad_page).contains("CONTRACT UNTIL")
+		and _link(squad_page, star.nickname) != null, "the Squad tab lists the whole squad with player links")
+	var star_link := _link(squad_page, star.nickname)
+	if star_link != null:
+		star_link.pressed.emit()
+		await wait_frames(1)
+	var player_page := hub.get("current_page") as CareerPlayerPage
+	check(player_page != null and player_page.player.id == star.id and _link(player_page, top_org.name) != null,
+		"a squad name opens the player's page, which links back to the team")
+	for tab: String in ["Stats", "Maps", "Career", "News"]:
+		var tab_button := _button(hub.get("current_page") as Node, tab)
+		if tab_button != null:
+			tab_button.pressed.emit()
+			await wait_frames(1)
+		check(str((hub.get("current_page") as CareerPage).args.get("tab")) == tab.to_lower(), "player tab %s opens" % tab)
+	var compare_button := _button(hub.get("current_page") as Node, "Compare…")
+	if compare_button != null:
+		compare_button.pressed.emit()
+		await wait_frames(1)
+	var compare := hub.get("current_page") as CareerComparePage
+	check(compare != null and compare.player_a.id == star.id, "Compare opens with the player on the left")
+	if compare != null:
+		var rival := session.repo.roster(top_org.id)[1]["player"] as CareerRecords.PlayerRecord
+		compare.search_edit.text = rival.nickname
+		compare.search()
+		await wait_frames(1)
+		var rival_link := _link(compare, rival.nickname, true)
+		check(rival_link != null, "the compare search finds a second player")
+		if rival_link != null:
+			rival_link.pressed.emit()
+			await wait_frames(1)
+		var compared := hub.get("current_page") as CareerComparePage
+		check(compared.player_b != null and compared.player_b.id == rival.id
+			and _text_of(compared).contains("Perceived attributes"), "two players are compared side by side")
+	check(bool(hub.call("go_back")) and hub.get("current_page_id") == &"compare", "Back returns to the previous page")
+	for _step: int in 8:
+		hub.call("go_back")
+	check(hub.get("current_page_id") == &"teams", "Back walks the history to the Teams index")
+	check(bool(hub.call("go_forward")) and hub.get("current_page_id") == &"team", "Forward goes forward again")
 	hub.call("show_page", &"players")
 	await wait_frames(1)
 	var players := hub.get("current_page") as CareerPlayersPage
@@ -157,6 +209,21 @@ func _restore(app: Node, original_saves: Variant) -> void:
 	_clean(TEST_ROOT)
 
 
+func _link(root: Node, text: String, prefix: bool = false) -> LinkButton:
+	for node: Node in root.find_children("*", "LinkButton", true, false):
+		var caption := (node as LinkButton).text
+		if caption == text or (prefix and caption.begins_with(text + "  ·")):
+			return node as LinkButton
+	return null
+
+
+func _button(root: Node, text: String) -> Button:
+	for node: Node in root.find_children("*", "Button", true, false):
+		if (node as Button).text == text:
+			return node as Button
+	return null
+
+
 func _text_of(node: Node) -> String:
 	if node == null:
 		return ""
@@ -165,6 +232,8 @@ func _text_of(node: Node) -> String:
 		parts.append((node as Label).text)
 	elif node is Button:
 		parts.append((node as Button).text)
+	elif node is LinkButton:
+		parts.append((node as LinkButton).text)
 	for child: Node in node.get_children():
 		parts.append(_text_of(child))
 	return " ".join(parts)

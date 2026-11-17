@@ -420,6 +420,20 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
   - **Benching:** a monthly check. Poor recent ratings can cost a starter their place to a
     better substitute, and a benched human can be recalled. A benched human's organisation is
     simulated without them.
+- [x] Manager-game hub layout (owner, 2026-11-17: layout in the style of football and esports
+      management games):
+  - **Top bar:** Back and Forward, the page title, the date, **Holiday** and **Continue** at the
+    top right. Holiday runs until the next inbox message (a headline), for 1 week to 6 months,
+    or to the end of the year. Your own match still stops it; a development checkbox simulates
+    it instead.
+  - **Sidebar headings:** Career (Home, Inbox, Calendar), Me (Profile, My Team), World
+    (Competitions, Teams, Players, News), Data (Statistics, Co-op).
+  - **Linked pages** with a history: Teams → a team (Overview, Squad, Matches, Finances,
+    History) → a player (Overview with scouting, Stats, Maps, Career, News) → Compare with
+    another player. Match reports show every map, the MVP, moments and each player's line.
+  - Every team, player and series name in tables, standings, brackets, news and the Calendar
+    is a link.
+  - Interviews are not built yet; a player's News tab shows the stories about them.
 - [x] Deep simulation (owner, 2026-11-17: "much much deeper"). Every series nobody plays goes
       round by round through `MatchEngine` (`CareerSeriesEngine`):
   - **Format and economy:** MR8 halves and overtime; pistol, eco, force and full buys from a
@@ -619,6 +633,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-17 | Hub layout: Continue and Holiday top right, sidebar headings, routed pages with Back/Forward, team, player, compare, match report and inbox pages, links everywhere. |
 | 2026-11-17 | M14: the round-by-round match engine for every simulated series: economy, duels, trades, clutches, day form, morale, traits, per-player simulated lines, opinion from form, and upset/star news. Save schema v12. |
 | 2026-11-17 | M13/M14: cups with brackets, promotion and relegation by tier swaps, fuller leagues, transfer offers, renewals, releases and benching for contracted humans, and a different start for every save. Save schema v11. |
 | 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |

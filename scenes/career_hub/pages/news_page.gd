@@ -24,7 +24,7 @@ func build_page() -> void:
 		button.pressed.connect(func() -> void: show_importance(importance))
 		filters.add_child(button)
 	list_card = UIFactory.card(self, "World news")
-	add_stories(list_card, career().repo.news(PAGE_SIZE, min_importance), "Nothing has happened yet. Move the calendar on.")
+	story_table(list_card, career().repo.news(PAGE_SIZE, min_importance), "Nothing has happened yet. Move the calendar on.")
 
 
 ## Rebuilds the page showing stories at or above [param importance].

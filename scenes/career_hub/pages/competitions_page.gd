@@ -1,5 +1,8 @@
 class_name CareerCompetitionsPage
 extends CareerPage
+## Leagues and cups: standings, brackets, top performers, records and the calendar of series.
+## Opens on {competition_id, year} when linked from a team or player; every team, player and
+## series links onwards.
 
 var _definitions: Array[CareerRecords.CompetitionRecord] = []
 var _choice: OptionButton
@@ -24,9 +27,13 @@ func build_page() -> void:
 	_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	selectors.add_child(_choice)
 	var initial_index := 0
+	var wanted := str(args.get("competition_id", ""))
 	for idx: int in _definitions.size():
 		_choice.add_item(_definitions[idx].name)
 		if _definitions[idx].kind == "league" and _definitions[initial_index].kind != "league":
+			initial_index = idx
+	for idx: int in _definitions.size():
+		if _definitions[idx].id == wanted:
 			initial_index = idx
 	_year_choice = OptionButton.new()
 	selectors.add_child(_year_choice)
@@ -49,6 +56,10 @@ func _select_competition(index: int) -> void:
 		if year != current_year:
 			_year_choice.add_item("Year %d" % year, year)
 	_year_choice.select(0)
+	if args.has("year") and competition.id == str(args.get("competition_id", "")):
+		for item: int in _year_choice.item_count:
+			if _year_choice.get_item_id(item) == int(args["year"]):
+				_year_choice.select(item)
 	_year_choice.visible = true
 	_show_season()
 
@@ -94,22 +105,22 @@ func _show_season() -> void:
 
 	var fixtures := repo.league_fixtures(competition.id, year)
 	var record := repo.league_record(competition.id, year)
-	var rows: Array[PackedStringArray] = []
+	var rows: Array[Array] = []
 	if record.is_empty():
 		var standings := CareerCompetitions.standings(repo.league_entrants(competition.id, year), fixtures)
 		var standings_card := UIFactory.card(_detail, "Standings")
 		standings_card.add_child(UIFactory.label("Prize pool %s, paid when the season ends." % CareerCatalog.format_money(
 			WorldSeasons.PRIZE_POOL.get(competition.tier, WorldSeasons.PRIZE_POOL[4])), &"MutedLabel", true))
 		for entry: Dictionary in standings:
-			rows.append(PackedStringArray([str(entry["name"]), str(entry["won"]), str(entry["lost"]),
-				"%+d" % int(entry["map_diff"])]))
-		UIFactory.table(standings_card, PackedStringArray(["Organisation", "Wins", "Losses", "Map diff"]), rows)
+			rows.append([cell_team(str(entry["organisation_id"]), str(entry["name"])), str(entry["won"]), str(entry["lost"]),
+				"%+d" % int(entry["map_diff"])])
+		link_table(standings_card, PackedStringArray(["Organisation", "Wins", "Losses", "Map diff"]), rows)
 	else:
 		var final_card := UIFactory.card(_detail, "Final standings · completed %s" % GameDate.format(int(record[0]["completed_day"])))
 		for entry: Dictionary in record:
-			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
-				str(entry["lost"]), "%+d" % int(entry["map_diff"]), CareerCatalog.format_money(int(entry["prize"]))]))
-		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Wins", "Losses", "Map diff", "Prize"]), rows)
+			rows.append([WorldSeasons.ordinal(int(entry["position"])), cell_team(str(entry["organisation_id"]), str(entry["name"])),
+				str(entry["won"]), str(entry["lost"]), "%+d" % int(entry["map_diff"]), CareerCatalog.format_money(int(entry["prize"]))])
+		link_table(final_card, PackedStringArray(["Pos", "Organisation", "Wins", "Losses", "Map diff", "Prize"]), rows)
 	_add_performers(repo, competition.id, year)
 	_add_history(repo, competition.id)
 	_add_fixture_rounds(fixtures, repo.current_day())
@@ -129,26 +140,28 @@ func _show_cup(repo: CareerRepository, competition: CareerRecords.CompetitionRec
 		&"MutedLabel", true))
 	var rounds := CareerCups.round_count(seeded.size())
 	for round_number: int in range(1, rounds + 1):
-		var rows: Array[PackedStringArray] = []
+		var rows: Array[Array] = []
 		for fixture: Dictionary in fixtures:
 			if int(fixture["round_number"]) != round_number:
 				continue
 			var score := "Awaiting result · %s" % GameDate.format(int(fixture["scheduled_day"])) if fixture["home_maps"] == null else (
 				"%d – %d" % [int(fixture["home_maps"]), int(fixture["away_maps"])])
-			rows.append(PackedStringArray([names.get(str(fixture["home_id"]), "?"), names.get(str(fixture["away_id"]), "?"), score]))
+			rows.append([cell_team(str(fixture["home_id"]), names.get(str(fixture["home_id"]), "?")),
+				cell_team(str(fixture["away_id"]), names.get(str(fixture["away_id"]), "?")),
+				cell_link(score, &"series", {"series_id": int(fixture["id"])})])
 		bracket_card.add_child(UIFactory.label(CareerCups.round_name(round_number, seeded.size()).to_upper(), &"SectionLabel"))
 		if rows.is_empty():
 			bracket_card.add_child(UIFactory.label("Drawn when the previous round is decided." if round_number > 1
 				else "Every side has a bye.", &"MutedLabel", true))
 		else:
-			UIFactory.table(bracket_card, PackedStringArray(["Home", "Away", "Series score"]), rows)
+			link_table(bracket_card, PackedStringArray(["Home", "Away", "Series score"]), rows)
 	if not record.is_empty():
 		var final_card := UIFactory.card(_detail, "Final placings · completed %s" % GameDate.format(int(record[0]["completed_day"])))
-		var rows: Array[PackedStringArray] = []
+		var rows: Array[Array] = []
 		for entry: Dictionary in record:
-			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
-				str(entry["lost"]), CareerCatalog.format_money(int(entry["prize"]))]))
-		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Series won", "Series lost", "Prize"]), rows)
+			rows.append([WorldSeasons.ordinal(int(entry["position"])), cell_team(str(entry["organisation_id"]), str(entry["name"])),
+				str(entry["won"]), str(entry["lost"]), CareerCatalog.format_money(int(entry["prize"]))])
+		link_table(final_card, PackedStringArray(["Pos", "Organisation", "Series won", "Series lost", "Prize"]), rows)
 	_add_performers(repo, competition.id, year)
 	_add_history(repo, competition.id)
 
@@ -159,11 +172,11 @@ func _add_performers(repo: CareerRepository, competition_id: String, year: int) 
 	if best.is_empty():
 		return
 	var card := UIFactory.card(_detail, "Top performers · simulated series")
-	var rows: Array[PackedStringArray] = []
+	var rows: Array[Array] = []
 	for entry: Dictionary in best:
-		rows.append(PackedStringArray([str(entry["nickname"]), str(entry["org"]) if entry["org"] != null else "", str(int(entry["maps"])),
-			"%d – %d" % [int(entry["kills"]), int(entry["deaths"])], "%.2f" % float(entry["rating"])]))
-	UIFactory.table(card, PackedStringArray(["Player", "Team", "Maps", "K – D", "Rating"]), rows)
+		rows.append([cell_player(str(entry["player_id"]), str(entry["nickname"])), str(entry["org"]) if entry["org"] != null else "",
+			str(int(entry["maps"])), "%d – %d" % [int(entry["kills"]), int(entry["deaths"])], "%.2f" % float(entry["rating"])])
+	link_table(card, PackedStringArray(["Player", "Team", "Maps", "K – D", "Rating"]), rows)
 
 
 ## Past podiums of a competition (season records).
@@ -209,12 +222,14 @@ func _add_fixture_rounds(fixtures: Array[Dictionary], today: int) -> void:
 		for child: Node in round_detail.get_children():
 			round_detail.remove_child(child)
 			child.queue_free()
-		var rows: Array[PackedStringArray] = []
+		var rows: Array[Array] = []
 		for fixture: Dictionary in by_round[selector.get_item_id(index)]:
 			var score := "Awaiting result" if fixture["home_maps"] == null else (
 				"%d – %d" % [int(fixture["home_maps"]), int(fixture["away_maps"])])
-			rows.append(PackedStringArray([str(fixture["home_name"]), str(fixture["away_name"]), score]))
-		UIFactory.table(round_detail, PackedStringArray(["Home", "Away", "Series score"]), rows)
+			rows.append([cell_team(str(fixture["home_id"]), str(fixture["home_name"])),
+				cell_team(str(fixture["away_id"]), str(fixture["away_name"])),
+				cell_link(score, &"series", {"series_id": int(fixture["id"])})])
+		link_table(round_detail, PackedStringArray(["Home", "Away", "Series score"]), rows)
 	selector.item_selected.connect(show_round)
 	selector.select(default_index if default_index >= 0 else selector.item_count - 1)
 	show_round.call(selector.selected)

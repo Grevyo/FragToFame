@@ -400,6 +400,22 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Hub layout and navigation)
+
+- [ ] Start or continue a career. The top bar shows Back / Forward, the page title, the date,
+      **Holiday** and **Continue ▸** at the top right; the sidebar groups pages under CAREER,
+      ME, WORLD and DATA.
+- [ ] Continue runs days and the line under the top bar says why it stopped.
+- [ ] Holiday → "Until the next inbox message" stops on a headline; "1 month" runs 30 days
+      unless your match is due; "Until the end of the year" lands on 31 December.
+- [ ] Teams → click a team → Squad → click a player → Stats, Maps, Career, News tabs →
+      Compare… → search a second player → the side-by-side table. Back walks all the way back.
+- [ ] A team's Matches tab → click a result → the match report (map scores, MVP, moments,
+      player lines). Player names there open their pages.
+- [ ] Names in Competitions standings, brackets, top performers, the Calendar and News are links.
+- [ ] Inbox lists your match, open offers, stories about you and the headlines. My Team shows
+      your organisation once signed, or a free-agent notice.
+
 ### Manual test checklist (Round-by-round simulation)
 
 - [ ] Start a **new** career and Continue through a few league weeks. Calendar → Recent results

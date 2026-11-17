@@ -169,6 +169,19 @@ func continue_career() -> Dictionary:
 	return outcome
 
 
+## Holiday ([method CareerCalendar.holiday]): a set number of days, 0 = until the next inbox
+## message, -1 = to the end of the year. Returns {days, reason, ok, simulated}.
+func holiday_career(days: int, simulate_matches: bool = false) -> Dictionary:
+	if not has_career():
+		return {"days": 0, "reason": "Open a career first.", "ok": false, "simulated": 0}
+	if has_unsaved_fixture_result():
+		return {"days": 0, "reason": "Save the completed match result before moving on.", "ok": false, "simulated": 0}
+	var outcome := CareerCalendar.holiday(career.repo, career.human_player_id, days, simulate_matches and OS.is_debug_build())
+	if bool(outcome["ok"]):
+		career_day_changed.emit()
+	return outcome
+
+
 ## Accepts a trial invitation (books the trial match) or a contract offer (signs). "" or why not.
 func accept_career_offer(offer_id: String) -> String:
 	if not has_career():

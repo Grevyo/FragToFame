@@ -106,7 +106,8 @@ func _test_career_hub() -> void:
 	var expected_titles: Dictionary[StringName, String] = {
 		&"home": "Home", &"profile": "Player Profile", &"teams": "Teams", &"players": "Players",
 		&"competitions": "Competitions", &"calendar": "Calendar", &"statistics": "Statistics",
-		&"coop": "Co-op (Dev)",
+		&"coop": "Co-op (Dev)", &"inbox": "Inbox", &"my_team": "My Team", &"news": "News", &"team": "Team",
+		&"player": "Player", &"compare": "Compare players", &"series": "Match report",
 	}
 	for page_id: StringName in expected_titles:
 		var ok: bool = hub.call("show_page", page_id)

@@ -351,6 +351,28 @@ func _test_world(app: Node) -> void:
 	await wait_frames(1)
 	check(page.status_label.text.contains(str(outcome["reason"])), "the page says why it stopped")
 
+	section("Top bar: Continue and Holiday")
+	var human_id := (app.get("career") as CareerSession).human_player_id
+	var top_day := repo.current_day()
+	var top := hub.call("continue_on") as Dictionary
+	check(repo.current_day() == top_day + int(top["days"]) and not (hub.get("status_label") as Label).text.is_empty(),
+		"the top-bar Continue moves the career on and says why it stopped")
+	var week_start := repo.current_day()
+	var week := hub.call("go_on_holiday", 7, false) as Dictionary
+	check(int(week["days"]) <= 7 and repo.current_day() == week_start + int(week["days"])
+		and (int(week["days"]) == 7 or repo.pending_fixture(human_id) != null),
+		"a one-week holiday runs seven days unless your match stops it (%s)" % week["reason"])
+	var inbox_start := repo.current_day()
+	var inbox := CareerCalendar.holiday(repo, human_id, 0, false)
+	var stopped_on := repo.news_on(repo.current_day(), WorldSimulation.HEADLINE)
+	check(int(inbox["days"]) > 0 and repo.current_day() - inbox_start <= CareerCalendar.HOLIDAY_INBOX_LIMIT
+		and (not stopped_on.is_empty() or str(inbox["reason"]).contains(CareerCalendar.MATCH_DAY)),
+		"a holiday until the next inbox message stops on a headline (%s)" % inbox["reason"])
+	var year_end := GameDate.make(GameDate.year_of(repo.current_day()) + 1, 1, 1) - 1
+	var to_year_end := CareerCalendar.holiday(repo, human_id, -1, false)
+	check(repo.current_day() == year_end or str(to_year_end["reason"]).contains(CareerCalendar.MATCH_DAY),
+		"a holiday to the end of the year lands on 31 December (%s)" % GameDate.format(repo.current_day()))
+
 
 func _clean(folder: String) -> void:
 	var dir := DirAccess.open(folder)

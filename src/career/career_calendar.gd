@@ -13,6 +13,8 @@ const BLOCKED_BY_FIXTURE: String = "You have a match scheduled. Play it before m
 const CONTINUE_LIMIT: int = 31
 const MATCH_DAY: String = "Match day: your scheduled match is today."
 const QUIET_MONTH: String = "A month passed with nothing that needs you."
+## A holiday "until the next inbox message" ends after this many days at the latest.
+const HOLIDAY_INBOX_LIMIT: int = 365
 
 
 ## Advances one day for the human [param player_id]. Refused while that player has an
@@ -66,6 +68,51 @@ static func continue_until_event(repo: CareerRepository, player_id: String, rng:
 		if not headlines.is_empty():
 			return {"days": days, "reason": str(headlines[0]["headline"]), "ok": true}
 	return {"days": days, "reason": QUIET_MONTH, "ok": true}
+
+
+## Holiday: runs days on its own. [param days] > 0 runs that many days; 0 runs until the next
+## inbox message (a headline); -1 runs to the end of the year. The player's own match stops it,
+## unless [param simulate_matches] (development) simulates the match instead. Returns
+## {days, reason, ok, simulated}.
+static func holiday(repo: CareerRepository, player_id: String, days: int, simulate_matches: bool,
+		rng: RandomNumberGenerator = null) -> Dictionary:
+	var dice := rng
+	if dice == null:
+		dice = RandomNumberGenerator.new()
+		dice.randomize()
+	var start := repo.current_day()
+	var target := start + days
+	if days == 0:
+		target = start + HOLIDAY_INBOX_LIMIT
+	elif days < 0:
+		target = GameDate.make(GameDate.year_of(start) + 1, 1, 1) - 1
+	var simulated := 0
+	while repo.current_day() < target:
+		var pending := repo.pending_fixture(player_id)
+		if pending != null and pending.scheduled_day <= repo.current_day():
+			if not simulate_matches:
+				return _holiday_end(repo, start, MATCH_DAY, simulated)
+			var outcome := CareerMatchSimulator.simulate_pending(repo, player_id, dice)
+			if not bool(outcome["ok"]):
+				return _holiday_end(repo, start, str(outcome["message"]), simulated)
+			simulated += int(outcome["maps"])
+			continue
+		var problem := advance_day(repo, player_id, dice)
+		if not problem.is_empty():
+			return _holiday_end(repo, start, problem, simulated)
+		if days == 0:
+			var headlines := repo.news_on(repo.current_day(), WorldSimulation.HEADLINE)
+			if not headlines.is_empty():
+				return _holiday_end(repo, start, str(headlines[0]["headline"]), simulated)
+	return _holiday_end(repo, start, "Back from holiday.", simulated)
+
+
+static func _holiday_end(repo: CareerRepository, start: int, reason: String, simulated: int) -> Dictionary:
+	var days := repo.current_day() - start
+	var text := "%d day%s · %s" % [days, "" if days == 1 else "s", reason]
+	if simulated > 0:
+		text += " (%d of your maps simulated)" % simulated
+	return {"days": days, "reason": text, "ok": days > 0 or simulated > 0, "simulated": simulated}
 
 
 ## Mean simulated ability of an organisation's five starters (perceived values for humans,

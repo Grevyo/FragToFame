@@ -108,10 +108,21 @@ avoid per-node colour overrides.
 
 ### Career Hub pages
 
-`career_hub.gd` holds a `PAGES` registry (id, title, script). Each page is a `CareerPage`
-(`VBoxContainer`) that builds itself in `build_page()`. Adding a section = add a script + a registry
-entry. The career pages get their world data through `App.career.repo`. Pages render a
-"no career open" card when no career is loaded.
+`career_hub.gd` holds a `PAGES` registry (id, label, sidebar group, script). Each page is a
+`CareerPage` (`VBoxContainer`) that builds itself in `build_page()`. Adding a section = add a
+script + a registry entry. The career pages get their world data through `App.career.repo`.
+Pages render a "no career open" card when no career is loaded.
+
+- **Routes:** a page is opened by route, `{page id, args}` (for example
+  `{"team", {"org_id": …, "tab": "squad"}}`). The hub keeps a history (Back/Forward, 60 entries)
+  and rebuilds the current route on `refresh()` after the date moves.
+- Entries with an empty group are reached through links only: `team`, `player`, `compare` and
+  `series`. Each must render with no args.
+- **Links:** `CareerPage.link`/`link_table`/`story_table` make clickable names (`NavLink`
+  `LinkButton`s) that call `go(page, args)`. The page finds the hub through the
+  `career_hub` group. Tabs (`add_tabs`) re-open the same page with `tab` merged into its args.
+- **Continue and Holiday** live in the top bar. Holiday is `CareerCalendar.holiday` via
+  `App.holiday_career`; like Continue it never plays the human's match.
 
 ### Networking (Milestone 2 proof)
 
@@ -773,6 +784,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
 | 2026-11-17 | Cup series reuse `league_fixture`; tiers move only by swaps; each save varies its start | One series pipeline for leagues and cups (simulation, playable series, prizes). Swaps keep every tier the same size, so finances and competitions stay balanced while the world changes. Starting variation stays within authored ranges |
 | 2026-11-17 | Simulated series are played round by round by a pure engine on the career layer; simulated player lines are stored apart from recorded statistics | Results come from people and moments (form, morale, traits, economy, clutches), not one strength roll, so the world feels alive and less predetermined. Recorded stats stay a record of played matches only. A simulated year takes a few seconds |
+| 2026-11-17 | The Career Hub navigates by routes with a history; pages link to each other | Manager games are browsed by clicking through teams, squads, players and matches. Routes keep pages independent (each builds from its args), Back works everywhere, and new pages only add a registry entry |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

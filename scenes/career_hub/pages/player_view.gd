@@ -49,6 +49,14 @@ static func build(parent: Control, repo: CareerRepository, player_id: String, st
 	if recorded_matches > 0:
 		standing_rows.append(PackedStringArray(["F2F performance rating", "%.2f" % MatchStatistics.rating(counts)]))
 	UIFactory.key_value_grid(standing, standing_rows)
+	var honour_list := repo.honours(player.id)
+	if not honour_list.is_empty():
+		standing.add_child(HSeparator.new())
+		standing.add_child(UIFactory.label("HONOURS", &"SectionLabel"))
+		for honour: Dictionary in honour_list:
+			standing.add_child(UIFactory.label("%s · %s %s · %s" % [WorldSeasons.ordinal(int(honour["position"])),
+				honour["competition_name"], GameDate.format_year(GameDate.make(int(honour["season_year"]), 1, 1)),
+				honour["org_name"]], &"", true))
 	var trait_list := repo.traits(player.id)
 	if not trait_list.is_empty():
 		standing.add_child(HSeparator.new())

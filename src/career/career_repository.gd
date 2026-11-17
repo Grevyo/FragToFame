@@ -896,6 +896,81 @@ func set_offer_salary(offer_id: String, salary: int) -> bool:
 		[maxi(salary, 0), offer_id])
 
 
+# --- Season records, honours and human spending ------------------------------------------------
+
+## League seasons whose every series is scored and that have no final record yet:
+## competition_id, season_year, name, tier.
+func seasons_to_close() -> Array[Dictionary]:
+	return db.rows("""SELECT s.competition_id, s.season_year, c.name, c.tier FROM league_season s
+		JOIN competition c ON c.id = s.competition_id
+		WHERE EXISTS (SELECT 1 FROM league_fixture f WHERE f.competition_id = s.competition_id AND f.season_year = s.season_year)
+		AND NOT EXISTS (SELECT 1 FROM league_fixture f WHERE f.competition_id = s.competition_id
+			AND f.season_year = s.season_year AND f.home_maps IS NULL)
+		AND NOT EXISTS (SELECT 1 FROM league_record r WHERE r.competition_id = s.competition_id
+			AND r.season_year = s.season_year)
+		ORDER BY c.tier, s.competition_id, s.season_year;""")
+
+
+func insert_league_record(competition_id: String, year: int, position: int, row: Dictionary, prize: int, day: int) -> bool:
+	return db.execute("INSERT INTO league_record VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+		[competition_id, year, position, row["organisation_id"], row["won"], row["lost"], row["map_diff"], prize, day])
+
+
+## A finished season's final table (position order) with names, or [] when it is still running.
+func league_record(competition_id: String, year: int) -> Array[Dictionary]:
+	return db.rows("""SELECT r.*, o.name FROM league_record r JOIN organisation o ON o.id = r.organisation_id
+		WHERE r.competition_id = ? AND r.season_year = ? ORDER BY r.position;""", [competition_id, year])
+
+
+## Champions and runners-up of a competition, newest season first.
+func league_podiums(competition_id: String) -> Array[Dictionary]:
+	return db.rows("""SELECT r.season_year, r.position, r.prize, o.name FROM league_record r
+		JOIN organisation o ON o.id = r.organisation_id
+		WHERE r.competition_id = ? AND r.position <= 3 ORDER BY r.season_year DESC, r.position;""", [competition_id])
+
+
+func add_honour(player_id: String, competition_id: String, year: int, position: int, org_id: String) -> bool:
+	return db.execute("INSERT OR IGNORE INTO player_honour VALUES (?, ?, ?, ?, ?);",
+		[player_id, competition_id, year, position, org_id])
+
+
+## A player's honours, newest first, with competition and organisation names.
+func honours(player_id: String) -> Array[Dictionary]:
+	return db.rows("""SELECT h.*, c.name AS competition_name, o.name AS org_name FROM player_honour h
+		JOIN competition c ON c.id = h.competition_id JOIN organisation o ON o.id = h.organisation_id
+		WHERE h.player_id = ? ORDER BY h.season_year DESC, h.position;""", [player_id])
+
+
+func services(player_id: String) -> Array[String]:
+	var list: Array[String] = []
+	for found: Dictionary in db.rows("SELECT service_id FROM human_service WHERE player_id = ? ORDER BY service_id;", [player_id]):
+		list.append(str(found["service_id"]))
+	return list
+
+
+## Every active service of every human: player_id, service_id.
+func all_services() -> Array[Dictionary]:
+	return db.rows("SELECT player_id, service_id FROM human_service ORDER BY player_id, service_id;")
+
+
+func add_service(player_id: String, service_id: String, day: int) -> bool:
+	return db.execute("INSERT INTO human_service VALUES (?, ?, ?);", [player_id, service_id, day])
+
+
+func remove_service(player_id: String, service_id: String) -> bool:
+	return db.execute("DELETE FROM human_service WHERE player_id = ? AND service_id = ?;", [player_id, service_id])
+
+
+func add_purchase(player_id: String, item_id: String, day: int) -> bool:
+	return db.execute("INSERT INTO human_purchase (player_id, item_id, day) VALUES (?, ?, ?);", [player_id, item_id, day])
+
+
+## Day of the player's latest purchase of [param item_id], or -1.
+func last_purchase(player_id: String, item_id: String) -> int:
+	return int(db.scalar("SELECT COALESCE(MAX(day), -1) FROM human_purchase WHERE player_id = ? AND item_id = ?;",
+		[player_id, item_id], -1))
+
+
 # --- Helpers ----------------------------------------------------------------------------------
 
 func _is_human(player_id: String) -> bool:

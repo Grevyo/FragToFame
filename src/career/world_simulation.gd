@@ -8,6 +8,7 @@ extends RefCounted
 ##              organisations short of starters sign free agents; weekly (busiest in the
 ##              January and July windows, sooner when in poor form) they buy or sign upgrades;
 ##              season openings make news;
+##              finished league seasons close with prizes and records ([WorldSeasons]);
 ##              organisations may invite an unsigned human to a trial ([CareerOffers]); a
 ##              contracted human's due league series is booked to play ([CareerLeagueMatches]).
 ## Each month:  AI players develop or decline, the world's opinion catches up with the truth,
@@ -64,7 +65,7 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 	if GameDate.day_of_year(day) == 0:
 		if not _new_year(repo, day, rng) or not CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(day)):
 			return false
-	if not _season_openings(repo, day):
+	if not _season_openings(repo, day) or not WorldSeasons.close_finished(repo, day, rng):
 		return false
 	if GameDate.month_and_day(day).y == 1 and day > 0:
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \

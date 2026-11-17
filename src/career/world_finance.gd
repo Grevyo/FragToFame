@@ -5,7 +5,8 @@ extends RefCounted
 ## transfer fees between organisations. Every movement is written to the ledger. Organisations
 ## in debt cannot buy and sell more readily ([WorldMarket]).
 ##
-## Humans are paid their contract salary monthly into their own balance.
+## Humans are paid their contract salary monthly into their own balance, then their services
+## ([CareerSpending]) are charged.
 
 ## Opening balance by tier (scaled by reputation) for organisations without finances yet.
 const TIER_FUNDS: Dictionary[int, int] = {1: 900000, 2: 300000, 3: 80000, 4: 12000}
@@ -78,7 +79,7 @@ static func monthly(repo: CareerRepository, day: int) -> bool:
 		var salary := int(paid["monthly_salary"])
 		if salary > 0 and not repo.add_player_money(str(paid["player_id"]), salary, day, "salary", "Salary · %s" % month):
 			return false
-	return true
+	return CareerSpending.monthly(repo, day)
 
 
 static func award_series(repo: CareerRepository, winner_id: String, tier: int, day: int) -> bool:

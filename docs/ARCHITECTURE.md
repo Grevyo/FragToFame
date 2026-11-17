@@ -491,6 +491,18 @@ sit beside small appliers, so the maths is tested without a database:
   `TIER_INCOME × (0.75 + 0.5 × reputation)`, wages out, and humans paid. A series win pays
   `SERIES_PRIZE` by tier. Transfer fee = `(rating − 40)² × 60 × age factor × contract share`.
   Every signing uses `affordable_salary`.
+- **Season endings (`WorldSeasons.close_finished`, daily):** a season with every series scored
+  and no `league_record` is closed once:
+  - the final table is stored (`league_record`);
+  - prizes are paid through the ledger;
+  - podium and last-place reputation changes apply;
+  - podium squads gain `player_honour` rows and reputation;
+  - humans in a paid squad get a `bonus`;
+  - a human's finish is a headline.
+- **Human spending (`CareerSpending`):** `human_service` holds monthly services, charged in
+  `WorldFinance.monthly` and ended when unaffordable. `human_purchase` holds one-offs with
+  cooldowns. Effects touch perceived values, confidence and reputation only, never FPS
+  mechanics.
 - **Yearly:** retirements by age and level, then an original rookie class (`WorldRookies`, name
   pools shared with the generator) of at least 10, enough to replace the retired. League seasons
   for the new year are published after the turnover.

@@ -400,6 +400,21 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Season endings and spending)
+
+- [ ] Use Continue (and Simulate match if you are signed) until a league's last round has
+      been played. News reports the champions. Your own organisation's finish is a headline.
+- [ ] Competitions → that league shows **Final standings** with a Prize column and a **Season
+      records** table with champion, runner-up and third. Pick a champion's player on Players:
+      their profile lists the honour.
+- [ ] Win an amateur match: Profile → **Your money** rises by $150.
+- [ ] Hire a **Personal coach**: the first month is charged, and training now raises the chosen
+      attribute by 2. Hire a **PR agent**: on the 1st your reputation rises by 1 and both
+      fees are charged.
+- [ ] Book a **Bootcamp**: four attributes rise by 1. The button then shows when the next one
+      is available.
+- [ ] Let your balance run out: on the 1st the services end with a headline.
+
 ### Manual test checklist (Simulate match — development option)
 
 - [ ] With a match pending (amateur, trial or league), Home → "Your next match" and the Calendar

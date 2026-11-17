@@ -36,8 +36,10 @@ static func train(repo: CareerRepository, player_id: String, ability: StringName
 			warning.append("This perceived attribute is already at its maximum.")
 			return false
 		var day := repo.current_day()
-		return repo.add_development_activity(player_id, TRAINING, day, player_id, String(ability), 1) \
-			and repo.set_perceived(player_id, {ability: before + 1}, repo.perceived_confidence(player_id), day))
+		var gain := CareerSpending.COACH_TRAINING_GAIN if CareerSpending.has_service(repo, player_id, "coach") else 1
+		gain = mini(gain, 100 - before)
+		return repo.add_development_activity(player_id, TRAINING, day, player_id, String(ability), gain) \
+			and repo.set_perceived(player_id, {ability: before + gain}, repo.perceived_confidence(player_id), day))
 	if saved:
 		return ""
 	return warning[0] if not warning.is_empty() else "Could not record training."
@@ -92,6 +94,8 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	var next_elo := clampi(prior_elo + roundi(ELO_K * (float(won) - expected)), 100, 3500)
 
 	var reputation_change := 1 if won else 0
+	if won and not repo.add_player_money(id, CareerSpending.AMATEUR_WIN_PRIZE, day, "prize", "Amateur match win"):
+		return false
 	if counts.is_empty():
 		return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
 			and repo.set_reputation(id, repo.reputation(id) + reputation_change, day)

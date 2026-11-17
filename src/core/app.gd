@@ -205,6 +205,19 @@ func simulate_career_fixture() -> Dictionary:
 	return outcome
 
 
+## Spending the human's own money ([CareerSpending]). Each returns "" or why not.
+func hire_career_service(service_id: String) -> String:
+	return CareerSpending.hire(career.repo, career.human_player_id, service_id) if has_career() else "Open a career first."
+
+
+func cancel_career_service(service_id: String) -> String:
+	return CareerSpending.cancel(career.repo, career.human_player_id, service_id) if has_career() else "Open a career first."
+
+
+func buy_career_bootcamp() -> String:
+	return CareerSpending.buy_bootcamp(career.repo, career.human_player_id) if has_career() else "Open a career first."
+
+
 func schedule_career_fixture(map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> String:
 	if not has_career():
 		return "Open a career first."

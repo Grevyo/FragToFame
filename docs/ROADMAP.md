@@ -350,7 +350,8 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
       unplayed match blocks the day (calendar conflict).
 - [x] Playable league series for the player's own organisation (M14 path to pro), map by map.
 - [ ] Map selection and veto, configurable MR length and overtime per competition.
-- [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
+- [x] Season records: final tables, prize money and honours (M14).
+- [ ] Add cup and qualifier brackets, promotion and relegation and the F2F Universal Ladder.
 
 ## Milestone 14 — World progression, transfers, rookies, retirement 🔶
 
@@ -417,7 +418,24 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
   tight. Organisations in debt renew less and sell more readily.
 - [x] Human salary paid monthly into their own balance. Contract talks: ask once for about 20%
       more; the organisation may refuse, and the offer stays open.
-- [ ] Season prize pools and standings rewards, and spending human money (with season records).
+- [x] Season endings (`WorldSeasons`): when every series is scored, the final table becomes
+      the season record.
+  - **Prize pool by tier:** $1m / $300k / $80k / $15k. The top four get 35 / 20 / 13 / 9%, and
+    the rest is shared evenly by the other places.
+  - **Reputation:** +5 / +3 / +1 for the podium, −3 for last.
+  - **Honours:** every player in a podium squad gains an honour and reputation. A human in the
+    squad gets a bonus of 20% of the prize split across the squad.
+  - **Where it shows:** Competitions shows final standings with prizes and the season records
+    (podiums); player pages list honours.
+- [x] Spending the human's own money (`CareerSpending`), with income from salary, season
+      bonuses and amateur wins ($150 each). Effects stay on the career layer only:
+  - personal coach ($600 a month): training gives +2;
+  - PR agent ($400 a month): reputation +1 a month below 70;
+  - bootcamp ($2,500, every 180 days): four teamwork-side perceived attributes +1 and more
+    confidence.
+
+  Services you cannot pay end, with a headline.
+- [ ] Cup and qualifier prize money (with cups); promotion and relegation from final tables.
 
 ## Milestone 16 — Official content creation 🔶
 
@@ -548,4 +566,5 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

@@ -16,9 +16,12 @@ extends RefCounted
 ##   career_offer       trial invitations and contract offers to human players
 ##   league_series_map  which career fixture plays which map of a human organisation's series
 ##   organisation_finance / player_finance  current balances; finance_ledger  every movement
+##   league_record      final table of every finished league season (with prize money)
+##   player_honour      top-three finishes of the players in those squads
+##   human_service / human_purchase  what a human spends their own money on
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 9
+const CURRENT_VERSION: int = 10
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -295,6 +298,61 @@ const MIGRATIONS: Array[PackedStringArray] = [
 		"CREATE INDEX finance_ledger_org ON finance_ledger(organisation_id, day DESC);",
 		"CREATE INDEX finance_ledger_player ON finance_ledger(player_id, day DESC);",
 		"ALTER TABLE career_offer ADD COLUMN negotiated INTEGER NOT NULL DEFAULT 0 CHECK (negotiated IN (0, 1));",
+	],
+	# v10 — season records, honours, prize money and human spending. The ledger is rebuilt to
+	# allow bonus and expense entries (SQLite cannot alter a CHECK constraint).
+	[
+		"""CREATE TABLE finance_ledger_v10 (
+			id INTEGER PRIMARY KEY,
+			day INTEGER NOT NULL,
+			organisation_id TEXT REFERENCES organisation(id),
+			player_id TEXT REFERENCES player(id),
+			kind TEXT NOT NULL CHECK (kind IN ('opening', 'income', 'wages', 'prize', 'fee_paid', 'fee_received',
+				'salary', 'bonus', 'expense')),
+			amount INTEGER NOT NULL,
+			note TEXT NOT NULL DEFAULT '',
+			CHECK ((organisation_id IS NULL) <> (player_id IS NULL))
+		);""",
+		"INSERT INTO finance_ledger_v10 SELECT id, day, organisation_id, player_id, kind, amount, note FROM finance_ledger;",
+		"DROP TABLE finance_ledger;",
+		"ALTER TABLE finance_ledger_v10 RENAME TO finance_ledger;",
+		"CREATE INDEX finance_ledger_org ON finance_ledger(organisation_id, day DESC);",
+		"CREATE INDEX finance_ledger_player ON finance_ledger(player_id, day DESC);",
+		"""CREATE TABLE league_record (
+			competition_id TEXT NOT NULL,
+			season_year INTEGER NOT NULL,
+			position INTEGER NOT NULL CHECK (position >= 1),
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			won INTEGER NOT NULL,
+			lost INTEGER NOT NULL,
+			map_diff INTEGER NOT NULL,
+			prize INTEGER NOT NULL CHECK (prize >= 0),
+			completed_day INTEGER NOT NULL,
+			PRIMARY KEY (competition_id, season_year, position),
+			FOREIGN KEY (competition_id, season_year) REFERENCES league_season(competition_id, season_year)
+		) WITHOUT ROWID;""",
+		"CREATE UNIQUE INDEX league_record_once ON league_record(competition_id, season_year, organisation_id);",
+		"""CREATE TABLE player_honour (
+			player_id TEXT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+			competition_id TEXT NOT NULL,
+			season_year INTEGER NOT NULL,
+			position INTEGER NOT NULL CHECK (position BETWEEN 1 AND 3),
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			PRIMARY KEY (player_id, competition_id, season_year)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE human_service (
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			service_id TEXT NOT NULL,
+			started_day INTEGER NOT NULL,
+			PRIMARY KEY (player_id, service_id)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE human_purchase (
+			id INTEGER PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			item_id TEXT NOT NULL,
+			day INTEGER NOT NULL
+		);""",
+		"CREATE INDEX human_purchase_by_player ON human_purchase(player_id, item_id, day DESC);",
 	],
 ]
 

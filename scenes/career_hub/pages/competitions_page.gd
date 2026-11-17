@@ -88,14 +88,45 @@ func _show_season() -> void:
 		return
 
 	var fixtures := repo.league_fixtures(competition.id, year)
-	var standings := CareerCompetitions.standings(repo.league_entrants(competition.id, year), fixtures)
-	var standings_card := UIFactory.card(_detail, "Standings")
+	var record := repo.league_record(competition.id, year)
 	var rows: Array[PackedStringArray] = []
-	for entry: Dictionary in standings:
-		rows.append(PackedStringArray([str(entry["name"]), str(entry["won"]), str(entry["lost"]),
-			"%+d" % int(entry["map_diff"])]))
-	UIFactory.table(standings_card, PackedStringArray(["Organisation", "Wins", "Losses", "Map diff"]), rows)
+	if record.is_empty():
+		var standings := CareerCompetitions.standings(repo.league_entrants(competition.id, year), fixtures)
+		var standings_card := UIFactory.card(_detail, "Standings")
+		standings_card.add_child(UIFactory.label("Prize pool %s, paid when the season ends." % CareerCatalog.format_money(
+			WorldSeasons.PRIZE_POOL.get(competition.tier, WorldSeasons.PRIZE_POOL[4])), &"MutedLabel", true))
+		for entry: Dictionary in standings:
+			rows.append(PackedStringArray([str(entry["name"]), str(entry["won"]), str(entry["lost"]),
+				"%+d" % int(entry["map_diff"])]))
+		UIFactory.table(standings_card, PackedStringArray(["Organisation", "Wins", "Losses", "Map diff"]), rows)
+	else:
+		var final_card := UIFactory.card(_detail, "Final standings · completed %s" % GameDate.format(int(record[0]["completed_day"])))
+		for entry: Dictionary in record:
+			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
+				str(entry["lost"]), "%+d" % int(entry["map_diff"]), CareerCatalog.format_money(int(entry["prize"]))]))
+		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Wins", "Losses", "Map diff", "Prize"]), rows)
+	_add_history(repo, competition.id)
 	_add_fixture_rounds(fixtures, repo.current_day())
+
+
+## Past podiums of a competition (season records).
+func _add_history(repo: CareerRepository, competition_id: String) -> void:
+	var podiums := repo.league_podiums(competition_id)
+	if podiums.is_empty():
+		return
+	var card := UIFactory.card(_detail, "Season records")
+	var by_year: Dictionary[int, PackedStringArray] = {}
+	var years: Array[int] = []
+	for entry: Dictionary in podiums:
+		var year := int(entry["season_year"])
+		if not by_year.has(year):
+			by_year[year] = PackedStringArray([GameDate.format_year(GameDate.make(year, 1, 1)), "", "", ""])
+			years.append(year)
+		by_year[year][int(entry["position"])] = str(entry["name"])
+	var rows: Array[PackedStringArray] = []
+	for year: int in years:
+		rows.append(by_year[year])
+	UIFactory.table(card, PackedStringArray(["Season", "Champion", "Runner-up", "Third"]), rows)
 
 
 func _add_fixture_rounds(fixtures: Array[Dictionary], today: int) -> void:

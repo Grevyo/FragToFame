@@ -22,7 +22,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
 | 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
-| 14 | World progression, transfers, rookies, retirement | 12, 13 | ⬜ |
+| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world; human path to pro next |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | 🔶 first map; awaiting manual test |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
@@ -348,9 +348,46 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
       (`SeriesSimulator`, `CareerCalendar`), atomically with the date and new seasons. The
       Calendar page advances the day and shows the week's series and recent results. A player's
       unplayed match blocks the day (calendar conflict).
-- [ ] Playable league series for the player's own organisation (needs human contracts, M14):
+- [ ] Playable league series for the player's own organisation (needs human contracts, M14 human path):
       map selection, configurable BO1, BO3 and BO5 series, MR length and overtime.
 - [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
+
+## Milestone 14 — World progression, transfers, rookies, retirement 🔶
+
+Owner decisions (2026-11-16): the player's own matches are always played, and only played games
+move their ELO and reputation (no quick-sim). The calendar has **Next day** and an FM-style
+**Continue** that runs days until something needs the player. Build the changing world first,
+then the human path to pro. LIGA-style career sims are a mechanics reference only; no names or
+content are copied.
+
+First slice — the living world (`WorldSimulation`, run for every day by `CareerCalendar`):
+
+- [x] Form: simulated series results move each organisation's form (−100..100), which adds up to
+      ±3 strength points in later simulated series.
+- [x] Reputation: Elo-style changes on the 0–100 scale from simulated series, weighted by
+      competition tier; AI starters share half. Monthly drift back towards the tier's typical
+      range; free agents fade; signed players converge on their organisation.
+- [x] Development: monthly growth towards hidden potential while young (fast to 20, slower to 28),
+      decline of mechanical abilities from 30 and of experience abilities from 33. Overall history
+      is recorded. Perceived values drift towards the truth; contracted players gain scouting
+      confidence up to their tier's cap.
+- [x] Market: expiring contracts are renewed or released (age, role and level decide). Organisations
+      short of five starters promote a substitute or sign the best fitting free agent (perceived
+      rating, role fit, region). Salaries follow tier and rating.
+- [x] New year: age-driven retirements, and an original rookie class (16–18, raw, high potential)
+      that replaces them as free agents.
+- [x] News log with importance (minor, notable, headline); News page, Calendar news card, Home
+      "Latest news" and organisation form on Teams.
+- [x] Continue stops on the player's match day, any headline (their contract, the new year, their
+      league starting) or after 31 days.
+
+Next — the human path to pro:
+
+- [ ] Amateur matchmaking queue raising visibility; trials and contract offers driven by
+      reputation and recent ratings (offers become headlines, so Continue stops on them).
+- [ ] Accepting an offer signs the human; their organisation's league series become playable
+      (BO1/3/5, MR length, overtime, map selection) and feed form and reputation.
+- [ ] AI transfers between organisations (poaching and upgrades), not only free-agent signings.
 
 ## Milestone 16 — Official content creation 🔶
 
@@ -475,4 +512,5 @@ Planned scope:
 | 2026-11-15 | M16 first slice: map creator tools (multi-select, clipboard, prefabs, gizmos, snapping, measuring, top view, 54-piece catalogue, materials, lighting, autosave, layers), AI support (navmesh analysis, timings, areas, anchors, hints, tactic compatibility) and the first official map, Kilnmarket. Godot 4.7.2 validation passed 1203 checks. Manual editor and map walkthrough remains open. |
 | 2026-11-15 | FPS Sandbox map select, a Controls screen (remapping, up to four bindings per action, saved) and sandbox noclip (V). Owner request, outside the milestone list. |
 | 2026-11-16 | Weapons, Coats and Magnets (owner request): ten modelled weapons in first person with inspection, Coat infrastructure for the simplified kits (no Coats shipped), 26 Magnets on five slots per weapon, Armoury screen, saved customisation. |
+| 2026-11-16 | M14 first slice, the living world: daily form, reputation and market, monthly development and opinion drift, yearly retirements and rookies, the news log, and Continue. Save schema v7. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

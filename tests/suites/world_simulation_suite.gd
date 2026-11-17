@@ -1,0 +1,259 @@
+extends TestSuite
+## The living world: development, opinion drift, retirements, rookies, the market, form,
+## reputation, the news log and FM-style Continue.
+
+const TEST_ROOT: String = "user://tests/world_simulation"
+const PROFILE: Dictionary = {"first_name": "Rowan", "last_name": "Tide", "nickname": "Fathom",
+	"nation_id": "ie", "preferred_role": &"rifler", "difficulty": &"standard", "age": 19}
+
+
+func suite_name() -> String:
+	return "Living world simulation (Milestone 14)"
+
+
+func run() -> void:
+	_test_development_rules()
+	_test_market_rules()
+	_test_form_and_reputation_rules()
+	var app := tree.root.get_node("App")
+	var original := app.get("career_saves") as CareerSaves
+	_clean(ProjectSettings.globalize_path(TEST_ROOT))
+	app.set("career_saves", CareerSaves.new(TEST_ROOT))
+	await _test_world(app)
+	app.call("close_career")
+	app.set("career_saves", original)
+	app.call("go_to", &"main_menu")
+	await wait_frames(3)
+	_clean(ProjectSettings.globalize_path(TEST_ROOT))
+
+
+func _truth(value: int, potential: int) -> Dictionary:
+	var truth: Dictionary = {}
+	for ability: StringName in CareerCatalog.ABILITIES:
+		truth[ability] = value
+	truth[CareerCatalog.POTENTIAL] = potential
+	return truth
+
+
+## Average overall after [param months] of development from a flat start.
+func _grow(value: int, potential: int, age: int, months: int, rng: RandomNumberGenerator) -> float:
+	var total := 0.0
+	for sample: int in 40:
+		var truth := _truth(value, potential)
+		for month: int in months:
+			truth.merge(WorldDevelopment.develop(truth, age, &"rifler", rng), true)
+		total += WorldDevelopment.overall(truth)
+	return total / 40.0
+
+
+func _test_development_rules() -> void:
+	section("Development and decline")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14
+	check(WorldDevelopment.overall(_truth(60, 90)) == 60, "overall ignores the hidden potential")
+	var young := _grow(50, 75, 18, 12, rng)
+	check(young > 55.0 and young < 70.0, "an 18-year-old with room to grow gains several points a year (%.1f)" % young)
+	var capped := _grow(70, 70, 19, 12, rng)
+	check(capped <= 70.5, "nobody grows past their potential (%.1f)" % capped)
+	var prime := _grow(70, 74, 25, 12, rng)
+	check(prime >= 70.0 and prime < young - 50.0 + 70.0, "a 25-year-old grows more slowly (%.1f)" % prime)
+	var veteran := _grow(75, 75, 33, 12, rng)
+	check(veteran < 74.0, "a 33-year-old declines (%.1f)" % veteran)
+	var veteran_truth := _truth(75, 75)
+	for month: int in 24:
+		veteran_truth.merge(WorldDevelopment.develop(veteran_truth, 34, &"rifler", rng), true)
+	check(int(veteran_truth[&"reaction"]) < int(veteran_truth[&"game_sense"]),
+		"age takes reaction before game sense (%d vs %d)" % [veteran_truth[&"reaction"], veteran_truth[&"game_sense"]])
+
+	var seen := _truth(40, 0)
+	seen.erase(CareerCatalog.POTENTIAL)
+	var truth := _truth(60, 70)
+	for month: int in 60:
+		seen.merge(WorldDevelopment.drift(seen, truth, 50, rng), true)
+	check(WorldDevelopment.overall(seen) == 60, "the world's opinion catches up with the truth over time")
+	check(WorldDevelopment.drift(truth.duplicate(), truth, 90, rng).is_empty(), "an accurate opinion does not move")
+
+	check(WorldDevelopment.retirement_chance(24, 70, true) == 0.0, "young professionals do not retire")
+	check(WorldDevelopment.retirement_chance(33, 70, true) > WorldDevelopment.retirement_chance(30, 70, true),
+		"retirement gets likelier with age")
+	check(WorldDevelopment.retirement_chance(38, 80, true) >= 0.9, "almost everyone stops by 37")
+	check(WorldDevelopment.retirement_chance(27, 40, false) > WorldDevelopment.retirement_chance(27, 40, true),
+		"unsigned players who are not good enough give up sooner")
+
+	var rookie := WorldRookies.roll_abilities(rng, &"sniper")
+	var rookie_overall := WorldDevelopment.overall(rookie)
+	check(rookie_overall > 25 and rookie_overall < 65 and int(rookie[CareerCatalog.POTENTIAL]) > rookie_overall,
+		"a rookie is raw with room to grow (%d → %d)" % [rookie_overall, rookie[CareerCatalog.POTENTIAL]])
+
+
+func _test_market_rules() -> void:
+	section("Market decisions")
+	check(WorldMarket.renewal_chance(24, 80, 1, false) > WorldMarket.renewal_chance(24, 80, 1, true),
+		"starters are kept more often than substitutes")
+	check(WorldMarket.renewal_chance(34, 80, 1, false) < WorldMarket.renewal_chance(26, 80, 1, false),
+		"veterans are let go more often")
+	check(WorldMarket.renewal_chance(25, 60, 1, false) < WorldMarket.renewal_chance(25, 78, 1, false),
+		"a player well below the tier's level is rarely kept")
+	check(WorldMarket.salary_for(1, 85) > WorldMarket.salary_for(1, 70) and WorldMarket.salary_for(1, 70) > WorldMarket.salary_for(3, 70),
+		"salaries rise with rating and tier")
+	check(WorldMarket.needed_role([&"igl", &"sniper"]) == &"entry", "an organisation looks for the first missing role")
+	var pool: Array[Dictionary] = [
+		{"rating": 70, "preferred_role": "rifler", "region_id": "na"},
+		{"rating": 68, "preferred_role": "sniper", "region_id": "eu_west"},
+	]
+	check(WorldMarket.best_candidate(pool, &"sniper", "eu_west") == 1, "role fit and region outweigh a small rating gap")
+	check(WorldMarket.best_candidate(pool, &"igl", "apac") == 0, "otherwise the best perceived player is chosen")
+	check(WorldMarket.best_candidate([] as Array[Dictionary], &"igl", "na") == -1, "an empty pool signs nobody")
+
+
+func _test_form_and_reputation_rules() -> void:
+	section("Form and reputation from results")
+	check(WorldSimulation.next_form(0, 1.0) == 40 and WorldSimulation.next_form(40, -1.0) == -16,
+		"a sweep lifts form; a loss after it drops it")
+	check(WorldSimulation.next_form(100, 1.0) == 100, "form is capped")
+	check(is_equal_approx(WorldSimulation.expected_score(50, 50), 0.5), "equal reputations are an even contest")
+	var upset := WorldSimulation.reputation_change(30, 80, true, 1)
+	var expected_win := WorldSimulation.reputation_change(80, 30, true, 1)
+	check(upset > 5.0 and expected_win > 0.0 and expected_win < 1.0, "an upset earns much more than a favourite's win (%.2f vs %.2f)" % [upset, expected_win])
+	check(WorldSimulation.reputation_change(50, 50, true, 1) > WorldSimulation.reputation_change(50, 50, true, 4),
+		"top-tier results matter more")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var total := 0
+	for i: int in 1000:
+		total += WorldSimulation.stochastic_round(0.3, rng)
+	check(total > 240 and total < 360, "small changes add up fairly (%d of ~300)" % total)
+
+
+func _test_world(app: Node) -> void:
+	section("A year of the living world")
+	var problem: String = app.call("new_career", "World tests", PROFILE)
+	check(problem.is_empty(), "creates a disposable career (%s)" % problem)
+	if not problem.is_empty():
+		return
+	var session := app.get("career") as CareerSession
+	var repo := session.repo
+	var player_id := session.human_player_id
+	check(repo.db.user_version() == CareerSchema.CURRENT_VERSION, "the save has the living-world tables")
+	var players_before := repo.player_count(false)
+	var truths_before := repo.all_abilities()
+	var ages: Dictionary[String, int] = {}
+	for found: Dictionary in repo.ai_players():
+		ages[str(found["id"])] = GameDate.age(int(found["birth_day"]), 0)
+	var org_reputation_before: Dictionary[String, int] = {}
+	for entry: Dictionary in repo.organisations():
+		org_reputation_before[(entry["organisation"] as CareerRecords.OrganisationRecord).id] = int(entry["reputation"])
+
+	# The human joins an organisation on a short deal so its expiry is a headline.
+	var human_org := str(repo.organisations()[0]["organisation"].id)
+	var contract := CareerRecords.ContractRecord.new()
+	contract.id = "con_world_test"
+	contract.player_id = player_id
+	contract.organisation_id = human_org
+	contract.role = &"rifler"
+	contract.is_substitute = true
+	contract.start_day = 0
+	contract.end_day = 20
+	check(repo.sign_contract(contract), "the test human signs a short contract")
+
+	var dice := RandomNumberGenerator.new()
+	dice.seed = 2027
+	var started := Time.get_ticks_msec()
+	var first := CareerCalendar.continue_until_event(repo, player_id, dice)
+	check(bool(first["ok"]) and int(first["days"]) == 20 and str(first["reason"]).contains("contract")
+		and repo.active_contract(player_id) == null,
+		"Continue runs until the human's contract expires (%d days: %s)" % [first["days"], first["reason"]])
+	check(repo.organisation_form(human_org) == 0, "the human organisation's series were left for them, so no simulated form")
+
+	check(CareerFixtures.schedule(repo, player_id, MapTemplates.SANDBOX_ARENA_ID).is_empty(), "an amateur match is scheduled")
+	var blocked := CareerCalendar.continue_until_event(repo, player_id, dice)
+	check(not bool(blocked["ok"]) and int(blocked["days"]) == 0 and str(blocked["reason"]) == CareerCalendar.BLOCKED_BY_FIXTURE,
+		"Continue refuses while the player's match is due")
+	repo.db.execute("DELETE FROM career_fixture WHERE player_id = ? AND submission_id IS NULL;", [player_id])
+
+	var quiet := CareerCalendar.continue_until_event(repo, player_id, dice)
+	check(bool(quiet["ok"]) and int(quiet["days"]) >= 1 and int(quiet["days"]) <= CareerCalendar.CONTINUE_LIMIT,
+		"Continue stops at the next event or after a month (%d days: %s)" % [quiet["days"], quiet["reason"]])
+
+	check(CareerCalendar.advance_to(repo, GameDate.DAYS_PER_YEAR, dice) and repo.current_day() == GameDate.DAYS_PER_YEAR,
+		"a full year passes (%d ms)" % (Time.get_ticks_msec() - started))
+
+	section("What changed")
+	var kinds: Dictionary[String, int] = {}
+	for story: Dictionary in repo.news(100000):
+		kinds[str(story["kind"])] = kinds.get(str(story["kind"]), 0) + 1
+	check(kinds.get(WorldSimulation.NEWS_SIGNING, 0) > 0, "organisations signed players (%d stories)" % kinds.get(WorldSimulation.NEWS_SIGNING, 0))
+	check(kinds.get(WorldSimulation.NEWS_RELEASE, 0) + kinds.get(WorldSimulation.NEWS_CONTRACT, 0) > 0,
+		"contracts were renewed or let go")
+	check(kinds.get(WorldSimulation.NEWS_NEW_YEAR, 0) == 1 and kinds.get(WorldSimulation.NEWS_ROOKIES, 0) == 1,
+		"the new year made headlines with its rookie class")
+	var retired := int(repo.db.scalar("SELECT COUNT(*) FROM player WHERE status = 'retired';", [], 0))
+	var rookies := int(repo.db.scalar("SELECT COUNT(*) FROM player WHERE created_day = ? AND is_human = 0;", [GameDate.DAYS_PER_YEAR], 0))
+	check(retired > 0 and rookies >= WorldSimulation.MIN_ROOKIES and rookies >= retired,
+		"veterans retired and rookies replaced them (%d out, %d in)" % [retired, rookies])
+	check(int(repo.db.scalar("""SELECT COUNT(*) FROM contract c JOIN player p ON p.id = c.player_id
+		WHERE c.status = 'active' AND p.status = 'retired';""", [], 0)) == 0, "retired players hold no contracts")
+	check(repo.player_count(false) >= players_before - 5, "the world keeps its size (%d → %d)" % [players_before, repo.player_count(false)])
+	var short := repo.organisations_short_of_starters().filter(func(o: Dictionary) -> bool: return int(o["starters"]) < 4)
+	check(short.size() <= 2, "almost every organisation fields a starting five (%d short)" % short.size())
+
+	var truths_after := repo.all_abilities()
+	var young_gain := 0.0
+	var young_count := 0
+	var old_change := 0.0
+	var old_count := 0
+	for id: String in truths_before:
+		if not truths_after.has(id) or not ages.has(id):
+			continue
+		var change := WorldDevelopment.overall(truths_after[id]) - WorldDevelopment.overall(truths_before[id])
+		if ages[id] <= 19:
+			young_gain += change
+			young_count += 1
+		elif ages[id] >= 31:
+			old_change += change
+			old_count += 1
+	check(young_count > 0 and young_gain / young_count > 1.0, "teenagers improved over the year (%+.1f avg)" % (young_gain / maxi(young_count, 1)))
+	check(old_count > 0 and old_change / old_count < 0.0, "veterans declined (%+.1f avg)" % (old_change / maxi(old_count, 1)))
+	check(int(repo.db.scalar("SELECT COUNT(*) FROM player_ability_history;", [], 0)) > 0, "monthly development is kept as history")
+	check(repo.abilities(player_id).is_empty(), "the human still has no simulated abilities")
+
+	var formed := int(repo.db.scalar("SELECT COUNT(*) FROM organisation_form WHERE value <> 0;", [], 0))
+	check(formed > 5, "simulated results gave organisations form (%d)" % formed)
+	var moved := 0
+	for entry: Dictionary in repo.organisations():
+		var org_id := (entry["organisation"] as CareerRecords.OrganisationRecord).id
+		if int(entry["reputation"]) != org_reputation_before.get(org_id, -1):
+			moved += 1
+	check(moved > 5, "reputations rose and fell with results (%d organisations)" % moved)
+
+	section("News and Continue on the Calendar page")
+	app.call("open_career_hub")
+	await wait_frames(3)
+	var hub := tree.current_scene
+	hub.call("show_page", &"news")
+	await wait_frames(1)
+	var news_page := hub.get("current_page") as CareerNewsPage
+	check(news_page != null, "the hub has a News page")
+	hub.call("show_page", &"calendar")
+	await wait_frames(1)
+	var page := hub.get("current_page") as CareerCalendarPage
+	check(page != null and page.continue_button != null and page.advance_button != null,
+		"the Calendar page offers Next day and Continue")
+	if page == null:
+		return
+	var before_day := repo.current_day()
+	var outcome := page.continue_on()
+	check(bool(outcome["ok"]) and repo.current_day() == before_day + int(outcome["days"]), "Continue moves the open career on")
+	await wait_frames(1)
+	check(page.status_label.text.contains(str(outcome["reason"])), "the page says why it stopped")
+
+
+func _clean(folder: String) -> void:
+	var dir := DirAccess.open(folder)
+	if dir == null:
+		return
+	for file: String in dir.get_files():
+		dir.remove(file)
+	for child: String in dir.get_directories():
+		_clean(folder.path_join(child))
+	DirAccess.remove_absolute(folder)

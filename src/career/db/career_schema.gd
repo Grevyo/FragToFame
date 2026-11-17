@@ -10,9 +10,12 @@ extends RefCounted
 ##   player_reputation  career standing
 ##   career_match_event / career_match_stat record what happened in playable fixtures.
 ##   career_match_rating stores independent, versioned performance ratings.
+##   organisation_form  recent results momentum (derived from series, never an ability)
+##   player_ability_history  monthly overall of AI players after development (history only)
+##   world_news         what happened in the world, one row per story
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 6
+const CURRENT_VERSION: int = 7
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -210,6 +213,31 @@ const MIGRATIONS: Array[PackedStringArray] = [
 		"CREATE INDEX league_fixture_round ON league_fixture(competition_id, season_year, round_number);",
 		"""CREATE UNIQUE INDEX league_fixture_pair ON league_fixture(competition_id, season_year,
 			MIN(home_id, away_id), MAX(home_id, away_id));""",
+	],
+	# v7 — the living world: organisation form, development history and the news log.
+	[
+		"""CREATE TABLE organisation_form (
+			organisation_id TEXT PRIMARY KEY REFERENCES organisation(id) ON DELETE CASCADE,
+			value INTEGER NOT NULL CHECK (value BETWEEN -100 AND 100),
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE player_ability_history (
+			player_id TEXT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+			day INTEGER NOT NULL,
+			overall INTEGER NOT NULL CHECK (overall BETWEEN 1 AND 100),
+			PRIMARY KEY (player_id, day)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE world_news (
+			id INTEGER PRIMARY KEY,
+			day INTEGER NOT NULL CHECK (day >= 0),
+			kind TEXT NOT NULL,
+			importance INTEGER NOT NULL CHECK (importance BETWEEN 1 AND 3),
+			headline TEXT NOT NULL,
+			player_id TEXT REFERENCES player(id),
+			organisation_id TEXT REFERENCES organisation(id)
+		);""",
+		"CREATE INDEX world_news_by_day ON world_news(day DESC, id DESC);",
+		"CREATE INDEX world_news_by_player ON world_news(player_id, day DESC);",
 	],
 ]
 

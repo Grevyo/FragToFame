@@ -156,6 +156,19 @@ func advance_career_day() -> String:
 	return problem
 
 
+## FM-style Continue: runs days until something needs the player (see
+## [method CareerCalendar.continue_until_event]). Returns {days, reason, ok}.
+func continue_career() -> Dictionary:
+	if not has_career():
+		return {"days": 0, "reason": "Open a career first.", "ok": false}
+	if has_unsaved_fixture_result():
+		return {"days": 0, "reason": "Save the completed match result before moving on.", "ok": false}
+	var outcome := CareerCalendar.continue_until_event(career.repo, career.human_player_id)
+	if int(outcome["days"]) > 0:
+		career_day_changed.emit()
+	return outcome
+
+
 func schedule_career_fixture(map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> String:
 	if not has_career():
 		return "Open a career first."

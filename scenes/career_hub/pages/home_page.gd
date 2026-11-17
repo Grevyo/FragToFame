@@ -56,6 +56,10 @@ func build_page() -> void:
 	]
 	UIFactory.key_value_grid(world_card, world_rows)
 
+	var news := UIFactory.card(self, "Latest news")
+	CareerNewsPage.add_stories(news, repo.news(5, WorldSimulation.NOTABLE),
+		"No notable news yet. Use Next day or Continue on the Calendar.")
+
 	var top := UIFactory.card(self, "Top organisations")
 	var rows: Array[PackedStringArray] = []
 	for entry: Dictionary in repo.organisations().slice(0, 6):

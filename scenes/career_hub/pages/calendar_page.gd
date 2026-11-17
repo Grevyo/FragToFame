@@ -1,12 +1,16 @@
 class_name CareerCalendarPage
 extends CareerPage
-## Today's date, moving to the next day, the week's organisation series across every league, and
-## the player's own fixtures.
+## Today's date, Next day and Continue (runs days until something needs you), the latest world
+## news, the week's organisation series across every league, and the player's own fixtures.
 
 const WEEK: int = 7
+const NEWS_SHOWN: int = 8
 
 var advance_button: Button
+var continue_button: Button
 var status_label: Label
+## Outcome of the last Next day / Continue, kept across the rebuild that follows it.
+var _last_status: String = ""
 
 
 func get_page_title() -> String:
@@ -21,13 +25,22 @@ func build_page() -> void:
 	var today := repo.current_day()
 
 	var day_card := UIFactory.card(self, "Today · %s" % GameDate.format(today))
-	day_card.add_child(UIFactory.label("Moving to the next day resolves every other organisation's series "
-		+ "that were due. Your own scheduled match has to be played first.", &"MutedLabel", true))
-	advance_button = UIFactory.button("Advance to next day", &"AccentButton")
+	day_card.add_child(UIFactory.label("Each day resolves other organisations' series and moves the world on: "
+		+ "signings, releases, development and news. Continue keeps going until something needs you. "
+		+ "Your own scheduled match has to be played first.", &"MutedLabel", true))
+	var buttons := UIFactory.hbox(8)
+	advance_button = UIFactory.button("Next day", &"AccentButton")
 	advance_button.pressed.connect(advance_day)
-	day_card.add_child(advance_button)
-	status_label = UIFactory.label("", &"WarningLabel", true)
+	buttons.add_child(advance_button)
+	continue_button = UIFactory.button("Continue")
+	continue_button.pressed.connect(continue_on)
+	buttons.add_child(continue_button)
+	day_card.add_child(buttons)
+	status_label = UIFactory.label(_last_status, &"WarningLabel", true)
 	day_card.add_child(status_label)
+
+	var news_card := UIFactory.card(self, "World news")
+	CareerNewsPage.add_stories(news_card, repo.news(NEWS_SHOWN), "No news yet. Move the calendar on.")
 
 	_series_card("Series this week", repo.league_fixtures_between(today, today + WEEK - 1))
 	_series_card("Recent results", repo.league_fixtures_between(today - WEEK, today - 1))
@@ -40,11 +53,29 @@ func advance_day() -> String:
 	if not problem.is_empty():
 		status_label.text = problem
 		return problem
+	_last_status = ""
+	_rebuild()
+	return ""
+
+
+## Continue: advances until an event and rebuilds the page with why it stopped. Returns the
+## outcome ({days, reason, ok}).
+func continue_on() -> Dictionary:
+	var outcome := App.continue_career()
+	var days := int(outcome["days"])
+	if days == 0:
+		status_label.text = str(outcome["reason"])
+		return outcome
+	_last_status = "%d day%s passed. %s" % [days, "" if days == 1 else "s", outcome["reason"]]
+	_rebuild()
+	return outcome
+
+
+func _rebuild() -> void:
 	for child: Node in get_children():
 		remove_child(child)
 		child.queue_free()
 	build_page()
-	return ""
 
 
 func _series_card(title: String, fixtures: Array[Dictionary]) -> void:

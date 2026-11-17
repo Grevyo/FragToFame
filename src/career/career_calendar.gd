@@ -1,14 +1,19 @@
 class_name CareerCalendar
 extends RefCounted
-## Moves a career's date forward. Every day that passes resolves the organisation series that
-## were due on it ([SeriesSimulator]) and publishes the new year's league seasons at a year
-## boundary, all in one transaction with the date change.
+## Moves a career's date forward one day at a time. Each day that passes first resolves the
+## organisation series that were due before it ([SeriesSimulator], feeding form and reputation),
+## then runs the living world for that day ([WorldSimulation]: market, development, retirements,
+## rookies, new seasons and news), all in one transaction with the date change.
 ##
 ## Series involving an organisation that has a human under contract are never simulated: those
 ## are the player's own matches (playable league series arrive once humans can sign for an
 ## organisation, Milestone 14).
 
 const BLOCKED_BY_FIXTURE: String = "You have a match scheduled. Play it before moving to the next day."
+## Continue never runs further than this without stopping.
+const CONTINUE_LIMIT: int = 31
+const MATCH_DAY: String = "Match day: your scheduled match is today."
+const QUIET_MONTH: String = "A month passed with nothing that needs you."
 
 
 ## Advances one day for the human [param player_id]. Refused while that player has an
@@ -33,16 +38,39 @@ static func advance_to(repo: CareerRepository, day: int, rng: RandomNumberGenera
 		dice = RandomNumberGenerator.new()
 		dice.randomize()
 	return repo.transaction(func() -> bool:
-		if not _simulate_due_series(repo, day, dice):
-			return false
-		for year: int in range(GameDate.year_of(previous) + 1, GameDate.year_of(day) + 1):
-			if not CareerCompetitions.ensure_league_seasons(repo, year):
+		for today: int in range(previous + 1, day + 1):
+			if not _simulate_due_series(repo, today, dice) or not WorldSimulation.simulate_day(repo, today, dice):
 				return false
 		return repo.set_current_day(day))
 
 
+## FM-style Continue: advances day by day until something needs the player — their match is
+## due, a headline story breaks (contract news, a new year, their league starting) — or
+## [constant CONTINUE_LIMIT] days pass. Returns {days: int, reason: String, ok: bool}; ok is
+## false when not even one day could pass (reason says why).
+static func continue_until_event(repo: CareerRepository, player_id: String, rng: RandomNumberGenerator = null) -> Dictionary:
+	var dice := rng
+	if dice == null:
+		dice = RandomNumberGenerator.new()
+		dice.randomize()
+	var days := 0
+	while days < CONTINUE_LIMIT:
+		var problem := advance_day(repo, player_id, dice)
+		if not problem.is_empty():
+			return {"days": days, "reason": problem, "ok": days > 0}
+		days += 1
+		var today := repo.current_day()
+		var pending := repo.pending_fixture(player_id)
+		if pending != null and pending.scheduled_day <= today:
+			return {"days": days, "reason": MATCH_DAY, "ok": true}
+		var headlines := repo.news_on(today, WorldSimulation.HEADLINE)
+		if not headlines.is_empty():
+			return {"days": days, "reason": str(headlines[0]["headline"]), "ok": true}
+	return {"days": days, "reason": QUIET_MONTH, "ok": true}
+
+
 ## Mean simulated ability of an organisation's five starters (perceived values for humans,
-## whose real skill is never simulated). 0 when the organisation fields nobody.
+## whose real skill is never simulated) plus its form bonus. 0 when the organisation fields nobody.
 static func organisation_strength(repo: CareerRepository, org_id: String) -> float:
 	var total := 0.0
 	var count := 0
@@ -55,7 +83,7 @@ static func organisation_strength(repo: CareerRepository, org_id: String) -> flo
 		for value: Variant in values.values():
 			total += float(value)
 			count += 1
-	return total / count if count > 0 else 0.0
+	return total / count + WorldSimulation.form_bonus(repo, org_id) if count > 0 else 0.0
 
 
 static func _simulate_due_series(repo: CareerRepository, before_day: int, rng: RandomNumberGenerator) -> bool:
@@ -70,7 +98,13 @@ static func _simulate_due_series(repo: CareerRepository, before_day: int, rng: R
 				human_org[org_id] = repo.organisation_has_human(org_id)
 		if human_org[home] or human_org[away]:
 			continue
-		var score := SeriesSimulator.simulate(rng, strength[home], strength[away], int(fixture["best_of"]))
+		var best_of := int(fixture["best_of"])
+		var score := SeriesSimulator.simulate(rng, strength[home], strength[away], best_of)
 		if not repo.store_league_score(int(fixture["id"]), score.x, score.y):
 			return false
+		if not WorldSimulation.apply_series(repo, home, away, score, best_of, int(fixture["tier"]), before_day, rng):
+			return false
+		# Form moved: later series on the same jump see it.
+		strength.erase(home)
+		strength.erase(away)
 	return true

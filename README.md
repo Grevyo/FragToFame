@@ -352,7 +352,7 @@ from spawn, so rounds often start with a long-range fight.
       Check that **Northstar Pro Series** opens on 1 February, shows 16 entrants and has 15 rounds.
 - [ ] Switch rounds and check that dates and pairings update. Reopen the career and verify the
       same schedule.
-- [ ] **Calendar → Advance to next day** a few times: the date in the top bar moves on, "Recent
+- [ ] **Calendar → Next day** a few times: the date in the top bar moves on, "Recent
       results" fills with BO3 scores, and the Competitions standings change to match.
 - [ ] Over a few weeks, stronger organisations should mostly beat weaker ones, with some upsets.
 - [ ] Schedule an amateur match on Home, then try to advance the day: it is refused until the match
@@ -360,6 +360,20 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Choose **Europe West Challenger League**, then **Oceania Challenger League**. Check that
       the first has an eight-team table and the second shows its eligible field.
 - [ ] Select an authored cup and check that its competition details and scheduling status appear.
+
+### Manual test checklist (Milestone 14 — the living world)
+
+- [ ] Start a new career, open **Calendar** and press **Continue**. It runs up to a month and
+      says why it stopped ("A month passed…", a headline, or match day).
+- [ ] **News** fills with signings, releases, extensions and season openings. The filter
+      buttons narrow it to notable stories and headlines (★).
+- [ ] **Teams**: an organisation's Form changes after its series, and its Reputation moves
+      with results (upsets move it most).
+- [ ] Keep pressing Continue past 1 January. It stops on the new-year headline. News lists
+      retirements and the rookie class. **Players** → free agents now include 16–18 year olds.
+- [ ] Over several months, a young AI player's perceived ratings tend to rise. A veteran's
+      (31+) tend to fall.
+- [ ] Schedule an amateur match on Home, then press Continue: it refuses until you play it.
 
 ### Manual test checklist (Milestone 16 — map creator tools and Kilnmarket)
 

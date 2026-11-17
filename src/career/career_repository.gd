@@ -550,10 +550,12 @@ func league_fixture(fixture_id: int) -> Dictionary:
 		[fixture_id])
 
 
-## Unscored series scheduled before [param before_day], oldest first, with their best-of.
+## Unscored series scheduled before [param before_day], oldest first, with their best-of and
+## competition tier.
 func unresolved_league_fixtures(before_day: int) -> Array[Dictionary]:
-	return db.rows("""SELECT f.id, f.home_id, f.away_id, f.scheduled_day, s.best_of FROM league_fixture f
+	return db.rows("""SELECT f.id, f.home_id, f.away_id, f.scheduled_day, s.best_of, c.tier FROM league_fixture f
 		JOIN league_season s ON s.competition_id = f.competition_id AND s.season_year = f.season_year
+		JOIN competition c ON c.id = f.competition_id
 		WHERE f.home_maps IS NULL AND f.scheduled_day < ? ORDER BY f.scheduled_day, f.id;""", [before_day])
 
 
@@ -577,6 +579,142 @@ func store_league_score(fixture_id: int, home_maps: int, away_maps: int) -> bool
 		[home_maps, away_maps, fixture_id])
 
 
+# --- Living world (form, development, market, news) --------------------------------------------
+
+## Recent-results momentum of an organisation, -100..100 (0 = neutral or unknown).
+func organisation_form(org_id: String) -> int:
+	return int(db.scalar("SELECT value FROM organisation_form WHERE organisation_id = ?;", [org_id], 0))
+
+
+func set_organisation_form(org_id: String, value: int, day: int) -> bool:
+	return db.execute("""INSERT INTO organisation_form (organisation_id, value, updated_day) VALUES (?, ?, ?)
+		ON CONFLICT(organisation_id) DO UPDATE SET value = excluded.value, updated_day = excluded.updated_day;""",
+		[org_id, clampi(value, -100, 100), day])
+
+
+## Adds one story to the world news log. [param importance]: 1 minor, 2 notable, 3 headline.
+func add_news(day: int, kind: String, importance: int, headline: String, player_id: String = "",
+		organisation_id: String = "") -> bool:
+	return db.execute("""INSERT INTO world_news (day, kind, importance, headline, player_id, organisation_id)
+		VALUES (?, ?, ?, ?, ?, ?);""", [day, kind, clampi(importance, 1, 3), headline,
+		null if player_id.is_empty() else player_id, null if organisation_id.is_empty() else organisation_id])
+
+
+## Latest stories first. Each row: id, day, kind, importance, headline, player_id, organisation_id.
+func news(limit: int = 30, min_importance: int = 1, offset: int = 0) -> Array[Dictionary]:
+	return db.rows("""SELECT * FROM world_news WHERE importance >= ?
+		ORDER BY day DESC, id DESC LIMIT ? OFFSET ?;""", [min_importance, limit, offset])
+
+
+## Stories dated [param day] at or above [param min_importance], oldest first.
+func news_on(day: int, min_importance: int = 1) -> Array[Dictionary]:
+	return db.rows("SELECT * FROM world_news WHERE day = ? AND importance >= ? ORDER BY id;", [day, min_importance])
+
+
+func player_news(player_id: String, limit: int = 10) -> Array[Dictionary]:
+	return db.rows("SELECT * FROM world_news WHERE player_id = ? ORDER BY day DESC, id DESC LIMIT ?;",
+		[player_id, limit])
+
+
+## Active AI players with simulated abilities: id, nickname, birth_day, preferred_role,
+## organisation_id (or null), tier (of their organisation, or null), reputation.
+func ai_players() -> Array[Dictionary]:
+	return db.rows("""SELECT p.id, p.nickname, p.birth_day, p.preferred_role, c.organisation_id, o.tier,
+			COALESCE(r.value, 0) AS reputation
+		FROM player p
+		LEFT JOIN contract c ON c.player_id = p.id AND c.status = 'active'
+		LEFT JOIN organisation o ON o.id = c.organisation_id
+		LEFT JOIN player_reputation r ON r.player_id = p.id
+		WHERE p.status = 'active' AND p.is_human = 0 ORDER BY p.id;""")
+
+
+## Every AI player's true abilities in one query: {player_id: {ability: value}} (potential included).
+func all_abilities() -> Dictionary[String, Dictionary]:
+	return _grouped_abilities("""SELECT a.player_id, a.ability, a.value FROM player_ability a
+		JOIN player p ON p.id = a.player_id WHERE p.status = 'active';""")
+
+
+## Every active player's perceived abilities: {player_id: {ability: value}}.
+func all_perceived() -> Dictionary[String, Dictionary]:
+	return _grouped_abilities("""SELECT pp.player_id, pp.ability, pp.value FROM player_perceived pp
+		JOIN player p ON p.id = pp.player_id WHERE p.status = 'active';""")
+
+
+func record_ability_history(player_id: String, day: int, overall: int) -> bool:
+	return db.execute("INSERT OR REPLACE INTO player_ability_history VALUES (?, ?, ?);",
+		[player_id, day, clampi(overall, 1, 100)])
+
+
+## {day, overall} rows, oldest first.
+func ability_history(player_id: String) -> Array[Dictionary]:
+	return db.rows("SELECT day, overall FROM player_ability_history WHERE player_id = ? ORDER BY day;", [player_id])
+
+
+## Active contracts ending on or before [param day], with what the market needs to decide.
+## Rows: contract columns + is_human, nickname, birth_day, tier, org_name.
+func contracts_ending(day: int) -> Array[Dictionary]:
+	return db.rows("""SELECT c.*, p.is_human, p.nickname, p.birth_day, o.tier, o.name AS org_name
+		FROM contract c JOIN player p ON p.id = c.player_id JOIN organisation o ON o.id = c.organisation_id
+		WHERE c.status = 'active' AND c.end_day <= ? ORDER BY c.end_day, c.id;""", [day])
+
+
+## Active organisations with fewer than [param size] starters: id, name, tier, region_id,
+## starters, substitutes, has_human. Best tier first so the strongest teams pick first.
+func organisations_short_of_starters(size: int = 5) -> Array[Dictionary]:
+	return db.rows("""SELECT o.id, o.name, o.tier, o.region_id,
+			SUM(CASE WHEN c.id IS NOT NULL AND c.is_substitute = 0 THEN 1 ELSE 0 END) AS starters,
+			SUM(CASE WHEN c.id IS NOT NULL AND c.is_substitute = 1 THEN 1 ELSE 0 END) AS substitutes,
+			MAX(CASE WHEN p.is_human = 1 THEN 1 ELSE 0 END) AS has_human
+		FROM organisation o
+		LEFT JOIN contract c ON c.organisation_id = o.id AND c.status = 'active'
+		LEFT JOIN player p ON p.id = c.player_id
+		WHERE o.active = 1 GROUP BY o.id HAVING starters < ?
+		ORDER BY o.tier, o.id;""", [size])
+
+
+## Unsigned active AI players for the market: id, nickname, preferred_role, region_id, birth_day,
+## rating (perceived), reputation. Best perceived first.
+func free_agent_pool() -> Array[Dictionary]:
+	return db.rows("""SELECT p.id, p.nickname, p.preferred_role, n.region_id, p.birth_day,
+			ROUND(COALESCE((SELECT AVG(value) FROM player_perceived pp WHERE pp.player_id = p.id), 0)) AS rating,
+			COALESCE(r.value, 0) AS reputation
+		FROM player p JOIN nation n ON n.id = p.nation_id
+		LEFT JOIN contract c ON c.player_id = p.id AND c.status = 'active'
+		LEFT JOIN player_reputation r ON r.player_id = p.id
+		WHERE p.status = 'active' AND p.is_human = 0 AND c.id IS NULL
+		ORDER BY rating DESC, p.id;""")
+
+
+func set_contract_substitute(contract_id: String, is_substitute: bool) -> bool:
+	return db.execute("UPDATE contract SET is_substitute = ? WHERE id = ? AND status = 'active';",
+		[1 if is_substitute else 0, contract_id])
+
+
+## Retires an AI player: ends any active contract and marks them retired. Humans never retire here.
+func retire_player(player_id: String, day: int) -> bool:
+	if _is_human(player_id):
+		return false
+	var contract := active_contract(player_id)
+	if contract != null and not end_contract(contract.id, "terminated", day):
+		return false
+	return db.execute("UPDATE player SET status = 'retired' WHERE id = ?;", [player_id])
+
+
+func nickname_taken(nickname: String) -> bool:
+	return int(db.scalar("SELECT COUNT(*) FROM player WHERE nickname = ? COLLATE NOCASE;", [nickname], 0)) > 0
+
+
+## League seasons whose first day is [param day]: competition_id, name, tier, season_year.
+func seasons_starting(day: int) -> Array[Dictionary]:
+	return db.rows("""SELECT s.competition_id, c.name, c.tier, s.season_year FROM league_season s
+		JOIN competition c ON c.id = s.competition_id WHERE s.start_day = ? ORDER BY c.tier, c.name;""", [day])
+
+
+func is_league_entrant(competition_id: String, year: int, org_id: String) -> bool:
+	return int(db.scalar("""SELECT COUNT(*) FROM league_entrant
+		WHERE competition_id = ? AND season_year = ? AND organisation_id = ?;""", [competition_id, year, org_id], 0)) > 0
+
+
 # --- Helpers ----------------------------------------------------------------------------------
 
 func _is_human(player_id: String) -> bool:
@@ -587,4 +725,14 @@ func _ability_map(sql: String, player_id: String) -> Dictionary[StringName, int]
 	var result: Dictionary[StringName, int] = {}
 	for found: Dictionary in db.rows(sql, [player_id]):
 		result[StringName(str(found["ability"]))] = int(found["value"])
+	return result
+
+
+func _grouped_abilities(sql: String) -> Dictionary[String, Dictionary]:
+	var result: Dictionary[String, Dictionary] = {}
+	for found: Dictionary in db.rows(sql):
+		var id := str(found["player_id"])
+		if not result.has(id):
+			result[id] = {}
+		result[id][StringName(str(found["ability"]))] = int(found["value"])
 	return result

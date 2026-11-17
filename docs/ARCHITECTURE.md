@@ -462,6 +462,32 @@ reaches the best-of target. Series of an organisation with a human under contrac
 simulated; playable league series follow once humans can sign for organisations (M14).
 Cup brackets, promotion and relegation, and the F2F Universal Ladder remain planned.
 
+### Living world (Milestone 14)
+
+`advance_to` now walks the days one at a time. Each day first resolves the series due before
+it, then runs `WorldSimulation.simulate_day`. The whole jump is still one transaction. Pure rules
+sit beside small appliers, so the maths is tested without a database:
+
+- **Results (`WorldSimulation.apply_series`):** form (`organisation_form`, −100..100: old × 0.6 +
+  40 × map margin) and Elo-style reputation (scale 25, K by competition tier, AI starters get half,
+  stochastic rounding). Form feeds `organisation_strength` (0.03 points per form point).
+- **Daily (`WorldMarket`):** expiring contracts are renewed or released. Organisations short of
+  five starters promote a substitute or sign a free agent, 35% chance per day. Decisions use
+  perceived values (what the world believes), never the hidden truth. A human's contract just
+  expires, as a headline.
+- **Monthly (`WorldDevelopment`):** growth towards potential by age, mechanical decline from 30,
+  experience decline from 33 (`player_ability_history` keeps the overall). Perceived values
+  drift towards the truth; confidence grows to the tier cap. Reputation drifts towards the tier
+  range.
+- **Yearly:** retirements by age and level, then an original rookie class (`WorldRookies`, name
+  pools shared with the generator) of at least 10, enough to replace the retired. League seasons
+  for the new year are published after the turnover.
+- **News (`world_news`):** one row per story with importance 1–3. `continue_until_event` stops on
+  the player's match day, any headline, or after 31 days.
+
+Humans are never developed, retired or re-rated by the world. Their skill is the person, and their
+reputation and ELO move only through played matches (`CareerDevelopment`).
+
 ### Bot AI (Milestone 6)
 
 ```
@@ -653,6 +679,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
 | 2026-11-16 | Sandbox bots play free-for-all and roam by scored interest points and heard gunfire instead of homing on the human | They no longer know where the player is through walls. Gunplay testing gets varied, fair fights. The planner is pure and testable, and reusable when M7 adds team intent |
+| 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |
 | 2026-11-15 | Run speed comes from the held weapon's `mobility`; weapon spread sees speed rescaled so a full run is always the reference speed | Retuning movement never silently changes weapon balance |

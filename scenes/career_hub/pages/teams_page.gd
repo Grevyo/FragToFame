@@ -55,6 +55,7 @@ func show_organisation(org_id: String) -> void:
 		PackedStringArray(["Region", CareerCatalog.region_name(org.region_id)]),
 		PackedStringArray(["Tier", CareerCatalog.tier_name(org.tier)]),
 		PackedStringArray(["Reputation", str(repo.organisation_reputation(org.id))]),
+		PackedStringArray(["Form", CareerNewsPage.form_label(repo.organisation_form(org.id))]),
 		PackedStringArray(["Founded", GameDate.format_year(org.founded_day)]),
 		PackedStringArray(["ID", org.id]),
 	]

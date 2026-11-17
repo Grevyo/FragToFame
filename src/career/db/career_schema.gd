@@ -15,9 +15,10 @@ extends RefCounted
 ##   world_news         what happened in the world, one row per story
 ##   career_offer       trial invitations and contract offers to human players
 ##   league_series_map  which career fixture plays which map of a human organisation's series
+##   organisation_finance / player_finance  current balances; finance_ledger  every movement
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 8
+const CURRENT_VERSION: int = 9
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -268,6 +269,32 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			human_home INTEGER NOT NULL CHECK (human_home IN (0, 1)),
 			PRIMARY KEY (league_fixture_id, map_number)
 		) WITHOUT ROWID;""",
+	],
+	# v9 — finances: balances, a ledger of every movement, and contract talks.
+	[
+		"""CREATE TABLE organisation_finance (
+			organisation_id TEXT PRIMARY KEY REFERENCES organisation(id) ON DELETE CASCADE,
+			balance INTEGER NOT NULL,
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE player_finance (
+			player_id TEXT PRIMARY KEY REFERENCES player(id) ON DELETE CASCADE,
+			balance INTEGER NOT NULL,
+			updated_day INTEGER NOT NULL
+		);""",
+		"""CREATE TABLE finance_ledger (
+			id INTEGER PRIMARY KEY,
+			day INTEGER NOT NULL,
+			organisation_id TEXT REFERENCES organisation(id),
+			player_id TEXT REFERENCES player(id),
+			kind TEXT NOT NULL CHECK (kind IN ('opening', 'income', 'wages', 'prize', 'fee_paid', 'fee_received', 'salary')),
+			amount INTEGER NOT NULL,
+			note TEXT NOT NULL DEFAULT '',
+			CHECK ((organisation_id IS NULL) <> (player_id IS NULL))
+		);""",
+		"CREATE INDEX finance_ledger_org ON finance_ledger(organisation_id, day DESC);",
+		"CREATE INDEX finance_ledger_player ON finance_ledger(player_id, day DESC);",
+		"ALTER TABLE career_offer ADD COLUMN negotiated INTEGER NOT NULL DEFAULT 0 CHECK (negotiated IN (0, 1));",
 	],
 ]
 

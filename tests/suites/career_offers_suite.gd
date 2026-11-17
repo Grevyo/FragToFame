@@ -102,13 +102,29 @@ func _test_path(app: Node) -> void:
 	if open.is_empty():
 		return
 
+	section("Contract talks")
+	var talks := RandomNumberGenerator.new()
+	talks.seed = 5
+	var asked_before := int(open[0]["monthly_salary"])
+	var first_talk := CareerOffers.negotiate(repo, player_id, str(open[0]["id"]), talks)
+	var after_talk := int(repo.offer(str(open[0]["id"]))["monthly_salary"])
+	check((bool(first_talk["ok"]) and after_talk > asked_before) or (not bool(first_talk["ok"]) and after_talk == asked_before),
+		"asking for more either raises the offer or leaves it as it was (%s)" % first_talk["message"])
+	var second_talk := CareerOffers.negotiate(repo, player_id, str(open[0]["id"]), talks)
+	check(not bool(second_talk["ok"]) and str(second_talk["message"]).contains("final"), "an organisation only negotiates once")
+	check(str(repo.offer(str(open[0]["id"]))["status"]) == "pending", "the offer stays open after talks")
+
 	section("Signing")
 	var org_id := str(trial["organisation_id"])
 	var starters_before := repo.lineup(org_id).size()
 	check(str(app.call("accept_career_offer", str(open[0]["id"]))).is_empty(), "signing the contract succeeds")
 	var contract := repo.active_contract(player_id)
-	check(contract != null and contract.organisation_id == org_id and not contract.is_substitute,
-		"the human is under contract as a starter")
+	check(contract != null and contract.organisation_id == org_id and not contract.is_substitute
+		and contract.monthly_salary == after_talk, "the human is under contract as a starter, on the agreed salary")
+	if contract != null:
+		var balance_before := repo.player_balance(player_id)
+		check(WorldFinance.monthly(repo, repo.current_day()) and repo.player_balance(player_id) == balance_before + contract.monthly_salary,
+			"the human's salary is paid into their balance each month")
 	var lineup := repo.lineup(org_id)
 	check(lineup.size() == maxi(starters_before, 5) and lineup.any(func(p: Dictionary) -> bool: return bool(p["is_human"])),
 		"the weakest AI starter makes room in the five")

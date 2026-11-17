@@ -22,8 +22,9 @@ static func build(parent: Control, repo: CareerRepository, player_id: String, st
 	if contract != null:
 		var org := repo.get_organisation(contract.organisation_id)
 		team = org.name if org != null else contract.organisation_id
-		contract_text = "%s%s · until %s · $%d/month" % [CareerCatalog.role_name(contract.role),
-			" (substitute)" if contract.is_substitute else "", GameDate.format(contract.end_day), contract.monthly_salary]
+		contract_text = "%s%s · until %s · %s/month" % [CareerCatalog.role_name(contract.role),
+			" (substitute)" if contract.is_substitute else "", GameDate.format(contract.end_day),
+			CareerCatalog.format_money(contract.monthly_salary)]
 	var identity_rows: Array[PackedStringArray] = [
 		PackedStringArray(["Player ID", player.id]),
 		PackedStringArray(["Age", str(player.age(today))]),

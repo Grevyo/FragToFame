@@ -179,6 +179,13 @@ func accept_career_offer(offer_id: String) -> String:
 	return problem
 
 
+## Contract talks on an offer (asks once for more). Returns {ok, message}.
+func negotiate_career_offer(offer_id: String) -> Dictionary:
+	if not has_career():
+		return {"ok": false, "message": "Open a career first."}
+	return CareerOffers.negotiate(career.repo, career.human_player_id, offer_id)
+
+
 func decline_career_offer(offer_id: String) -> String:
 	if not has_career():
 		return "Open a career first."

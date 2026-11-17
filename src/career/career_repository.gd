@@ -823,6 +823,79 @@ func due_series_for(org_id: String, day: int) -> Array[Dictionary]:
 		ORDER BY f.scheduled_day, f.id;""", [day, org_id, org_id])
 
 
+# --- Finances ---------------------------------------------------------------------------------
+
+## An organisation's balance (0 when it has no finance record yet).
+func organisation_balance(org_id: String) -> int:
+	return int(db.scalar("SELECT balance FROM organisation_finance WHERE organisation_id = ?;", [org_id], 0))
+
+
+func has_finances(org_id: String) -> bool:
+	return int(db.scalar("SELECT COUNT(*) FROM organisation_finance WHERE organisation_id = ?;", [org_id], 0)) > 0
+
+
+## Active organisations without a finance record: id, tier, reputation.
+func organisations_without_finances() -> Array[Dictionary]:
+	return db.rows("""SELECT o.id, o.tier, COALESCE(r.value, 0) AS reputation FROM organisation o
+		LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+		LEFT JOIN organisation_finance f ON f.organisation_id = o.id
+		WHERE o.active = 1 AND f.organisation_id IS NULL ORDER BY o.id;""")
+
+
+## Moves money in (+) or out (−) of an organisation and records it in the ledger.
+func add_organisation_money(org_id: String, amount: int, day: int, kind: String, note: String = "") -> bool:
+	return db.execute("""INSERT INTO organisation_finance (organisation_id, balance, updated_day) VALUES (?, ?, ?)
+			ON CONFLICT(organisation_id) DO UPDATE SET balance = balance + excluded.balance, updated_day = excluded.updated_day;""",
+			[org_id, amount, day]) \
+		and db.execute("INSERT INTO finance_ledger (day, organisation_id, kind, amount, note) VALUES (?, ?, ?, ?, ?);",
+			[day, org_id, kind, amount, note])
+
+
+func player_balance(player_id: String) -> int:
+	return int(db.scalar("SELECT balance FROM player_finance WHERE player_id = ?;", [player_id], 0))
+
+
+## Pays (+) or charges (−) a player and records it in the ledger.
+func add_player_money(player_id: String, amount: int, day: int, kind: String, note: String = "") -> bool:
+	return db.execute("""INSERT INTO player_finance (player_id, balance, updated_day) VALUES (?, ?, ?)
+			ON CONFLICT(player_id) DO UPDATE SET balance = balance + excluded.balance, updated_day = excluded.updated_day;""",
+			[player_id, amount, day]) \
+		and db.execute("INSERT INTO finance_ledger (day, player_id, kind, amount, note) VALUES (?, ?, ?, ?, ?);",
+			[day, player_id, kind, amount, note])
+
+
+## Monthly wage bill of every organisation with players: {org_id: total}.
+func wage_bills() -> Dictionary[String, int]:
+	var bills: Dictionary[String, int] = {}
+	for found: Dictionary in db.rows("""SELECT organisation_id, SUM(monthly_salary) AS total FROM contract
+			WHERE status = 'active' GROUP BY organisation_id;"""):
+		bills[str(found["organisation_id"])] = int(found["total"])
+	return bills
+
+
+func wage_bill(org_id: String) -> int:
+	return int(db.scalar("SELECT COALESCE(SUM(monthly_salary), 0) FROM contract WHERE organisation_id = ? AND status = 'active';",
+		[org_id], 0))
+
+
+## Active human players under contract: player_id, monthly_salary, organisation_id.
+func paid_humans() -> Array[Dictionary]:
+	return db.rows("""SELECT c.player_id, c.monthly_salary, c.organisation_id FROM contract c
+		JOIN player p ON p.id = c.player_id WHERE c.status = 'active' AND p.is_human = 1;""")
+
+
+## Latest ledger entries of an organisation (or, with [param player], of a player).
+func ledger(owner_id: String, player: bool = false, limit: int = 12) -> Array[Dictionary]:
+	return db.rows("SELECT * FROM finance_ledger WHERE %s = ? ORDER BY day DESC, id DESC LIMIT ?;" % (
+		"player_id" if player else "organisation_id"), [owner_id, limit])
+
+
+## Contract talks: a new salary for a pending contract offer, marking it negotiated.
+func set_offer_salary(offer_id: String, salary: int) -> bool:
+	return db.execute("UPDATE career_offer SET monthly_salary = ?, negotiated = 1 WHERE id = ? AND status = 'pending';",
+		[maxi(salary, 0), offer_id])
+
+
 # --- Helpers ----------------------------------------------------------------------------------
 
 func _is_human(player_id: String) -> bool:

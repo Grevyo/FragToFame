@@ -10,7 +10,8 @@ extends RefCounted
 ##              organisations may invite an unsigned human to a trial ([CareerOffers]); a
 ##              contracted human's due league series is booked to play ([CareerLeagueMatches]).
 ## Each month:  AI players develop or decline, the world's opinion catches up with the truth,
-##              and reputations drift back towards what an organisation's level supports.
+##              reputations drift back towards what an organisation's level supports, and
+##              money moves: income in, wages out, humans paid ([WorldFinance]).
 ## Each year:   veterans retire and a class of original rookies enters the scene.
 ##
 ## Humans are never developed or re-rated by the world: their skill is the person, and their
@@ -57,13 +58,16 @@ const NOTABLE_REPUTATION: int = 60
 ## Runs everything that happens on [param day] apart from resolving series (the calendar does
 ## that first so today's world sees yesterday's results).
 static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
+	if not WorldFinance.ensure(repo, day):
+		return false
 	if GameDate.day_of_year(day) == 0:
 		if not _new_year(repo, day, rng) or not CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(day)):
 			return false
 	if not _season_openings(repo, day):
 		return false
 	if GameDate.month_and_day(day).y == 1 and day > 0:
-		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng):
+		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \
+				or not WorldFinance.monthly(repo, day):
 			return false
 	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfer_window(repo, day, rng) \
 		and WorldMarket.fill_rosters(repo, day, rng) \
@@ -102,6 +106,8 @@ static func apply_series(repo: CareerRepository, home_id: String, away_id: Strin
 	var home_rep := repo.organisation_reputation(home_id)
 	var away_rep := repo.organisation_reputation(away_id)
 	var change := reputation_change(home_rep, away_rep, score.x > score.y, tier)
+	if not WorldFinance.award_series(repo, home_id if score.x > score.y else away_id, tier, day):
+		return false
 	for side: Array in [[home_id, outcome, change, home_rep], [away_id, -outcome, -change, away_rep]]:
 		var org_id := str(side[0])
 		var delta := float(side[2])

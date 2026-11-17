@@ -75,6 +75,19 @@ const DIFFICULTY_NAMES: Dictionary[StringName, String] = {
 }
 
 
+## "$950", "$12.5k", "$1.20m" (negative amounts keep their sign).
+static func format_money(amount: int) -> String:
+	var sign := "-" if amount < 0 else ""
+	var value := absi(amount)
+	if value >= 1000000:
+		return "%s$%.2fm" % [sign, value / 1000000.0]
+	if value >= 10000:
+		return "%s$%dk" % [sign, roundi(value / 1000.0)]
+	if value >= 1000:
+		return "%s$%.1fk" % [sign, value / 1000.0]
+	return "%s$%d" % [sign, value]
+
+
 static func ability_name(id: StringName) -> String:
 	return ABILITY_NAMES.get(id, String(id).capitalize())
 

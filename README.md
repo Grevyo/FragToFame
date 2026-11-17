@@ -391,6 +391,11 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Press **Continue**: it stops on league match day. Play map 1 of the BO3. Map 2 is booked
       straight away on the same day. Once one side has two maps, the series appears in
       Competitions and the Calendar's recent results, and the day moves on.
+- [ ] On a contract offer, press **Ask for more** once. Either the salary rises and is marked
+      "(final)", or they refuse and the offer stays. Sign it. On the first of the next month
+      your Home **Balance** grows by your salary.
+- [ ] **Teams** shows each organisation's balance, monthly income and wages. Transfer stories in
+      News name the fee ("… for $85k"). The buyer's balance falls by it and the seller's rises.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 

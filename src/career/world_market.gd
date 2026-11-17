@@ -37,6 +37,9 @@ const EXPIRING_DAYS: int = 180
 const SELL_BEST_PLAYER: float = 0.3
 ## A buyer with more than this many players releases the displaced starter instead of benching.
 const MAX_SQUAD: int = 7
+## Money trouble: organisations in debt renew less and sell more readily.
+const DEBT_RENEWAL_PENALTY: float = 0.2
+const DEBT_SELL_BONUS: float = 0.3
 
 
 ## Chance an organisation renews an expiring contract.
@@ -104,7 +107,10 @@ static func process_contracts(repo: CareerRepository, day: int, rng: RandomNumbe
 		var substitute := int(found["is_substitute"]) == 1
 		if not repo.end_contract(contract_id, "expired", day):
 			return false
-		if rng.randf() < renewal_chance(age, rating, tier, substitute):
+		var chance := renewal_chance(age, rating, tier, substitute)
+		if repo.organisation_balance(org_id) < 0:
+			chance -= DEBT_RENEWAL_PENALTY
+		if rng.randf() < chance:
 			var years := rng.randi_range(MIN_YEARS, MAX_YEARS)
 			if not _sign(repo, rng, player_id, org_id, StringName(str(found["role"])), substitute, tier, rating, day, years):
 				return false
@@ -207,7 +213,7 @@ static func upgrade_target(pool: Array[Dictionary], buyer_id: String, buyer_tier
 
 
 ## Transfer window: organisations, best tier first, try to replace their weakest AI starter
-## with a better player from another organisation. No fees yet (organisations have no finances).
+## with a better player from another organisation, paying a fee ([WorldFinance]) they can afford.
 static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
 	if not in_window(day):
 		return true
@@ -224,6 +230,9 @@ static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberG
 		if rng.randf() >= BUY_CHANCE:
 			continue
 		var buyer := entry["organisation"] as CareerRecords.OrganisationRecord
+		var funds := repo.organisation_balance(buyer.id)
+		if funds <= 0:
+			continue
 		var roster := repo.roster(buyer.id)
 		var weakest: Dictionary = {}
 		for member: Dictionary in roster:
@@ -239,21 +248,29 @@ static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberG
 			continue
 		var target := pool[pick]
 		var seller_id := str(target["organisation_id"])
+		var days_left := int(target["end_day"]) - day
+		var fee := WorldFinance.transfer_fee(int(target["rating"]), GameDate.age(int(target["birth_day"]), day), days_left)
+		if not WorldFinance.can_afford(funds, fee, salary_for(buyer.tier, int(target["rating"]))):
+			continue
 		var is_best: bool = str(best_by_org.get(seller_id, "")) == str(target["player_id"])
-		if rng.randf() >= sell_chance(int(target["end_day"]) - day, is_best):
+		var willing := sell_chance(days_left, is_best)
+		if repo.organisation_balance(seller_id) < 0:
+			willing += DEBT_SELL_BONUS
+		if rng.randf() >= willing:
 			continue
 		pool.remove_at(pick)
-		if not _transfer(repo, rng, target, buyer, weakest, roster.size(), day):
+		if not _transfer(repo, rng, target, buyer, weakest, roster.size(), fee, day):
 			return false
 	return true
 
 
 static func _transfer(repo: CareerRepository, rng: RandomNumberGenerator, target: Dictionary,
-		buyer: CareerRecords.OrganisationRecord, weakest: Dictionary, squad_size: int, day: int) -> bool:
+		buyer: CareerRecords.OrganisationRecord, weakest: Dictionary, squad_size: int, fee: int, day: int) -> bool:
 	var weak_contract := weakest["contract"] as CareerRecords.ContractRecord
 	var weak_player := weakest["player"] as CareerRecords.PlayerRecord
 	var player_id := str(target["player_id"])
-	if not repo.end_contract(str(target["contract_id"]), "terminated", day):
+	if not repo.end_contract(str(target["contract_id"]), "terminated", day) \
+			or not WorldFinance.pay_fee(repo, buyer.id, str(target["organisation_id"]), fee, str(target["nickname"]), day):
 		return false
 	if squad_size >= MAX_SQUAD:
 		if not repo.end_contract(weak_contract.id, "terminated", day) or not repo.add_news(day,
@@ -266,7 +283,8 @@ static func _transfer(repo: CareerRepository, rng: RandomNumberGenerator, target
 			rng.randi_range(MIN_YEARS + 1, MAX_YEARS)):
 		return false
 	return repo.add_news(day, WorldSimulation.NEWS_TRANSFER, WorldSimulation.NOTABLE if buyer.tier <= 2 else WorldSimulation.MINOR,
-		"%s joins %s from %s." % [target["nickname"], buyer.name, target["org_name"]], player_id, buyer.id)
+		"%s joins %s from %s for %s." % [target["nickname"], buyer.name, target["org_name"], CareerCatalog.format_money(fee)],
+		player_id, buyer.id)
 
 
 static func _sign(repo: CareerRepository, rng: RandomNumberGenerator, player_id: String, org_id: String,
@@ -277,7 +295,7 @@ static func _sign(repo: CareerRepository, rng: RandomNumberGenerator, player_id:
 	contract.organisation_id = org_id
 	contract.role = role
 	contract.is_substitute = substitute
-	contract.monthly_salary = salary_for(tier, rating)
+	contract.monthly_salary = WorldFinance.affordable_salary(repo.organisation_balance(org_id), salary_for(tier, rating), tier)
 	contract.start_day = day
 	contract.end_day = day + years * GameDate.DAYS_PER_YEAR
 	return repo.sign_contract(contract)

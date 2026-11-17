@@ -483,6 +483,12 @@ sit beside small appliers, so the maths is tested without a database:
   experience decline from 33 (`player_ability_history` keeps the overall). Perceived values
   drift towards the truth; confidence grows to the tier cap. Reputation drifts towards the tier
   range.
+- **Money (`WorldFinance`):** balances live in `organisation_finance` and `player_finance`. Every
+  movement is a `finance_ledger` row, so a balance always equals its ledger sum. `ensure` gives
+  organisations without finances an opening balance, which covers older saves. Monthly: income
+  `TIER_INCOME × (0.75 + 0.5 × reputation)`, wages out, and humans paid. A series win pays
+  `SERIES_PRIZE` by tier. Transfer fee = `(rating − 40)² × 60 × age factor × contract share`.
+  Every signing uses `affordable_salary`.
 - **Yearly:** retirements by age and level, then an original rookie class (`WorldRookies`, name
   pools shared with the generator) of at least 10, enough to replace the retired. League seasons
   for the new year are published after the turnover.

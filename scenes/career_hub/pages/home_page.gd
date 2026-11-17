@@ -41,6 +41,7 @@ func build_page() -> void:
 		PackedStringArray(["Team", team]),
 		PackedStringArray(["Preferred role", CareerCatalog.role_name(me.preferred_role) if me != null else "—"]),
 		PackedStringArray(["Reputation", "%s (%d)" % [CareerCatalog.reputation_label(reputation), reputation]]),
+		PackedStringArray(["Balance", CareerCatalog.format_money(repo.player_balance(me.id)) if me != null else "—"]),
 		PackedStringArray(["Difficulty", CareerCatalog.DIFFICULTY_NAMES.get(StringName(str(profile.get("difficulty", ""))), "—")]),
 	]
 	if me != null:
@@ -152,7 +153,8 @@ func refresh_offers() -> void:
 		if trial:
 			text += " · trial invitation" if str(offer["status"]) == "pending" else " · trial booked (play it above)"
 		else:
-			text += " · %d-year contract, %d a month" % [int(offer["years"]), int(offer["monthly_salary"])]
+			text += " · %d-year contract, %s a month%s" % [int(offer["years"]),
+				CareerCatalog.format_money(int(offer["monthly_salary"])), " (final)" if int(offer["negotiated"]) == 1 else ""]
 		text += " · open until %s" % GameDate.format(int(offer["expires_day"]))
 		var caption := UIFactory.label(text, &"", true)
 		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -162,6 +164,12 @@ func refresh_offers() -> void:
 			var accept := UIFactory.button("Accept trial" if trial else "Sign", &"AccentButton")
 			accept.pressed.connect(func() -> void: _answer_offer(offer_id, true))
 			row.add_child(accept)
+			if not trial and int(offer["negotiated"]) == 0:
+				var ask := UIFactory.button("Ask for more")
+				ask.tooltip_text = "Ask once for about %d%% more. They may refuse; the offer stays open." % roundi(
+					CareerOffers.RAISE_SHARE * 100.0)
+				ask.pressed.connect(func() -> void: negotiate_offer(offer_id))
+				row.add_child(ask)
 			var decline := UIFactory.button("Decline")
 			decline.pressed.connect(func() -> void: _answer_offer(offer_id, false))
 			row.add_child(decline)
@@ -178,6 +186,14 @@ func _answer_offer(offer_id: String, accept: bool) -> String:
 	_refresh_fixture_card()
 	refresh_offers()
 	return ""
+
+
+## Contract talks from the Offers card. Returns the organisation's answer.
+func negotiate_offer(offer_id: String) -> String:
+	var answer := App.negotiate_career_offer(offer_id)
+	refresh_offers()
+	offer_status.text = str(answer["message"])
+	return str(answer["message"])
 
 
 func _map_name(map_id: String) -> String:

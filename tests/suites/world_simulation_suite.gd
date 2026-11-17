@@ -15,6 +15,7 @@ func run() -> void:
 	_test_development_rules()
 	_test_market_rules()
 	_test_form_and_reputation_rules()
+	_test_finance_rules()
 	var app := tree.root.get_node("App")
 	var original := app.get("career_saves") as CareerSaves
 	_clean(ProjectSettings.globalize_path(TEST_ROOT))
@@ -128,6 +129,24 @@ func _test_market_rules() -> void:
 	check(WorldMarket.upgrade_target(market, "org_buyer", 1, 80, 72, &"igl", "na") == 3
 		and WorldMarket.upgrade_target(market, "org_buyer", 1, 80, 73, &"igl", "na") == -1,
 		"a target must be clearly better than the starter it replaces")
+
+
+func _test_finance_rules() -> void:
+	section("Finance rules")
+	check(WorldFinance.opening_balance(1, 80) > WorldFinance.opening_balance(2, 80)
+		and WorldFinance.opening_balance(2, 80) > WorldFinance.opening_balance(4, 80), "bigger tiers start richer")
+	check(WorldFinance.monthly_income(1, 90) > WorldFinance.monthly_income(1, 60), "reputation brings sponsors and viewers")
+	check(WorldFinance.transfer_fee(80, 25, 700) > WorldFinance.transfer_fee(70, 25, 700), "better players cost more")
+	check(WorldFinance.transfer_fee(75, 20, 700) > WorldFinance.transfer_fee(75, 31, 700), "youth costs more than age")
+	check(WorldFinance.transfer_fee(75, 25, 60) < WorldFinance.transfer_fee(75, 25, 700), "an expiring contract is cheap to buy out")
+	check(WorldFinance.transfer_fee(41, 33, 10) >= 1000, "every fee is at least a token amount")
+	check(WorldFinance.can_afford(100000, 70000, 9000) and not WorldFinance.can_afford(80000, 70000, 9000),
+		"a buyer keeps three months of the new salary after the fee")
+	check(WorldFinance.affordable_salary(1000000, 12000, 1) == 12000 and WorldFinance.affordable_salary(30000, 12000, 1) < 12000
+		and WorldFinance.affordable_salary(-5000, 12000, 1) == WorldGenerator.TIER_PROFILE[1][3],
+		"tight budgets offer less, never below the tier minimum")
+	check(CareerCatalog.format_money(950) == "$950" and CareerCatalog.format_money(12500) == "$13k"
+		and CareerCatalog.format_money(2400) == "$2.4k" and CareerCatalog.format_money(-1250000) == "-$1.25m", "money reads naturally")
 
 
 func _test_form_and_reputation_rules() -> void:
@@ -259,6 +278,30 @@ func _test_world(app: Node) -> void:
 		if int(entry["reputation"]) != org_reputation_before.get(org_id, -1):
 			moved += 1
 	check(moved > 5, "reputations rose and fell with results (%d organisations)" % moved)
+
+	section("Money over the year")
+	var org_count := repo.organisation_count()
+	check(int(repo.db.scalar("SELECT COUNT(*) FROM organisation_finance;", [], 0)) == org_count, "every organisation has finances")
+	var incomes := int(repo.db.scalar("SELECT COUNT(*) FROM finance_ledger WHERE kind = 'income';", [], 0))
+	check(incomes == org_count * 12, "income arrived on the first of each month (%d entries)" % incomes)
+	check(int(repo.db.scalar("SELECT COUNT(*) FROM finance_ledger WHERE kind = 'wages';", [], 0)) > 0
+		and int(repo.db.scalar("SELECT COUNT(*) FROM finance_ledger WHERE kind = 'prize';", [], 0)) > 0,
+		"wages were paid and series wins earned prize money")
+	var paid := int(repo.db.scalar("SELECT COALESCE(SUM(amount), 0) FROM finance_ledger WHERE kind = 'fee_paid';", [], 0))
+	var received := int(repo.db.scalar("SELECT COALESCE(SUM(amount), 0) FROM finance_ledger WHERE kind = 'fee_received';", [], 0))
+	check(paid < 0 and paid == -received, "every transfer fee left one organisation and reached another (%s)" % CareerCatalog.format_money(received))
+	check(int(repo.db.scalar("""SELECT COUNT(*) FROM organisation_finance f WHERE f.balance <> (SELECT SUM(amount)
+		FROM finance_ledger l WHERE l.organisation_id = f.organisation_id);""", [], 0)) == 0,
+		"every balance equals the sum of its ledger")
+	var in_debt := int(repo.db.scalar("SELECT COUNT(*) FROM organisation_finance WHERE balance < 0;", [], 0))
+	var by_tier: PackedStringArray = []
+	for tier: int in [1, 2, 3, 4]:
+		by_tier.append("T%d %s" % [tier, CareerCatalog.format_money(int(repo.db.scalar("""SELECT COALESCE(ROUND(AVG(f.balance)), 0)
+			FROM organisation_finance f JOIN organisation o ON o.id = f.organisation_id WHERE o.tier = ?;""", [tier], 0)))])
+	check(in_debt * 5 <= org_count, "most organisations stay solvent (%d of %d in debt; average %s)" % [in_debt, org_count, ", ".join(by_tier)])
+	check(repo.news(100000).any(func(n: Dictionary) -> bool:
+			return str(n["kind"]) == WorldSimulation.NEWS_TRANSFER and str(n["headline"]).contains("$")),
+		"transfer stories name the fee")
 
 	section("News and Continue on the Calendar page")
 	app.call("open_career_hub")

@@ -26,6 +26,11 @@ const TRIAL_MAX_ROUNDS: int = 5
 const TRIAL_COMPETITION: String = "Trial"
 const CONTRACT_YEARS: Vector2i = Vector2i(1, 2)
 
+## Contract talks: one request per offer for this much more, granted with this chance when the
+## organisation can afford it.
+const RAISE_SHARE: float = 0.2
+const RAISE_CHANCE: float = 0.55
+
 const KIND_TRIAL: String = "trial"
 const KIND_CONTRACT: String = "contract"
 
@@ -92,6 +97,33 @@ static func accept(repo: CareerRepository, player_id: String, offer_id: String) 
 	return _sign(repo, player_id, found)
 
 
+## Contract talks: asks once for [constant RAISE_SHARE] more. Returns {ok, message}; ok is true
+## when the organisation improved its offer. The offer stays open either way.
+static func negotiate(repo: CareerRepository, player_id: String, offer_id: String,
+		rng: RandomNumberGenerator = null) -> Dictionary:
+	var found := repo.offer(offer_id)
+	if found.is_empty() or str(found["player_id"]) != player_id or str(found["status"]) != "pending" \
+			or str(found["kind"]) != KIND_CONTRACT:
+		return {"ok": false, "message": "There is no open contract offer to discuss."}
+	if int(found["negotiated"]) == 1:
+		return {"ok": false, "message": "%s have already given their final offer." % found["org_name"]}
+	var dice := rng
+	if dice == null:
+		dice = RandomNumberGenerator.new()
+		dice.randomize()
+	var current := int(found["monthly_salary"])
+	var asked := maxi(current + 50, roundi(current * (1.0 + RAISE_SHARE) / 50.0) * 50)
+	var org_id := str(found["organisation_id"])
+	var granted := dice.randf() < RAISE_CHANCE and WorldFinance.can_afford(repo.organisation_balance(org_id), 0, asked)
+	var salary := asked if granted else current
+	if not repo.set_offer_salary(offer_id, salary):
+		return {"ok": false, "message": "Could not record the talks."}
+	if granted:
+		return {"ok": true, "message": "%s agree to %s a month. This is their final offer." % [found["org_name"],
+			CareerCatalog.format_money(salary)]}
+	return {"ok": false, "message": "%s will not go higher than %s a month." % [found["org_name"], CareerCatalog.format_money(current)]}
+
+
 static func decline(repo: CareerRepository, player_id: String, offer_id: String) -> String:
 	var found := repo.offer(offer_id)
 	if found.is_empty() or str(found["player_id"]) != player_id or str(found["status"]) != "pending":
@@ -122,7 +154,8 @@ static func apply_trial_result(repo: CareerRepository, trial: Dictionary, result
 	var years := rng.randi_range(CONTRACT_YEARS.x, CONTRACT_YEARS.y)
 	var contract := {"id": Ids.generate("ofr"), "player_id": player_id, "organisation_id": org_id,
 		"kind": KIND_CONTRACT, "role": str(trial["role"]),
-		"monthly_salary": WorldMarket.salary_for(tier, repo.perceived_rating(player_id)), "years": years,
+		"monthly_salary": WorldFinance.affordable_salary(repo.organisation_balance(org_id),
+			WorldMarket.salary_for(tier, repo.perceived_rating(player_id)), tier), "years": years,
 		"created_day": day, "expires_day": day + OPEN_DAYS}
 	return repo.set_offer_status(str(trial["id"]), "passed", day) and repo.insert_offer(contract) \
 		and repo.add_news(day, WorldSimulation.NEWS_OFFER, WorldSimulation.HEADLINE,

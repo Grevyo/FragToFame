@@ -22,7 +22,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
 | 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
-| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world, path to pro and AI transfers |
+| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world, path to pro, transfers and finances |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | 🔶 first map; awaiting manual test |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
@@ -402,7 +402,18 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
       readily when the contract is nearly over and less for their best player. The displaced
       starter is benched, or released from a squad of seven. Players settle for 120 days, and
       nobody over 31 is bought.
-- [ ] Transfer fees, wages and organisation finances (with the human's own contract talks).
+- [x] Organisation finances (`WorldFinance`):
+  - an opening balance by tier and reputation;
+  - monthly income (sponsors and audience) and wages;
+  - series prize money;
+  - transfer fees by rating, age and contract left, paid buyer → seller;
+  - a ledger of every movement.
+
+  Buyers must keep three months of the new salary after a fee. Salaries shrink when money is
+  tight. Organisations in debt renew less and sell more readily.
+- [x] Human salary paid monthly into their own balance. Contract talks: ask once for about 20%
+      more; the organisation may refuse, and the offer stays open.
+- [ ] Season prize pools and standings rewards, and spending human money (with season records).
 
 ## Milestone 16 — Official content creation 🔶
 
@@ -530,4 +541,5 @@ Planned scope:
 | 2026-11-16 | M14 first slice, the living world: daily form, reputation and market, monthly development and opinion drift, yearly retirements and rookies, the news log, and Continue. Save schema v7. |
 | 2026-11-17 | M14 second slice, the path to pro: visibility, trial invitations, playable trials, contract offers, signing, and playable league series map by map. Save schema v8. |
 | 2026-11-17 | M14: AI transfers between organisations in January and July windows (no fees until organisations have finances). |
+| 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

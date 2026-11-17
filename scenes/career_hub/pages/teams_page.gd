@@ -56,6 +56,11 @@ func show_organisation(org_id: String) -> void:
 		PackedStringArray(["Tier", CareerCatalog.tier_name(org.tier)]),
 		PackedStringArray(["Reputation", str(repo.organisation_reputation(org.id))]),
 		PackedStringArray(["Form", CareerNewsPage.form_label(repo.organisation_form(org.id))]),
+		PackedStringArray(["Balance", CareerCatalog.format_money(repo.organisation_balance(org.id))
+			if repo.has_finances(org.id) else "Opens on the next day"]),
+		PackedStringArray(["Monthly income", CareerCatalog.format_money(WorldFinance.monthly_income(org.tier,
+			repo.organisation_reputation(org.id)))]),
+		PackedStringArray(["Monthly wages", CareerCatalog.format_money(repo.wage_bill(org.id))]),
 		PackedStringArray(["Founded", GameDate.format_year(org.founded_day)]),
 		PackedStringArray(["ID", org.id]),
 	]

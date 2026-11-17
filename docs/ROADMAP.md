@@ -22,7 +22,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
 | 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
-| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world; human path to pro next |
+| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world and path to pro; AI transfers next |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | 🔶 first map; awaiting manual test |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
@@ -348,8 +348,8 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
       (`SeriesSimulator`, `CareerCalendar`), atomically with the date and new seasons. The
       Calendar page advances the day and shows the week's series and recent results. A player's
       unplayed match blocks the day (calendar conflict).
-- [ ] Playable league series for the player's own organisation (needs human contracts, M14 human path):
-      map selection, configurable BO1, BO3 and BO5 series, MR length and overtime.
+- [x] Playable league series for the player's own organisation (M14 path to pro), map by map.
+- [ ] Map selection and veto, configurable MR length and overtime per competition.
 - [ ] Add cup and qualifier brackets, promotion and relegation, season records and the F2F Universal Ladder.
 
 ## Milestone 14 — World progression, transfers, rookies, retirement 🔶
@@ -381,12 +381,21 @@ First slice — the living world (`WorldSimulation`, run for every day by `Caree
 - [x] Continue stops on the player's match day, any headline (their contract, the new year, their
       league starting) or after 31 days.
 
-Next — the human path to pro:
+Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
 
-- [ ] Amateur matchmaking queue raising visibility; trials and contract offers driven by
-      reputation and recent ratings (offers become headlines, so Continue stops on them).
-- [ ] Accepting an offer signs the human; their organisation's league series become playable
-      (BO1/3/5, MR length, overtime, map selection) and feed form and reputation.
+- [x] Visibility from reputation, amateur ELO and recent F2F ratings (only played matches count).
+      Each tier looks from a visibility threshold (10 / 25 / 45 / 65) and needs a perceived level
+      near its norm. Unsigned humans get at most two open approaches, and an organisation waits
+      60 days before asking again.
+- [x] Trial invitations (headline, 7 days to answer) → a playable MR5 trial alongside four of
+      the organisation's starters. Rating ≥ 1.00 (≥ 0.85 in a win) earns a contract offer.
+- [x] Signing makes the human a starter. The weakest AI starter drops to the bench and other
+      offers are withdrawn.
+- [x] Playable league series: due series are booked map by map (MR8, the human's side at home).
+      A map that does not decide the series keeps the day. The final score goes to the table and
+      moves form and reputation, including the human's.
+- [ ] Map selection and veto, per-competition MR and overtime settings (with the M19 editor).
+- [ ] Offers to contracted humans (moves up a tier), and releases or benching of humans.
 - [ ] AI transfers between organisations (poaching and upgrades), not only free-agent signings.
 
 ## Milestone 16 — Official content creation 🔶
@@ -513,4 +522,5 @@ Planned scope:
 | 2026-11-15 | FPS Sandbox map select, a Controls screen (remapping, up to four bindings per action, saved) and sandbox noclip (V). Owner request, outside the milestone list. |
 | 2026-11-16 | Weapons, Coats and Magnets (owner request): ten modelled weapons in first person with inspection, Coat infrastructure for the simplified kits (no Coats shipped), 26 Magnets on five slots per weapon, Armoury screen, saved customisation. |
 | 2026-11-16 | M14 first slice, the living world: daily form, reputation and market, monthly development and opinion drift, yearly retirements and rookies, the news log, and Continue. Save schema v7. |
+| 2026-11-17 | M14 second slice, the path to pro: visibility, trial invitations, playable trials, contract offers, signing, and playable league series map by map. Save schema v8. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

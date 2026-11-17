@@ -486,7 +486,31 @@ sit beside small appliers, so the maths is tested without a database:
   the player's match day, any headline, or after 31 days.
 
 Humans are never developed, retired or re-rated by the world. Their skill is the person, and their
-reputation and ELO move only through played matches (`CareerDevelopment`).
+reputation and ELO move only through played matches (`CareerDevelopment`, and their own league
+series via `apply_series(..., played = true)`).
+
+**Path to pro.** `CareerOffers.daily` runs inside the world day:
+- Lapsed offers expire.
+- An unsigned human may be invited to a trial by the best tier that can see them. Visibility is
+  half their reputation, plus (ELO − 800) / 20, plus recent form; their perceived level must be
+  within 12 of the tier's norm.
+
+Offers live in `career_offer`. The status flow is pending → accepted (trial booked) → passed /
+failed, or declined / expired / withdrawn. A partial unique index allows one open approach per
+organisation.
+
+A trial is an ordinary `CareerFixture`. `CareerFixtures.record_result` finds it through
+`career_offer.fixture_id`, and `apply_trial_result` decides the contract offer. Signing benches
+the weakest AI starter.
+
+`CareerLeagueMatches.schedule_due` books the first map of the oldest due series for a contracted
+human. Each saved map is linked through `league_series_map`. `record_map` either books the next
+map without advancing the day, or publishes the series with `record_league_result` and
+`apply_series`.
+
+The FPS runtime always plays the human at home, so `human_home` maps the score back to the
+league's sides. Map choice is a fixed pool (`MAP_POOL`), and league maps are MR8, until per-
+competition settings arrive with M19.
 
 ### Bot AI (Milestone 6)
 
@@ -679,6 +703,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
 | 2026-11-16 | Sandbox bots play free-for-all and roam by scored interest points and heard gunfire instead of homing on the human | They no longer know where the player is through walls. Gunplay testing gets varied, fair fights. The planner is pure and testable, and reusable when M7 adds team intent |
+| 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

@@ -1,7 +1,9 @@
 class_name CareerFixtures
 extends RefCounted
-## Schedules and resolves the first local career fixture type. The FPS runtime receives only a
-## MatchSetup and returns a MatchResult. Result publication and calendar advancement are atomic.
+## Schedules amateur fixtures and resolves every career fixture (amateur matches, trials from
+## [CareerOffers] and league series maps from [CareerLeagueMatches]). The FPS runtime receives
+## only a MatchSetup and returns a MatchResult. Result publication and calendar advancement are
+## atomic; a map that does not decide its series keeps the day for the next map.
 
 const COMPETITION: String = "Amateur Matchmaking"
 const MAX_ROUNDS: int = 5
@@ -69,6 +71,17 @@ static func record_result(repo: CareerRepository, player_id: String, result: Mat
 			if fixture.setup.competition == COMPETITION and not CareerDevelopment.apply_amateur_result(
 					repo, fixture, result, totals[player_id]):
 				return false
+		var series_map := repo.series_map_for_fixture(fixture.setup.fixture_id)
+		if not series_map.is_empty():
+			var finished: Array[bool] = []
+			if not CareerLeagueMatches.record_map(repo, fixture, series_map, finished):
+				return false
+			if not finished[0]:
+				return true  # The next map of the series is played the same day.
+		var trial := repo.offer_for_fixture(fixture.setup.fixture_id)
+		if not trial.is_empty() and not CareerOffers.apply_trial_result(repo, trial, result,
+				totals.get(player_id, {}) as Dictionary):
+			return false
 		# Days passed while playing resolve their other series and new seasons too.
 		return CareerCalendar.advance_to(repo, maxi(repo.current_day(), fixture.scheduled_day + 1)))
 	if stored:

@@ -13,9 +13,11 @@ extends RefCounted
 ##   organisation_form  recent results momentum (derived from series, never an ability)
 ##   player_ability_history  monthly overall of AI players after development (history only)
 ##   world_news         what happened in the world, one row per story
+##   career_offer       trial invitations and contract offers to human players
+##   league_series_map  which career fixture plays which map of a human organisation's series
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 7
+const CURRENT_VERSION: int = 8
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -238,6 +240,34 @@ const MIGRATIONS: Array[PackedStringArray] = [
 		);""",
 		"CREATE INDEX world_news_by_day ON world_news(day DESC, id DESC);",
 		"CREATE INDEX world_news_by_player ON world_news(player_id, day DESC);",
+	],
+	# v8 — the human path to pro: trials, contract offers and playable league series.
+	[
+		"""CREATE TABLE career_offer (
+			id TEXT PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			kind TEXT NOT NULL CHECK (kind IN ('trial', 'contract')),
+			role TEXT NOT NULL,
+			monthly_salary INTEGER NOT NULL CHECK (monthly_salary >= 0),
+			years INTEGER NOT NULL CHECK (years BETWEEN 1 AND 5),
+			created_day INTEGER NOT NULL,
+			expires_day INTEGER NOT NULL,
+			status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'passed', 'failed', 'declined',
+				'expired', 'withdrawn')),
+			fixture_id TEXT UNIQUE REFERENCES career_fixture(id),
+			resolved_day INTEGER,
+			CHECK (expires_day >= created_day)
+		);""",
+		"CREATE UNIQUE INDEX career_offer_one_open ON career_offer(player_id, organisation_id) WHERE status = 'pending' OR (status = 'accepted' AND kind = 'trial');",
+		"CREATE INDEX career_offer_by_player ON career_offer(player_id, created_day DESC);",
+		"""CREATE TABLE league_series_map (
+			league_fixture_id INTEGER NOT NULL REFERENCES league_fixture(id),
+			map_number INTEGER NOT NULL CHECK (map_number BETWEEN 1 AND 5),
+			career_fixture_id TEXT NOT NULL UNIQUE REFERENCES career_fixture(id),
+			human_home INTEGER NOT NULL CHECK (human_home IN (0, 1)),
+			PRIMARY KEY (league_fixture_id, map_number)
+		) WITHOUT ROWID;""",
 	],
 ]
 

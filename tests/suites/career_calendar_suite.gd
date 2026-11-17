@@ -102,6 +102,7 @@ func _test_calendar(app: Node) -> void:
 	check(CareerFixtures.schedule(repo, player_id, MapTemplates.SANDBOX_ARENA_ID).is_empty(), "an amateur match is scheduled today")
 	check(CareerCalendar.advance_day(repo, player_id) == CareerCalendar.BLOCKED_BY_FIXTURE and repo.current_day() == 1,
 		"the day cannot pass while the player's match is unplayed")
+	repo.db.execute("DELETE FROM league_series_map;")
 	repo.db.execute("DELETE FROM career_fixture WHERE player_id = ? AND submission_id IS NULL;", [player_id])
 
 	check(repo.db.execute("""CREATE TRIGGER block_calendar_score BEFORE UPDATE OF home_maps ON league_fixture
@@ -116,6 +117,12 @@ func _test_calendar(app: Node) -> void:
 	check(unresolved.size() >= 2 and unresolved.all(func(f: Dictionary) -> bool:
 			return str(f["home_id"]) == human_org or str(f["away_id"]) == human_org),
 		"after a month only the human organisation's weekly series are still open (%d)" % unresolved.size())
+
+	# The human's own league series are booked for them to play; release them so the page can
+	# move the day on in this test.
+	repo.db.execute("DELETE FROM league_series_map;")
+	repo.db.execute("DELETE FROM career_fixture WHERE player_id = ? AND submission_id IS NULL;", [player_id])
+	repo.end_contract(contract.id, "terminated", repo.current_day())
 
 	section("Calendar page")
 	app.call("open_career_hub")

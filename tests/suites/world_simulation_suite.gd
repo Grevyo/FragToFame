@@ -145,7 +145,13 @@ func _test_world(app: Node) -> void:
 		org_reputation_before[(entry["organisation"] as CareerRecords.OrganisationRecord).id] = int(entry["reputation"])
 
 	# The human joins an organisation on a short deal so its expiry is a headline.
-	var human_org := str(repo.organisations()[0]["organisation"].id)
+	# An organisation with no league series in its first weeks, so the contract is the first event.
+	var human_org := ""
+	for entry: Dictionary in repo.organisations():
+		var candidate := (entry["organisation"] as CareerRecords.OrganisationRecord).id
+		if repo.due_series_for(candidate, 25).is_empty():
+			human_org = candidate
+			break
 	var contract := CareerRecords.ContractRecord.new()
 	contract.id = "con_world_test"
 	contract.player_id = player_id

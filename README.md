@@ -375,6 +375,22 @@ from spawn, so rounds often start with a long-range fight.
       (31+) tend to fall.
 - [ ] Schedule an amateur match on Home, then press Continue: it refuses until you play it.
 
+### Manual test checklist (Milestone 14 — path to pro)
+
+- [ ] Start a **Hyped prospect** career. Home shows an **Offers** card with your visibility.
+      Play an amateur match or two, then press **Continue** on the Calendar until an organisation
+      invites you to a trial (a headline stops Continue).
+- [ ] On Home, **Accept trial**. "Your next match" shows the trial alongside four of that
+      organisation's starters. Play it on Kilnmarket.
+- [ ] Play well (or win): a contract offer arrives. Play badly: the organisation passes and a
+      headline says so. **Sign** the offer. Home says you are under contract, and the Teams page
+      lists you in the organisation's starting five.
+- [ ] Press **Continue**: it stops on league match day. Play map 1 of the BO3. Map 2 is booked
+      straight away on the same day. Once one side has two maps, the series appears in
+      Competitions and the Calendar's recent results, and the day moves on.
+- [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
+      your visibility.
+
 ### Manual test checklist (Milestone 16 — map creator tools and Kilnmarket)
 
 Automated tests cover every operation below headlessly; these checks are for feel and visuals.

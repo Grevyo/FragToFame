@@ -169,6 +169,22 @@ func continue_career() -> Dictionary:
 	return outcome
 
 
+## Accepts a trial invitation (books the trial match) or a contract offer (signs). "" or why not.
+func accept_career_offer(offer_id: String) -> String:
+	if not has_career():
+		return "Open a career first."
+	var problem := CareerOffers.accept(career.repo, career.human_player_id, offer_id)
+	if problem.is_empty():
+		career_day_changed.emit()
+	return problem
+
+
+func decline_career_offer(offer_id: String) -> String:
+	if not has_career():
+		return "Open a career first."
+	return CareerOffers.decline(career.repo, career.human_player_id, offer_id)
+
+
 func schedule_career_fixture(map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> String:
 	if not has_career():
 		return "Open a career first."

@@ -5,13 +5,15 @@ extends RefCounted
 ## day either happens completely or not at all.
 ##
 ## Every day:   series results move form and reputation; contracts end (renewed or released);
-##              organisations short of starters sign free agents; season openings make news.
+##              organisations short of starters sign free agents; season openings make news;
+##              organisations may invite an unsigned human to a trial ([CareerOffers]); a
+##              contracted human's due league series is booked to play ([CareerLeagueMatches]).
 ## Each month:  AI players develop or decline, the world's opinion catches up with the truth,
 ##              and reputations drift back towards what an organisation's level supports.
 ## Each year:   veterans retire and a class of original rookies enters the scene.
 ##
-## Humans are only ever affected through their reputation-free stories (contract news); their
-## skill, reputation and amateur rating belong to [CareerDevelopment].
+## Humans are never developed or re-rated by the world: their skill is the person, and their
+## reputation only moves through matches they play (amateur matches, their league series).
 
 ## News importance. Continue (FM-style) stops on headlines.
 const MINOR: int = 1
@@ -25,6 +27,7 @@ const NEWS_RETIREMENT: String = "retirement"
 const NEWS_ROOKIES: String = "rookies"
 const NEWS_SEASON: String = "season"
 const NEWS_NEW_YEAR: String = "new_year"
+const NEWS_OFFER: String = "offer"
 
 ## Form after a series: old form × KEEP + GAIN × outcome (outcome 1 = clean sweep, −1 = swept).
 const FORM_KEEP: float = 0.6
@@ -60,7 +63,8 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 	if GameDate.month_and_day(day).y == 1 and day > 0:
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng):
 			return false
-	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.fill_rosters(repo, day, rng)
+	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.fill_rosters(repo, day, rng) \
+		and CareerOffers.daily(repo, day, rng) and CareerLeagueMatches.schedule_due(repo, day)
 
 
 ## Simulated strength bonus from an organisation's form.
@@ -85,9 +89,10 @@ static func reputation_change(home: int, away: int, home_won: bool, tier: int) -
 
 
 ## Applies a finished organisation series to both sides' form and reputation (and their AI
-## starters' reputation). [param score]: maps won (home, away).
+## starters' reputation). [param score]: maps won (home, away). [param played]: a human played
+## the series, so human starters' reputation moves too (only real games move theirs).
 static func apply_series(repo: CareerRepository, home_id: String, away_id: String, score: Vector2i,
-		best_of: int, tier: int, day: int, rng: RandomNumberGenerator) -> bool:
+		best_of: int, tier: int, day: int, rng: RandomNumberGenerator, played: bool = false) -> bool:
 	@warning_ignore("integer_division")
 	var target := float(best_of / 2 + 1)
 	var outcome := float(score.x - score.y) / target
@@ -102,7 +107,7 @@ static func apply_series(repo: CareerRepository, home_id: String, away_id: Strin
 		if not repo.set_organisation_reputation(org_id, int(side[3]) + stochastic_round(delta, rng), day):
 			return false
 		for entry: Dictionary in repo.lineup(org_id):
-			if bool(entry["is_human"]):
+			if bool(entry["is_human"]) and not played:
 				continue
 			var player_id := str(entry["player_id"])
 			var step := stochastic_round(delta * PLAYER_SHARE, rng)

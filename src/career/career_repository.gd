@@ -474,6 +474,11 @@ func insert_competition(competition: CompetitionRecord) -> bool:
 			competition.team_count, competition.start_month])
 
 
+func get_competition(id: String) -> CompetitionRecord:
+	var found := db.row("SELECT * FROM competition WHERE id = ?;", [id])
+	return CompetitionRecord.from_row(found) if not found.is_empty() else null
+
+
 ## Active competitions, top tier first, international before regional.
 func competitions() -> Array[CompetitionRecord]:
 	var list: Array[CompetitionRecord] = []
@@ -713,6 +718,94 @@ func seasons_starting(day: int) -> Array[Dictionary]:
 func is_league_entrant(competition_id: String, year: int, org_id: String) -> bool:
 	return int(db.scalar("""SELECT COUNT(*) FROM league_entrant
 		WHERE competition_id = ? AND season_year = ? AND organisation_id = ?;""", [competition_id, year, org_id], 0)) > 0
+
+
+# --- Offers to humans and playable league series ---------------------------------------------
+
+func insert_offer(offer: Dictionary) -> bool:
+	return db.execute("""INSERT INTO career_offer (id, player_id, organisation_id, kind, role, monthly_salary, years,
+			created_day, expires_day, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending');""",
+		[offer["id"], offer["player_id"], offer["organisation_id"], offer["kind"], str(offer["role"]),
+			offer["monthly_salary"], offer["years"], offer["created_day"], offer["expires_day"]])
+
+
+## One offer with its organisation's name and tier, or {}.
+func offer(offer_id: String) -> Dictionary:
+	return db.row("""SELECT f.*, o.name AS org_name, o.tier FROM career_offer f
+		JOIN organisation o ON o.id = f.organisation_id WHERE f.id = ?;""", [offer_id])
+
+
+## The trial offer a career fixture was scheduled for, or {}.
+func offer_for_fixture(fixture_id: String) -> Dictionary:
+	return db.row("""SELECT f.*, o.name AS org_name, o.tier FROM career_offer f
+		JOIN organisation o ON o.id = f.organisation_id WHERE f.fixture_id = ?;""", [fixture_id])
+
+
+## A player's offers, newest first; [param open_only] keeps pending ones and booked trials.
+func offers(player_id: String, open_only: bool = false, limit: int = 20) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, o.name AS org_name, o.tier FROM career_offer f
+		JOIN organisation o ON o.id = f.organisation_id
+		WHERE f.player_id = ? %s ORDER BY f.created_day DESC, f.id DESC LIMIT ?;""" % (
+		"AND (f.status = 'pending' OR (f.status = 'accepted' AND f.kind = 'trial'))" if open_only else ""),
+		[player_id, limit])
+
+
+func set_offer_status(offer_id: String, status: String, day: int, fixture_id: String = "") -> bool:
+	return db.execute("UPDATE career_offer SET status = ?, resolved_day = ?, fixture_id = COALESCE(?, fixture_id) WHERE id = ?;",
+		[status, day, null if fixture_id.is_empty() else fixture_id, offer_id])
+
+
+## Pending offers that ran out before [param day].
+func lapsed_offers(day: int) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, o.name AS org_name FROM career_offer f JOIN organisation o ON o.id = f.organisation_id
+		WHERE f.status = 'pending' AND f.expires_day < ?;""", [day])
+
+
+## Organisations that approached [param player_id] on or after [param since_day] (or still are).
+func recent_suitors(player_id: String, since_day: int) -> Dictionary[String, bool]:
+	var result: Dictionary[String, bool] = {}
+	for found: Dictionary in db.rows("""SELECT DISTINCT organisation_id FROM career_offer WHERE player_id = ?
+			AND (status = 'pending' OR (status = 'accepted' AND kind = 'trial')
+				OR COALESCE(resolved_day, created_day) >= ?);""", [player_id, since_day]):
+		result[str(found["organisation_id"])] = true
+	return result
+
+
+## Recent recorded F2F ratings of a player (newest first).
+func recent_ratings(player_id: String, limit: int = 5) -> Array[float]:
+	var list: Array[float] = []
+	for found: Dictionary in db.rows("""SELECT r.rating FROM career_match_rating r JOIN career_fixture f ON f.id = r.fixture_id
+			WHERE r.player_id = ? ORDER BY f.scheduled_day DESC, f.id DESC LIMIT ?;""", [player_id, limit]):
+		list.append(float(found["rating"]))
+	return list
+
+
+func insert_series_map(league_fixture_id: int, map_number: int, career_fixture_id: String, human_home: bool) -> bool:
+	return db.execute("INSERT INTO league_series_map VALUES (?, ?, ?, ?);",
+		[league_fixture_id, map_number, career_fixture_id, 1 if human_home else 0])
+
+
+## The series map a career fixture plays, or {} (league_fixture_id, map_number, human_home).
+func series_map_for_fixture(career_fixture_id: String) -> Dictionary:
+	return db.row("SELECT * FROM league_series_map WHERE career_fixture_id = ?;", [career_fixture_id])
+
+
+## Maps of a series booked so far, in order: map_number, human_home, career_fixture_id.
+func series_maps(league_fixture_id: int) -> Array[Dictionary]:
+	return db.rows("""SELECT map_number, human_home, career_fixture_id FROM league_series_map
+		WHERE league_fixture_id = ? ORDER BY map_number;""", [league_fixture_id])
+
+
+## Unscored series of [param org_id] scheduled on or before [param day], oldest first, with the
+## competition's name and tier.
+func due_series_for(org_id: String, day: int) -> Array[Dictionary]:
+	return db.rows("""SELECT f.*, s.best_of, c.name AS competition_name, c.tier,
+			h.name AS home_name, a.name AS away_name FROM league_fixture f
+		JOIN league_season s ON s.competition_id = f.competition_id AND s.season_year = f.season_year
+		JOIN competition c ON c.id = f.competition_id
+		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id
+		WHERE f.home_maps IS NULL AND f.scheduled_day <= ? AND (f.home_id = ? OR f.away_id = ?)
+		ORDER BY f.scheduled_day, f.id;""", [day, org_id, org_id])
 
 
 # --- Helpers ----------------------------------------------------------------------------------

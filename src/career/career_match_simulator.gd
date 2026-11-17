@@ -1,10 +1,10 @@
 class_name CareerMatchSimulator
 extends RefCounted
 ## DEVELOPMENT OPTION: resolves the player's pending career match without playing it, so days
-## can be tested quickly. It uses the same model as every simulated world series
-## ([SeriesSimulator]): each side's strength is the mean ability of its lineup (AI players' true
-## abilities; human players' perceived values, i.e. what the world believes about them) plus the
-## organisation's form, and the map goes to the home side with the logistic map-win chance.
+## can be tested quickly. Each map goes through the same round-by-round [MatchEngine] as every
+## simulated world series: AI players with their true abilities, the human with their perceived
+## values (what the world believes about them), traits and morale. The engine's player lines
+## are kept as simulated lines (`sim_player_map`), never as recorded match statistics.
 ##
 ## A simulated result carries [constant MatchResult.SOURCE_SIMULATION] and no telemetry, so it
 ## records no statistics or performance rating and changes no opinions. It does count like a
@@ -66,13 +66,50 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 					ratings[str(member["player_id"])] = repo.perceived_rating(str(member["player_id"]))
 		var home := lineup_strength(setup.home_lineup, ratings) + WorldSimulation.form_bonus(repo, setup.home_team_id)
 		var away := lineup_strength(setup.away_lineup, ratings) + WorldSimulation.form_bonus(repo, setup.away_team_id)
-		var score := map_score(dice, home, away, setup.max_rounds)
+		var played := engine_map(repo, setup, dice)
+		var score: Vector2i = played["score"]
+		if home <= 0.0 and away <= 0.0:
+			score = map_score(dice, home, away, setup.max_rounds)
 		var result := MatchResult.create(setup.fixture_id, score.x, score.y, MatchResult.SOURCE_SIMULATION)
 		result.map_id = setup.map_id
 		var problem := CareerFixtures.record_result(repo, player_id, result, true)
 		if not problem.is_empty():
 			return {"ok": false, "message": problem, "maps": lines.size()}
+		if not _store_lines(repo, fixture, setup, played, score, this_series):
+			return {"ok": false, "message": "Could not store the simulated lines.", "maps": lines.size()}
 		lines.append("%s %d–%d %s" % [setup.home_team_name, score.x, score.y, setup.away_team_name])
 	if lines.is_empty():
 		return {"ok": false, "message": "There is no match to simulate.", "maps": 0}
 	return {"ok": true, "message": "Simulated (dev): " + "; ".join(lines) + ".", "maps": lines.size()}
+
+
+## One map of a career fixture through the match engine (home side starts on attack).
+static func engine_map(repo: CareerRepository, setup: MatchSetup, dice: RandomNumberGenerator) -> Dictionary:
+	var engine := MatchEngine.new(dice, setup.max_rounds)
+	var home := MatchEngine.SimTeam.new()
+	home.id = setup.home_team_id
+	home.name = setup.home_team_name
+	home.form = repo.organisation_form(setup.home_team_id)
+	var away := MatchEngine.SimTeam.new()
+	away.id = setup.away_team_id
+	away.name = setup.away_team_name
+	away.form = repo.organisation_form(setup.away_team_id)
+	for member: Dictionary in setup.home_lineup:
+		home.players.append(CareerSeriesEngine.sim_player(repo, member))
+	for member: Dictionary in setup.away_lineup:
+		away.players.append(CareerSeriesEngine.sim_player(repo, member))
+	return engine.play_map(home, away)
+
+
+static func _store_lines(repo: CareerRepository, fixture: CareerFixture, setup: MatchSetup, played: Dictionary, score: Vector2i,
+		series_id: int) -> bool:
+	var stats: Dictionary = played.get("players", {})
+	for side: Array in [[setup.home_lineup, setup.home_team_id, score.x > score.y], [setup.away_lineup, setup.away_team_id, score.y > score.x]]:
+		for member: Dictionary in side[0]:
+			var line: Dictionary = stats.get(str(member["player_id"]), {})
+			if line.is_empty():
+				continue
+			if not repo.insert_sim_line(fixture.scheduled_day, series_id, setup.fixture_id, 1, str(member["player_id"]),
+					str(side[1]), line, bool(side[2])):
+				return false
+	return true

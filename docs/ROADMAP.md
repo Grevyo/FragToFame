@@ -420,6 +420,31 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
   - **Benching:** a monthly check. Poor recent ratings can cost a starter their place to a
     better substitute, and a benched human can be recalled. A benched human's organisation is
     simulated without them.
+- [x] Deep simulation (owner, 2026-11-17: "much much deeper"). Every series nobody plays goes
+      round by round through `MatchEngine` (`CareerSeriesEngine`):
+  - **Format and economy:** MR8 halves and overtime; pistol, eco, force and full buys from a
+    team bank, with loss bonuses.
+  - **Rounds:** attack and defence, plants, defuses and saves. Each round is a chain of duels
+    whose fighters are picked by role and personality, with trades, assists and clutches.
+  - **What decides a duel:** each player's duel skill on the day, side, numbers, equipment,
+    post-plant position, the team's tactics, utility and coordination, how the team executes
+    the round, its form on the day, and momentum.
+  - **Players:** form on the day comes from consistency, morale and personality (streaky or
+    steady). Traits matter: clutch, pressure, tilt, calm, flick and spray specialists,
+    aggression, team play.
+  - **Calibration** (400 maps per gap): even sides split, with about 42% of maps within three
+    rounds. A 3-point gap wins about 58% of maps, a tier (about 8) about 80%, 15 points about
+    95%. Average rating is 1.00 and there is about one ace per 10 maps.
+  - **Results:** each map's score, MVP and moments are stored, along with a line for every
+    player (kills, deaths, assists, damage, KAST, openings, clutches, rating). These are kept
+    apart from the statistics of played matches.
+  - **Morale:** moves with every map, scaled by personality, and fades monthly.
+  - **Reputation and opinion:** standout or poor series move a player's reputation. Monthly,
+    the world's opinion follows recent form, within 8 points of the truth.
+  - **News:** upsets, star performances, aces and 1v4+ clutches (tiers 1–2).
+  - **In the hub:** Calendar shows map scores and the MVP, Competitions top performers, and
+    player pages their simulated form and morale.
+  - The development "simulate match" uses the same engine.
 - [x] Each save starts differently (`CareerStart.vary_world`):
   - three to six tier swaps between adjacent tiers;
   - random starting form;
@@ -594,6 +619,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-17 | M14: the round-by-round match engine for every simulated series: economy, duels, trades, clutches, day form, morale, traits, per-player simulated lines, opinion from form, and upset/star news. Save schema v12. |
 | 2026-11-17 | M13/M14: cups with brackets, promotion and relegation by tier swaps, fuller leagues, transfer offers, renewals, releases and benching for contracted humans, and a different start for every save. Save schema v11. |
 | 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

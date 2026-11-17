@@ -1,7 +1,7 @@
 class_name CareerCalendar
 extends RefCounted
-## Moves a career's date forward one day at a time. Each day that passes first resolves the
-## organisation series that were due before it ([SeriesSimulator], feeding form and reputation),
+## Moves a career's date forward one day at a time. Each day that passes first plays the
+## organisation series that were due before it, round by round ([CareerSeriesEngine]),
 ## then runs the living world for that day ([WorldSimulation]: market, development, retirements,
 ## rookies, new seasons and news), all in one transaction with the date change.
 ##
@@ -85,25 +85,22 @@ static func organisation_strength(repo: CareerRepository, org_id: String) -> flo
 	return total / count + WorldSimulation.form_bonus(repo, org_id) if count > 0 else 0.0
 
 
+## Plays every due series nobody plays through the round-by-round match engine
+## ([CareerSeriesEngine]). Form and morale move after each series, so later series see them.
 static func _simulate_due_series(repo: CareerRepository, before_day: int, rng: RandomNumberGenerator) -> bool:
-	var strength: Dictionary[String, float] = {}
 	var human_org: Dictionary[String, bool] = {}
 	for fixture: Dictionary in repo.unresolved_league_fixtures(before_day):
 		var home := str(fixture["home_id"])
 		var away := str(fixture["away_id"])
 		for org_id: String in [home, away]:
-			if not strength.has(org_id):
-				strength[org_id] = organisation_strength(repo, org_id)
+			if not human_org.has(org_id):
 				human_org[org_id] = repo.organisation_has_human_starter(org_id)
 		if human_org[home] or human_org[away]:
 			continue
 		var best_of := int(fixture["best_of"])
-		var score := SeriesSimulator.simulate(rng, strength[home], strength[away], best_of)
-		if not repo.store_league_score(int(fixture["id"]), score.x, score.y):
+		var score := CareerSeriesEngine.play_series(repo, fixture, int(fixture["scheduled_day"]), rng)
+		if score.x < 0 or not repo.store_league_score(int(fixture["id"]), score.x, score.y):
 			return false
 		if not WorldSimulation.apply_series(repo, home, away, score, best_of, int(fixture["tier"]), before_day, rng):
 			return false
-		# Form moved: later series on the same jump see it.
-		strength.erase(home)
-		strength.erase(away)
 	return true

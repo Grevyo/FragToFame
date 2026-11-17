@@ -1089,3 +1089,69 @@ func organisation_has_human_starter(org_id: String) -> bool:
 
 func set_contract_end(contract_id: String, end_day: int) -> bool:
 	return db.execute("UPDATE contract SET end_day = ? WHERE id = ? AND start_day < ?;", [end_day, contract_id, end_day])
+
+
+# --- Match engine: morale and simulated maps ---------------------------------------------------
+
+func morale(player_id: String) -> int:
+	return int(db.scalar("SELECT value FROM player_morale WHERE player_id = ?;", [player_id], 0))
+
+
+func set_morale(player_id: String, value: int, day: int) -> bool:
+	return db.execute("""INSERT INTO player_morale (player_id, value, updated_day) VALUES (?, ?, ?)
+		ON CONFLICT(player_id) DO UPDATE SET value = excluded.value, updated_day = excluded.updated_day;""",
+		[player_id, clampi(value, -20, 20), day])
+
+
+## Morale fades towards neutral (monthly).
+func fade_morale(keep: float, day: int) -> bool:
+	return db.execute("UPDATE player_morale SET value = CAST(ROUND(value * ?) AS INTEGER), updated_day = ?;", [keep, day])
+
+
+func insert_sim_map(league_fixture_id: int, map_number: int, map_id: String, score: Vector2i, mvp_id: String,
+		highlights: PackedStringArray) -> bool:
+	return db.execute("INSERT INTO sim_map VALUES (?, ?, ?, ?, ?, ?, ?);", [league_fixture_id, map_number, map_id,
+		score.x, score.y, null if mvp_id.is_empty() else mvp_id, "\n".join(highlights)])
+
+
+## Simulated maps of a series with the MVP's nickname.
+func sim_maps(league_fixture_id: int) -> Array[Dictionary]:
+	return db.rows("""SELECT m.*, p.nickname AS mvp_name FROM sim_map m LEFT JOIN player p ON p.id = m.mvp_id
+		WHERE m.league_fixture_id = ? ORDER BY m.map_number;""", [league_fixture_id])
+
+
+## One player's line from a simulated map ([param line] holds the engine's counts and rating).
+func insert_sim_line(day: int, league_fixture_id: int, career_fixture_id: String, map_number: int, player_id: String,
+		org_id: String, line: Dictionary, won: bool) -> bool:
+	return db.execute("""INSERT INTO sim_player_map (day, league_fixture_id, career_fixture_id, map_number, player_id,
+			organisation_id, rounds, kills, deaths, assists, damage, kast_rounds, opening_kills, clutch_wins, rating, won)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", [day, null if league_fixture_id < 0 else league_fixture_id,
+		null if career_fixture_id.is_empty() else career_fixture_id, map_number, player_id, null if org_id.is_empty() else org_id,
+		int(line["rounds"]), int(line["kills"]), int(line["deaths"]), int(line["assists"]), int(line["damage"]),
+		int(line["kast_rounds"]), int(line["opening_kills"]), int(line["clutch_wins"]), float(line["rating"]), 1 if won else 0])
+
+
+## A player's simulated maps since [param since_day]: totals and the average rating.
+func sim_form(player_id: String, since_day: int) -> Dictionary:
+	return db.row("""SELECT COUNT(*) AS maps, COALESCE(SUM(won), 0) AS won, COALESCE(SUM(rounds), 0) AS rounds,
+			COALESCE(SUM(kills), 0) AS kills, COALESCE(SUM(deaths), 0) AS deaths, COALESCE(SUM(assists), 0) AS assists,
+			COALESCE(SUM(opening_kills), 0) AS opening_kills, COALESCE(SUM(clutch_wins), 0) AS clutch_wins,
+			COALESCE(AVG(rating), 0) AS rating, COALESCE(MAX(rating), 0) AS best
+		FROM sim_player_map WHERE player_id = ? AND day >= ?;""", [player_id, since_day])
+
+
+## Average simulated rating of AI players with at least [param min_maps] maps since a day.
+func sim_ratings_since(since_day: int, min_maps: int) -> Array[Dictionary]:
+	return db.rows("""SELECT s.player_id, AVG(s.rating) AS rating, COUNT(*) AS maps FROM sim_player_map s
+		JOIN player p ON p.id = s.player_id WHERE p.is_human = 0 AND s.day >= ?
+		GROUP BY s.player_id HAVING COUNT(*) >= ?;""", [since_day, min_maps])
+
+
+## Best simulated performers of a competition season (average rating, at least [param min_maps]).
+func top_performers(competition_id: String, year: int, min_maps: int, limit: int = 10) -> Array[Dictionary]:
+	return db.rows("""SELECT s.player_id, p.nickname, o.short_name AS org, COUNT(*) AS maps, AVG(s.rating) AS rating,
+			SUM(s.kills) AS kills, SUM(s.deaths) AS deaths
+		FROM sim_player_map s JOIN league_fixture f ON f.id = s.league_fixture_id
+		JOIN player p ON p.id = s.player_id LEFT JOIN organisation o ON o.id = s.organisation_id
+		WHERE f.competition_id = ? AND f.season_year = ?
+		GROUP BY s.player_id HAVING COUNT(*) >= ? ORDER BY rating DESC LIMIT ?;""", [competition_id, year, min_maps, limit])

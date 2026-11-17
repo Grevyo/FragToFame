@@ -110,6 +110,7 @@ func _show_season() -> void:
 			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
 				str(entry["lost"]), "%+d" % int(entry["map_diff"]), CareerCatalog.format_money(int(entry["prize"]))]))
 		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Wins", "Losses", "Map diff", "Prize"]), rows)
+	_add_performers(repo, competition.id, year)
 	_add_history(repo, competition.id)
 	_add_fixture_rounds(fixtures, repo.current_day())
 
@@ -148,7 +149,21 @@ func _show_cup(repo: CareerRepository, competition: CareerRecords.CompetitionRec
 			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
 				str(entry["lost"]), CareerCatalog.format_money(int(entry["prize"]))]))
 		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Series won", "Series lost", "Prize"]), rows)
+	_add_performers(repo, competition.id, year)
 	_add_history(repo, competition.id)
+
+
+## The season's best players in simulated series (average rating, at least four maps).
+func _add_performers(repo: CareerRepository, competition_id: String, year: int) -> void:
+	var best := repo.top_performers(competition_id, year, 4)
+	if best.is_empty():
+		return
+	var card := UIFactory.card(_detail, "Top performers · simulated series")
+	var rows: Array[PackedStringArray] = []
+	for entry: Dictionary in best:
+		rows.append(PackedStringArray([str(entry["nickname"]), str(entry["org"]) if entry["org"] != null else "", str(int(entry["maps"])),
+			"%d – %d" % [int(entry["kills"]), int(entry["deaths"])], "%.2f" % float(entry["rating"])]))
+	UIFactory.table(card, PackedStringArray(["Player", "Team", "Maps", "K – D", "Rating"]), rows)
 
 
 ## Past podiums of a competition (season records).

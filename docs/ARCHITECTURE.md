@@ -499,6 +499,17 @@ sit beside small appliers, so the maths is tested without a database:
   - podium squads gain `player_honour` rows and reputation;
   - humans in a paid squad get a `bonus`;
   - a human's finish is a headline.
+- **Match engine (`src/career/sim/`):**
+  - `MatchEngine` is pure. It takes two `SimTeam`s of `SimPlayer`s and plays a map round by
+    round, returning the score, every player's counts and rating (`MatchStatistics.rating`),
+    the MVP, a round log and highlights.
+  - `CareerSeriesEngine` builds teams from the career (AI players' true abilities, humans'
+    perceived values, traits, morale). It plays the series and writes `sim_map`,
+    `sim_player_map` and `player_morale`, plus reputation and news. Monthly it fades morale
+    and moves AI perceived duel skills towards recent form.
+  - Simulated lines never enter the recorded statistics tables.
+  - The engine lives on the career layer and never touches the FPS runtime, so career
+    attributes still never affect real aim, recoil or movement.
 - **Cups (`CareerCups`):** editions are published with the leagues. `cup_seed` holds the seed
   order, and the bracket is derived from the seeds and the scored series each day. A round's
   series are inserted into `league_fixture` once both sides are known, so cups reuse
@@ -761,6 +772,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | The transfer market is open all year; windows only raise the odds (owner) | Struggling teams can react mid-season, which makes the world feel alive, while windows keep most movement predictable |
 | 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
 | 2026-11-17 | Cup series reuse `league_fixture`; tiers move only by swaps; each save varies its start | One series pipeline for leagues and cups (simulation, playable series, prizes). Swaps keep every tier the same size, so finances and competitions stay balanced while the world changes. Starting variation stays within authored ranges |
+| 2026-11-17 | Simulated series are played round by round by a pure engine on the career layer; simulated player lines are stored apart from recorded statistics | Results come from people and moments (form, morale, traits, economy, clutches), not one strength roll, so the world feels alive and less predetermined. Recorded stats stay a record of played matches only. A simulated year takes a few seconds |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

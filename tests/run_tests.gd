@@ -36,6 +36,7 @@ const SUITES: Array[String] = [
 	"res://tests/suites/career_offers_suite.gd",
 	"res://tests/suites/world_seasons_suite.gd",
 	"res://tests/suites/world_cups_suite.gd",
+	"res://tests/suites/match_engine_suite.gd",
 ]
 
 

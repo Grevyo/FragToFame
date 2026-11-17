@@ -1,9 +1,9 @@
 class_name SeriesSimulator
 extends RefCounted
-## Resolves organisation series that nobody plays: each map is won with a probability set by
-## the two lineups' strength, until one side reaches the best-of target. Pure maths (no
-## database or scene access) so it can be tested in isolation and reused by cups (M13) and
-## world simulation (M14).
+## The quick strength model: each map is won with a probability set by the two lineups'
+## strength. Series the world plays now go through the round-by-round [MatchEngine]
+## ([CareerSeriesEngine]); this model remains for pre-match odds (upsets) and quick estimates.
+## Pure maths (no database or scene access).
 
 ## Strength gap that turns into a 73% map-win chance (logistic scale, in ability points).
 const STRENGTH_SCALE: float = 6.0

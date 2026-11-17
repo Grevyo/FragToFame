@@ -106,8 +106,26 @@ func _series_card(title: String, fixtures: Array[Dictionary]) -> void:
 		var score := "Scheduled" if fixture["home_maps"] == null else "%d – %d" % [
 			int(fixture["home_maps"]), int(fixture["away_maps"])]
 		rows.append(PackedStringArray([GameDate.format(int(fixture["scheduled_day"])), str(fixture["competition_name"]),
-			"%s vs %s" % [fixture["home_name"], fixture["away_name"]], score]))
-	UIFactory.table(card, PackedStringArray(["Date", "Competition", "Series", "Maps"]), rows)
+			"%s vs %s" % [fixture["home_name"], fixture["away_name"]], score, map_summary(int(fixture["id"]))]))
+	UIFactory.table(card, PackedStringArray(["Date", "Competition", "Series", "Maps", "Map scores · MVP"]), rows)
+
+
+## "9–6, 7–9, 12–10 · MVP Vex" for a simulated series ("" when it was not simulated).
+func map_summary(series_id: int) -> String:
+	var maps := career().repo.sim_maps(series_id)
+	if maps.is_empty():
+		return ""
+	var scores: PackedStringArray = []
+	var mvps: Dictionary[String, int] = {}
+	for map: Dictionary in maps:
+		scores.append("%d–%d" % [int(map["home_rounds"]), int(map["away_rounds"])])
+		if map["mvp_name"] != null:
+			mvps[str(map["mvp_name"])] = mvps.get(str(map["mvp_name"]), 0) + 1
+	var mvp := ""
+	for name: String in mvps:
+		if mvp.is_empty() or mvps[name] > mvps[mvp]:
+			mvp = name
+	return ", ".join(scores) + ("" if mvp.is_empty() else " · MVP %s" % mvp)
 
 
 func _own_fixtures(session: CareerSession) -> void:

@@ -66,6 +66,7 @@ static func build(parent: Control, repo: CareerRepository, player_id: String, st
 				"●".repeat(trait_list[trait_id]), TraitLibrary.describe(trait_id)], &"", true)
 			standing.add_child(line)
 
+	_add_sim_form(parent, repo, player.id)
 	var attributes := UIFactory.card(parent, "Perceived attributes")
 	attributes.add_child(UIFactory.label(
 		"What scouts and the esports world believe about this player — not their true ability. "
@@ -76,3 +77,27 @@ static func build(parent: Control, repo: CareerRepository, player_id: String, st
 	for ability: StringName in CareerCatalog.ABILITIES:
 		if seen.has(ability):
 			UIFactory.rating_bar(attributes, CareerCatalog.ability_name(ability), seen[ability])
+
+
+## Form in simulated series (the world's matches nobody played), kept apart from recorded
+## statistics: the last 90 days and morale.
+static func _add_sim_form(parent: Control, repo: CareerRepository, player_id: String) -> void:
+	var form := repo.sim_form(player_id, repo.current_day() - 90)
+	if int(form.get("maps", 0)) == 0:
+		return
+	var card := UIFactory.card(parent, "Simulated form · last 90 days")
+	card.add_child(UIFactory.label("From series the match engine simulated round by round. These lines are separate from the statistics of matches you play.",
+		&"MutedLabel", true))
+	var maps := int(form["maps"])
+	var morale := repo.morale(player_id)
+	UIFactory.key_value_grid(card, [
+		PackedStringArray(["Maps", "%d (%d won)" % [maps, int(form["won"])]]),
+		PackedStringArray(["Average rating", "%.2f (best %.2f)" % [float(form["rating"]), float(form["best"])]]),
+		PackedStringArray(["Kills – deaths", "%d – %d (%.2f per round)" % [int(form["kills"]), int(form["deaths"]),
+			float(form["kills"]) / maxf(float(form["rounds"]), 1.0)]]),
+		PackedStringArray(["Assists", str(int(form["assists"]))]),
+		PackedStringArray(["Opening kills", str(int(form["opening_kills"]))]),
+		PackedStringArray(["Clutches won", str(int(form["clutch_wins"]))]),
+		PackedStringArray(["Morale", "%+d · %s" % [morale, "flying" if morale >= 10 else ("confident" if morale >= 4
+			else ("low" if morale <= -10 else ("shaky" if morale <= -4 else "settled")))]]),
+	] as Array[PackedStringArray])

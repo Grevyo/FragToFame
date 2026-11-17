@@ -73,7 +73,8 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 		return false
 	if GameDate.month_and_day(day).y == 1 and day > 0:
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \
-				or not WorldFinance.monthly(repo, day) or not CareerHumanContracts.monthly(repo, day, rng):
+				or not WorldFinance.monthly(repo, day) or not CareerHumanContracts.monthly(repo, day, rng) \
+				or not CareerSeriesEngine.monthly(repo, day):
 			return false
 	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfers(repo, day, rng) \
 		and WorldMarket.fill_rosters(repo, day, rng) \

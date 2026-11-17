@@ -400,6 +400,18 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Round-by-round simulation)
+
+- [ ] Start a **new** career and Continue through a few league weeks. Calendar → Recent results
+      shows every map's score (sometimes overtime, e.g. 12–10) and the series MVP.
+- [ ] Results vary: favourites usually win, but News reports upsets, star performances,
+      aces and 1v4 clutches.
+- [ ] Players → a pro: **Simulated form · last 90 days** shows maps, rating, K–D, openings,
+      clutches and morale. A player on a hot run is rated higher by the world a month later.
+- [ ] Competitions → a running league: **Top performers** lists the best average ratings.
+- [ ] A month of Continue takes a moment longer than before (every map is played round by
+      round), with no errors in the console.
+
 ### Manual test checklist (Cups, promotion and life under contract)
 
 - [ ] Start two new careers from the same database. Teams shows different tiers for a few

@@ -21,7 +21,7 @@ extends RefCounted
 ##   human_service / human_purchase  what a human spends their own money on
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 11
+const CURRENT_VERSION: int = 12
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -401,6 +401,46 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			reason TEXT NOT NULL DEFAULT ''
 		);""",
 		"CREATE INDEX organisation_move_by_org ON organisation_move(organisation_id, day DESC);",
+	],
+	# v12 — the round-by-round match engine: player morale, simulated map results and the
+	# per-player lines of simulated maps (kept apart from statistics recorded in played matches).
+	[
+		"""CREATE TABLE player_morale (
+			player_id TEXT PRIMARY KEY REFERENCES player(id) ON DELETE CASCADE,
+			value INTEGER NOT NULL CHECK (value BETWEEN -20 AND 20),
+			updated_day INTEGER NOT NULL
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE sim_map (
+			league_fixture_id INTEGER NOT NULL REFERENCES league_fixture(id),
+			map_number INTEGER NOT NULL CHECK (map_number BETWEEN 1 AND 5),
+			map_id TEXT NOT NULL,
+			home_rounds INTEGER NOT NULL,
+			away_rounds INTEGER NOT NULL,
+			mvp_id TEXT,
+			highlights TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (league_fixture_id, map_number)
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE sim_player_map (
+			id INTEGER PRIMARY KEY,
+			day INTEGER NOT NULL,
+			league_fixture_id INTEGER REFERENCES league_fixture(id),
+			career_fixture_id TEXT,
+			map_number INTEGER NOT NULL,
+			player_id TEXT NOT NULL,
+			organisation_id TEXT,
+			rounds INTEGER NOT NULL,
+			kills INTEGER NOT NULL,
+			deaths INTEGER NOT NULL,
+			assists INTEGER NOT NULL,
+			damage INTEGER NOT NULL,
+			kast_rounds INTEGER NOT NULL,
+			opening_kills INTEGER NOT NULL,
+			clutch_wins INTEGER NOT NULL,
+			rating REAL NOT NULL,
+			won INTEGER NOT NULL CHECK (won IN (0, 1))
+		);""",
+		"CREATE INDEX sim_player_map_by_player ON sim_player_map(player_id, day DESC);",
+		"CREATE INDEX sim_player_map_by_series ON sim_player_map(league_fixture_id, map_number);",
 	],
 ]
 

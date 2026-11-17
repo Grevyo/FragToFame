@@ -105,6 +105,30 @@ func _test_market_rules() -> void:
 	check(WorldMarket.best_candidate(pool, &"igl", "apac") == 0, "otherwise the best perceived player is chosen")
 	check(WorldMarket.best_candidate([] as Array[Dictionary], &"igl", "na") == -1, "an empty pool signs nobody")
 
+	section("Transfers between organisations")
+	var july := GameDate.make(2, 7, 1)
+	while GameDate.day_of_year(july) % WorldMarket.WINDOW_DAY_STEP != 0:
+		july += 1
+	check(WorldMarket.in_window(GameDate.make(2, 1, 8)) and WorldMarket.in_window(july)
+		and not WorldMarket.in_window(july + 1) and not WorldMarket.in_window(GameDate.make(2, 4, 8)),
+		"transfers happen weekly in the January and July windows")
+	check(WorldMarket.wants_move(3, 40, 2, 30) and WorldMarket.wants_move(2, 40, 2, 55) and not WorldMarket.wants_move(1, 80, 2, 99),
+		"players move for a better tier or a bigger name in the same tier, never down")
+	check(WorldMarket.sell_chance(90, false) > WorldMarket.sell_chance(600, false)
+		and WorldMarket.sell_chance(600, true) < WorldMarket.sell_chance(600, false),
+		"expiring players are easier to buy; a team's best player is harder")
+	var market: Array[Dictionary] = [
+		{"organisation_id": "org_buyer", "rating": 90, "preferred_role": "igl", "region_id": "na", "tier": 1, "org_reputation": 80},
+		{"organisation_id": "org_big", "rating": 88, "preferred_role": "igl", "region_id": "na", "tier": 1, "org_reputation": 90},
+		{"organisation_id": "org_small", "rating": 71, "preferred_role": "igl", "region_id": "na", "tier": 3, "org_reputation": 30},
+		{"organisation_id": "org_small", "rating": 76, "preferred_role": "entry", "region_id": "eu_west", "tier": 3, "org_reputation": 30},
+	]
+	check(WorldMarket.upgrade_target(market, "org_buyer", 1, 80, 70, &"igl", "na") == 3,
+		"the buyer takes the best upgrade that wants to come, not its own player or a bigger club's")
+	check(WorldMarket.upgrade_target(market, "org_buyer", 1, 80, 72, &"igl", "na") == 3
+		and WorldMarket.upgrade_target(market, "org_buyer", 1, 80, 73, &"igl", "na") == -1,
+		"a target must be clearly better than the starter it replaces")
+
 
 func _test_form_and_reputation_rules() -> void:
 	section("Form and reputation from results")
@@ -189,6 +213,10 @@ func _test_world(app: Node) -> void:
 	for story: Dictionary in repo.news(100000):
 		kinds[str(story["kind"])] = kinds.get(str(story["kind"]), 0) + 1
 	check(kinds.get(WorldSimulation.NEWS_SIGNING, 0) > 0, "organisations signed players (%d stories)" % kinds.get(WorldSimulation.NEWS_SIGNING, 0))
+	check(kinds.get(WorldSimulation.NEWS_TRANSFER, 0) > 0,
+		"organisations bought players from each other in the windows (%d)" % kinds.get(WorldSimulation.NEWS_TRANSFER, 0))
+	var outside: int = repo.db.scalar("SELECT COUNT(*) FROM world_news WHERE kind = ? AND (day % 365) % 7 <> 0;", [WorldSimulation.NEWS_TRANSFER], 0)
+	check(int(outside) == 0, "transfers only happen on window days")
 	check(kinds.get(WorldSimulation.NEWS_RELEASE, 0) + kinds.get(WorldSimulation.NEWS_CONTRACT, 0) > 0,
 		"contracts were renewed or let go")
 	check(kinds.get(WorldSimulation.NEWS_NEW_YEAR, 0) == 1 and kinds.get(WorldSimulation.NEWS_ROOKIES, 0) == 1,

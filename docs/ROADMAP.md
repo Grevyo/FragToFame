@@ -22,7 +22,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 11 | Detailed statistics | 5, 10 | 🔶 awaiting manual test |
 | 12 | Career development and scouting | 9, 11 | 🔶 awaiting manual test |
 | 13 | Competition and tournament systems | 9, 10 | 🔶 league scheduling |
-| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world and path to pro; AI transfers next |
+| 14 | World progression, transfers, rookies, retirement | 12, 13 | 🔶 living world, path to pro and AI transfers |
 | 15 | Full cooperative career integration | 2, 10, 14 | ⬜ |
 | 16 | Official content creation (5–7 maps) | 3, 6, 8 | 🔶 first map; awaiting manual test |
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
@@ -396,7 +396,13 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
       moves form and reputation, including the human's.
 - [ ] Map selection and veto, per-competition MR and overtime settings (with the M19 editor).
 - [ ] Offers to contracted humans (moves up a tier), and releases or benching of humans.
-- [ ] AI transfers between organisations (poaching and upgrades), not only free-agent signings.
+- [x] AI transfers between organisations: weekly in the January and July windows, an
+      organisation may replace its weakest AI starter with a clearly better player (4+ perceived)
+      who wants the step up (better tier, or same tier and more reputation). Sellers agree more
+      readily when the contract is nearly over and less for their best player. The displaced
+      starter is benched, or released from a squad of seven. Players settle for 120 days, and
+      nobody over 31 is bought.
+- [ ] Transfer fees, wages and organisation finances (with the human's own contract talks).
 
 ## Milestone 16 — Official content creation 🔶
 
@@ -523,4 +529,5 @@ Planned scope:
 | 2026-11-16 | Weapons, Coats and Magnets (owner request): ten modelled weapons in first person with inspection, Coat infrastructure for the simplified kits (no Coats shipped), 26 Magnets on five slots per weapon, Armoury screen, saved customisation. |
 | 2026-11-16 | M14 first slice, the living world: daily form, reputation and market, monthly development and opinion drift, yearly retirements and rookies, the news log, and Continue. Save schema v7. |
 | 2026-11-17 | M14 second slice, the path to pro: visibility, trial invitations, playable trials, contract offers, signing, and playable league series map by map. Save schema v8. |
+| 2026-11-17 | M14: AI transfers between organisations in January and July windows (no fees until organisations have finances). |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

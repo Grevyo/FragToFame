@@ -94,10 +94,11 @@ func _test_path(app: Node) -> void:
 	check(_play(repo, player_id, true).is_empty(), "the trial result is saved")
 	check(str(repo.offer(str(trial["id"]))["status"]) == "passed" and repo.current_day() == before_day + 1,
 		"a convincing trial passes and the day moves on")
-	open = repo.offers(player_id, true)
-	check(open.size() >= 1 and str(open[0]["kind"]) == CareerOffers.KIND_CONTRACT
-		and str(open[0]["organisation_id"]) == str(trial["organisation_id"]) and int(open[0]["monthly_salary"]) >= 0,
-		"the organisation follows up with a contract offer")
+	# Other organisations may approach on the new day too; pick the contract offer itself.
+	open = repo.offers(player_id, true).filter(func(o: Dictionary) -> bool:
+		return str(o["kind"]) == CareerOffers.KIND_CONTRACT)
+	check(open.size() == 1 and str(open[0]["organisation_id"]) == str(trial["organisation_id"])
+		and int(open[0]["monthly_salary"]) >= 0, "the organisation follows up with a contract offer")
 	if open.is_empty():
 		return
 
@@ -116,9 +117,23 @@ func _test_path(app: Node) -> void:
 	check(visible_before, "contracted players receive no new trial invitations")
 
 	section("Playable league series")
-	var due := repo.league_fixtures_between(repo.current_day(), repo.current_day() + 400, 100000).filter(
-		func(f: Dictionary) -> bool: return str(f["home_id"]) == org_id or str(f["away_id"]) == org_id)
-	check(not due.is_empty(), "the organisation has league series ahead")
+	var ahead := repo.league_fixtures_between(repo.current_day(), repo.current_day() + 400, 100000)
+	var due := ahead.filter(func(f: Dictionary) -> bool: return str(f["home_id"]) == org_id or str(f["away_id"]) == org_id)
+	if due.is_empty() and not ahead.is_empty():
+		# The trial organisation plays in no league this year (careers roll differently each
+		# time): move the human to a league organisation so the series flow is still covered.
+		org_id = str(ahead[0]["home_id"])
+		repo.end_contract(contract.id, "terminated", repo.current_day())
+		var league_contract := CareerRecords.ContractRecord.new()
+		league_contract.id = "con_offers_league"
+		league_contract.player_id = player_id
+		league_contract.organisation_id = org_id
+		league_contract.role = &"entry"
+		league_contract.start_day = repo.current_day()
+		league_contract.end_day = repo.current_day() + 800
+		repo.sign_contract(league_contract)
+		due = ahead.filter(func(f: Dictionary) -> bool: return str(f["home_id"]) == org_id or str(f["away_id"]) == org_id)
+	check(not due.is_empty(), "the human's organisation has league series ahead")
 	if due.is_empty():
 		return
 	var series: Dictionary = due[0]

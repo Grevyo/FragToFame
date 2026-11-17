@@ -471,8 +471,12 @@ sit beside small appliers, so the maths is tested without a database:
 - **Results (`WorldSimulation.apply_series`):** form (`organisation_form`, −100..100: old × 0.6 +
   40 × map margin) and Elo-style reputation (scale 25, K by competition tier, AI starters get half,
   stochastic rounding). Form feeds `organisation_strength` (0.03 points per form point).
-- **Daily (`WorldMarket`):** expiring contracts are renewed or released. Organisations short of
-  five starters promote a substitute or sign a free agent, 35% chance per day. Decisions use
+- **Daily (`WorldMarket`):** expiring contracts are renewed or released. In the transfer windows
+  (`in_window`: every 7th day of the year in January and July), organisations try to upgrade
+  their weakest AI starter. The buyer goes by tier, then reputation. The target must be 4+
+  perceived points better and want the move (`wants_move`), and the seller must agree
+  (`sell_chance`). Fees and finances do not exist yet. Then organisations short of five starters
+  promote a substitute or sign a free agent, 35% chance per day. Decisions use
   perceived values (what the world believes), never the hidden truth. A human's contract just
   expires, as a headline.
 - **Monthly (`WorldDevelopment`):** growth towards potential by age, mechanical decline from 30,

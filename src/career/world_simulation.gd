@@ -5,7 +5,8 @@ extends RefCounted
 ## day either happens completely or not at all.
 ##
 ## Every day:   series results move form and reputation; contracts end (renewed or released);
-##              organisations short of starters sign free agents; season openings make news;
+##              organisations short of starters sign free agents; in the January and July
+##              windows they also buy upgrades from other organisations; season openings make news;
 ##              organisations may invite an unsigned human to a trial ([CareerOffers]); a
 ##              contracted human's due league series is booked to play ([CareerLeagueMatches]).
 ## Each month:  AI players develop or decline, the world's opinion catches up with the truth,
@@ -28,6 +29,7 @@ const NEWS_ROOKIES: String = "rookies"
 const NEWS_SEASON: String = "season"
 const NEWS_NEW_YEAR: String = "new_year"
 const NEWS_OFFER: String = "offer"
+const NEWS_TRANSFER: String = "transfer"
 
 ## Form after a series: old form × KEEP + GAIN × outcome (outcome 1 = clean sweep, −1 = swept).
 const FORM_KEEP: float = 0.6
@@ -63,7 +65,8 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 	if GameDate.month_and_day(day).y == 1 and day > 0:
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng):
 			return false
-	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.fill_rosters(repo, day, rng) \
+	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfer_window(repo, day, rng) \
+		and WorldMarket.fill_rosters(repo, day, rng) \
 		and CareerOffers.daily(repo, day, rng) and CareerLeagueMatches.schedule_due(repo, day)
 
 

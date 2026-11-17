@@ -690,6 +690,21 @@ func free_agent_pool() -> Array[Dictionary]:
 		ORDER BY rating DESC, p.id;""")
 
 
+## AI players under contract who could move: contract and organisation details, perceived
+## rating, age inputs. Players who signed on or after [param signed_before] are left alone.
+## Rows: player_id, nickname, preferred_role, birth_day, rating, contract_id, end_day,
+## is_substitute, organisation_id, org_name, tier, org_reputation, region_id.
+func transfer_pool(signed_before: int) -> Array[Dictionary]:
+	return db.rows("""SELECT p.id AS player_id, p.nickname, p.preferred_role, p.birth_day,
+			ROUND(COALESCE((SELECT AVG(value) FROM player_perceived pp WHERE pp.player_id = p.id), 0)) AS rating,
+			c.id AS contract_id, c.end_day, c.is_substitute, o.id AS organisation_id, o.name AS org_name, o.tier,
+			COALESCE(r.value, 0) AS org_reputation, o.region_id
+		FROM contract c JOIN player p ON p.id = c.player_id JOIN organisation o ON o.id = c.organisation_id
+		LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+		WHERE c.status = 'active' AND p.is_human = 0 AND p.status = 'active' AND c.start_day < ?
+		ORDER BY rating DESC, p.id;""", [signed_before])
+
+
 func set_contract_substitute(contract_id: String, is_substitute: bool) -> bool:
 	return db.execute("UPDATE contract SET is_substitute = ? WHERE id = ? AND status = 'active';",
 		[1 if is_substitute else 0, contract_id])

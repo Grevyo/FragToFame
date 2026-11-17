@@ -18,7 +18,7 @@ const MAX_ROUNDS: int = 8
 static func schedule_due(repo: CareerRepository, day: int) -> bool:
 	for human: CareerRecords.PlayerRecord in repo.human_players():
 		var contract := repo.active_contract(human.id)
-		if contract == null or repo.pending_fixture(human.id) != null:
+		if contract == null or contract.is_substitute or repo.pending_fixture(human.id) != null:
 			continue
 		var due := repo.due_series_for(contract.organisation_id, day)
 		if due.is_empty():

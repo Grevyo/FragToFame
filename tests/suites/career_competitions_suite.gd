@@ -65,7 +65,7 @@ func _test_career() -> void:
 		and repo.league_season(pro_id, 1).get("start_day") == GameDate.make(1, 2, 1),
 		"the pro league opens in its authored month with all unique series")
 	check(repo.league_entrants(west_id, 1).size() == 8 and repo.league_season(oceania_id, 1).is_empty()
-		and repo.league_season(cup_id, 1).is_empty(), "the eligible regional league publishes and small fields and cups wait")
+		and repo.cup_seeds(cup_id, 1).size() == 16, "the regional league publishes, a tiny field waits and the cup is drawn")
 	if fixtures.is_empty():
 		session.close()
 		return

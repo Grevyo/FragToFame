@@ -59,7 +59,8 @@ static func trial_passed(rating: float, won: bool) -> bool:
 	return rating >= TRIAL_PASS_RATING or (won and rating >= TRIAL_PASS_WITH_WIN)
 
 
-## Daily: lapsed offers expire, then interested organisations may invite unsigned humans.
+## Daily: lapsed offers expire, interested organisations may invite unsigned humans, and
+## contracted humans get renewal decisions and transfer offers ([CareerHumanContracts]).
 static func daily(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
 	for lapsed: Dictionary in repo.lapsed_offers(day):
 		if not repo.set_offer_status(str(lapsed["id"]), "expired", day) or not repo.add_news(day, WorldSimulation.NEWS_OFFER,
@@ -67,7 +68,12 @@ static func daily(repo: CareerRepository, day: int, rng: RandomNumberGenerator) 
 				str(lapsed["player_id"]), str(lapsed["organisation_id"])):
 			return false
 	for human: CareerRecords.PlayerRecord in repo.human_players():
-		if human.status != "active" or repo.active_contract(human.id) != null:
+		if human.status != "active":
+			continue
+		var contract := repo.active_contract(human.id)
+		if contract != null:
+			if not CareerHumanContracts.daily(repo, human, contract, day, rng):
+				return false
 			continue
 		if repo.offers(human.id, true).size() >= MAX_OPEN or rng.randf() >= DAILY_INTEREST:
 			continue
@@ -90,11 +96,14 @@ static func accept(repo: CareerRepository, player_id: String, offer_id: String) 
 	var found := repo.offer(offer_id)
 	if found.is_empty() or str(found["player_id"]) != player_id or str(found["status"]) != "pending":
 		return "This offer is no longer open."
+	var kind := str(found["kind"])
+	if kind == CareerHumanContracts.KIND_TRANSFER or kind == CareerHumanContracts.KIND_RENEWAL:
+		return CareerHumanContracts.accept(repo, player_id, found)
 	if repo.active_contract(player_id) != null:
 		return "You are already under contract."
-	if str(found["kind"]) == KIND_TRIAL:
+	if kind == KIND_TRIAL:
 		return _book_trial(repo, player_id, found)
-	return _sign(repo, player_id, found)
+	return sign_human(repo, player_id, found)
 
 
 ## Contract talks: asks once for [constant RAISE_SHARE] more. Returns {ok, message}; ok is true
@@ -103,7 +112,7 @@ static func negotiate(repo: CareerRepository, player_id: String, offer_id: Strin
 		rng: RandomNumberGenerator = null) -> Dictionary:
 	var found := repo.offer(offer_id)
 	if found.is_empty() or str(found["player_id"]) != player_id or str(found["status"]) != "pending" \
-			or str(found["kind"]) != KIND_CONTRACT:
+			or str(found["kind"]) == KIND_TRIAL:
 		return {"ok": false, "message": "There is no open contract offer to discuss."}
 	if int(found["negotiated"]) == 1:
 		return {"ok": false, "message": "%s have already given their final offer." % found["org_name"]}
@@ -241,7 +250,7 @@ static func _trial_setup(repo: CareerRepository, player_id: String, found: Dicti
 
 ## Signs the human as a starter. The organisation's weakest AI starter becomes a substitute when
 ## the five is full, and every other open offer is withdrawn.
-static func _sign(repo: CareerRepository, player_id: String, found: Dictionary) -> String:
+static func sign_human(repo: CareerRepository, player_id: String, found: Dictionary) -> String:
 	var day := repo.current_day()
 	var org_id := str(found["organisation_id"])
 	var ok := repo.transaction(func() -> bool:
@@ -274,4 +283,5 @@ static func _sign(repo: CareerRepository, player_id: String, found: Dictionary) 
 
 
 static func _offer_noun(kind: String) -> String:
-	return "trial invitation" if kind == KIND_TRIAL else "contract offer"
+	return {KIND_TRIAL: "trial invitation", CareerHumanContracts.KIND_TRANSFER: "transfer offer",
+		CareerHumanContracts.KIND_RENEWAL: "renewal offer"}.get(kind, "contract offer")

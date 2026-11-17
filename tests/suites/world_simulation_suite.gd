@@ -223,12 +223,13 @@ func _test_world(app: Node) -> void:
 
 	var dice := RandomNumberGenerator.new()
 	dice.seed = 2027
+	var human_form := repo.organisation_form(human_org)
 	var started := Time.get_ticks_msec()
 	var first := CareerCalendar.continue_until_event(repo, player_id, dice)
 	check(bool(first["ok"]) and int(first["days"]) == 20 and str(first["reason"]).contains("contract")
 		and repo.active_contract(player_id) == null,
 		"Continue runs until the human's contract expires (%d days: %s)" % [first["days"], first["reason"]])
-	check(repo.organisation_form(human_org) == 0, "the human organisation's series were left for them, so no simulated form")
+	check(repo.organisation_form(human_org) == human_form, "the human organisation's series were left for them, so no simulated form")
 
 	check(CareerFixtures.schedule(repo, player_id, MapTemplates.SANDBOX_ARENA_ID).is_empty(), "an amateur match is scheduled")
 	var blocked := CareerCalendar.continue_until_event(repo, player_id, dice)

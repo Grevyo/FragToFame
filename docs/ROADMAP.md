@@ -351,7 +351,23 @@ AI development, ageing, roster decisions and trait-driven team tactics are later
 - [x] Playable league series for the player's own organisation (M14 path to pro), map by map.
 - [ ] Map selection and veto, configurable MR length and overtime per competition.
 - [x] Season records: final tables, prize money and honours (M14).
-- [ ] Add cup and qualifier brackets, promotion and relegation and the F2F Universal Ladder.
+- [x] Cups (`CareerCups`): single elimination, seeded by tier and reputation, bracket sized to
+      the next power of two with byes for the top seeds. Cups invite from one tier above their
+      own downwards (in their region, or worldwide). Rounds are weekly from the 4th of the
+      start month; each round is drawn once its sides are known. Cup series use the league
+      tables, so simulation, the human's playable series and series prizes work the same. The
+      final closes the cup with placings, prizes, honours and news.
+- [x] Leagues fill empty places from the tier below and run with at least six organisations.
+- [x] Promotion and relegation from final tables (`WorldSeasons`), always as swaps so tiers
+      keep their size:
+  - in a tier T league, the best tier T finisher(s) in the top half (two in a field of 12+) go
+    up to T−1. The worst tier T−1 entrant below them goes down, or else the least reputable
+    tier T−1 organisation of the region, then anywhere;
+  - the best filler from tier T+1 in the top half goes up to T the same way;
+  - a tier 4 winner of a regional open goes up to tier 3.
+
+  Every move is recorded (`organisation_move`) and reported in the news.
+- [ ] Qualifier brackets and the F2F Universal Ladder.
 
 ## Milestone 14 — World progression, transfers, rookies, retirement 🔶
 
@@ -396,7 +412,19 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
       A map that does not decide the series keeps the day. The final score goes to the table and
       moves form and reputation, including the human's.
 - [ ] Map selection and veto, per-competition MR and overtime settings (with the M19 editor).
-- [ ] Offers to contracted humans (moves up a tier), and releases or benching of humans.
+- [x] Life under contract (`CareerHumanContracts`):
+  - **Transfer offers:** a higher-tier organisation that would consider the human may bid.
+    The fee is paid to their organisation, and accepting moves them at once.
+  - **Renewal:** 60 days before a contract ends the organisation offers a new deal, or says it
+    will release the human (level below the tier norm, a slump, or benched).
+  - **Benching:** a monthly check. Poor recent ratings can cost a starter their place to a
+    better substitute, and a benched human can be recalled. A benched human's organisation is
+    simulated without them.
+- [x] Each save starts differently (`CareerStart.vary_world`):
+  - three to six tier swaps between adjacent tiers;
+  - random starting form;
+  - contract end dates moved by −90 to +150 days;
+  - young players who may secretly have the top of their authored potential range.
 - [x] AI transfers between organisations, weekly all year round (owner, 2026-11-17: windows are
       the busiest time, but the market is never locked):
   - Each week an organisation has a 30% chance to act in the January and July windows and 1.5%
@@ -435,7 +463,7 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
     confidence.
 
   Services you cannot pay end, with a headline.
-- [ ] Cup and qualifier prize money (with cups); promotion and relegation from final tables.
+- [x] Cup prize money and promotion and relegation from final tables (see M13).
 
 ## Milestone 16 — Official content creation 🔶
 
@@ -566,5 +594,6 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-17 | M13/M14: cups with brackets, promotion and relegation by tier swaps, fuller leagues, transfer offers, renewals, releases and benching for contracted humans, and a different start for every save. Save schema v11. |
 | 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

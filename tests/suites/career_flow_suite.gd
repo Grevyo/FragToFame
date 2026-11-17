@@ -86,13 +86,13 @@ func run() -> void:
 			choice.select(idx)
 			choice.item_selected.emit(idx)
 			break
-	check(_text_of(competitions).contains("0 of 8 required organisations"), "an undersubscribed league shows its eligible field")
+	check(_text_of(competitions).contains("of 6 required organisations"), "an undersubscribed league shows its eligible field")
 	for idx: int in choice.item_count:
 		if choice.get_item_text(idx) == "Vanguard Masters":
 			choice.select(idx)
 			choice.item_selected.emit(idx)
 			break
-	check(_text_of(competitions).contains("Cup scheduling is pending."), "an authored cup appears with its current scheduling status")
+	check(_text_of(competitions).contains("Bracket") and _text_of(competitions).contains("ROUND OF 16"), "an authored cup shows its drawn bracket")
 
 	section("Continue a saved career")
 	var save_id := session.save_id

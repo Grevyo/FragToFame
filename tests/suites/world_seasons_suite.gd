@@ -26,7 +26,7 @@ func run() -> void:
 
 func _test_rules() -> void:
 	section("Prize rules")
-	for entrants: int in [2, 4, 8, 16]:
+	for entrants: int in [2, 4, 6, 8, 16]:
 		var shares := WorldSeasons.prize_shares(entrants)
 		var total := 0.0
 		var ordered := true
@@ -76,7 +76,8 @@ func _test_career(app: Node) -> void:
 	for i: int in range(1, record.size()):
 		if int(record[i]["won"]) > int(record[i - 1]["won"]) or int(record[i]["prize"]) > int(record[i - 1]["prize"]):
 			ordered = false
-	check(ordered, "positions follow wins and prizes follow positions")
+	check(ordered, "positions follow wins and prizes follow positions (%s)" % str(record.map(func(r: Dictionary) -> String:
+		return "%d:%dw:%d" % [int(r["position"]), int(r["won"]), int(r["prize"])])))
 	var competition := repo.get_competition(competition_id)
 	var pool: int = WorldSeasons.PRIZE_POOL[competition.tier]
 	var paid := 0

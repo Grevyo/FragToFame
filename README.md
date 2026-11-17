@@ -400,6 +400,25 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Cups, promotion and life under contract)
+
+- [ ] Start two new careers from the same database. Teams shows different tiers for a few
+      organisations, and News on day one differs.
+- [ ] Competitions → **Vanguard Masters**: a 16-team bracket. Continue past late March: each
+      round fills in, then **Final placings** with prizes, and News names the winner and the
+      beaten finalist.
+- [ ] Competitions → a regional **Open** in June: a short field gives the top seeds byes. A tier 4
+      winner is promoted to tier 3 (News).
+- [ ] After a Challenger League or the Northstar Pro Series ends, News reports promotions and
+      relegations. Next season's league includes the promoted sides.
+- [ ] Signed to a tier 3 or 4 organisation with high visibility, wait for a **transfer offer**
+      on Home (fee shown). Accept it: you join the new organisation and the fee goes to the
+      old one.
+- [ ] 60 days before your contract ends: a renewal offer on Home, or a headline that you will
+      be released.
+- [ ] Play a few poor matches (rating under 0.85). On the 1st you may be benched (headline), and
+      your organisation's series are then simulated without you.
+
 ### Manual test checklist (Season endings and spending)
 
 - [ ] Use Continue (and Simulate match if you are signed) until a league's last round has

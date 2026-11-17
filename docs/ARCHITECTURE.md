@@ -499,10 +499,28 @@ sit beside small appliers, so the maths is tested without a database:
   - podium squads gain `player_honour` rows and reputation;
   - humans in a paid squad get a `bonus`;
   - a human's finish is a headline.
+- **Cups (`CareerCups`):** editions are published with the leagues. `cup_seed` holds the seed
+  order, and the bracket is derived from the seeds and the scored series each day. A round's
+  series are inserted into `league_fixture` once both sides are known, so cups reuse
+  simulation, the human's playable series and the series prize money. `CareerCups.progress`
+  runs daily after league closing. A decided final calls `WorldSeasons.close_cup`.
+- **Promotion and relegation:** organisation tiers change only by swaps at season or cup end,
+  recorded in `organisation_move`. Tier drives income, scouting caps, salaries and reputation
+  drift, so a promoted organisation grows into its new level over the following months.
+- **Contracted humans (`CareerHumanContracts`):**
+  - transfer and renewal offers are `career_offer` kinds; the table was rebuilt in v11 to add
+    them and a `fee` column;
+  - benching is a contract flag;
+  - `organisation_has_human_starter` decides whether an organisation's series are the
+    human's to play.
+- **Per-save start (`CareerStart.vary_world`):** runs once at career creation, after the
+  database is copied. It only uses balanced tier swaps, form, contract dates and potential
+  rolls inside authored ranges.
 - **Human spending (`CareerSpending`):** `human_service` holds monthly services, charged in
   `WorldFinance.monthly` and ended when unaffordable. `human_purchase` holds one-offs with
   cooldowns. Effects touch perceived values, confidence and reputation only, never FPS
   mechanics.
+- **Cup rounds and finals (`CareerCups.progress`, daily)** after league seasons close.
 - **Yearly:** retirements by age and level, then an original rookie class (`WorldRookies`, name
   pools shared with the generator) of at least 10, enough to replace the retired. League seasons
   for the new year are published after the turnover.
@@ -742,6 +760,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | Simulated (dev) matches count for ELO and reputation (owner) | Quick testing should exercise the same career progression as played matches; without telemetry they still record no statistics or opinion changes |
 | 2026-11-17 | The transfer market is open all year; windows only raise the odds (owner) | Struggling teams can react mid-season, which makes the world feel alive, while windows keep most movement predictable |
 | 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
+| 2026-11-17 | Cup series reuse `league_fixture`; tiers move only by swaps; each save varies its start | One series pipeline for leagues and cups (simulation, playable series, prizes). Swaps keep every tier the same size, so finances and competitions stay balanced while the world changes. Starting variation stays within authored ranges |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

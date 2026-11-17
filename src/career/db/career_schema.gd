@@ -21,7 +21,7 @@ extends RefCounted
 ##   human_service / human_purchase  what a human spends their own money on
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 10
+const CURRENT_VERSION: int = 11
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -353,6 +353,54 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			day INTEGER NOT NULL
 		);""",
 		"CREATE INDEX human_purchase_by_player ON human_purchase(player_id, item_id, day DESC);",
+	],
+	# v11 — cups, promotion and relegation, and offers to contracted humans. The offer table is
+	# rebuilt to allow transfer and renewal offers with a fee.
+	[
+		"""CREATE TABLE career_offer_v11 (
+			id TEXT PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES human_profile(player_id),
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			kind TEXT NOT NULL CHECK (kind IN ('trial', 'contract', 'transfer', 'renewal')),
+			role TEXT NOT NULL,
+			monthly_salary INTEGER NOT NULL CHECK (monthly_salary >= 0),
+			years INTEGER NOT NULL CHECK (years BETWEEN 1 AND 5),
+			created_day INTEGER NOT NULL,
+			expires_day INTEGER NOT NULL,
+			status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'passed', 'failed', 'declined',
+				'expired', 'withdrawn')),
+			fixture_id TEXT UNIQUE REFERENCES career_fixture(id),
+			resolved_day INTEGER,
+			negotiated INTEGER NOT NULL DEFAULT 0 CHECK (negotiated IN (0, 1)),
+			fee INTEGER NOT NULL DEFAULT 0 CHECK (fee >= 0),
+			CHECK (expires_day >= created_day)
+		);""",
+		"""INSERT INTO career_offer_v11 (id, player_id, organisation_id, kind, role, monthly_salary, years, created_day,
+			expires_day, status, fixture_id, resolved_day, negotiated)
+			SELECT id, player_id, organisation_id, kind, role, monthly_salary, years, created_day, expires_day, status,
+			fixture_id, resolved_day, negotiated FROM career_offer;""",
+		"DROP TABLE career_offer;",
+		"ALTER TABLE career_offer_v11 RENAME TO career_offer;",
+		"CREATE UNIQUE INDEX career_offer_one_open ON career_offer(player_id, organisation_id) WHERE status = 'pending' OR (status = 'accepted' AND kind = 'trial');",
+		"CREATE INDEX career_offer_by_player ON career_offer(player_id, created_day DESC);",
+		"""CREATE TABLE cup_seed (
+			competition_id TEXT NOT NULL,
+			season_year INTEGER NOT NULL,
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			seed INTEGER NOT NULL CHECK (seed >= 1),
+			PRIMARY KEY (competition_id, season_year, organisation_id),
+			FOREIGN KEY (competition_id, season_year) REFERENCES league_season(competition_id, season_year)
+		) WITHOUT ROWID;""",
+		"CREATE UNIQUE INDEX cup_seed_once ON cup_seed(competition_id, season_year, seed);",
+		"""CREATE TABLE organisation_move (
+			id INTEGER PRIMARY KEY,
+			organisation_id TEXT NOT NULL REFERENCES organisation(id),
+			day INTEGER NOT NULL,
+			from_tier INTEGER NOT NULL CHECK (from_tier BETWEEN 1 AND 4),
+			to_tier INTEGER NOT NULL CHECK (to_tier BETWEEN 1 AND 4),
+			reason TEXT NOT NULL DEFAULT ''
+		);""",
+		"CREATE INDEX organisation_move_by_org ON organisation_move(organisation_id, day DESC);",
 	],
 ]
 

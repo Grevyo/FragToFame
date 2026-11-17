@@ -149,18 +149,22 @@ func refresh_offers() -> void:
 		var signed := repo.active_contract(session.human_player_id) != null
 		var seen := CareerOffers.visibility(repo.reputation(session.human_player_id),
 			CareerDevelopment.current_elo(repo, session.human_player_id), repo.recent_ratings(session.human_player_id))
-		offers_card.add_child(UIFactory.label("You are under contract." if signed else
+		offers_card.add_child(UIFactory.label(("You are under contract. Higher-tier organisations may bid for you once your visibility (%d / 100) reaches their level; renewal talks open %d days before your contract ends."
+			% [roundi(seen), CareerHumanContracts.RENEWAL_NOTICE]) if signed else
 			"No offers right now. Visibility %d / 100: tier 4 organisations look from %d, tier 3 from %d, tier 2 from %d, tier 1 from %d."
 			% [roundi(seen), roundi(CareerOffers.TIER_VISIBILITY[4]), roundi(CareerOffers.TIER_VISIBILITY[3]),
 				roundi(CareerOffers.TIER_VISIBILITY[2]), roundi(CareerOffers.TIER_VISIBILITY[1])], &"MutedLabel", true))
 	for offer: Dictionary in open:
 		var row := UIFactory.hbox(8)
 		var trial := str(offer["kind"]) == CareerOffers.KIND_TRIAL
+		var kind := str(offer["kind"])
 		var text := "%s · %s" % [offer["org_name"], CareerCatalog.tier_name(int(offer["tier"]))]
 		if trial:
 			text += " · trial invitation" if str(offer["status"]) == "pending" else " · trial booked (play it above)"
 		else:
-			text += " · %d-year contract, %s a month%s" % [int(offer["years"]),
+			text += " · %s%d-year %s, %s a month%s" % ["transfer for %s · " % CareerCatalog.format_money(int(offer["fee"]))
+				if kind == CareerHumanContracts.KIND_TRANSFER else "", int(offer["years"]),
+				"extension" if kind == CareerHumanContracts.KIND_RENEWAL else "contract",
 				CareerCatalog.format_money(int(offer["monthly_salary"])), " (final)" if int(offer["negotiated"]) == 1 else ""]
 		text += " · open until %s" % GameDate.format(int(offer["expires_day"]))
 		var caption := UIFactory.label(text, &"", true)

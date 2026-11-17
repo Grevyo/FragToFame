@@ -49,7 +49,7 @@ func _select_competition(index: int) -> void:
 		if year != current_year:
 			_year_choice.add_item("Year %d" % year, year)
 	_year_choice.select(0)
-	_year_choice.visible = competition.kind == "league"
+	_year_choice.visible = true
 	_show_season()
 
 
@@ -65,7 +65,7 @@ func _show_season() -> void:
 	var region := "International" if competition.is_international() else CareerCatalog.region_name(competition.region_id)
 	var card := UIFactory.card(_detail, competition.name)
 	var info: Array[PackedStringArray] = [
-		PackedStringArray(["Type", "Single round-robin league" if competition.kind == "league" else "Cup"]),
+		PackedStringArray(["Type", "Single round-robin league" if competition.kind == "league" else "Single-elimination cup"]),
 		PackedStringArray(["Region", region]),
 		PackedStringArray(["Tier", CareerCatalog.tier_name(competition.tier)]),
 		PackedStringArray(["Teams", str(competition.team_count)]),
@@ -76,15 +76,20 @@ func _show_season() -> void:
 		info.append(PackedStringArray(["Opening day", GameDate.format(int(season["start_day"]))]))
 		info.append(PackedStringArray(["Format", "BO%d" % int(season["best_of"])]))
 	UIFactory.key_value_grid(card, info)
-	if competition.kind == "cup":
-		card.add_child(UIFactory.label("Cup scheduling is pending.", &"MutedLabel", true))
-		return
 	if season.is_empty():
-		var eligible := repo.eligible_organisations(competition, start_day).size()
 		var notice := "Season schedule unavailable."
-		if eligible < competition.team_count:
-			notice = "%d of %d required organisations are eligible for this league." % [eligible, competition.team_count]
+		if competition.kind == "cup":
+			var invited := repo.cup_candidates(competition, start_day).size()
+			notice = ("The %s draw is made when the edition starts." % competition.name if invited >= CareerCups.MIN_TEAMS
+				else "%d of %d required organisations can enter this cup." % [invited, CareerCups.MIN_TEAMS])
+		else:
+			var eligible := CareerCompetitions.league_field(repo, competition, start_day).size()
+			if eligible < CareerCompetitions.MIN_LEAGUE_TEAMS:
+				notice = "%d of %d required organisations are eligible for this league." % [eligible, CareerCompetitions.MIN_LEAGUE_TEAMS]
 		card.add_child(UIFactory.label(notice, &"MutedLabel", true))
+		return
+	if competition.kind == "cup":
+		_show_cup(repo, competition, year)
 		return
 
 	var fixtures := repo.league_fixtures(competition.id, year)
@@ -107,6 +112,43 @@ func _show_season() -> void:
 		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Wins", "Losses", "Map diff", "Prize"]), rows)
 	_add_history(repo, competition.id)
 	_add_fixture_rounds(fixtures, repo.current_day())
+
+
+## A cup edition: the bracket round by round, then the final placings once it is decided.
+func _show_cup(repo: CareerRepository, competition: CareerRecords.CompetitionRecord, year: int) -> void:
+	var seeded := repo.cup_seeds(competition.id, year)
+	var fixtures := repo.league_fixtures(competition.id, year)
+	var record := repo.league_record(competition.id, year)
+	var names: Dictionary[String, String] = {}
+	for entrant: Dictionary in repo.league_entrants(competition.id, year):
+		names[str(entrant["organisation_id"])] = str(entrant["name"])
+	var bracket_card := UIFactory.card(_detail, "Bracket")
+	bracket_card.add_child(UIFactory.label("%d organisations, seeded by tier and reputation; top seeds get byes in a short field. Prize pool %s." % [
+		seeded.size(), CareerCatalog.format_money(WorldSeasons.PRIZE_POOL.get(competition.tier, WorldSeasons.PRIZE_POOL[4]))],
+		&"MutedLabel", true))
+	var rounds := CareerCups.round_count(seeded.size())
+	for round_number: int in range(1, rounds + 1):
+		var rows: Array[PackedStringArray] = []
+		for fixture: Dictionary in fixtures:
+			if int(fixture["round_number"]) != round_number:
+				continue
+			var score := "Awaiting result · %s" % GameDate.format(int(fixture["scheduled_day"])) if fixture["home_maps"] == null else (
+				"%d – %d" % [int(fixture["home_maps"]), int(fixture["away_maps"])])
+			rows.append(PackedStringArray([names.get(str(fixture["home_id"]), "?"), names.get(str(fixture["away_id"]), "?"), score]))
+		bracket_card.add_child(UIFactory.label(CareerCups.round_name(round_number, seeded.size()).to_upper(), &"SectionLabel"))
+		if rows.is_empty():
+			bracket_card.add_child(UIFactory.label("Drawn when the previous round is decided." if round_number > 1
+				else "Every side has a bye.", &"MutedLabel", true))
+		else:
+			UIFactory.table(bracket_card, PackedStringArray(["Home", "Away", "Series score"]), rows)
+	if not record.is_empty():
+		var final_card := UIFactory.card(_detail, "Final placings · completed %s" % GameDate.format(int(record[0]["completed_day"])))
+		var rows: Array[PackedStringArray] = []
+		for entry: Dictionary in record:
+			rows.append(PackedStringArray([WorldSeasons.ordinal(int(entry["position"])), str(entry["name"]), str(entry["won"]),
+				str(entry["lost"]), CareerCatalog.format_money(int(entry["prize"]))]))
+		UIFactory.table(final_card, PackedStringArray(["Pos", "Organisation", "Series won", "Series lost", "Prize"]), rows)
+	_add_history(repo, competition.id)
 
 
 ## Past podiums of a competition (season records).

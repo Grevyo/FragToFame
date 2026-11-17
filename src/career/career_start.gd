@@ -3,7 +3,19 @@ extends RefCounted
 ## Copies the fixed world database's organisations, professionals, rosters and competitions into
 ## an independent career save. Where the database specifies ranges, sample initial values within
 ## those authored bounds and derive starting scouting opinions.
+##
+## Every save then gets its own starting story ([method vary_world]): a few organisations start
+## a tier up or down, form and contract lengths differ, and some young players have more hidden
+## potential than anyone knows. Two careers from the same database never start the same.
 
+## Starting variation: tier swaps between adjacent tiers, the starting form range and how far
+## contract end dates move (days). Young players may be hidden breakouts: their potential is the
+## top of its authored range instead of a roll near the middle.
+const START_TIER_SWAPS: Vector2i = Vector2i(3, 6)
+const START_FORM: int = 30
+const CONTRACT_SHIFT: Vector2i = Vector2i(-90, 150)
+const BREAKOUT_CHANCE: float = 0.08
+const BREAKOUT_MAX_AGE: int = 21
 ## Scouting confidence the world starts with, by organisation tier (0 = free agent).
 const TIER_CONFIDENCE: Dictionary[int, int] = {1: 82, 2: 66, 3: 46, 4: 30, 0: 22}
 
@@ -65,9 +77,54 @@ static func populate(repo: CareerRepository, world: WorldDatabase) -> String:
 		for found: Dictionary in competitions:
 			if not repo.insert_competition(CareerRecords.CompetitionRecord.from_row(found)):
 				return false
+		if not vary_world(repo, rng, today):
+			return false
 		return repo.set_meta_value("database_id", world.database_id()) \
 			and repo.set_meta_value("database_name", world.display_name()))
 	return "" if ok else "could not start the career from '%s': %s" % [world.display_name(), repo.db.last_error]
+
+
+## This save's own starting story (see the class notes). Tier swaps keep every tier's size.
+## Skipped for saves on an older schema (tests that build legacy careers).
+static func vary_world(repo: CareerRepository, rng: RandomNumberGenerator, today: int) -> bool:
+	if repo.db.user_version() < CareerSchema.CURRENT_VERSION:
+		return true
+	var by_tier: Dictionary[int, Array] = {}
+	for entry: Dictionary in repo.organisations():
+		var org := entry["organisation"] as CareerRecords.OrganisationRecord
+		if not by_tier.has(org.tier):
+			by_tier[org.tier] = []
+		by_tier[org.tier].append(org.id)
+		if not repo.set_organisation_form(org.id, rng.randi_range(-START_FORM, START_FORM), today):
+			return false
+	var swaps := rng.randi_range(START_TIER_SWAPS.x, START_TIER_SWAPS.y)
+	for i: int in swaps:
+		var upper := rng.randi_range(1, 3)
+		var top: Array = by_tier.get(upper, [])
+		var bottom: Array = by_tier.get(upper + 1, [])
+		if top.is_empty() or bottom.is_empty():
+			continue
+		var falling := str(top.pop_at(rng.randi() % top.size()))
+		var rising := str(bottom.pop_at(rng.randi() % bottom.size()))
+		if not _start_move(repo, rng, rising, upper, today) or not _start_move(repo, rng, falling, upper + 1, today):
+			return false
+	for entry: Dictionary in repo.organisations():
+		for member: Dictionary in repo.roster((entry["organisation"] as CareerRecords.OrganisationRecord).id):
+			var contract := member["contract"] as CareerRecords.ContractRecord
+			var end_day := maxi(contract.end_day + rng.randi_range(CONTRACT_SHIFT.x, CONTRACT_SHIFT.y),
+				maxi(contract.start_day, today) + 30)
+			if not repo.set_contract_end(contract.id, end_day):
+				return false
+	return true
+
+
+## Moves an organisation to [param tier] for this save's start; its reputation settles halfway
+## towards the new tier's typical range.
+static func _start_move(repo: CareerRepository, rng: RandomNumberGenerator, org_id: String, tier: int, today: int) -> bool:
+	var profile: Array = WorldGenerator.TIER_PROFILE[tier]
+	var target := rng.randi_range(int(profile[1]), int(profile[2]))
+	return repo.set_organisation_tier(org_id, tier, today, "Start of this world") \
+		and repo.set_organisation_reputation(org_id, roundi((repo.organisation_reputation(org_id) + target) / 2.0), today)
 
 
 static func _add_player(repo: CareerRepository, rng: RandomNumberGenerator, found: Dictionary,
@@ -90,7 +147,8 @@ static func _add_player(repo: CareerRepository, rng: RandomNumberGenerator, foun
 		truth[ability] = int(truth[ability]) - reduction
 		excess -= reduction
 	var stored: Dictionary = truth.duplicate()
-	stored[CareerCatalog.POTENTIAL] = maxi(_roll(rng, potential),
+	var breakout := player.age(today) <= BREAKOUT_MAX_AGE and rng.randf() < BREAKOUT_CHANCE
+	stored[CareerCatalog.POTENTIAL] = maxi(potential.y if breakout else _roll(rng, potential),
 		roundi(float(mini(total, potential.y * CareerCatalog.ABILITIES.size())) / CareerCatalog.ABILITIES.size()))
 	if not repo.set_abilities(player.id, stored):
 		return false

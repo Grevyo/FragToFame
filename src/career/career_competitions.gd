@@ -1,9 +1,13 @@
 class_name CareerCompetitions
 extends RefCounted
-## Publishes round-robin league seasons from the fixed definitions in a career. The league calendar
-## and organisation series belong to the career host and have no dependency on an FPS scene.
+## Publishes round-robin league seasons (and, through [CareerCups], cup editions) from the
+## definitions in a career. A league takes the organisations of its tier and above, fills empty
+## places from the tier below and runs with at least [constant MIN_LEAGUE_TEAMS]. The league
+## calendar and organisation series belong to the career host and have no dependency on an FPS
+## scene.
 
 const LEAGUE_BEST_OF: int = 3
+const MIN_LEAGUE_TEAMS: int = 6
 const DAYS_BETWEEN_ROUNDS: int = 7
 
 
@@ -15,14 +19,22 @@ static func ensure_league_seasons(repo: CareerRepository, year: int) -> bool:
 			if competition.kind != "league" or not repo.league_season(competition.id, year).is_empty():
 				continue
 			var start_day := GameDate.make(year, competition.start_month, 1)
-			var entrants := repo.eligible_organisations(competition, start_day)
-			if entrants.size() < competition.team_count:
+			var entrants := league_field(repo, competition, start_day)
+			if entrants.size() < MIN_LEAGUE_TEAMS:
 				continue
-			entrants.resize(competition.team_count)
 			var fixtures := round_robin(entrants, start_day)
 			if not repo.insert_league_season(competition.id, year, start_day, LEAGUE_BEST_OF, entrants, fixtures):
 				return false
-		return true)
+		return CareerCups.ensure_cup_seasons(repo, year))
+
+
+## A league's entrants: its tier and above (best first), then fillers from the tier below.
+static func league_field(repo: CareerRepository, competition: CareerRecords.CompetitionRecord, start_day: int) -> Array[String]:
+	var entrants := repo.eligible_organisations(competition, start_day)
+	if entrants.size() > competition.team_count:
+		entrants.resize(competition.team_count)
+	entrants.append_array(repo.league_fillers(competition, start_day, competition.team_count - entrants.size()))
+	return entrants
 
 
 ## The circle method gives every pair one meeting and every team at most one match per round.

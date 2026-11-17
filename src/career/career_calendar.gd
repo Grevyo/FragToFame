@@ -5,9 +5,8 @@ extends RefCounted
 ## then runs the living world for that day ([WorldSimulation]: market, development, retirements,
 ## rookies, new seasons and news), all in one transaction with the date change.
 ##
-## Series involving an organisation that has a human under contract are never simulated: those
-## are the player's own matches (playable league series arrive once humans can sign for an
-## organisation, Milestone 14).
+## Series involving an organisation with a human in its starting five are never simulated: those
+## are the player's own matches. A benched human's organisation is simulated without them.
 
 const BLOCKED_BY_FIXTURE: String = "You have a match scheduled. Play it before moving to the next day."
 ## Continue never runs further than this without stopping.
@@ -95,7 +94,7 @@ static func _simulate_due_series(repo: CareerRepository, before_day: int, rng: R
 		for org_id: String in [home, away]:
 			if not strength.has(org_id):
 				strength[org_id] = organisation_strength(repo, org_id)
-				human_org[org_id] = repo.organisation_has_human(org_id)
+				human_org[org_id] = repo.organisation_has_human_starter(org_id)
 		if human_org[home] or human_org[away]:
 			continue
 		var best_of := int(fixture["best_of"])

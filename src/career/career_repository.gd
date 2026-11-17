@@ -739,9 +739,9 @@ func is_league_entrant(competition_id: String, year: int, org_id: String) -> boo
 
 func insert_offer(offer: Dictionary) -> bool:
 	return db.execute("""INSERT INTO career_offer (id, player_id, organisation_id, kind, role, monthly_salary, years,
-			created_day, expires_day, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending');""",
+			created_day, expires_day, status, fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?);""",
 		[offer["id"], offer["player_id"], offer["organisation_id"], offer["kind"], str(offer["role"]),
-			offer["monthly_salary"], offer["years"], offer["created_day"], offer["expires_day"]])
+			offer["monthly_salary"], offer["years"], offer["created_day"], offer["expires_day"], int(offer.get("fee", 0))])
 
 
 ## One offer with its organisation's name and tier, or {}.
@@ -901,9 +901,9 @@ func set_offer_salary(offer_id: String, salary: int) -> bool:
 ## League seasons whose every series is scored and that have no final record yet:
 ## competition_id, season_year, name, tier.
 func seasons_to_close() -> Array[Dictionary]:
-	return db.rows("""SELECT s.competition_id, s.season_year, c.name, c.tier FROM league_season s
+	return db.rows("""SELECT s.competition_id, s.season_year, c.name, c.tier, c.region_id FROM league_season s
 		JOIN competition c ON c.id = s.competition_id
-		WHERE EXISTS (SELECT 1 FROM league_fixture f WHERE f.competition_id = s.competition_id AND f.season_year = s.season_year)
+		WHERE c.kind = 'league' AND EXISTS (SELECT 1 FROM league_fixture f WHERE f.competition_id = s.competition_id AND f.season_year = s.season_year)
 		AND NOT EXISTS (SELECT 1 FROM league_fixture f WHERE f.competition_id = s.competition_id
 			AND f.season_year = s.season_year AND f.home_maps IS NULL)
 		AND NOT EXISTS (SELECT 1 FROM league_record r WHERE r.competition_id = s.competition_id
@@ -992,3 +992,100 @@ func _grouped_abilities(sql: String) -> Dictionary[String, Dictionary]:
 			result[id] = {}
 		result[id][StringName(str(found["ability"]))] = int(found["value"])
 	return result
+
+
+# --- Cups, promotion and relegation ----------------------------------------------------------
+
+## Organisations a cup invites: the competition's region (or everyone for an international cup),
+## from one tier above the cup's tier downwards, best tier and reputation first.
+func cup_candidates(competition: CompetitionRecord, start_day: int) -> Array[String]:
+	var ids: Array[String] = []
+	for found: Dictionary in db.rows("""SELECT o.id FROM organisation o
+			LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+		WHERE o.active = 1 AND o.founded_day <= ? AND o.tier >= ? AND (? = '' OR o.region_id = ?)
+		ORDER BY o.tier ASC, COALESCE(r.value, 0) DESC, o.id ASC LIMIT ?;""",
+		[start_day, maxi(1, competition.tier - 1), competition.region_id, competition.region_id, competition.team_count]):
+		ids.append(str(found["id"]))
+	return ids
+
+
+## Organisations one tier below a league that may fill its empty places (best reputation first).
+func league_fillers(competition: CompetitionRecord, start_day: int, limit: int) -> Array[String]:
+	var ids: Array[String] = []
+	if limit <= 0 or competition.tier >= 4:
+		return ids
+	for found: Dictionary in db.rows("""SELECT o.id FROM organisation o
+			LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+		WHERE o.active = 1 AND o.founded_day <= ? AND o.tier = ? AND (? = '' OR o.region_id = ?)
+		ORDER BY COALESCE(r.value, 0) DESC, o.id ASC LIMIT ?;""",
+		[start_day, competition.tier + 1, competition.region_id, competition.region_id, limit]):
+		ids.append(str(found["id"]))
+	return ids
+
+
+func insert_cup_seeds(competition_id: String, year: int, seeded: Array[String]) -> bool:
+	for index: int in seeded.size():
+		if not db.execute("INSERT INTO cup_seed VALUES (?, ?, ?, ?);", [competition_id, year, seeded[index], index + 1]):
+			return false
+	return true
+
+
+## A cup edition's organisations in seed order.
+func cup_seeds(competition_id: String, year: int) -> Array[String]:
+	var ids: Array[String] = []
+	for found: Dictionary in db.rows("SELECT organisation_id FROM cup_seed WHERE competition_id = ? AND season_year = ? ORDER BY seed;",
+			[competition_id, year]):
+		ids.append(str(found["organisation_id"]))
+	return ids
+
+
+## Cup editions that have not been completed yet.
+func open_cup_seasons() -> Array[Dictionary]:
+	return db.rows("""SELECT s.competition_id, s.season_year, s.start_day, s.best_of, c.name, c.tier, c.region_id
+		FROM league_season s JOIN competition c ON c.id = s.competition_id
+		WHERE c.kind = 'cup' AND NOT EXISTS (SELECT 1 FROM league_record r WHERE r.competition_id = s.competition_id
+			AND r.season_year = s.season_year)
+		ORDER BY s.start_day, s.competition_id;""")
+
+
+func insert_league_fixture(competition_id: String, year: int, round_number: int, day: int, home_id: String, away_id: String) -> bool:
+	return db.execute("""INSERT INTO league_fixture (competition_id, season_year, round_number, scheduled_day, home_id, away_id)
+		VALUES (?, ?, ?, ?, ?, ?);""", [competition_id, year, round_number, day, home_id, away_id])
+
+
+## Moves an organisation to another tier and records why.
+func set_organisation_tier(org_id: String, tier: int, day: int, reason: String) -> bool:
+	var org := get_organisation(org_id)
+	if org == null or tier < 1 or tier > 4:
+		return false
+	if org.tier == tier:
+		return true
+	return db.execute("UPDATE organisation SET tier = ? WHERE id = ?;", [tier, org_id]) \
+		and db.execute("INSERT INTO organisation_move (organisation_id, day, from_tier, to_tier, reason) VALUES (?, ?, ?, ?, ?);",
+			[org_id, day, org.tier, tier, reason])
+
+
+## An organisation's tier moves, newest first.
+func organisation_moves(org_id: String) -> Array[Dictionary]:
+	return db.rows("SELECT * FROM organisation_move WHERE organisation_id = ? ORDER BY day DESC, id DESC;", [org_id])
+
+
+## The least reputable active organisation of [param tier] (in [param region_id] when given),
+## skipping [param exclude]. "" when there is none.
+func weakest_in_tier(tier: int, region_id: String, exclude: Array[String]) -> String:
+	for found: Dictionary in db.rows("""SELECT o.id FROM organisation o LEFT JOIN organisation_reputation r ON r.organisation_id = o.id
+			WHERE o.active = 1 AND o.tier = ? AND (? = '' OR o.region_id = ?)
+			ORDER BY COALESCE(r.value, 0) ASC, o.id ASC;""", [tier, region_id, region_id]):
+		if not exclude.has(str(found["id"])):
+			return str(found["id"])
+	return ""
+
+
+## The human's active starters only: a benched human's organisation plays (and is simulated) without them.
+func organisation_has_human_starter(org_id: String) -> bool:
+	return int(db.scalar("""SELECT COUNT(*) FROM contract c JOIN player p ON p.id = c.player_id
+		WHERE c.organisation_id = ? AND c.status = 'active' AND c.is_substitute = 0 AND p.is_human = 1;""", [org_id], 0)) > 0
+
+
+func set_contract_end(contract_id: String, end_day: int) -> bool:
+	return db.execute("UPDATE contract SET end_day = ? WHERE id = ? AND start_day < ?;", [end_day, contract_id, end_day])

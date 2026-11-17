@@ -485,6 +485,20 @@ Cup brackets, promotion and relegation, and the F2F Universal Ladder remain plan
   `PlayerMovement` tuning. They share acceleration, friction, weapon and stance speed limits,
   jumps, landings, stamina, capsule clearance and the speed passed to weapon spread. Bot
   navigation and combat supply movement intent.
+- **Sandbox free-for-all (`SandboxBots`, `RoamPlanner`).** Sandbox bots each get their own team,
+  so they fight the human and each other. They share one combatant list; team checks skip
+  themselves. They spawn at the clear spot farthest from every living combatant, using both
+  teams' spawns and the roam points. With no team plan, `RoamPlanner` (pure) scores interest
+  points built from the map (bombsites, callout areas, anchors, AI hints, spawns and random
+  navmesh corners):
+  - interest weight, plus a bell around a 22 m trip;
+  - a penalty for the last 4 destinations;
+  - a pull towards gunfire heard within 45 m during the last 6 s, which becomes a push when the
+    bot is at 40% health or below.
+  On arrival a bot lingers for 1.2–3.5 s, watching the latest gunfire or the farthest visible
+  point of interest. It walks within 14 m of recent gunfire. Fighting and searching stay the
+  bot's own (`BotController`). This is sandbox behaviour only; matches use `BotSquad`, and team AI
+  is M7.
 - **Fair by construction.** Perception uses a view cone, view distance, awareness radius and
   world-only line of sight; aiming has a reaction delay, a capped turn rate and an acquisition
   error that decays. Skill presets change these numbers, never the rules.
@@ -638,6 +652,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Sniper role instead of a weapon-specific role name | Keeps role names original; the vision's "AWPer" maps to `sniper` |
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
+| 2026-11-16 | Sandbox bots play free-for-all and roam by scored interest points and heard gunfire instead of homing on the human | They no longer know where the player is through walls. Gunplay testing gets varied, fair fights. The planner is pure and testable, and reusable when M7 adds team intent |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |
 | 2026-11-15 | Run speed comes from the held weapon's `mobility`; weapon spread sees speed rescaled so a full run is always the reference speed | Retuning movement never silently changes weapon balance |

@@ -20,6 +20,7 @@ func run() -> void:
 	_test_aim_model()
 	_test_skills()
 	await _test_movement_parity()
+	_test_roam_planner()
 	await _test_sandbox_bots()
 	await _test_world()
 
@@ -163,6 +164,45 @@ func _same_movement(player: FirstPersonController, bot: BotController) -> bool:
 		and is_equal_approx(player.movement.stamina, bot.movement.stamina))
 
 
+func _test_roam_planner() -> void:
+	section("Free-roam reasoning (RoamPlanner)")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var here := Vector3.ZERO
+	var near := RoamPoint.new(Vector3(2, 0, 0), &"site")
+	var site := RoamPoint.new(Vector3(20, 0, 0), &"site")
+	var corner := RoamPoint.new(Vector3(0, 0, 21), &"wander")
+	var far := RoamPoint.new(Vector3(-90, 0, 0), &"site")
+	var no_noise: Array[RoamNoise] = []
+	check(is_inf(RoamPlanner.score_point(near, here, false, no_noise, 1.0)), "a point it is standing next to is never chosen")
+	check(RoamPlanner.score_point(site, here, false, no_noise, 1.0) > RoamPlanner.score_point(corner, here, false, no_noise, 1.0),
+		"a bombsite is more interesting than a random corner at the same distance")
+	check(RoamPlanner.score_point(site, here, false, no_noise, 1.0) > RoamPlanner.score_point(far, here, false, no_noise, 1.0),
+		"a comfortable distance beats crossing the whole map")
+	check(RoamPlanner.score_point(site, here, true, no_noise, 1.0) < RoamPlanner.score_point(corner, here, false, no_noise, 1.0),
+		"a recently visited site loses to somewhere new")
+	var points: Array[RoamPoint] = [site, corner]
+	var recent: Array[int] = [0]
+	check(RoamPlanner.choose(points, here, recent, no_noise, 1.0, rng) == 1, "choose() tours: it skips where it just was")
+	var shot: Array[RoamNoise] = [RoamNoise.new(Vector3(0, 0, 24), "other")]
+	var empty_recent: Array[int] = []
+	var investigate := 0
+	var avoid := 0
+	for i: int in 40:
+		if RoamPlanner.choose(points, here, empty_recent, shot, 1.0, rng) == 1:
+			investigate += 1
+		if RoamPlanner.choose(points, here, empty_recent, shot, 0.3, rng) == 0:
+			avoid += 1
+	check(investigate == 40, "a healthy bot goes towards gunfire it heard (%d/40)" % investigate)
+	check(avoid == 40, "a badly hurt bot keeps away from it (%d/40)" % avoid)
+	check(RoamPlanner.should_walk(Vector3(0, 0, 18), shot) and not RoamPlanner.should_walk(Vector3(0, 0, -30), shot),
+		"bots walk carefully near recent gunfire and run elsewhere")
+	shot[0].age = RoamPlanner.NOISE_MEMORY
+	check(not RoamPlanner.should_walk(Vector3(0, 0, 18), shot), "old gunfire is forgotten")
+	check(RoamPlanner.hears(here, Vector3(0, 0, 40)) and not RoamPlanner.hears(here, Vector3(0, 0, 60)),
+		"gunshots are heard within %.0f m" % RoamPlanner.HEARING_RADIUS)
+
+
 func _test_sandbox_bots() -> void:
 	section("Free-roam sandbox bots")
 	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
@@ -188,11 +228,39 @@ func _test_sandbox_bots() -> void:
 	var start := first.global_position
 	check(not first.can_process() and start.distance_to(bots[1].global_position) > 0.7,
 		"paused bots stay put and occupy separate spawns")
-	check(first.enemies == [player.health] and player.health.is_enemy_of(first.team),
-		"bots use the human as their opponent")
+	var second := bots[1]
+	check(first.enemies.has(player.health) and first.enemies.has(second.health)
+		and player.health.is_enemy_of(first.team) and second.health.is_enemy_of(first.team)
+		and not first.health.is_enemy_of(first.team),
+		"free for all: every bot fights the human and the other bots, never itself")
 	sandbox.call("resume")
-	check(await wait_until(func() -> bool: return first.global_position.distance_to(start) > 1.0),
-		"bots use map navigation to move toward the human")
+	check(await wait_until(func() -> bool: return not (roster.call("interest_points") as Array).is_empty(), 3.0),
+		"bots gather places of interest from the map once navigation is ready")
+	check(await wait_until(func() -> bool: return first.global_position.distance_to(start) > 1.0, 6.0),
+		"bots use map navigation to roam")
+	# Bots now fight each other and may respawn (which resets their plan), so look for any living
+	# bot that is roaming between fights.
+	var roaming := func() -> bool:
+		var points := roster.call("interest_points") as Array
+		for bot: BotController in bots:
+			var mind: Object = roster.call("mind_of", bot)
+			if not bot.is_alive() or mind == null or int(mind.get("destination")) < 0 or not bot.has_goal:
+				continue
+			var chosen := points[int(mind.get("destination"))] as RoamPoint
+			if bot.goal_position.distance_to(chosen.position) < 0.1 \
+					and bot.goal_position.distance_to(player.global_position) > 1.0:
+				return true
+		return false
+	check(await wait_until(roaming, 6.0),
+		"bots head for interest points they chose, not the human's position")
+	# Put the two bots face to face in the open, the human far behind cover: they fight each other.
+	player.global_position = start + Vector3(0, 0, 40)
+	var arena := Vector3(level.spawn_points("attack")[0][0] as Vector3)
+	first.respawn_at(arena, 0.0)
+	second.respawn_at(arena + Vector3(0, 0, -8), PI)
+	var hurt := func() -> bool:
+		return second.health.current < second.health.max_health or first.health.current < first.health.max_health
+	check(await wait_until(hurt, 6.0), "two bots that see each other trade fire (free for all)")
 	first.health.kill()
 	check(not first.visible and not first.is_alive(), "a killed sandbox bot disappears")
 	check(await wait_until(func() -> bool: return first.is_alive(), 4.0) and first.visible,

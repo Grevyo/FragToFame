@@ -270,6 +270,18 @@ Start from **Main menu → Career Hub** (opens the career screen when no career 
 Saves live in `%APPDATA%\Godot\app_userdata\Frag to Fame\careers\<save>\career.db` with
 snapshots in `backups\`.
 
+### Manual test checklist (Sandbox free-for-all bots)
+
+- [ ] In the FPS Sandbox pause menu add 4–6 bots and resume. Bots spread out across the map
+      instead of all heading for you. Each has its own colour.
+- [ ] Bots fight each other as well as you. Bot-on-bot kills appear in the kill feed
+      ("Bot 2 [rifle] Bot 4 · 18 m"); a killed bot respawns after about 3 s away from others.
+- [ ] Watch one bot: it travels to a site, area or corner, pauses to look around, then moves on
+      to somewhere it has not just been.
+- [ ] Fire a few shots out of sight of a bot within about 45 m: healthy bots come to investigate,
+      walking as they get close. Hurt bots move away.
+- [ ] Hide and stay quiet: bots should not find you unless their roaming brings them past.
+
 ### Manual test checklist (Milestone 6 — combat and navigation AI)
 
 Start from **FPS Sandbox → Esc → Start practice match (MR3 · 5v5 with bots)**.

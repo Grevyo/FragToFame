@@ -70,6 +70,7 @@ func _load_level() -> void:
 		else "FPS SANDBOX · %s" % doc.name, playtest)
 	_sandbox_bots = SandboxBots.new(level, player, team)
 	_sandbox_bots.roster_changed.connect(hud.set_sandbox_bot_count)
+	_sandbox_bots.kill_reported.connect(hud.push_feed)
 	_sandbox_bots.spawn_failed.connect(func() -> void: hud.set_pause_message("No clear bot spawn on this map."))
 	add_child(_sandbox_bots)
 	hud.add_bot_requested.connect(func() -> void:

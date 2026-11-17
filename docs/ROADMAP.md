@@ -396,9 +396,13 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
       moves form and reputation, including the human's.
 - [ ] Map selection and veto, per-competition MR and overtime settings (with the M19 editor).
 - [ ] Offers to contracted humans (moves up a tier), and releases or benching of humans.
-- [x] AI transfers between organisations: weekly in the January and July windows, an
-      organisation may replace its weakest AI starter with a clearly better player (4+ perceived)
-      who wants the step up (better tier, or same tier and more reputation). Sellers agree more
+- [x] AI transfers between organisations, weekly all year round (owner, 2026-11-17: windows are
+      the busiest time, but the market is never locked):
+  - Each week an organisation has a 30% chance to act in the January and July windows and 1.5%
+    outside them. Poor form (≤ −30) adds 10% in a window and 6% outside one.
+  - It replaces its weakest AI starter with a clearly better player (4+ perceived) who wants
+    the step up: a better tier, or the same tier and more reputation.
+  - Failing that, it benches the starter for a clearly better free agent. Sellers agree more
       readily when the contract is nearly over and less for their best player. The displaced
       starter is benched, or released from a squad of seven. Players settle for 120 days, and
       nobody over 31 is bought.
@@ -542,4 +546,5 @@ Planned scope:
 | 2026-11-17 | M14 second slice, the path to pro: visibility, trial invitations, playable trials, contract offers, signing, and playable league series map by map. Save schema v8. |
 | 2026-11-17 | M14: AI transfers between organisations in January and July windows (no fees until organisations have finances). |
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
+| 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

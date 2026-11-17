@@ -112,7 +112,23 @@ func _test_market_rules() -> void:
 		july += 1
 	check(WorldMarket.in_window(GameDate.make(2, 1, 8)) and WorldMarket.in_window(july)
 		and not WorldMarket.in_window(july + 1) and not WorldMarket.in_window(GameDate.make(2, 4, 8)),
-		"transfers happen weekly in the January and July windows")
+		"the January and July windows are recognised")
+	var april := GameDate.make(2, 4, 1)
+	while GameDate.day_of_year(april) % WorldMarket.WINDOW_DAY_STEP != 0:
+		april += 1
+	check(WorldMarket.is_market_day(april) and not WorldMarket.in_window(april) and not WorldMarket.is_market_day(april + 1),
+		"the market also runs weekly outside the windows")
+	check(WorldMarket.buy_chance(true, 0) > WorldMarket.buy_chance(false, 0) and WorldMarket.buy_chance(false, 0) > 0.0,
+		"most moves happen in the windows, but the market never closes")
+	check(WorldMarket.buy_chance(false, -60) > WorldMarket.buy_chance(false, 0) * 3.0
+		and WorldMarket.buy_chance(true, -60) > WorldMarket.buy_chance(true, 0),
+		"an organisation in poor form acts far more readily, even mid-season")
+	var free: Array[Dictionary] = [
+		{"id": "a", "rating": 60, "preferred_role": "igl", "region_id": "na"},
+		{"id": "b", "rating": 66, "preferred_role": "entry", "region_id": "na"},
+	]
+	check(WorldMarket.free_agent_upgrade(free, 61, &"igl", "na") == 1 and WorldMarket.free_agent_upgrade(free, 63, &"igl", "na") == -1,
+		"a free agent replaces a starter only when clearly better")
 	check(WorldMarket.wants_move(3, 40, 2, 30) and WorldMarket.wants_move(2, 40, 2, 55) and not WorldMarket.wants_move(1, 80, 2, 99),
 		"players move for a better tier or a bigger name in the same tier, never down")
 	check(WorldMarket.sell_chance(90, false) > WorldMarket.sell_chance(600, false)
@@ -233,9 +249,19 @@ func _test_world(app: Node) -> void:
 		kinds[str(story["kind"])] = kinds.get(str(story["kind"]), 0) + 1
 	check(kinds.get(WorldSimulation.NEWS_SIGNING, 0) > 0, "organisations signed players (%d stories)" % kinds.get(WorldSimulation.NEWS_SIGNING, 0))
 	check(kinds.get(WorldSimulation.NEWS_TRANSFER, 0) > 0,
-		"organisations bought players from each other in the windows (%d)" % kinds.get(WorldSimulation.NEWS_TRANSFER, 0))
-	var outside: int = repo.db.scalar("SELECT COUNT(*) FROM world_news WHERE kind = ? AND (day % 365) % 7 <> 0;", [WorldSimulation.NEWS_TRANSFER], 0)
-	check(int(outside) == 0, "transfers only happen on window days")
+		"organisations bought players from each other (%d)" % kinds.get(WorldSimulation.NEWS_TRANSFER, 0))
+	var off_day: int = repo.db.scalar("SELECT COUNT(*) FROM world_news WHERE kind = ? AND (day % 365) % 7 <> 0;", [WorldSimulation.NEWS_TRANSFER], 0)
+	check(off_day == 0, "transfers happen on the weekly market days")
+	var in_windows := 0
+	var off_window := 0
+	for story: Dictionary in repo.news(100000):
+		if str(story["kind"]) == WorldSimulation.NEWS_TRANSFER:
+			if WorldMarket.in_window(int(story["day"])):
+				in_windows += 1
+			else:
+				off_window += 1
+	check(in_windows > off_window and off_window > 0,
+		"most transfers happen in the windows, some during the season (%d in, %d out)" % [in_windows, off_window])
 	check(kinds.get(WorldSimulation.NEWS_RELEASE, 0) + kinds.get(WorldSimulation.NEWS_CONTRACT, 0) > 0,
 		"contracts were renewed or let go")
 	check(kinds.get(WorldSimulation.NEWS_NEW_YEAR, 0) == 1 and kinds.get(WorldSimulation.NEWS_ROOKIES, 0) == 1,

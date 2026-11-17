@@ -2,8 +2,10 @@ class_name WorldMarket
 extends RefCounted
 ## The AI side of the player market, run every day: contracts that reach their end are renewed
 ## or let go, and organisations short of five starters promote a substitute or sign the best
-## fitting free agent. In the transfer windows (January and July) organisations also try to
-## upgrade their weakest starter by signing a better player from another organisation. Organisations judge players by perceived values (what the world believes),
+## fitting free agent. Once a week all year round organisations may also upgrade their weakest
+## starter, buying a better player from another organisation or signing a better free agent and
+## benching (or releasing) the starter. Most moves happen in the January and July windows; an
+## organisation in poor form acts more readily at any time. Organisations judge players by perceived values (what the world believes),
 ## never by the hidden truth. The human's own contract simply expires; offers to humans are the
 ## human path to pro, built separately.
 
@@ -20,12 +22,18 @@ const SAME_REGION_BONUS: float = 3.0
 ## Contract lengths (years) for new signings and renewals.
 const MIN_YEARS: int = 1
 const MAX_YEARS: int = 3
-## Transfer windows: months (0 = January) when organisations move players between them, on
-## every 7th day of the year inside them.
+## The market runs every 7th day of the year. The windows (months, 0 = January) are its busiest
+## time, but it never closes.
 const WINDOW_MONTHS: Array[int] = [0, 6]
 const WINDOW_DAY_STEP: int = 7
-## Weekly chance an organisation tries to upgrade, and how much better a target must be.
+## Weekly chance an organisation tries to upgrade: in a window, outside one, and the extra for an
+## organisation whose form is this poor (struggling teams shake things up mid-season).
 const BUY_CHANCE: float = 0.3
+const OFF_WINDOW_CHANCE: float = 0.015
+const STRUGGLING_FORM: int = -30
+const STRUGGLING_BONUS: float = 0.1
+const STRUGGLING_OFF_WINDOW_BONUS: float = 0.06
+## How much better (perceived) a signing must be than the starter it replaces.
 const UPGRADE_MARGIN: int = 4
 ## Players are not moved again this soon after signing, nor past this age.
 const SETTLE_DAYS: int = 120
@@ -166,9 +174,22 @@ static func fill_rosters(repo: CareerRepository, day: int, rng: RandomNumberGene
 	return true
 
 
-## True on the days transfers between organisations happen.
+## True on the weekly market days (all year).
+static func is_market_day(day: int) -> bool:
+	return day > 0 and GameDate.day_of_year(day) % WINDOW_DAY_STEP == 0
+
+
+## True on market days inside the January and July windows.
 static func in_window(day: int) -> bool:
-	return WINDOW_MONTHS.has(GameDate.month_and_day(day).x) and day > 0 and GameDate.day_of_year(day) % WINDOW_DAY_STEP == 0
+	return is_market_day(day) and WINDOW_MONTHS.has(GameDate.month_and_day(day).x)
+
+
+## Weekly chance an organisation tries to strengthen its five.
+static func buy_chance(window: bool, form: int) -> float:
+	var chance := BUY_CHANCE if window else OFF_WINDOW_CHANCE
+	if form <= STRUGGLING_FORM:
+		chance += STRUGGLING_BONUS if window else STRUGGLING_OFF_WINDOW_BONUS
+	return clampf(chance, 0.0, 0.9)
 
 
 ## A player wants the move when it is a step up: a better tier, or the same tier with more
@@ -212,11 +233,13 @@ static func upgrade_target(pool: Array[Dictionary], buyer_id: String, buyer_tier
 	return best
 
 
-## Transfer window: organisations, best tier first, try to replace their weakest AI starter
-## with a better player from another organisation, paying a fee ([WorldFinance]) they can afford.
-static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
-	if not in_window(day):
+## Weekly market (all year, busiest in the windows): organisations, best tier first, try to
+## replace their weakest AI starter. First choice is a better player from another organisation
+## for a fee they can afford ([WorldFinance]); otherwise a better free agent.
+static func transfers(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
+	if not is_market_day(day):
 		return true
+	var window := in_window(day)
 	var pool: Array[Dictionary] = []
 	for found: Dictionary in repo.transfer_pool(day - SETTLE_DAYS):
 		if GameDate.age(int(found["birth_day"]), day) <= MAX_TRANSFER_AGE:
@@ -226,12 +249,10 @@ static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberG
 		var org_id := str(found["organisation_id"])
 		if not best_by_org.has(org_id):
 			best_by_org[org_id] = str(found["player_id"])  # pool is sorted best first
+	var free_agents := repo.free_agent_pool()
 	for entry: Dictionary in repo.organisations():
-		if rng.randf() >= BUY_CHANCE:
-			continue
 		var buyer := entry["organisation"] as CareerRecords.OrganisationRecord
-		var funds := repo.organisation_balance(buyer.id)
-		if funds <= 0:
+		if rng.randf() >= buy_chance(window, repo.organisation_form(buyer.id)):
 			continue
 		var roster := repo.roster(buyer.id)
 		var weakest: Dictionary = {}
@@ -242,42 +263,61 @@ static func transfer_window(repo: CareerRepository, day: int, rng: RandomNumberG
 		if weakest.is_empty():
 			continue
 		var weak_contract := weakest["contract"] as CareerRecords.ContractRecord
+		var funds := repo.organisation_balance(buyer.id)
 		var pick := upgrade_target(pool, buyer.id, buyer.tier, int(entry["reputation"]), int(weakest["rating"]),
-			weak_contract.role, buyer.region_id)
-		if pick < 0:
+			weak_contract.role, buyer.region_id) if funds > 0 else -1
+		if pick >= 0:
+			var target := pool[pick]
+			var seller_id := str(target["organisation_id"])
+			var days_left := int(target["end_day"]) - day
+			var fee := WorldFinance.transfer_fee(int(target["rating"]), GameDate.age(int(target["birth_day"]), day), days_left)
+			var is_best: bool = str(best_by_org.get(seller_id, "")) == str(target["player_id"])
+			var willing := sell_chance(days_left, is_best) + (DEBT_SELL_BONUS if repo.organisation_balance(seller_id) < 0 else 0.0)
+			if WorldFinance.can_afford(funds, fee, salary_for(buyer.tier, int(target["rating"]))) and rng.randf() < willing:
+				pool.remove_at(pick)
+				if not _transfer(repo, rng, target, buyer, weakest, roster.size(), fee, day):
+					return false
+				continue
+		var free_pick := free_agent_upgrade(free_agents, int(weakest["rating"]), weak_contract.role, buyer.region_id)
+		if free_pick < 0:
 			continue
-		var target := pool[pick]
-		var seller_id := str(target["organisation_id"])
-		var days_left := int(target["end_day"]) - day
-		var fee := WorldFinance.transfer_fee(int(target["rating"]), GameDate.age(int(target["birth_day"]), day), days_left)
-		if not WorldFinance.can_afford(funds, fee, salary_for(buyer.tier, int(target["rating"]))):
-			continue
-		var is_best: bool = str(best_by_org.get(seller_id, "")) == str(target["player_id"])
-		var willing := sell_chance(days_left, is_best)
-		if repo.organisation_balance(seller_id) < 0:
-			willing += DEBT_SELL_BONUS
-		if rng.randf() >= willing:
-			continue
-		pool.remove_at(pick)
-		if not _transfer(repo, rng, target, buyer, weakest, roster.size(), fee, day):
+		var signing := free_agents[free_pick]
+		free_agents.remove_at(free_pick)
+		if not _make_room(repo, buyer, weakest, roster.size(), day) or not _sign(repo, rng, str(signing["id"]), buyer.id,
+				weak_contract.role, false, buyer.tier, int(signing["rating"]), day, rng.randi_range(MIN_YEARS, MAX_YEARS - 1)):
+			return false
+		if not repo.add_news(day, WorldSimulation.NEWS_SIGNING, WorldSimulation.NOTABLE if buyer.tier <= 2 else WorldSimulation.MINOR,
+				"%s sign free agent %s, and %s loses their place." % [buyer.name, signing["nickname"],
+				(weakest["player"] as CareerRecords.PlayerRecord).nickname], str(signing["id"]), buyer.id):
 			return false
 	return true
+
+
+## Index of the best free agent clearly better than a starter rated [param weakest], or -1.
+static func free_agent_upgrade(pool: Array[Dictionary], weakest: int, role: StringName, region: String) -> int:
+	var eligible: Array[Dictionary] = pool.filter(func(c: Dictionary) -> bool: return int(c["rating"]) >= weakest + UPGRADE_MARGIN)
+	var pick := best_candidate(eligible, role, region)
+	return pool.find(eligible[pick]) if pick >= 0 else -1
+
+
+## The displaced starter goes to the bench, or is released when the squad is already full.
+static func _make_room(repo: CareerRepository, buyer: CareerRecords.OrganisationRecord, weakest: Dictionary,
+		squad_size: int, day: int) -> bool:
+	var weak_contract := weakest["contract"] as CareerRecords.ContractRecord
+	var weak_player := weakest["player"] as CareerRecords.PlayerRecord
+	if squad_size < MAX_SQUAD:
+		return repo.set_contract_substitute(weak_contract.id, true)
+	return repo.end_contract(weak_contract.id, "terminated", day) and repo.add_news(day, WorldSimulation.NEWS_RELEASE,
+		WorldSimulation.MINOR, "%s release %s to make room." % [buyer.name, weak_player.nickname], weak_player.id, buyer.id)
 
 
 static func _transfer(repo: CareerRepository, rng: RandomNumberGenerator, target: Dictionary,
 		buyer: CareerRecords.OrganisationRecord, weakest: Dictionary, squad_size: int, fee: int, day: int) -> bool:
 	var weak_contract := weakest["contract"] as CareerRecords.ContractRecord
-	var weak_player := weakest["player"] as CareerRecords.PlayerRecord
 	var player_id := str(target["player_id"])
 	if not repo.end_contract(str(target["contract_id"]), "terminated", day) \
-			or not WorldFinance.pay_fee(repo, buyer.id, str(target["organisation_id"]), fee, str(target["nickname"]), day):
-		return false
-	if squad_size >= MAX_SQUAD:
-		if not repo.end_contract(weak_contract.id, "terminated", day) or not repo.add_news(day,
-				WorldSimulation.NEWS_RELEASE, WorldSimulation.MINOR, "%s release %s to make room." % [buyer.name,
-				weak_player.nickname], weak_player.id, buyer.id):
-			return false
-	elif not repo.set_contract_substitute(weak_contract.id, true):
+			or not WorldFinance.pay_fee(repo, buyer.id, str(target["organisation_id"]), fee, str(target["nickname"]), day) \
+			or not _make_room(repo, buyer, weakest, squad_size, day):
 		return false
 	if not _sign(repo, rng, player_id, buyer.id, weak_contract.role, false, buyer.tier, int(target["rating"]), day,
 			rng.randi_range(MIN_YEARS + 1, MAX_YEARS)):

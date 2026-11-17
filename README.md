@@ -374,8 +374,9 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Over several months, a young AI player's perceived ratings tend to rise. A veteran's
       (31+) tend to fall.
 - [ ] Schedule an amateur match on Home, then press Continue: it refuses until you play it.
-- [ ] In January (Continue from the start) and again in July, **News** shows transfers
-      ("X joins Org from Other Org"). The buying organisation's Teams page lists the new player
+- [ ] Most transfers ("X joins Org from Other Org for $…") come in January and July. A few
+      appear mid-season, mostly from teams whose Form on Teams is Poor or Shaky. Those teams also
+      sign better free agents ("… sign free agent X, and Y loses their place"). The buying organisation's Teams page lists the new player
       in its five and the displaced starter on the bench (or released).
 
 ### Manual test checklist (Milestone 14 — path to pro)

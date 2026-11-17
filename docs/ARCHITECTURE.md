@@ -471,9 +471,11 @@ sit beside small appliers, so the maths is tested without a database:
 - **Results (`WorldSimulation.apply_series`):** form (`organisation_form`, −100..100: old × 0.6 +
   40 × map margin) and Elo-style reputation (scale 25, K by competition tier, AI starters get half,
   stochastic rounding). Form feeds `organisation_strength` (0.03 points per form point).
-- **Daily (`WorldMarket`):** expiring contracts are renewed or released. In the transfer windows
-  (`in_window`: every 7th day of the year in January and July), organisations try to upgrade
-  their weakest AI starter. The buyer goes by tier, then reputation. The target must be 4+
+- **Daily (`WorldMarket`):** expiring contracts are renewed or released. Every 7th day of the year
+  (`is_market_day`) organisations may try to upgrade their weakest AI starter. The weekly
+  chance comes from `buy_chance(in_window, form)`: high in the January and July windows, low
+  outside them, and raised for poor form. If no transfer happens, a clearly better free agent
+  is signed instead and the starter is benched or released (`_make_room`). The buyer goes by tier, then reputation. The target must be 4+
   perceived points better and want the move (`wants_move`), and the seller must agree
   (`sell_chance`). Fees and finances do not exist yet. Then organisations short of five starters
   promote a substitute or sign a free agent, 35% chance per day. Decisions use
@@ -713,6 +715,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
 | 2026-11-16 | Sandbox bots play free-for-all and roam by scored interest points and heard gunfire instead of homing on the human | They no longer know where the player is through walls. Gunplay testing gets varied, fair fights. The planner is pure and testable, and reusable when M7 adds team intent |
+| 2026-11-17 | The transfer market is open all year; windows only raise the odds (owner) | Struggling teams can react mid-season, which makes the world feel alive, while windows keep most movement predictable |
 | 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |

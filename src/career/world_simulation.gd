@@ -5,8 +5,9 @@ extends RefCounted
 ## day either happens completely or not at all.
 ##
 ## Every day:   series results move form and reputation; contracts end (renewed or released);
-##              organisations short of starters sign free agents; in the January and July
-##              windows they also buy upgrades from other organisations; season openings make news;
+##              organisations short of starters sign free agents; weekly (busiest in the
+##              January and July windows, sooner when in poor form) they buy or sign upgrades;
+##              season openings make news;
 ##              organisations may invite an unsigned human to a trial ([CareerOffers]); a
 ##              contracted human's due league series is booked to play ([CareerLeagueMatches]).
 ## Each month:  AI players develop or decline, the world's opinion catches up with the truth,
@@ -69,7 +70,7 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \
 				or not WorldFinance.monthly(repo, day):
 			return false
-	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfer_window(repo, day, rng) \
+	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfers(repo, day, rng) \
 		and WorldMarket.fill_rosters(repo, day, rng) \
 		and CareerOffers.daily(repo, day, rng) and CareerLeagueMatches.schedule_due(repo, day)
 

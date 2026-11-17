@@ -405,7 +405,9 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] With a match pending (amateur, trial or league), Home → "Your next match" and the Calendar
       show **Simulate match (dev)**. Pressing it reports the score(s) and moves the day on.
 - [ ] For a league series, one press simulates every map and the series score appears in
-      Competitions. Your ELO and reputation on Home do not change.
+      Competitions. Your reputation on Home can change with the result.
+- [ ] Simulating an amateur match changes your ELO on Home (up for a win, down for a loss).
+      Statistics records nothing for it.
 - [ ] A simulated trial counts a win as a pass (a contract offer follows) and a loss as a fail.
 - [ ] Press Continue → Simulate → Continue repeatedly to move through weeks quickly.
 

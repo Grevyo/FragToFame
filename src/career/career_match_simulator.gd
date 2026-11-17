@@ -7,8 +7,10 @@ extends RefCounted
 ## organisation's form, and the map goes to the home side with the logistic map-win chance.
 ##
 ## A simulated result carries [constant MatchResult.SOURCE_SIMULATION] and no telemetry, so it
-## records no statistics and never moves the human's ELO or reputation (only played games do).
-## League series simulate every remaining map; trials judge a win as a pass.
+## records no statistics or performance rating and changes no opinions. It does count like a
+## played result (owner, 2026-11-17): amateur matches move ELO and reputation, league series
+## move the human's reputation with their organisation's. League series simulate every
+## remaining map; trials judge a win as a pass.
 
 const MAX_MAPS: int = 5
 

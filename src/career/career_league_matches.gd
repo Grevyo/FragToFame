@@ -32,7 +32,7 @@ static func schedule_due(repo: CareerRepository, day: int) -> bool:
 
 ## Saves one played map (inside the result transaction). Sets [code]finished[0][/code] to true
 ## when the series is decided; otherwise the next map is booked for the same day.
-## [param human_played]: false for a simulated (dev) series, which leaves human reputation alone.
+## [param human_played]: the human's reputation moves with the series (played or simulated).
 static func record_map(repo: CareerRepository, fixture: CareerFixture, series_map: Dictionary,
 		finished: Array[bool], human_played: bool = true) -> bool:
 	var series := repo.league_fixture(int(series_map["league_fixture_id"]))

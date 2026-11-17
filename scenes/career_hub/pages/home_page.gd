@@ -127,7 +127,7 @@ func _refresh_fixture_card() -> void:
 		buttons.add_child(play)
 		if OS.is_debug_build():
 			var simulate := UIFactory.button("Simulate match (dev)")
-			simulate.tooltip_text = "Development option: resolve this match like a world series (perceived ratings for you). No stats, ELO or reputation change."
+			simulate.tooltip_text = "Development option: resolve this match like a world series (perceived ratings for you). The result counts for ELO and reputation; no match statistics are recorded."
 			simulate.pressed.connect(simulate_fixture)
 			buttons.add_child(simulate)
 		_fixture_card.add_child(buttons)

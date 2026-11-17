@@ -69,16 +69,17 @@ static func record_result(repo: CareerRepository, player_id: String, result: Mat
 				return false
 		if not repo.store_fixture_result(result):
 			return false
-		if not totals.is_empty():
-			if not repo.store_fixture_statistics(fixture, result, totals):
-				return false
-			if fixture.setup.competition == COMPETITION and not CareerDevelopment.apply_amateur_result(
-					repo, fixture, result, totals[player_id]):
-				return false
+		if not totals.is_empty() and not repo.store_fixture_statistics(fixture, result, totals):
+			return false
+		# Simulated (dev) matches count for ELO and reputation too (owner, 2026-11-17); with no
+		# telemetry they move no opinions.
+		if fixture.setup.competition == COMPETITION and (not totals.is_empty() or simulated) \
+				and not CareerDevelopment.apply_amateur_result(repo, fixture, result, totals.get(player_id, {}) as Dictionary):
+			return false
 		var series_map := repo.series_map_for_fixture(fixture.setup.fixture_id)
 		if not series_map.is_empty():
 			var finished: Array[bool] = []
-			if not CareerLeagueMatches.record_map(repo, fixture, series_map, finished, not simulated):
+			if not CareerLeagueMatches.record_map(repo, fixture, series_map, finished):
 				return false
 			if not finished[0]:
 				return true  # The next map of the series is played the same day.

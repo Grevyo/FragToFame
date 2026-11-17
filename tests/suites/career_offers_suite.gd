@@ -225,8 +225,14 @@ func _test_path(app: Node) -> void:
 	check(bool(outcome["ok"]) and int(outcome["maps"]) >= 2 and simulated_series["home_maps"] != null,
 		"one press simulates the whole series (%s)" % outcome["message"])
 	check(repo.current_day() == sim_day + 1 and repo.pending_fixture(player_id) == null, "the day moves on afterwards")
-	check(repo.reputation(player_id) == rep_before and CareerDevelopment.current_elo(repo, player_id) == elo_before,
-		"a simulated series never moves the human's reputation or ELO")
+	var sim_home := int(next_series["human_home"]) == 1
+	var won := int(simulated_series["home_maps"] if sim_home else simulated_series["away_maps"]) == 2
+	check(CareerDevelopment.current_elo(repo, player_id) == elo_before and (repo.reputation(player_id) >= rep_before if won
+		else repo.reputation(player_id) <= rep_before),
+		"a simulated series counts for the human's reputation like a played one (%d → %d, %s)" % [rep_before,
+			repo.reputation(player_id), "won" if won else "lost"])
+	check(repo.performance_totals(player_id).get("matches", 0) == 0 or int(repo.performance_totals(player_id)["matches"]) == 0,
+		"simulated matches record no statistics")
 	check(repo.fixture_by_id(next_map.setup.fixture_id).result.source == MatchResult.SOURCE_SIMULATION,
 		"the stored result is marked as simulated")
 	var strict := MatchResult.create("fix_unknown", 9, 3, MatchResult.SOURCE_SIMULATION)
@@ -234,6 +240,19 @@ func _test_path(app: Node) -> void:
 		"normal result saving still refuses simulated results")
 	var none: Dictionary = app.call("simulate_career_fixture")
 	check(not bool(none["ok"]), "there is nothing to simulate without a pending match")
+
+	check(CareerFixtures.schedule(repo, player_id, MapTemplates.SANDBOX_ARENA_ID).is_empty() and repo.pending_fixture(player_id) != null,
+		"an amateur match is scheduled")
+	var amateur_elo := CareerDevelopment.current_elo(repo, player_id)
+	var amateur_rep := repo.reputation(player_id)
+	var amateur: Dictionary = app.call("simulate_career_fixture")
+	var saved := repo.amateur_rating(player_id)
+	check(bool(amateur["ok"]) and int(saved.get("last_change", 0)) != 0
+		and CareerDevelopment.current_elo(repo, player_id) == amateur_elo + int(saved["last_change"]),
+		"a simulated amateur match moves ELO (%+d)" % int(saved.get("last_change", 0)))
+	var amateur_won := int(saved.get("last_change", 0)) > 0
+	check(repo.reputation(player_id) == amateur_rep + (1 if amateur_won else 0),
+		"and reputation, from the result alone (no performance rating)")
 
 
 func _clean(folder: String) -> void:

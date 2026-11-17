@@ -79,6 +79,8 @@ static func scout(repo: CareerRepository, player_id: String, subject_id: String)
 
 
 ## Called once by fixture publication, inside its transaction and after telemetry validation.
+## [param counts] is empty for a simulated match: the result still moves ELO and reputation,
+## but there is no performance rating or evidence to change opinions.
 static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 		result: MatchResult, counts: Dictionary) -> bool:
 	var id := fixture.player_id
@@ -90,6 +92,9 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	var next_elo := clampi(prior_elo + roundi(ELO_K * (float(won) - expected)), 100, 3500)
 
 	var reputation_change := 1 if won else 0
+	if counts.is_empty():
+		return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
+			and repo.set_reputation(id, repo.reputation(id) + reputation_change, day)
 	var rating := MatchStatistics.rating(counts)
 	if rating >= 1.25:
 		reputation_change += 1

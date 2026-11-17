@@ -547,5 +547,5 @@ Planned scope:
 | 2026-11-17 | M14: AI transfers between organisations in January and July windows (no fees until organisations have finances). |
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
-| 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. |
+| 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |

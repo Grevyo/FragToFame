@@ -502,8 +502,9 @@ resolves the pending career match with the world's series model:
 - Strength is the lineup's mean ability (AI true abilities, human perceived rating) plus form.
 - `map_win_chance` picks the winner; the loser's rounds are closer when the sides are even.
 - The result is saved through the normal `record_result` with `allow_simulated`, carrying
-  `SOURCE_SIMULATION` and no telemetry. So no statistics are recorded and no ELO or human
-  reputation moves (`record_map(..., human_played = false)`).
+  `SOURCE_SIMULATION` and no telemetry. No statistics or performance rating are recorded and no
+  opinions move. The result still counts (owner, 2026-11-17): amateur ELO and reputation
+  change from the win or loss, and league series move the human's reputation.
 - League series simulate every remaining map in one press.
 
 Whether this becomes a player-facing feature is the owner's call.
@@ -726,6 +727,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Save list opens databases normally, not read-only | godot-sqlite's read-only mode ignores data still in the WAL file |
 | 2026-11-15 | `validate.ps1` fails on any `SCRIPT ERROR` in the test log | A runtime error aborts a test function without failing a check |
 | 2026-11-16 | Sandbox bots play free-for-all and roam by scored interest points and heard gunfire instead of homing on the human | They no longer know where the player is through walls. Gunplay testing gets varied, fair fights. The planner is pure and testable, and reusable when M7 adds team intent |
+| 2026-11-17 | Simulated (dev) matches count for ELO and reputation (owner) | Quick testing should exercise the same career progression as played matches; without telemetry they still record no statistics or opinion changes |
 | 2026-11-17 | The transfer market is open all year; windows only raise the odds (owner) | Struggling teams can react mid-season, which makes the world feel alive, while windows keep most movement predictable |
 | 2026-11-17 | Trials and league series maps are ordinary career fixtures linked by side tables (`career_offer.fixture_id`, `league_series_map`) | One fixture pipeline (validation, telemetry, statistics, calendar conflicts) serves every playable match. The FPS runtime still only sees a `MatchSetup` |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |

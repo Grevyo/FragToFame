@@ -497,6 +497,17 @@ sit beside small appliers, so the maths is tested without a database:
 - **News (`world_news`):** one row per story with importance 1–3. `continue_until_event` stops on
   the player's match day, any headline, or after 31 days.
 
+**Simulate match (development option).** `CareerMatchSimulator`, shown in debug builds only,
+resolves the pending career match with the world's series model:
+- Strength is the lineup's mean ability (AI true abilities, human perceived rating) plus form.
+- `map_win_chance` picks the winner; the loser's rounds are closer when the sides are even.
+- The result is saved through the normal `record_result` with `allow_simulated`, carrying
+  `SOURCE_SIMULATION` and no telemetry. So no statistics are recorded and no ELO or human
+  reputation moves (`record_map(..., human_played = false)`).
+- League series simulate every remaining map in one press.
+
+Whether this becomes a player-facing feature is the owner's call.
+
 Humans are never developed, retired or re-rated by the world. Their skill is the person, and their
 reputation and ELO move only through played matches (`CareerDevelopment`, and their own league
 series via `apply_series(..., played = true)`).

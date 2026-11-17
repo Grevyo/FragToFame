@@ -8,6 +8,8 @@ const NEWS_SHOWN: int = 8
 
 var advance_button: Button
 var continue_button: Button
+## Development option, shown while a match is pending (debug builds only).
+var simulate_button: Button
 var status_label: Label
 ## Outcome of the last Next day / Continue, kept across the rebuild that follows it.
 var _last_status: String = ""
@@ -35,6 +37,11 @@ func build_page() -> void:
 	continue_button = UIFactory.button("Continue")
 	continue_button.pressed.connect(continue_on)
 	buttons.add_child(continue_button)
+	if OS.is_debug_build() and session.repo.pending_fixture(session.human_player_id) != null:
+		simulate_button = UIFactory.button("Simulate match (dev)")
+		simulate_button.tooltip_text = "Development option: resolve your match like a world series and keep testing days."
+		simulate_button.pressed.connect(simulate_match)
+		buttons.add_child(simulate_button)
 	day_card.add_child(buttons)
 	status_label = UIFactory.label(_last_status, &"WarningLabel", true)
 	day_card.add_child(status_label)
@@ -67,6 +74,17 @@ func continue_on() -> Dictionary:
 		status_label.text = str(outcome["reason"])
 		return outcome
 	_last_status = "%d day%s passed. %s" % [days, "" if days == 1 else "s", outcome["reason"]]
+	_rebuild()
+	return outcome
+
+
+## Development option: simulates the pending match, then rebuilds with the score.
+func simulate_match() -> Dictionary:
+	var outcome := App.simulate_career_fixture()
+	if not bool(outcome["ok"]):
+		status_label.text = str(outcome["message"])
+		return outcome
+	_last_status = str(outcome["message"])
 	_rebuild()
 	return outcome
 

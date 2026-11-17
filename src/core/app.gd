@@ -192,6 +192,19 @@ func decline_career_offer(offer_id: String) -> String:
 	return CareerOffers.decline(career.repo, career.human_player_id, offer_id)
 
 
+## DEVELOPMENT OPTION: simulates the pending career match (and the rest of a league series)
+## instead of playing it. Returns {ok, message}.
+func simulate_career_fixture() -> Dictionary:
+	if not has_career():
+		return {"ok": false, "message": "Open a career first."}
+	if has_unsaved_fixture_result():
+		return {"ok": false, "message": "Save the completed match result first."}
+	var outcome := CareerMatchSimulator.simulate_pending(career.repo, career.human_player_id)
+	if bool(outcome["ok"]):
+		career_day_changed.emit()
+	return outcome
+
+
 func schedule_career_fixture(map_id: String = MapTemplates.SANDBOX_ARENA_ID) -> String:
 	if not has_career():
 		return "Open a career first."

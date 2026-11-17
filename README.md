@@ -400,6 +400,15 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Simulate match — development option)
+
+- [ ] With a match pending (amateur, trial or league), Home → "Your next match" and the Calendar
+      show **Simulate match (dev)**. Pressing it reports the score(s) and moves the day on.
+- [ ] For a league series, one press simulates every map and the series score appears in
+      Competitions. Your ELO and reputation on Home do not change.
+- [ ] A simulated trial counts a win as a pass (a contract offer follows) and a loss as a fail.
+- [ ] Press Continue → Simulate → Continue repeatedly to move through weeks quickly.
+
 ### Manual test checklist (Milestone 16 — map creator tools and Kilnmarket)
 
 Automated tests cover every operation below headlessly; these checks are for feel and visuals.

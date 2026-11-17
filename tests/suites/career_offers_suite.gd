@@ -25,7 +25,31 @@ func run() -> void:
 	_clean(ProjectSettings.globalize_path(TEST_ROOT))
 
 
+func _test_simulation_rules() -> void:
+	section("Simulate match (dev): model")
+	var lineup: Array[Dictionary] = [
+		{"player_id": "h", "is_human": true, "abilities": {}},
+		{"player_id": "a", "is_human": false, "abilities": {"aim": 70, "reaction": 80}},
+	]
+	check(is_equal_approx(CareerMatchSimulator.lineup_strength(lineup, {"h": 60}), 70.0),
+		"humans count with their perceived rating, AI players with their abilities")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var legal := true
+	var strong_wins := 0
+	var rules := MatchRules.competitive(8)
+	for i: int in 300:
+		var score := CareerMatchSimulator.map_score(rng, 76.0, 64.0, 8)
+		if maxi(score.x, score.y) != rules.winning_score(mini(score.x, score.y)):
+			legal = false
+		if score.x > score.y:
+			strong_wins += 1
+	check(legal, "every simulated map ends on a legal final score")
+	check(strong_wins > 240 and strong_wins < 300, "the stronger side wins most maps but not all (%d of 300)" % strong_wins)
+
+
 func _test_rules() -> void:
+	_test_simulation_rules()
 	section("Visibility and verdicts")
 	var none: Array[float] = []
 	check(is_equal_approx(CareerOffers.visibility(8, 1000, none), 14.0), "a standard start is visible to amateur organisations (14)")
@@ -182,6 +206,34 @@ func _test_path(app: Node) -> void:
 		and repo.current_day() == match_day + 1, "a 2–0 is published to the league table and the day moves on")
 	check(repo.organisation_form(org_id) > 0, "the played series lifts the organisation's form")
 	check(repo.reputation(player_id) >= reputation_before, "a played win can raise the human's reputation")
+
+	section("Simulate match (dev)")
+	var waited := 0
+	while repo.pending_fixture(player_id) == null and waited < 20:
+		CareerCalendar.continue_until_event(repo, player_id, dice)
+		waited += 1
+	var next_map := repo.pending_fixture(player_id)
+	var next_series := repo.series_map_for_fixture(next_map.setup.fixture_id) if next_map != null else {}
+	check(not next_series.is_empty(), "Continue reaches the next league match day")
+	if next_series.is_empty():
+		return
+	var sim_day := repo.current_day()
+	var rep_before := repo.reputation(player_id)
+	var elo_before := CareerDevelopment.current_elo(repo, player_id)
+	var outcome: Dictionary = app.call("simulate_career_fixture")
+	var simulated_series := repo.league_fixture(int(next_series["league_fixture_id"]))
+	check(bool(outcome["ok"]) and int(outcome["maps"]) >= 2 and simulated_series["home_maps"] != null,
+		"one press simulates the whole series (%s)" % outcome["message"])
+	check(repo.current_day() == sim_day + 1 and repo.pending_fixture(player_id) == null, "the day moves on afterwards")
+	check(repo.reputation(player_id) == rep_before and CareerDevelopment.current_elo(repo, player_id) == elo_before,
+		"a simulated series never moves the human's reputation or ELO")
+	check(repo.fixture_by_id(next_map.setup.fixture_id).result.source == MatchResult.SOURCE_SIMULATION,
+		"the stored result is marked as simulated")
+	var strict := MatchResult.create("fix_unknown", 9, 3, MatchResult.SOURCE_SIMULATION)
+	check(not CareerFixtures.record_result(repo, player_id, strict).is_empty(),
+		"normal result saving still refuses simulated results")
+	var none: Dictionary = app.call("simulate_career_fixture")
+	check(not bool(none["ok"]), "there is nothing to simulate without a pending match")
 
 
 func _clean(folder: String) -> void:

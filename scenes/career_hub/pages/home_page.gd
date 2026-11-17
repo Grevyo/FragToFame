@@ -121,9 +121,16 @@ func _refresh_fixture_card() -> void:
 			&"CardTitleLabel", true))
 		_fixture_card.add_child(UIFactory.label("%s · %s · MR%d · %s" % [setup.competition,
 			GameDate.format(fixture.scheduled_day), setup.max_rounds, _map_name(setup.map_id)], &"MutedLabel", true))
+		var buttons := UIFactory.hbox(8)
 		var play := UIFactory.button("Play fixture", &"AccentButton")
 		play.pressed.connect(func() -> void: _fixture_status.text = App.start_career_fixture(setup.fixture_id))
-		_fixture_card.add_child(play)
+		buttons.add_child(play)
+		if OS.is_debug_build():
+			var simulate := UIFactory.button("Simulate match (dev)")
+			simulate.tooltip_text = "Development option: resolve this match like a world series (perceived ratings for you). No stats, ELO or reputation change."
+			simulate.pressed.connect(simulate_fixture)
+			buttons.add_child(simulate)
+		_fixture_card.add_child(buttons)
 	_fixture_card.add_child(_fixture_status)
 
 
@@ -186,6 +193,15 @@ func _answer_offer(offer_id: String, accept: bool) -> String:
 	_refresh_fixture_card()
 	refresh_offers()
 	return ""
+
+
+## Development option: simulates the pending match and refreshes the cards. Returns the message.
+func simulate_fixture() -> String:
+	var outcome := App.simulate_career_fixture()
+	_refresh_fixture_card()
+	refresh_offers()
+	_fixture_status.text = str(outcome["message"])
+	return str(outcome["message"])
 
 
 ## Contract talks from the Offers card. Returns the organisation's answer.

@@ -29,13 +29,17 @@ static func schedule(repo: CareerRepository, player_id: String, map_id: String) 
 	return "Could not schedule the fixture."
 
 
-static func record_result(repo: CareerRepository, player_id: String, result: MatchResult) -> String:
+## [param allow_simulated]: accept a [constant MatchResult.SOURCE_SIMULATION] result (the
+## development "simulate match" option, [CareerMatchSimulator]).
+static func record_result(repo: CareerRepository, player_id: String, result: MatchResult,
+		allow_simulated: bool = false) -> String:
 	if result == null:
 		return "Missing match result."
 	var problem := result.validate()
 	if not problem.is_empty():
 		return problem
-	if result.source != MatchResult.SOURCE_FPS_RUNTIME:
+	var simulated := allow_simulated and result.source == MatchResult.SOURCE_SIMULATION
+	if result.source != MatchResult.SOURCE_FPS_RUNTIME and not simulated:
 		return "A played FPS match is required for this fixture."
 
 	var rejected: Array[String] = []
@@ -74,7 +78,7 @@ static func record_result(repo: CareerRepository, player_id: String, result: Mat
 		var series_map := repo.series_map_for_fixture(fixture.setup.fixture_id)
 		if not series_map.is_empty():
 			var finished: Array[bool] = []
-			if not CareerLeagueMatches.record_map(repo, fixture, series_map, finished):
+			if not CareerLeagueMatches.record_map(repo, fixture, series_map, finished, not simulated):
 				return false
 			if not finished[0]:
 				return true  # The next map of the series is played the same day.

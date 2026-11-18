@@ -74,8 +74,9 @@ static func scout_report(seen: Dictionary, truth: Dictionary, confidence: int, m
 	for ability: StringName in CareerCatalog.ABILITIES:
 		if truth.has(ability):
 			var estimate: int = seen.get(ability, 50)
-			var misread := rng.randf_range(-1.0, 1.0) * (1.0 - evidence) * 4.0
-			revised[ability] = clampi(estimate + roundi((int(truth[ability]) - estimate) * share + misread), 1, 100)
+			# The scout sees the truth through the evidence: thin footage blurs what they see.
+			var observed := int(truth[ability]) + rng.randf_range(-1.0, 1.0) * (1.0 - evidence) * 6.0
+			revised[ability] = clampi(estimate + roundi((observed - estimate) * share), 1, 100)
 	var openness := 1.0 - clampf(confidence / 100.0, 0.0, 0.95)
 	return {"revised": revised, "gain": roundi((4.0 + 16.0 * evidence) * openness), "evidence": evidence}
 
@@ -93,20 +94,19 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	var expected := 1.0 / (1.0 + pow(10.0, (opponent_elo - prior_elo) / 400.0))
 	var next_elo := clampi(prior_elo + roundi(ELO_K * (float(won) - expected)), 100, 3500)
 
-	var reputation_change := 1 if won else 0
+	var rounds := result.home_score + result.away_score
+	var margin := float(result.home_score - result.away_score) / maxf(rounds, 1.0)
+	var reputation := repo.reputation(id)
 	if won and not repo.add_player_money(id, CareerSpending.AMATEUR_WIN_PRIZE, day, "prize", "Amateur match win"):
 		return false
 	if counts.is_empty():
 		return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
-			and repo.set_reputation(id, repo.reputation(id) + reputation_change, day)
-	var rating := MatchStatistics.rating(counts)
-	if rating >= 1.25:
-		reputation_change += 1
-	elif not won and rating < 0.50:
-		reputation_change -= 1
+			and repo.set_reputation(id, clampi(reputation + amateur_reputation(won, expected, margin, 0.0, reputation), 0, 100), day)
+	var reputation_change := amateur_reputation(won, expected, margin, MatchStatistics.rating(counts), reputation)
 
 	var opinions := repo.perceived(id)
-	var confidence := _confidence_after(repo.perceived_confidence(id), 3)
+	var previous_confidence := repo.perceived_confidence(id)
+	var confidence := _confidence_after(previous_confidence, amateur_confidence_gain(previous_confidence, rounds))
 	# Move only opinions supported by recorded evidence. The recorded counts and rating stay fixed.
 	if int(counts["shots"]) >= 5:
 		_update_opinion(opinions, &"aim", int(counts["hits"]), int(counts["shots"]))
@@ -115,8 +115,24 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	if int(counts["clutch_attempts"]) > 0:
 		_update_opinion(opinions, &"composure", int(counts["clutch_wins"]), int(counts["clutch_attempts"]))
 	return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
-		and repo.set_reputation(id, repo.reputation(id) + reputation_change, day) \
+		and repo.set_reputation(id, clampi(reputation + reputation_change, 0, 100), day) \
 		and repo.set_perceived(id, opinions, confidence, day)
+
+
+## How an amateur result moves reputation. What counts is the surprise (a win you were expected
+## to lose says far more than one you were expected to win; [param expected] is the ELO win
+## chance), the margin (-1..1), and how you played ([param rating], 0 when there is no recorded
+## performance). The amateur scene matters less the better known you already are. Pure.
+static func amateur_reputation(won: bool, expected: float, margin: float, rating: float, reputation: int) -> int:
+	var result_part := (float(won) - expected) * 4.0 + margin * 1.5
+	var performance := (rating - 1.0) * 3.0 if rating > 0.0 else 0.0
+	return roundi((result_part + performance) * clampf(1.1 - reputation / 100.0, 0.2, 1.1))
+
+
+## Confidence a played amateur match adds: more rounds are more evidence, and a world that is
+## already sure of you learns less. Pure.
+static func amateur_confidence_gain(confidence: int, rounds: int) -> int:
+	return roundi(minf(rounds / 16.0, 1.5) * 5.0 * (1.0 - clampf(confidence / 100.0, 0.0, 0.95)))
 
 
 static func _opponent_elo(setup: MatchSetup) -> float:
@@ -134,7 +150,9 @@ static func _update_opinion(opinions: Dictionary[StringName, int], ability: Stri
 		successes: int, attempts: int) -> void:
 	var before: int = opinions.get(ability, 50)
 	var observed := clampi(roundi(float(successes) / attempts * 100.0), 1, 100)
-	opinions[ability] = before + clampi(observed - before, -2, 2)
+	# A larger sample moves the opinion further: a handful of shots says little.
+	var share := attempts / (attempts + 80.0) * 0.3
+	opinions[ability] = clampi(before + roundi((observed - before) * share), 1, 100)
 
 
 static func _confidence_after(previous: int, gain: int) -> int:

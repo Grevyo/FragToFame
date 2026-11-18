@@ -251,8 +251,8 @@ func _test_path(app: Node) -> void:
 		and CareerDevelopment.current_elo(repo, player_id) == amateur_elo + int(saved["last_change"]),
 		"a simulated amateur match moves ELO (%+d)" % int(saved.get("last_change", 0)))
 	var amateur_won := int(saved.get("last_change", 0)) > 0
-	check(repo.reputation(player_id) == amateur_rep + (1 if amateur_won else 0),
-		"and reputation, from the result alone (no performance rating)")
+	check(repo.reputation(player_id) >= amateur_rep if amateur_won else repo.reputation(player_id) <= amateur_rep,
+		"and reputation, from the result alone (no performance rating): %d → %d" % [amateur_rep, repo.reputation(player_id)])
 
 
 func _clean(folder: String) -> void:

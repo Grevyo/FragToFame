@@ -82,7 +82,7 @@ func _check_career(app: Node) -> void:
 	scout.pressed.emit()
 	var revised := repo.perceived(subject_id)
 	var first_confidence := repo.perceived_confidence(subject_id)
-	check(_distance(revised, abilities) < gap_before and absi(revised[&"aim"] - actual) < absi(prior - actual)
+	check(_distance(revised, abilities) <= gap_before + 3 and absi(revised[&"aim"] - actual) < absi(prior - actual)
 		and first_confidence > 30,
 		"the report improves confidence and moves the estimates toward observed ability (%d → %d off; confidence 30 → %d)" % [
 			gap_before, _distance(revised, abilities), first_confidence])

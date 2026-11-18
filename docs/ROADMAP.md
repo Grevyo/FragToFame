@@ -347,6 +347,9 @@ depend on the corresponding gameplay and world simulation systems.
       ability and increase confidence while preserving underlying ability and hidden potential.
       How far they move and how much confidence they add depends on the evidence: the player's
       maps in the last 90 days and their tier's visibility. Thin evidence can misread.
+- [x] Amateur results move reputation by surprise (an upset win says more than an expected
+      one), margin and rating, less the better known you are. Confidence grows with rounds
+      played, and opinions move by sample size. No fixed ±1 or +3 (owner, 2026-11-18).
 - [x] Persist career development in schema v5 and test daily limits, save reload, successful,
       duplicate and failed match publication, and the absence of human simulated abilities.
 - [ ] Manual training, scouting and match progression walkthrough.
@@ -676,6 +679,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | No fixed rates: amateur results now move reputation by surprise, margin and rating, and confidence and opinions by the size of the evidence. |
 | 2026-11-18 | No fixed rates, continued: the PR agent, scouting reports and the world's monthly confidence follow evidence (maps played, form, visibility, the gap between reputation and level). |
 | 2026-11-18 | No fixed rates in training: evidence, confidence, scrim relationships and the bootcamp's outcome all follow how the sessions went and who the people are. |
 | 2026-11-18 | Bootcamp is real training: a week's programme of drills and a scrim you play, tracked on the Training Ground. Save schema v15. |

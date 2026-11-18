@@ -434,8 +434,15 @@ matches before computing rates. Older score-only fixtures remain in Calendar.
 ### Career development and scouting (Milestone 12)
 
 `CareerDevelopment` updates amateur ELO and the human player's reputation when a recorded
-amateur fixture completes. Recent match evidence can move perceived aim, crosshair placement
-and composure by up to two points. Progression writes are in the same transaction as the score,
+amateur fixture completes. Nothing moves by a fixed amount:
+- `amateur_reputation` (pure) weighs the surprise of the result against the ELO win chance,
+  the margin and your rating, and counts for less the better known you are.
+- `amateur_confidence_gain` grows with rounds played and shrinks as the world becomes sure of
+  you.
+- Perceived aim, crosshair placement and composure move toward what the match showed by a share
+  that grows with the sample (shots, first shots, clutches).
+
+Progression writes are in the same transaction as the score,
 statistics and calendar advancement, so retries cannot award progression twice. Existing
 careers use their difficulty's starting amateur ELO until their first recorded result.
 

@@ -90,16 +90,44 @@ func _squad(repo: CareerRepository) -> void:
 		&"MutedLabel", true))
 	var rows: Array[Array] = []
 	var today := repo.current_day()
-	for entry: Dictionary in repo.roster(org.id):
+	var squad := repo.roster(org.id)
+	for entry: Dictionary in squad:
 		var player := entry["player"] as CareerRecords.PlayerRecord
 		var contract := entry["contract"] as CareerRecords.ContractRecord
 		var form := repo.sim_form(player.id, today - 90)
-		rows.append([cell_player(player.id, player.nickname + ("  (you)" if player.is_human else "")),
+		var person := repo.person(player.id)
+		var mood := "—" if person.is_empty() else PersonVoice.mood_word(int(person["happiness"]), int(person["wants_move"]) == 1)
+		rows.append([cell_player(player.id, player.nickname + ("  (you)" if player.is_human else "")), mood,
 			CareerCatalog.role_name(contract.role) + (" · bench" if contract.is_substitute else ""), str(player.age(today)),
 			CareerCatalog.nation_name(player.nation_id), str(entry["rating"]),
 			"%.2f (%d maps)" % [float(form["rating"]), int(form["maps"])] if int(form["maps"]) > 0 else "—",
 			"%+d" % repo.morale(player.id), CareerCatalog.format_money(contract.monthly_salary), GameDate.format(contract.end_day)])
-	link_table(card, PackedStringArray(["Player", "Role", "Age", "Nation", "Rating", "Form", "Morale", "Salary", "Contract until"]), rows)
+	link_table(card, PackedStringArray(["Player", "Mood", "Role", "Age", "Nation", "Rating", "Form", "Morale", "Salary", "Contract until"]), rows)
+	_dynamics(repo, squad)
+
+
+## Friendships and rivalries inside the squad, strongest first.
+func _dynamics(repo: CareerRepository, squad: Array[Dictionary]) -> void:
+	var card := UIFactory.card(self, "Dressing room")
+	var pairs: Array[Array] = []
+	for i: int in squad.size():
+		for j: int in range(i + 1, squad.size()):
+			var a := squad[i]["player"] as CareerRecords.PlayerRecord
+			var b := squad[j]["player"] as CareerRecords.PlayerRecord
+			var strength := repo.relationship(a.id, b.id)
+			if absi(strength) >= 15:
+				pairs.append([strength, a, b])
+	pairs.sort_custom(func(x: Array, y: Array) -> bool: return absi(int(x[0])) > absi(int(y[0])))
+	if pairs.is_empty():
+		card.add_child(UIFactory.label("No strong friendships or rivalries yet. They form month by month.", &"MutedLabel", true))
+		return
+	var rows: Array[Array] = []
+	for pair: Array in pairs.slice(0, 10):
+		var a := pair[1] as CareerRecords.PlayerRecord
+		var b := pair[2] as CareerRecords.PlayerRecord
+		rows.append([cell_player(a.id, a.nickname), cell_player(b.id, b.nickname), PersonVoice.bond_word(int(pair[0])), "%+d" % int(pair[0])])
+	link_table(card, PackedStringArray(["Player", "Player", "Relationship", "Strength"]), rows)
+	card.add_child(UIFactory.label("Good relationships help a line-up coordinate in matches; rivalries hurt it.", &"MutedLabel", true))
 
 
 func _matches(repo: CareerRepository) -> void:

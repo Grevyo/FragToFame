@@ -1259,3 +1259,85 @@ func training_bests(player_id: String) -> Dictionary[String, Dictionary]:
 func training_evidence_today(player_id: String, drill_id: String, day: int) -> bool:
 	return int(db.scalar("SELECT COUNT(*) FROM training_session WHERE player_id = ? AND drill_id = ? AND day = ? AND evidence <> 0;",
 		[player_id, drill_id, day], 0)) > 0
+
+
+# --- People -----------------------------------------------------------------------------------
+
+const PERSON_FIELDS: Array[String] = ["ambition", "loyalty", "professionalism", "temperament", "ego", "sociability"]
+
+
+func insert_person(player_id: String, person: Dictionary) -> bool:
+	return db.execute("""INSERT OR REPLACE INTO person (player_id, ambition, loyalty, professionalism, temperament, ego,
+			sociability, drive, background, goal, happiness, updated_day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+		[player_id, person["ambition"], person["loyalty"], person["professionalism"], person["temperament"], person["ego"],
+			person["sociability"], person["drive"], person["background"], person["goal"], int(person.get("happiness", 0)),
+			int(person.get("updated_day", 0))])
+
+
+## A player's person row, or {} (humans have none: the person is the one playing).
+func person(player_id: String) -> Dictionary:
+	return db.row("SELECT * FROM person WHERE player_id = ?;", [player_id])
+
+
+## Every person row by player id.
+func people() -> Dictionary[String, Dictionary]:
+	var all: Dictionary[String, Dictionary] = {}
+	for found: Dictionary in db.rows("SELECT * FROM person;"):
+		all[str(found["player_id"])] = found
+	return all
+
+
+## Active AI players without a person yet (new rookies, older saves): id, birth_day.
+func players_without_person() -> Array[Dictionary]:
+	return db.rows("""SELECT p.id, p.birth_day FROM player p WHERE p.is_human = 0 AND p.status = 'active'
+		AND NOT EXISTS (SELECT 1 FROM person x WHERE x.player_id = p.id) ORDER BY p.id;""")
+
+
+func set_person_mood(player_id: String, happiness: int, wants_move: bool, reason: String, day: int) -> bool:
+	return db.execute("UPDATE person SET happiness = ?, wants_move = ?, mood_reason = ?, updated_day = ? WHERE player_id = ?;",
+		[clampi(happiness, -50, 50), 1 if wants_move else 0, reason, day, player_id])
+
+
+func set_goal_done(player_id: String, day: int) -> bool:
+	return db.execute("UPDATE person SET goal_done_day = ? WHERE player_id = ? AND goal_done_day IS NULL;", [day, player_id])
+
+
+## Every active contract with what the people layer needs: player_id, organisation_id, tier,
+## is_substitute, monthly_salary, start_day, is_human, birth_day, form.
+func contracted_players() -> Array[Dictionary]:
+	return db.rows("""SELECT c.player_id, c.organisation_id, o.tier, c.is_substitute, c.monthly_salary, c.start_day,
+			p.is_human, p.birth_day, p.nickname, COALESCE(f.value, 0) AS form
+		FROM contract c JOIN player p ON p.id = c.player_id JOIN organisation o ON o.id = c.organisation_id
+		LEFT JOIN organisation_form f ON f.organisation_id = c.organisation_id
+		WHERE c.status = 'active' ORDER BY c.organisation_id, c.is_substitute, c.player_id;""")
+
+
+## Relationship strength between two players (0 when they have none).
+func relationship(a_id: String, b_id: String) -> int:
+	var low := a_id if a_id < b_id else b_id
+	var high := b_id if a_id < b_id else a_id
+	return int(db.scalar("SELECT strength FROM relationship WHERE a_id = ? AND b_id = ?;", [low, high], 0))
+
+
+## All relationships by "a|b" key (a < b) → strength.
+func relationships() -> Dictionary[String, int]:
+	var all: Dictionary[String, int] = {}
+	for found: Dictionary in db.rows("SELECT a_id, b_id, strength FROM relationship;"):
+		all["%s|%s" % [found["a_id"], found["b_id"]]] = int(found["strength"])
+	return all
+
+
+func set_relationship(a_id: String, b_id: String, strength: int, day: int) -> bool:
+	var low := a_id if a_id < b_id else b_id
+	var high := b_id if a_id < b_id else a_id
+	return db.execute("""INSERT INTO relationship (a_id, b_id, strength, since_day, updated_day) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT (a_id, b_id) DO UPDATE SET strength = excluded.strength, updated_day = excluded.updated_day;""",
+		[low, high, clampi(strength, -100, 100), day, day])
+
+
+## A player's relationships, strongest feelings first: other_id, nickname, strength, since_day.
+func relationships_of(player_id: String, limit: int = 12) -> Array[Dictionary]:
+	return db.rows("""SELECT CASE WHEN r.a_id = ? THEN r.b_id ELSE r.a_id END AS other_id, p.nickname, r.strength, r.since_day
+		FROM relationship r JOIN player p ON p.id = (CASE WHEN r.a_id = ? THEN r.b_id ELSE r.a_id END)
+		WHERE (r.a_id = ? OR r.b_id = ?) AND r.strength <> 0 ORDER BY ABS(r.strength) DESC LIMIT ?;""",
+		[player_id, player_id, player_id, player_id, limit])

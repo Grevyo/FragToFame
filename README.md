@@ -400,6 +400,18 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (People)
+
+- [ ] Start a **new** career. Open any AI player: **The person** shows descriptors (e.g.
+      "Driven · Loyal"), background, drive, career goal, mood with a reason and how they speak.
+- [ ] After a few months of Continue, players have **Relationships** (friends and rivals) and a
+      team's Squad tab shows a **Dressing room** and a Mood column.
+- [ ] News shows people stories: friendships, tension, unsettled players, streams, burnout,
+      mentoring, goals achieved. A player's News tab lists their **Interviews**, and different
+      players sound different.
+- [ ] Over a season, some unsettled players leave at contract end ("turns down a new deal"), and
+      some loyal players turn down moves.
+
 ### Manual test checklist (Training ground)
 
 - [ ] Sidebar headings (CAREER, ME, WORLD, DATA) collapse and expand when clicked.

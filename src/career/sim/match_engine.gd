@@ -95,6 +95,8 @@ class SimTeam extends RefCounted:
 	var name: String = ""
 	var players: Array[SimPlayer] = []
 	var form: int = 0
+	## How well the players get on (-6..+6, from [CareerPeople] relationships); adds to coordination.
+	var chemistry: float = 0.0
 	# Team-wide values for one map.
 	var tactics: float = 50.0
 	var utility: float = 50.0
@@ -203,7 +205,7 @@ func _prepare(team: SimTeam) -> void:
 	team.utility = utility / size
 	coordination /= size
 	# Fewer than five players hurts coordination as well as numbers.
-	team.coordination = coordination - 6.0 * (5 - mini(team.players.size(), 5))
+	team.coordination = coordination - 6.0 * (5 - mini(team.players.size(), 5)) + team.chemistry
 
 
 func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:

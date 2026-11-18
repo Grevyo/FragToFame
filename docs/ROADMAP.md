@@ -467,6 +467,26 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
   - **In the hub:** Calendar shows map scores and the MVP, Competitions top performers, and
     player pages their simulated form and morale.
   - The development "simulate match" uses the same engine.
+- [x] Every AI professional is a person (owner, 2026-11-18: "each and every character in the
+      database is its own person"), via `CareerPeople`:
+  - **Personality:** ambition, loyalty, professionalism, temperament, ego and sociability,
+    shaped by traits. Also a drive (winning, money, fame, team, love of the game), a background
+    and a career goal.
+  - **Mood:** monthly happiness from playing time, team results, pay against teammates of the
+    same level, outgrowing the tier, friends and rivals in the squad, and form. Unhappy players
+    want a move.
+  - **Relationships** between teammates grow from personalities and results, so friendships and
+    rivalries form. A line-up's chemistry adds to or takes from its coordination in the match
+    engine.
+  - **Life:** practice streams, burnout, veterans mentoring rookies, public fallings-out, and
+    goals achieved. Each makes news.
+  - **Interviews** in each person's own voice (brash, humble, fiery or measured), given after
+    star games and upsets, when unsettled, on joining a club, and when a goal is reached.
+  - **Market effects:** unsettled players turn renewals down and are easier to buy. Loyal,
+    happy players often refuse moves.
+  - **In the hub:** the player page shows the person and their relationships, the squad shows
+    moods and the dressing room, and the News tab shows interviews.
+  - Save schema v14.
 - [x] Each save starts differently (`CareerStart.vary_world`):
   - three to six tier swaps between adjacent tiers;
   - random starting form;
@@ -641,6 +661,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | M14: people. Personality, drive, goal, mood, relationships, life events and interviews for every AI professional, feeding the market and match chemistry. Save schema v14. |
 | 2026-11-18 | Real training: flick, reaction, tracking and movement drills and 5v5 scrims played in the FPS, measured and recorded. Collapsible sidebar headings. Save schema v13. |
 | 2026-11-17 | Hub layout: Continue and Holiday top right, sidebar headings, routed pages with Back/Forward, team, player, compare, match report and inbox pages, links everywhere. |
 | 2026-11-17 | M14: the round-by-round match engine for every simulated series: economy, duels, trades, clutches, day form, morale, traits, per-player simulated lines, opinion from form, and upset/star news. Save schema v12. |

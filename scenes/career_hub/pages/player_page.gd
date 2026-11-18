@@ -38,9 +38,18 @@ func build_page() -> void:
 		"career":
 			_career(repo)
 		"news":
+			var talks := UIFactory.card(self, "Interviews")
+			var said: Array[Dictionary] = []
+			var stories: Array[Dictionary] = []
+			for story: Dictionary in repo.news_about(player.id, "", 60):
+				if str(story["kind"]) == WorldSimulation.NEWS_INTERVIEW:
+					said.append(story)
+				else:
+					stories.append(story)
+			story_table(talks, said, "Has not spoken to the press yet." if not player.is_human
+				else "Your own interviews are not part of the game yet.")
 			var card := UIFactory.card(self, "In the news")
-			story_table(card, repo.news_about(player.id, "", 40), "No stories about this player yet.")
-			add_child(UIFactory.label("Interviews are not part of the game yet.", &"MutedLabel", true))
+			story_table(card, stories, "No stories about this player yet.")
 		_:
 			_overview()
 
@@ -69,7 +78,39 @@ func _overview() -> void:
 	var session := career()
 	if not player.is_human and player.status == "active":
 		_build_scouting(session)
+	_person(session.repo)
 	PlayerView.build(self, session.repo, player.id)
+
+
+## Who they are: personality, drive, goal, mood and relationships (AI professionals).
+func _person(repo: CareerRepository) -> void:
+	var person := repo.person(player.id)
+	var bonds := repo.relationships_of(player.id, 8)
+	if person.is_empty() and bonds.is_empty():
+		return
+	var row := add_row()
+	if not person.is_empty():
+		var card := UIFactory.card(row, "The person")
+		card.add_child(UIFactory.label(" · ".join(PersonVoice.descriptors(person)), &"AccentLabel", true))
+		var happiness := int(person["happiness"])
+		var wants := int(person["wants_move"]) == 1
+		var goal := PersonVoice.goal_text(str(person["goal"])) + (" (achieved %s)" % GameDate.format(int(person["goal_done_day"]))
+			if person["goal_done_day"] != null else "")
+		UIFactory.key_value_grid(card, [PackedStringArray(["Background", str(person["background"])]),
+			PackedStringArray(["Driven by", PersonVoice.drive_text(str(person["drive"]))]),
+			PackedStringArray(["Career goal", goal]),
+			PackedStringArray(["Mood", "%s (%s)" % [PersonVoice.mood_word(happiness, wants), person["mood_reason"]]
+				if not str(person["mood_reason"]).is_empty() else PersonVoice.mood_word(happiness, wants)]),
+			PackedStringArray(["Speaks", PersonVoice.tone(person).capitalize()])] as Array[PackedStringArray])
+	var people := UIFactory.card(row, "Relationships")
+	if bonds.is_empty():
+		people.add_child(UIFactory.label("No strong feelings either way yet.", &"MutedLabel", true))
+		return
+	var rows: Array[Array] = []
+	for bond: Dictionary in bonds:
+		rows.append([cell_player(str(bond["other_id"]), str(bond["nickname"])), PersonVoice.bond_word(int(bond["strength"])),
+			"%+d" % int(bond["strength"])])
+	link_table(people, PackedStringArray(["With", "Relationship", "Strength"]), rows)
 
 
 func _stats(repo: CareerRepository) -> void:

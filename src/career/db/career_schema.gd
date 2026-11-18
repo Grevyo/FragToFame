@@ -19,9 +19,12 @@ extends RefCounted
 ##   league_record      final table of every finished league season (with prize money)
 ##   player_honour      top-three finishes of the players in those squads
 ##   human_service / human_purchase  what a human spends their own money on
+##   training_session   the human's played drills and scrims with measured results
+##   person             an AI professional's personality, drive, goal and mood (never for humans)
+##   relationship       how two players get on (-100..100)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 13
+const CURRENT_VERSION: int = 14
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -454,6 +457,37 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			evidence INTEGER NOT NULL DEFAULT 0
 		);""",
 		"CREATE INDEX training_session_by_player ON training_session(player_id, day DESC);",
+	],
+	# v14 — people: every AI professional's personality, what drives them, a career goal, how
+	# happy they are where they are, and their relationships with teammates.
+	[
+		"""CREATE TABLE person (
+			player_id TEXT PRIMARY KEY REFERENCES player(id),
+			ambition INTEGER NOT NULL CHECK (ambition BETWEEN 1 AND 20),
+			loyalty INTEGER NOT NULL CHECK (loyalty BETWEEN 1 AND 20),
+			professionalism INTEGER NOT NULL CHECK (professionalism BETWEEN 1 AND 20),
+			temperament INTEGER NOT NULL CHECK (temperament BETWEEN 1 AND 20),
+			ego INTEGER NOT NULL CHECK (ego BETWEEN 1 AND 20),
+			sociability INTEGER NOT NULL CHECK (sociability BETWEEN 1 AND 20),
+			drive TEXT NOT NULL,
+			background TEXT NOT NULL,
+			goal TEXT NOT NULL,
+			goal_done_day INTEGER,
+			happiness INTEGER NOT NULL DEFAULT 0 CHECK (happiness BETWEEN -50 AND 50),
+			wants_move INTEGER NOT NULL DEFAULT 0 CHECK (wants_move IN (0, 1)),
+			mood_reason TEXT NOT NULL DEFAULT '',
+			updated_day INTEGER NOT NULL DEFAULT 0
+		) WITHOUT ROWID;""",
+		"""CREATE TABLE relationship (
+			a_id TEXT NOT NULL REFERENCES player(id),
+			b_id TEXT NOT NULL REFERENCES player(id),
+			strength INTEGER NOT NULL CHECK (strength BETWEEN -100 AND 100),
+			since_day INTEGER NOT NULL,
+			updated_day INTEGER NOT NULL,
+			PRIMARY KEY (a_id, b_id),
+			CHECK (a_id < b_id)
+		) WITHOUT ROWID;""",
+		"CREATE INDEX relationship_by_b ON relationship(b_id);",
 	],
 ]
 

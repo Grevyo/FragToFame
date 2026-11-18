@@ -36,6 +36,10 @@ const NEWS_SEASON: String = "season"
 const NEWS_NEW_YEAR: String = "new_year"
 const NEWS_OFFER: String = "offer"
 const NEWS_TRANSFER: String = "transfer"
+## Stories about people: moods, friendships, rivalries, goals, life events ([CareerPeople]).
+const NEWS_PEOPLE: String = "people"
+## Something a player said to the press.
+const NEWS_INTERVIEW: String = "interview"
 
 ## Form after a series: old form × KEEP + GAIN × outcome (outcome 1 = clean sweep, −1 = swept).
 const FORM_KEEP: float = 0.6
@@ -74,7 +78,7 @@ static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGene
 	if GameDate.month_and_day(day).y == 1 and day > 0:
 		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \
 				or not WorldFinance.monthly(repo, day) or not CareerHumanContracts.monthly(repo, day, rng) \
-				or not CareerSeriesEngine.monthly(repo, day):
+				or not CareerSeriesEngine.monthly(repo, day) or not CareerPeople.monthly(repo, day, rng):
 			return false
 	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfers(repo, day, rng) \
 		and WorldMarket.fill_rosters(repo, day, rng) \

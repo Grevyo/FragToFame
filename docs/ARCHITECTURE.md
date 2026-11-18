@@ -445,6 +445,23 @@ towards observed ability by up to four points and increases the report's confide
 does not disclose potential or change underlying simulated ability. Recorded match counts,
 versioned performance ratings, career opinions and reputation remain separate.
 
+### People (`src/career/people/`)
+
+- `CareerPeople` gives every active AI professional a `person` row: six personality values
+  (1–20), a drive, a background, a goal, happiness and whether they want a move. Rows are made at
+  career start and lazily for rookies and older saves. Humans never get one: the person is the
+  one playing.
+- **Monthly** (from `WorldSimulation`): relationships between teammates (`relationship`, a < b,
+  -100..100) move with compatibility and results. Moods move toward a target built from named
+  reasons, and goals and life events are checked. Stories use `NEWS_PEOPLE`; interviews use
+  `NEWS_INTERVIEW` with text from `PersonVoice` (all original lines).
+- **Feedback:**
+  - `WorldMarket` adds `renewal_modifier` and `sell_modifier`, and asks `accepts_move` before a
+    transfer.
+  - `CareerSeriesEngine` turns a line-up's average relationship into `SimTeam.chemistry`, which
+    adds to coordination.
+- Personality is shown as words (descriptors, mood, relationship labels), not raw numbers.
+
 ### Real training (owner, 2026-11-18)
 
 The human professional has no hidden stats: the person at the keyboard is the player, so
@@ -809,6 +826,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | Simulated series are played round by round by a pure engine on the career layer; simulated player lines are stored apart from recorded statistics | Results come from people and moments (form, morale, traits, economy, clutches), not one strength roll, so the world feels alive and less predetermined. Recorded stats stay a record of played matches only. A simulated year takes a few seconds |
 | 2026-11-17 | The Career Hub navigates by routes with a history; pages link to each other | Manager games are browsed by clicking through teams, squads, players and matches. Routes keep pages independent (each builds from its args), Back works everywhere, and new pages only add a registry entry |
 | 2026-11-18 | Training is played in the FPS (drills and scrims); results are measured evidence for the human's perceived attributes | The human has no hidden stats to raise, so "train aim today" was fiction. Real drills train the person at the keyboard; the career only records what they measured, and the runtime still never writes the career |
+| 2026-11-18 | AI professionals are people (personality, mood, relationships) whose feelings change world decisions and match chemistry | A living world needs individuals, not ratings: who renews, who leaves, who refuses a move and how well a five plays together now depend on the people involved. Moods are explained by named reasons so the hub can say why |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

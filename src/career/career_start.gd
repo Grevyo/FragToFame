@@ -79,6 +79,8 @@ static func populate(repo: CareerRepository, world: WorldDatabase) -> String:
 				return false
 		if not vary_world(repo, rng, today):
 			return false
+		if repo.db.user_version() >= CareerSchema.CURRENT_VERSION and not CareerPeople.ensure(repo, today, rng):
+			return false
 		return repo.set_meta_value("database_id", world.database_id()) \
 			and repo.set_meta_value("database_name", world.display_name()))
 	return "" if ok else "could not start the career from '%s': %s" % [world.display_name(), repo.db.last_error]

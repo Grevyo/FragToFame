@@ -115,7 +115,8 @@ static func process_contracts(repo: CareerRepository, day: int, rng: RandomNumbe
 		var substitute := int(found["is_substitute"]) == 1
 		if not repo.end_contract(contract_id, "expired", day):
 			return false
-		var chance := renewal_chance(age, rating, tier, substitute)
+		var person := repo.person(player_id)
+		var chance := renewal_chance(age, rating, tier, substitute) + CareerPeople.renewal_modifier(person)
 		if repo.organisation_balance(org_id) < 0:
 			chance -= DEBT_RENEWAL_PENALTY
 		if rng.randf() < chance:
@@ -127,7 +128,10 @@ static func process_contracts(repo: CareerRepository, day: int, rng: RandomNumbe
 					player_id, org_id):
 				return false
 		elif not repo.add_news(day, WorldSimulation.NEWS_RELEASE, WorldSimulation.NOTABLE if tier <= 2 else WorldSimulation.MINOR,
-				"%s leaves %s and becomes a free agent." % [nickname, org_name], player_id, org_id):
+				("%s turns down a new deal and leaves %s as a free agent." if int(person.get("wants_move", 0)) == 1
+					else "%s leaves %s and becomes a free agent.") % [nickname, org_name], player_id, org_id):
+			return false
+		elif not person.is_empty() and not repo.set_person_mood(player_id, int(person["happiness"]), false, "a fresh start", day):
 			return false
 	return true
 
@@ -272,8 +276,17 @@ static func transfers(repo: CareerRepository, day: int, rng: RandomNumberGenerat
 			var days_left := int(target["end_day"]) - day
 			var fee := WorldFinance.transfer_fee(int(target["rating"]), GameDate.age(int(target["birth_day"]), day), days_left)
 			var is_best: bool = str(best_by_org.get(seller_id, "")) == str(target["player_id"])
-			var willing := sell_chance(days_left, is_best) + (DEBT_SELL_BONUS if repo.organisation_balance(seller_id) < 0 else 0.0)
+			var person := repo.person(str(target["player_id"]))
+			var willing := sell_chance(days_left, is_best) + (DEBT_SELL_BONUS if repo.organisation_balance(seller_id) < 0 else 0.0) \
+				+ CareerPeople.sell_modifier(person)
 			if WorldFinance.can_afford(funds, fee, salary_for(buyer.tier, int(target["rating"]))) and rng.randf() < willing:
+				if not CareerPeople.accepts_move(person, int(target["tier"]), buyer.tier, rng):
+					pool.remove_at(pick)
+					if int(target["tier"]) <= 2 and not repo.add_news(day, WorldSimulation.NEWS_PEOPLE, WorldSimulation.MINOR,
+							"%s turns down a move to %s to stay at %s." % [target["nickname"], buyer.name, target["org_name"]],
+							str(target["player_id"]), seller_id):
+						return false
+					continue
 				pool.remove_at(pick)
 				if not _transfer(repo, rng, target, buyer, weakest, roster.size(), fee, day):
 					return false
@@ -322,9 +335,16 @@ static func _transfer(repo: CareerRepository, rng: RandomNumberGenerator, target
 	if not _sign(repo, rng, player_id, buyer.id, weak_contract.role, false, buyer.tier, int(target["rating"]), day,
 			rng.randi_range(MIN_YEARS + 1, MAX_YEARS)):
 		return false
-	return repo.add_news(day, WorldSimulation.NEWS_TRANSFER, WorldSimulation.NOTABLE if buyer.tier <= 2 else WorldSimulation.MINOR,
-		"%s joins %s from %s for %s." % [target["nickname"], buyer.name, target["org_name"], CareerCatalog.format_money(fee)],
-		player_id, buyer.id)
+	if not repo.add_news(day, WorldSimulation.NEWS_TRANSFER, WorldSimulation.NOTABLE if buyer.tier <= 2 else WorldSimulation.MINOR,
+			"%s joins %s from %s for %s." % [target["nickname"], buyer.name, target["org_name"], CareerCatalog.format_money(fee)],
+			player_id, buyer.id):
+		return false
+	var person := repo.person(player_id)
+	if not person.is_empty() and not repo.set_person_mood(player_id, maxi(int(person["happiness"]), 10), false, "excited by the move", day):
+		return false
+	if buyer.tier > CareerPeople.NEWS_TIERS:
+		return true
+	return CareerPeople.interview(repo, player_id, str(target["organisation_id"]), "new_club", buyer.name, WorldSimulation.MINOR, day, rng)
 
 
 static func _sign(repo: CareerRepository, rng: RandomNumberGenerator, player_id: String, org_id: String,

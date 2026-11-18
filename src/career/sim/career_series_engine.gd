@@ -10,6 +10,8 @@ extends RefCounted
 ##   form (perceived values only; the hidden truth never moves from results).
 ## Organisation form, reputation and prize money still move through [method WorldSimulation.apply_series].
 
+## Coordination per point of average relationship strength in a line-up.
+const CHEMISTRY_SCALE: float = 0.08
 ## Maps are MR8 like the human's league series.
 const ROUNDS_PER_HALF: int = 8
 ## Morale change per map: rating above or below 1.00, and a win or a loss.
@@ -43,7 +45,19 @@ static func sim_team(repo: CareerRepository, org_id: String, lineup: Array[Dicti
 	var members := lineup if not lineup.is_empty() else repo.lineup(org_id)
 	for member: Dictionary in members:
 		team.players.append(sim_player(repo, member))
+	team.chemistry = chemistry(repo, team.players)
 	return team
+
+
+## Average relationship among the line-up, scaled to -6..+6 coordination.
+static func chemistry(repo: CareerRepository, players: Array[MatchEngine.SimPlayer]) -> float:
+	var total := 0.0
+	var pairs := 0
+	for i: int in players.size():
+		for j: int in range(i + 1, players.size()):
+			total += repo.relationship(players[i].id, players[j].id)
+			pairs += 1
+	return clampf(total / maxf(pairs, 1.0) * CHEMISTRY_SCALE, -6.0, 6.0)
 
 
 static func sim_player(repo: CareerRepository, member: Dictionary) -> MatchEngine.SimPlayer:
@@ -175,14 +189,22 @@ static func _after_series(repo: CareerRepository, fixture: Dictionary, home: Mat
 	var loser := away if home_won else home
 	var winner_chance := chance if home_won else 1.0 - chance
 	var score_text := "%d–%d" % [maxi(score.x, score.y), mini(score.x, score.y)]
-	if winner_chance < UPSET_CHANCE and not repo.add_news(day, WorldSimulation.NEWS_SEASON,
-			WorldSimulation.NOTABLE if tier <= 2 else WorldSimulation.MINOR, "Upset: %s beat %s %s." % [winner.name, loser.name,
-				score_text], "", winner.id):
-		return false
+	if winner_chance < UPSET_CHANCE:
+		if not repo.add_news(day, WorldSimulation.NEWS_SEASON, WorldSimulation.NOTABLE if tier <= 2 else WorldSimulation.MINOR,
+				"Upset: %s beat %s %s." % [winner.name, loser.name, score_text], "", winner.id):
+			return false
+		var speaker := _best_of(winner, lines)
+		if tier <= 3 and not speaker.is_empty() and not CareerPeople.interview(repo, speaker, winner.id, "upset_win", loser.name,
+				WorldSimulation.MINOR, day, rng):
+			return false
 	if tier <= 2 and best >= 1.6 and not best_id.is_empty():
 		var star := repo.get_player(best_id)
 		if star != null and not repo.add_news(day, WorldSimulation.NEWS_SEASON, WorldSimulation.MINOR,
 				"%s stars with a %.2f rating as %s beat %s %s." % [star.nickname, best, winner.name, loser.name, score_text], best_id):
+			return false
+		var star_contract := repo.active_contract(best_id)
+		if star != null and star_contract != null and rng.randf() < 0.5 and not CareerPeople.interview(repo, best_id,
+				star_contract.organisation_id, "star", loser.name, WorldSimulation.MINOR, day, rng):
 			return false
 	for note: String in notes:
 		if (note.contains("aces") or note.contains("1v4") or note.contains("1v5")) and tier <= 2 \
@@ -190,6 +212,24 @@ static func _after_series(repo: CareerRepository, fixture: Dictionary, home: Mat
 					"%s (%s vs %s)." % [note, home.name, away.name]):
 			return false
 	return true
+
+
+## The AI player with the best average rating on [param team] this series ("" if none).
+static func _best_of(team: MatchEngine.SimTeam, lines: Dictionary[String, Array]) -> String:
+	var best_id := ""
+	var best := -1.0
+	for player: MatchEngine.SimPlayer in team.players:
+		var ratings: Array = lines.get(player.id, [])
+		if player.is_human or ratings.is_empty():
+			continue
+		var average := 0.0
+		for value: float in ratings:
+			average += value
+		average /= ratings.size()
+		if average > best:
+			best = average
+			best_id = player.id
+	return best_id
 
 
 static func _mean(team: MatchEngine.SimTeam) -> float:

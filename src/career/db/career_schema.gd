@@ -19,12 +19,12 @@ extends RefCounted
 ##   league_record      final table of every finished league season (with prize money)
 ##   player_honour      top-three finishes of the players in those squads
 ##   human_service / human_purchase  what a human spends their own money on
-##   training_session   the human's played drills and scrims with measured results
+##   training_session   the human's played drills and scrims with measured results (bootcamp-marked)
 ##   person             an AI professional's personality, drive, goal and mood (never for humans)
 ##   relationship       how two players get on (-100..100)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 14
+const CURRENT_VERSION: int = 15
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -488,6 +488,10 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			CHECK (a_id < b_id)
 		) WITHOUT ROWID;""",
 		"CREATE INDEX relationship_by_b ON relationship(b_id);",
+	],
+	# v15 — the bootcamp is a real programme: sessions played during one are marked.
+	[
+		"ALTER TABLE training_session ADD COLUMN bootcamp INTEGER NOT NULL DEFAULT 0 CHECK (bootcamp IN (0, 1));",
 	],
 ]
 

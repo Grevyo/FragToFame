@@ -1230,9 +1230,20 @@ func find_players(text: String, limit: int = 12) -> Array[Dictionary]:
 # --- Training ----------------------------------------------------------------------------------
 
 ## Stores one finished drill or scrim. [param evidence] is the perceived-attribute change it made.
-func insert_training(player_id: String, day: int, drill_id: String, score: int, metrics: Dictionary, evidence: int) -> bool:
-	return db.execute("INSERT INTO training_session (player_id, day, drill_id, score, metrics_json, evidence) VALUES (?, ?, ?, ?, ?, ?);",
-		[player_id, day, drill_id, clampi(score, 0, 100), JSON.stringify(metrics), evidence])
+func insert_training(player_id: String, day: int, drill_id: String, score: int, metrics: Dictionary, evidence: int,
+		bootcamp: bool = false) -> bool:
+	return db.execute("""INSERT INTO training_session (player_id, day, drill_id, score, metrics_json, evidence, bootcamp)
+		VALUES (?, ?, ?, ?, ?, ?, ?);""", [player_id, day, drill_id, clampi(score, 0, 100), JSON.stringify(metrics), evidence,
+		1 if bootcamp else 0])
+
+
+## Drill ids already completed as bootcamp sessions since [param since_day].
+func bootcamp_done(player_id: String, since_day: int) -> Array[String]:
+	var done: Array[String] = []
+	for found: Dictionary in db.rows("SELECT DISTINCT drill_id FROM training_session WHERE player_id = ? AND bootcamp = 1 AND day >= ?;",
+			[player_id, since_day]):
+		done.append(str(found["drill_id"]))
+	return done
 
 
 ## A player's training sessions, newest first ({day, drill_id, score, metrics, evidence}).

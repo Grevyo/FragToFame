@@ -45,8 +45,9 @@ func _build_spending(session: CareerSession, player_id: String) -> void:
 		card.add_child(row)
 	var camp := UIFactory.hbox(8)
 	var wait := CareerSpending.bootcamp_wait(repo, player_id)
-	var camp_text := UIFactory.label("Bootcamp · %s once · game sense, teamwork, communication and utility +1, more scouting confidence%s" % [
-		CareerCatalog.format_money(CareerSpending.BOOTCAMP_COST), "" if wait == 0 else " · available in %d days" % wait], &"", true)
+	var camp_text := UIFactory.label("Bootcamp · %s · a week of real sessions you play: every drill and a scrim within %d days. Finish it and the world trusts its view of you more, and you grow closer to your teammates%s" % [
+		CareerCatalog.format_money(CareerSpending.BOOTCAMP_COST), CareerSpending.BOOTCAMP_DAYS,
+		"" if wait == 0 else " · next one available in %d days" % wait], &"", true)
 	camp_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	camp.add_child(camp_text)
 	var book := UIFactory.button("Book bootcamp", &"AccentButton")
@@ -54,6 +55,8 @@ func _build_spending(session: CareerSession, player_id: String) -> void:
 	book.pressed.connect(func() -> void: spend(CareerSpending.BOOTCAMP_ID, true))
 	camp.add_child(book)
 	card.add_child(camp)
+	if bool(CareerSpending.bootcamp_state(repo, player_id)["active"]):
+		card.add_child(link("Your bootcamp is on: open the training ground", &"training", {}))
 	card.add_child(spending_status)
 
 

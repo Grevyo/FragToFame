@@ -145,9 +145,9 @@ func _test_career(app: Node) -> void:
 		and repo.reputation(player_id) == mini(rep_before + 1, maxi(rep_before, CareerSpending.PR_REPUTATION_CAP)),
 		"each month the services are charged and the PR agent lifts reputation")
 	var camp_seen := repo.perceived(player_id)
-	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty()
-		and CareerSpending.BOOTCAMP_ABILITIES.all(func(a: StringName) -> bool:
-			return int(repo.perceived(player_id)[a]) == mini(int(camp_seen[a]) + 1, 99)), "a bootcamp raises its attributes")
+	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty() and repo.perceived(player_id) == camp_seen
+		and bool(CareerSpending.bootcamp_state(repo, player_id)["active"]),
+		"booking a bootcamp opens its programme; it changes nothing on its own")
 	check(CareerSpending.buy_bootcamp(repo, player_id).contains("days"), "bootcamps have a cooldown")
 	repo.add_player_money(player_id, -repo.player_balance(player_id), repo.current_day(), "expense", "Test: spend it all")
 	check(CareerSpending.monthly(repo, repo.current_day()) and repo.services(player_id).is_empty()

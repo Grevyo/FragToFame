@@ -483,6 +483,12 @@ training is played, not simulated.
   schema v13). Each day's first completed session of a drill is evidence: the perceived
   attribute it measures (aim, reaction, movement) moves up to 3 points toward the score (5 with
   a personal coach), with a little more confidence. Nothing changes FPS mechanics.
+- **Bootcamp:** booking it (`CareerSpending.buy_bootcamp`) only opens a programme
+  (`BOOTCAMP_PROGRAMME`: every drill and a scrim, within `BOOTCAMP_DAYS`).
+  `CareerSpending.bootcamp_state` derives progress from sessions marked `bootcamp = 1` (schema
+  v15) since the booking day. `CareerTraining.record` marks the first session of each item and
+  counts it as reviewed evidence (the coach's step) even past the daily limit. Completing the
+  programme adds confidence, raises the bond with each teammate and makes news.
 
 ### League seasons (Milestone 13)
 
@@ -827,6 +833,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | The Career Hub navigates by routes with a history; pages link to each other | Manager games are browsed by clicking through teams, squads, players and matches. Routes keep pages independent (each builds from its args), Back works everywhere, and new pages only add a registry entry |
 | 2026-11-18 | Training is played in the FPS (drills and scrims); results are measured evidence for the human's perceived attributes | The human has no hidden stats to raise, so "train aim today" was fiction. Real drills train the person at the keyboard; the career only records what they measured, and the runtime still never writes the career |
 | 2026-11-18 | AI professionals are people (personality, mood, relationships) whose feelings change world decisions and match chemistry | A living world needs individuals, not ratings: who renews, who leaves, who refuses a move and how well a five plays together now depend on the people involved. Moods are explained by named reasons so the hub can say why |
+| 2026-11-18 | The bootcamp is a programme of real sessions, not a purchase that raises attributes | Consistent with real training: money buys structure (a week's plan, reviewed evidence), but only sessions you play move the world's view of you |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

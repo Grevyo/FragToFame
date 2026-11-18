@@ -485,8 +485,11 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Hire a **Personal coach**: the first month is charged, and training now raises the chosen
       attribute by 2. Hire a **PR agent**: on the 1st your reputation rises by 1 and both
       fees are charged.
-- [ ] Book a **Bootcamp**: four attributes rise by 1. The button then shows when the next one
-      is available.
+- [ ] Book a **Bootcamp**: nothing changes by itself. The button shows when the next one is
+      available, and the Training Ground shows a Bootcamp card (0 of 5, days left).
+- [ ] Play each drill and a scrim within the week: each first session says "bootcamp session
+      N of 5", the last says "bootcamp complete", and a news item appears. A camp left
+      unfinished shows "ended with N of 5".
 - [ ] Let your balance run out: on the 1st the services end with a headline.
 
 ### Manual test checklist (Simulate match — development option)

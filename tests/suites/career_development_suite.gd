@@ -103,6 +103,55 @@ func _check_career(app: Node) -> void:
 		and CareerDevelopment.scout(session.repo, player_id, subject_id).is_empty()
 		and session.repo.perceived_confidence(subject_id) == 54,
 		"the next career day permits another training session and report")
+	await _check_bootcamp(app, session, player_id)
+
+
+## The bootcamp is a programme of sessions you play: booking alone changes nothing.
+func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> void:
+	section("Bootcamp: a week of real sessions")
+	var repo := session.repo
+	repo.add_player_money(player_id, CareerSpending.BOOTCAMP_COST * 2, repo.current_day(), "income", "Test: bootcamp funds")
+	var seen := repo.perceived(player_id)
+	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty() and repo.perceived(player_id) == seen,
+		"booking a bootcamp changes nothing on its own")
+	var camp := CareerSpending.bootcamp_state(repo, player_id)
+	check(bool(camp["active"]) and (camp["done"] as Array).is_empty()
+		and int(camp["end_day"]) == repo.current_day() + CareerSpending.BOOTCAMP_DAYS - 1, "it opens a week-long programme")
+	var reaction := TrainingResult.make(TrainingDrills.REACTION, {"reps_hit": 15, "average_ms": 180.0}, true)
+	var message := CareerTraining.record(repo, player_id, reaction)
+	var first := repo.training_sessions(player_id, 1)[0]
+	check(message.contains("bootcamp session 1 of %d" % CareerSpending.BOOTCAMP_PROGRAMME.size()) and int(first["bootcamp"]) == 1,
+		"a programme session counts for the bootcamp, even after today's evidence is in (%s)" % message)
+	check(not CareerTraining.record(repo, player_id, reaction).contains("bootcamp")
+		and int(repo.training_sessions(player_id, 1)[0]["bootcamp"]) == 0, "repeating a done item does not count twice")
+	app.call("open_career_hub")
+	await wait_frames(3)
+	var hub := tree.current_scene
+	hub.call("show_page", &"training")
+	var ground := hub.get("current_page") as CareerTrainingPage
+	check(ground != null and ground.bootcamp_label != null and ground.bootcamp_label.text.begins_with("1 of 5"),
+		"the Training Ground shows the bootcamp's progress")
+	var confidence := repo.perceived_confidence(player_id)
+	CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.FLICK, {"kills": 40, "duration": 60.0, "accuracy": 0.6}, true))
+	repo.set_current_day(repo.current_day() + 3)
+	CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.TRACKING, {"damage": 900, "duration": 30.0, "accuracy": 0.6}, true))
+	CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.MOVEMENT, {"finished": true, "time": 26.0, "par": 30.0}, true))
+	message = CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.SCRIM,
+		{"won": true, "score_for": 9, "score_against": 5, "opponent": "Test", "kills": 14, "deaths": 9}, true))
+	camp = CareerSpending.bootcamp_state(repo, player_id)
+	check(bool(camp["complete"]) and not bool(camp["active"]) and message.contains("bootcamp complete"),
+		"playing every drill and a scrim within the week completes it (%s)" % message)
+	check(repo.perceived_confidence(player_id) >= mini(confidence + CareerSpending.BOOTCAMP_CONFIDENCE, CareerTraining.CONFIDENCE_LIMIT)
+		and repo.news(5).any(func(n: Dictionary) -> bool: return str(n["headline"]).contains("complete a bootcamp")),
+		"finishing it makes the world more confident in its view of you and makes news")
+	check(CareerSpending.buy_bootcamp(repo, player_id).contains("days"), "the next bootcamp waits for its cooldown")
+	repo.set_current_day(repo.current_day() + CareerSpending.BOOTCAMP_COOLDOWN)
+	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty(), "a later bootcamp can be booked")
+	repo.set_current_day(repo.current_day() + CareerSpending.BOOTCAMP_DAYS)
+	camp = CareerSpending.bootcamp_state(repo, player_id)
+	check(not bool(camp["active"]) and not bool(camp["complete"]) and (camp["done"] as Array).is_empty()
+		and not CareerTraining.record(repo, player_id, reaction).contains("bootcamp"),
+		"an unplayed bootcamp lapses after its week")
 
 
 func _button(root: Node, text: String) -> Button:

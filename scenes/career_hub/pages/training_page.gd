@@ -7,6 +7,8 @@ extends CareerPage
 var drill_buttons: Dictionary[StringName, Button] = {}
 var scrim_choice: OptionButton
 var status_label: Label
+## The bootcamp card's text (tests read it); null when no bootcamp was ever booked.
+var bootcamp_label: Label
 
 var _scrim_ids: Array[String] = []
 
@@ -25,6 +27,7 @@ func build_page() -> void:
 		&"MutedLabel", true))
 	status_label = UIFactory.label("", &"WarningLabel", true)
 	intro.add_child(status_label)
+	_bootcamp_card(repo, session.human_player_id)
 	var bests := repo.training_bests(session.human_player_id)
 	var today := repo.current_day()
 	var row := add_row()
@@ -59,6 +62,46 @@ func start_drill(drill: StringName) -> String:
 		status_label.text = "Could not open the training ground: %s." % error_string(error)
 		return status_label.text
 	return ""
+
+
+## The booked bootcamp: what is done, what is left and the days remaining.
+func _bootcamp_card(repo: CareerRepository, human_id: String) -> void:
+	var camp := CareerSpending.bootcamp_state(repo, human_id)
+	if not bool(camp["booked"]):
+		return
+	var done := camp["done"] as Array
+	var total := CareerSpending.BOOTCAMP_PROGRAMME.size()
+	if not bool(camp["active"]) and repo.current_day() > int(camp["end_day"]) + 30:
+		return
+	var card := UIFactory.card(self, "Bootcamp")
+	var text := ""
+	if bool(camp["complete"]):
+		text = "Bootcamp complete: all %d sessions played." % total
+	elif bool(camp["active"]):
+		var left := int(camp["end_day"]) - repo.current_day() + 1
+		text = "%d of %d sessions done · %d day%s left (until %s). Each first session of a programme item counts as reviewed evidence, even if today's evidence is already in." % [
+			done.size(), total, left, "" if left == 1 else "s", GameDate.format(int(camp["end_day"]))]
+	else:
+		text = "Your bootcamp ended with %d of %d sessions played." % [done.size(), total]
+	bootcamp_label = UIFactory.label(text, &"" if bool(camp["active"]) else &"MutedLabel", true)
+	card.add_child(bootcamp_label)
+	var items: PackedStringArray = []
+	for drill: StringName in CareerSpending.BOOTCAMP_PROGRAMME:
+		items.append("%s %s" % ["✓" if done.has(String(drill)) else "○", TrainingDrills.drill_name(drill)])
+	card.add_child(UIFactory.label("  ·  ".join(items), &"MutedLabel", true))
+	if not bool(camp["active"]):
+		return
+	var row := UIFactory.hbox(8)
+	for drill: StringName in CareerSpending.BOOTCAMP_PROGRAMME:
+		if done.has(String(drill)) or drill == TrainingDrills.SCRIM:
+			continue
+		var start := UIFactory.button("Start %s" % TrainingDrills.drill_name(drill).to_lower(), &"AccentButton")
+		var drill_id := drill
+		start.pressed.connect(func() -> void: start_drill(drill_id))
+		row.add_child(start)
+	card.add_child(row)
+	if not done.has(String(TrainingDrills.SCRIM)):
+		card.add_child(UIFactory.label("Play the scrim from the scrim card below.", &"MutedLabel", true))
 
 
 func _scrim_card(repo: CareerRepository, human_id: String) -> void:
@@ -98,7 +141,8 @@ func _history(repo: CareerRepository, human_id: String) -> void:
 		var evidence := int(entry["evidence"])
 		rows.append(PackedStringArray([GameDate.format(int(entry["day"])), TrainingDrills.drill_name(drill),
 			"—" if drill == TrainingDrills.SCRIM else str(int(entry["score"])), TrainingDrills.describe(drill, entry["metrics"] as Dictionary),
-			"%+d %s" % [evidence, CareerCatalog.ability_name(TrainingDrills.ability(drill)).to_lower()] if evidence != 0 else ""]))
+			("%+d %s" % [evidence, CareerCatalog.ability_name(TrainingDrills.ability(drill)).to_lower()] if evidence != 0 else "")
+				+ (" · bootcamp" if int(entry.get("bootcamp", 0)) == 1 else "")]))
 	if rows.is_empty():
 		card.add_child(UIFactory.label("No sessions yet. Start a drill above.", &"MutedLabel"))
 		return

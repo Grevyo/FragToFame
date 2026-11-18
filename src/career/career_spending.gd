@@ -1,8 +1,9 @@
 class_name CareerSpending
 extends RefCounted
 ## What a human professional can spend their own money on. Everything here works on the career
-## layer only: perceived values (what the world believes), reputation and visibility. Nothing
-## changes aim, recoil, movement or reaction in a match: the person playing is the skill.
+## layer only: perceived values (what the world believes), reputation, visibility and the
+## sessions a bootcamp asks you to play. Nothing changes aim, recoil, movement or reaction in a
+## match: the person playing is the skill.
 ##
 ## Monthly services are charged on the first of each month ([WorldFinance]); one that can no
 ## longer be paid ends, with a headline. The bootcamp is a one-off purchase with a cooldown.
@@ -13,12 +14,19 @@ const SERVICES: Dictionary[String, Array] = {
 	"pr_agent": ["PR agent", 400, "Reputation +1 each month while below 70, so organisations notice you sooner."],
 }
 const PR_REPUTATION_CAP: int = 70
-## Bootcamp: a one-off week of structured practice the scene hears about.
+## Bootcamp: a week-long programme of real sessions, played by you ([CareerTraining]). Booking it
+## opens the programme; what you get out of it is what you play.
 const BOOTCAMP_ID: String = "bootcamp"
 const BOOTCAMP_COST: int = 2500
 const BOOTCAMP_COOLDOWN: int = 180
-const BOOTCAMP_ABILITIES: Array[StringName] = [&"game_sense", &"teamwork", &"communication", &"utility"]
+## The programme: every drill and a scrim, within [constant BOOTCAMP_DAYS] days of booking.
+const BOOTCAMP_PROGRAMME: Array[StringName] = [TrainingDrills.FLICK, TrainingDrills.REACTION, TrainingDrills.TRACKING,
+	TrainingDrills.MOVEMENT, TrainingDrills.SCRIM]
+const BOOTCAMP_DAYS: int = 7
+## Finishing the whole programme: more confidence in the world's view of you, and a closer bond
+## with each teammate (a week together).
 const BOOTCAMP_CONFIDENCE: int = 5
+const BOOTCAMP_BOND: int = 10
 ## Amateur match winnings (paid to the human for each win).
 const AMATEUR_WIN_PRIZE: int = 150
 
@@ -59,7 +67,20 @@ static func bootcamp_wait(repo: CareerRepository, player_id: String) -> int:
 	return 0 if last < 0 else maxi(0, last + BOOTCAMP_COOLDOWN - repo.current_day())
 
 
-## Buys a bootcamp: perceived teamwork-side attributes +1 and more scouting confidence.
+## The current or latest bootcamp: {booked, active, start_day, end_day, done: Array[String],
+## complete}. "Active" means booked, within its week and not yet complete.
+static func bootcamp_state(repo: CareerRepository, player_id: String) -> Dictionary:
+	var start := repo.last_purchase(player_id, BOOTCAMP_ID)
+	if start < 0:
+		return {"booked": false, "active": false, "start_day": -1, "end_day": -1, "done": [] as Array[String], "complete": false}
+	var done := repo.bootcamp_done(player_id, start)
+	var complete := BOOTCAMP_PROGRAMME.all(func(id: StringName) -> bool: return done.has(String(id)))
+	var end_day := start + BOOTCAMP_DAYS - 1
+	return {"booked": true, "active": not complete and repo.current_day() <= end_day, "start_day": start, "end_day": end_day,
+		"done": done, "complete": complete}
+
+
+## Books a bootcamp: opens the week's programme of sessions on the Training Ground.
 static func buy_bootcamp(repo: CareerRepository, player_id: String) -> String:
 	if repo.human_profile(player_id).is_empty():
 		return "Only your career player can attend a bootcamp."
@@ -70,13 +91,8 @@ static func buy_bootcamp(repo: CareerRepository, player_id: String) -> String:
 		return "A bootcamp costs %s." % CareerCatalog.format_money(BOOTCAMP_COST)
 	var day := repo.current_day()
 	var ok := repo.transaction(func() -> bool:
-		var seen := repo.perceived(player_id)
-		var raised: Dictionary = {}
-		for ability: StringName in BOOTCAMP_ABILITIES:
-			raised[ability] = mini(int(seen.get(ability, 50)) + 1, 99)
 		return repo.add_player_money(player_id, -BOOTCAMP_COST, day, "expense", "Bootcamp") \
-			and repo.add_purchase(player_id, BOOTCAMP_ID, day) \
-			and repo.set_perceived(player_id, raised, mini(repo.perceived_confidence(player_id) + BOOTCAMP_CONFIDENCE, 95), day))
+			and repo.add_purchase(player_id, BOOTCAMP_ID, day))
 	return "" if ok else "Could not book the bootcamp."
 
 

@@ -526,8 +526,11 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
       bonuses and amateur wins ($150 each). Effects stay on the career layer only:
   - personal coach ($600 a month): a drill's daily evidence moves up to 5 points instead of 3;
   - PR agent ($400 a month): reputation +1 a month below 70;
-  - bootcamp ($2,500, every 180 days): four teamwork-side perceived attributes +1 and more
-    confidence.
+  - bootcamp ($2,500, every 180 days): a week-long programme of real sessions you play
+    yourself (every drill and a scrim within 7 days; owner, 2026-11-18). Each programme item
+    counts as reviewed evidence even past the daily limit. Finishing it raises the world's
+    confidence in its view of you and your bond with each teammate. Booking alone changes
+    nothing. Save schema v15.
 
   Services you cannot pay end, with a headline.
 - [x] Cup prize money and promotion and relegation from final tables (see M13).
@@ -661,6 +664,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | Bootcamp is real training: a week's programme of drills and a scrim you play, tracked on the Training Ground. Save schema v15. |
 | 2026-11-18 | M14: people. Personality, drive, goal, mood, relationships, life events and interviews for every AI professional, feeding the market and match chemistry. Save schema v14. |
 | 2026-11-18 | Real training: flick, reaction, tracking and movement drills and 5v5 scrims played in the FPS, measured and recorded. Collapsible sidebar headings. Save schema v13. |
 | 2026-11-17 | Hub layout: Continue and Holiday top right, sidebar headings, routed pages with Back/Forward, team, player, compare, match report and inbox pages, links everywhere. |

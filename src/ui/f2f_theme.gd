@@ -102,6 +102,15 @@ static func _build_buttons(theme: Theme) -> void:
 	theme.set_color(&"font_color", &"SidebarButton", TEXT_MUTED)
 	theme.set_font_size(&"font_size", &"SidebarButton", 17)
 
+	# Sidebar group headings (click to expand or collapse the group).
+	theme.set_type_variation(&"SidebarHeadingButton", &"Button")
+	var heading := box(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0, 20, 4)
+	_apply_button_states(theme, &"SidebarHeadingButton", heading, box(PANEL_ALT, Color.TRANSPARENT, 0, 0, 20, 4),
+		heading, heading)
+	theme.set_color(&"font_color", &"SidebarHeadingButton", TEXT_MUTED)
+	theme.set_color(&"font_hover_color", &"SidebarHeadingButton", ACCENT_ALT)
+	theme.set_font_size(&"font_size", &"SidebarHeadingButton", 13)
+
 	# Clickable names in tables and cards (players, teams, competitions, matches).
 	theme.set_type_variation(&"NavLink", &"LinkButton")
 	theme.set_color(&"font_color", &"NavLink", ACCENT_ALT)

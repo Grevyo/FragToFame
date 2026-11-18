@@ -26,6 +26,7 @@ var _materials: Array[StandardMaterial3D] = []
 var _flash_left: float = 0.0
 var _respawn_left: float = 0.0
 var _strafe_time: float = 0.0
+var _fall_tween: Tween
 
 
 func _ready() -> void:
@@ -110,12 +111,26 @@ func _on_died(info: DamageInfo) -> void:
 	for hitbox: Hitbox in hitboxes:
 		hitbox.set_enabled(false)
 	_blocker.collision_layer = 0
-	var tween := create_tween()
-	tween.tween_property(body_root, "rotation_degrees:x", 85.0, 0.35).set_ease(Tween.EASE_IN)
+	_fall_tween = create_tween()
+	_fall_tween.tween_property(body_root, "rotation_degrees:x", 85.0, 0.35).set_ease(Tween.EASE_IN)
 	eliminated.emit(self, info)
 
 
+## Training drills move one dummy around: true stands it up and makes it hittable; false hides
+## it and turns off its hitboxes.
+func set_active(active: bool) -> void:
+	visible = active
+	if active:
+		_stand_up()
+		return
+	for hitbox: Hitbox in hitboxes:
+		hitbox.set_enabled(false)
+	_blocker.collision_layer = 0
+
+
 func _stand_up() -> void:
+	if _fall_tween != null and _fall_tween.is_valid():
+		_fall_tween.kill()
 	body_root.rotation_degrees.x = 0.0
 	for hitbox: Hitbox in hitboxes:
 		hitbox.set_enabled(true)

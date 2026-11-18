@@ -85,6 +85,10 @@ static func default_props(type: String) -> Dictionary:
 			return {"team": "defence"}
 		"target_dummy":
 			return {"motion": "static"}
+		"course_checkpoint":
+			return {"order": 1}
+		"course_finish":
+			return {"par": 30.0}
 		"tactical_anchor":
 			return {"name": "Anchor", "kind": "default"}
 		"ai_cover", "ai_hold", "ai_angle":

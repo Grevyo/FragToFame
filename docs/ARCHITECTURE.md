@@ -439,11 +439,33 @@ and composure by up to two points. Progression writes are in the same transactio
 statistics and calendar advancement, so retries cannot award progression twice. Existing
 careers use their difficulty's starting amateur ELO until their first recorded result.
 
-Schema v5 also stores one training session and one scouting report per career day. Training
-adds one point to the selected human career opinion. Scouting moves reported AI estimates
+Schema v5 also stores one scouting report per career day. (Its abstract "train one attribute
+today" action was replaced in v13 by real training, below.) Scouting moves reported AI estimates
 towards observed ability by up to four points and increases the report's confidence. Scouting
 does not disclose potential or change underlying simulated ability. Recorded match counts,
 versioned performance ratings, career opinions and reputation remain separate.
+
+### Real training (owner, 2026-11-18)
+
+The human professional has no hidden stats: the person at the keyboard is the player, so
+training is played, not simulated.
+
+- **Drills** (`src/training/`, pure): `TrainingDrills` defines the flick range, reaction test,
+  tracking lane and movement course, and turns measured numbers into a 1–100 score.
+  `TrainingSession` is the drill's rules without nodes (countdown, targets, reps, course clock
+  and checkpoints). `TrainingResult` (`format_version`) is what a run measured.
+- **Runtime:** `App.start_training` opens the FPS runtime with a training map
+  (`MapTemplates.training_range` / `training_course`, built only from catalog pieces, including
+  the new `course_start` / `course_checkpoint` / `course_finish` zones, so they are editable in
+  the Creation Studio). `TrainingDirector` moves one target dummy, feeds shots and hits, watches
+  the course pads and shows the result. It emits the result and never writes the career.
+- **Scrims:** `App.start_scrim` plays an MR8 5v5 practice match against an organisation (your
+  own team's players as bot teammates when signed). The score is kept as a training session,
+  never as a fixture.
+- **Career:** `CareerTraining.record` stores every completed session (`training_session`,
+  schema v13). Each day's first completed session of a drill is evidence: the perceived
+  attribute it measures (aim, reaction, movement) moves up to 3 points toward the score (5 with
+  a personal coach), with a little more confidence. Nothing changes FPS mechanics.
 
 ### League seasons (Milestone 13)
 
@@ -719,6 +741,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | Match simulation **(planned)** | Resolve AI-only fixtures without 3D | Must emit the **same event schema** as the FPS runtime. |
 | Match orchestration **(local fixtures, M10)** | `MatchSetup` → FPS runtime → `MatchResult`, idempotent submission by fixture ID | The dev co-op proof uses `StubMatchRunner`. |
 | FPS runtime **(partial: movement, weapons, health, match rules, bots)** | Rounds, economy, weapons, utility, bombsite | `src/combat/`, `src/rules/` + `scenes/fps_sandbox/`. Server-authoritative on match host later. |
+| Training **(drills and scrims)** | Played drills with measured results | `src/training/` (pure) + `TrainingDirector` in the FPS runtime; `CareerTraining` records results. |
 | Bot AI **(individual, M6)** / Tactical AI / IGL **(planned)** | Individual combat + team plans + calls | `src/ai/` + `BotSquad`; one team-tactics layer shared by AI and human IGLs in M7. |
 | Statistics **(M11)** | Versioned events, derived per-player counts and calculated ratings | Perceived/scouted values and reputation remain separate. |
 | Map editor **(M3, M16)** | Modular pieces, group editing, prefabs, snapping, materials, lighting, navigation validation, playtest | `src/maps/` + Creation Studio; see the M16 section. Sharing is M17. |
@@ -785,6 +808,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-17 | Cup series reuse `league_fixture`; tiers move only by swaps; each save varies its start | One series pipeline for leagues and cups (simulation, playable series, prizes). Swaps keep every tier the same size, so finances and competitions stay balanced while the world changes. Starting variation stays within authored ranges |
 | 2026-11-17 | Simulated series are played round by round by a pure engine on the career layer; simulated player lines are stored apart from recorded statistics | Results come from people and moments (form, morale, traits, economy, clutches), not one strength roll, so the world feels alive and less predetermined. Recorded stats stay a record of played matches only. A simulated year takes a few seconds |
 | 2026-11-17 | The Career Hub navigates by routes with a history; pages link to each other | Manager games are browsed by clicking through teams, squads, players and matches. Routes keep pages independent (each builds from its args), Back works everywhere, and new pages only add a registry entry |
+| 2026-11-18 | Training is played in the FPS (drills and scrims); results are measured evidence for the human's perceived attributes | The human has no hidden stats to raise, so "train aim today" was fiction. Real drills train the person at the keyboard; the career only records what they measured, and the runtime still never writes the career |
 | 2026-11-16 | The living world runs day by day inside the calendar's transaction; AI decisions use perceived values; Continue stops on headlines | One writer keeps days atomic and replayable in tests. Judging by opinion keeps the hidden-truth layer hidden. News importance gives one simple stop rule that offers and invites can join later |
 | 2026-11-15 | One calendar writer (`CareerCalendar`); unplayed series are simulated from true lineup ability as the day passes | Results can never be skipped or double-counted, and off-screen outcomes follow real squad strength rather than reputation |
 | 2026-11-15 | One movement model (`PlayerMovement`) for humans and bots via `CombatantMovementBody`; values fitted to recorded reference runs and tagged measured/estimate | Bots can never move better or worse than a person; competitive feel comes from data, and estimates stay visible for later tuning |

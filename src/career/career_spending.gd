@@ -9,11 +9,10 @@ extends RefCounted
 
 ## id → [name, monthly fee, what it does]
 const SERVICES: Dictionary[String, Array] = {
-	"coach": ["Personal coach", 600, "Training raises the perceived attribute by 2 instead of 1."],
+	"coach": ["Personal coach", 600, "Reviews your drills: each day's first session of a drill teaches the world more about you (larger step)."],
 	"pr_agent": ["PR agent", 400, "Reputation +1 each month while below 70, so organisations notice you sooner."],
 }
 const PR_REPUTATION_CAP: int = 70
-const COACH_TRAINING_GAIN: int = 2
 ## Bootcamp: a one-off week of structured practice the scene hears about.
 const BOOTCAMP_ID: String = "bootcamp"
 const BOOTCAMP_COST: int = 2500

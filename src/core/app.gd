@@ -48,6 +48,10 @@ var pending_match_rules: MatchRules = null
 var pending_match_map: MapDocument = null
 ## Runtime options for the pending match, e.g. {"opponents": "bots", "skill": "normal"}.
 var pending_match_options: Dictionary = {}
+## Training drill the FPS runtime should run when it next loads: {drill, map, career}.
+var pending_training: Dictionary = {}
+## The most recent training outcome produced by the FPS runtime.
+var last_training_result: TrainingResult = null
 ## The most recent match outcome produced by the FPS runtime.
 var last_match_result: MatchResult = null
 ## The open career (null when none is loaded). Career data stays inside its repository.
@@ -55,6 +59,9 @@ var career: CareerSession = null
 var career_saves := CareerSaves.new()
 
 var _active_fixture_id: String = ""
+## Save that started the running training drill or scrim ("" = not a career session).
+var _training_save_id: String = ""
+var _scrim_opponent: String = ""
 var _active_fixture_save_id: String = ""
 ## Holds a result in memory if SQLite could not publish it on the first attempt.
 var _unsaved_fixture_results: Dictionary[String, MatchResult] = {}
@@ -142,6 +149,68 @@ func start_practice_against(org_id: String, map_id: String = MapTemplates.SANDBO
 	if setup == null:
 		return ERR_DOES_NOT_EXIST
 	return start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots"})
+
+
+## Opens a training drill ([TrainingDrills]) in the FPS runtime. With [param for_career] the
+## result is recorded to the open career when it finishes.
+func start_training(drill: StringName, for_career: bool = true) -> Error:
+	if not TrainingDrills.is_drill(drill):
+		return ERR_INVALID_PARAMETER
+	var map := MapTemplates.training_course() if str(TrainingDrills.DRILLS[drill]["map"]) == TrainingDrills.MAP_COURSE \
+		else MapTemplates.training_range()
+	_active_fixture_id = ""
+	_scrim_opponent = ""
+	_training_save_id = career.save_id if for_career and has_career() else ""
+	playtest_map = null
+	pending_training = {"drill": drill, "map": map, "career": not _training_save_id.is_empty()}
+	var error := go_to(SCENE_FPS_SANDBOX)
+	if error != OK:
+		pending_training = {}
+	return error
+
+
+func has_pending_training() -> bool:
+	return not pending_training.is_empty()
+
+
+func consume_pending_training() -> Dictionary:
+	var drill := pending_training
+	pending_training = {}
+	return drill
+
+
+## True while the runtime's drill or scrim reports to the open career.
+func is_career_training() -> bool:
+	return not _training_save_id.is_empty()
+
+
+## Receives a finished drill from the FPS runtime. Returns what happened to it.
+func report_training_finished(result: TrainingResult) -> String:
+	last_training_result = result
+	if _training_save_id.is_empty():
+		return "Free training: not recorded."
+	if not has_career() or career.save_id != _training_save_id:
+		return "The career that started this drill is no longer open."
+	return CareerTraining.record(career.repo, career.human_player_id, result)
+
+
+## A 5v5 scrim against an organisation (your own team's players beside you when signed). The
+## result is recorded as a training session, never as a fixture.
+func start_scrim(org_id: String) -> Error:
+	if not has_career():
+		return ERR_UNCONFIGURED
+	var map := map_by_id(OfficialMaps.DEFAULT_ID)
+	if map == null:
+		map = MapTemplates.sandbox_arena()
+	var setup := CareerMatches.practice_setup(career.repo, career.human_player_id, org_id, map.map_id, 8)
+	if setup == null:
+		return ERR_DOES_NOT_EXIST
+	setup.competition = "Scrim"
+	var error := start_match(setup, MatchRules.practice(setup.max_rounds), map, {"opponents": "bots", "scrim": true})
+	if error == OK:
+		_training_save_id = career.save_id
+		_scrim_opponent = setup.away_team_name
+	return error
 
 
 ## Moves the open career to the next day (other series due today are resolved). Returns "" or why not.
@@ -277,6 +346,8 @@ func retry_career_result() -> String:
 ## Receives the same result signal from every FPS match. Only an active career fixture may write.
 func report_match_finished(result: MatchResult) -> String:
 	last_match_result = result
+	if not _scrim_opponent.is_empty():
+		return _record_scrim(result)
 	if _active_fixture_id.is_empty():
 		return ""
 	if not has_career() or career.save_id != _active_fixture_save_id or result.fixture_id != _active_fixture_id:
@@ -284,6 +355,19 @@ func report_match_finished(result: MatchResult) -> String:
 	_unsaved_fixture_results[career.save_id] = result
 	var error := retry_career_result()
 	return "Result saved to your career." if error.is_empty() else error
+
+
+func _record_scrim(result: MatchResult) -> String:
+	var opponent := _scrim_opponent
+	_scrim_opponent = ""
+	if not has_career() or career.save_id != _training_save_id:
+		return "The career that started this scrim is no longer open."
+	var counts := MatchStatistics.calculate(result)
+	var human: Dictionary = counts.get(career.human_player_id, {})
+	var metrics := {"won": result.winner_side() == "home",
+		"score_for": result.home_score, "score_against": result.away_score, "opponent": opponent,
+		"kills": int(human.get("kills", 0)), "deaths": int(human.get("deaths", 0))}
+	return CareerTraining.record(career.repo, career.human_player_id, TrainingResult.make(TrainingDrills.SCRIM, metrics, true))
 
 
 ## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.
@@ -347,6 +431,8 @@ func start_practice_match(doc: MapDocument = null, skill: StringName = &"normal"
 func start_match(setup: MatchSetup, rules: MatchRules, map: MapDocument, options: Dictionary = {}) -> Error:
 	_active_fixture_id = ""
 	_active_fixture_save_id = ""
+	_training_save_id = ""
+	_scrim_opponent = ""
 	last_match_result = null
 	pending_match_options = options
 	pending_match_setup = setup

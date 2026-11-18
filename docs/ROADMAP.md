@@ -326,8 +326,16 @@ depend on the corresponding gameplay and world simulation systems.
       from accepted amateur fixture outcomes.
 - [x] Use completed matches to update reputation, confidence and perceived aim, crosshair
       placement and composure when enough relevant events were recorded.
-- [x] Offer one training focus per career day in Player Profile. Training changes the selected
-      perceived ability and is recorded in the save.
+- [x] ~~Offer one training focus per career day in Player Profile.~~ Replaced on 2026-11-18 by
+      real training (owner: "real training, not 'I'm training aim today'"):
+  - **Training Ground** page (sidebar ME): flick range (60 s), reaction test (12 reps, false
+    starts), tracking lane (30 s strafing target) and a movement course (checkpoints, falls
+    reset to the last one, par time). Each is played in the FPS and scored 1–100.
+  - **Scrims:** MR8 5v5 against an organisation near your tier, your teammates as bots.
+  - Every session is recorded with its measured numbers and personal bests. Each day's first
+    session of a drill is evidence for the world's view of your aim, reaction or movement.
+  - Training maps are editable in the Creation Studio (new course start, checkpoint and finish
+    pieces). Save schema v13.
 - [x] Offer one scouting report per career day in Players. Reports refine estimates toward AI
       ability and increase confidence while preserving underlying ability and hidden potential.
 - [x] Persist career development in schema v5 and test daily limits, save reload, successful,
@@ -496,7 +504,7 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
     (podiums); player pages list honours.
 - [x] Spending the human's own money (`CareerSpending`), with income from salary, season
       bonuses and amateur wins ($150 each). Effects stay on the career layer only:
-  - personal coach ($600 a month): training gives +2;
+  - personal coach ($600 a month): a drill's daily evidence moves up to 5 points instead of 3;
   - PR agent ($400 a month): reputation +1 a month below 70;
   - bootcamp ($2,500, every 180 days): four teamwork-side perceived attributes +1 and more
     confidence.
@@ -633,6 +641,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | Real training: flick, reaction, tracking and movement drills and 5v5 scrims played in the FPS, measured and recorded. Collapsible sidebar headings. Save schema v13. |
 | 2026-11-17 | Hub layout: Continue and Holiday top right, sidebar headings, routed pages with Back/Forward, team, player, compare, match report and inbox pages, links everywhere. |
 | 2026-11-17 | M14: the round-by-round match engine for every simulated series: economy, duels, trades, clutches, day form, morale, traits, per-player simulated lines, opinion from form, and upset/star news. Save schema v12. |
 | 2026-11-17 | M13/M14: cups with brackets, promotion and relegation by tier swaps, fuller leagues, transfer offers, renewals, releases and benching for contracted humans, and a different start for every save. Save schema v11. |

@@ -14,6 +14,7 @@ const PAGES: Array[Dictionary] = [
 	{"id": &"inbox", "label": "Inbox", "group": "CAREER", "script": preload("res://scenes/career_hub/pages/inbox_page.gd")},
 	{"id": &"calendar", "label": "Calendar", "group": "CAREER", "script": preload("res://scenes/career_hub/pages/calendar_page.gd")},
 	{"id": &"profile", "label": "My Profile", "group": "ME", "script": preload("res://scenes/career_hub/pages/profile_page.gd")},
+	{"id": &"training", "label": "Training", "group": "ME", "script": preload("res://scenes/career_hub/pages/training_page.gd")},
 	{"id": &"my_team", "label": "My Team", "group": "ME", "script": preload("res://scenes/career_hub/pages/team_page.gd")},
 	{"id": &"competitions", "label": "Competitions", "group": "WORLD", "script": preload("res://scenes/career_hub/pages/competitions_page.gd")},
 	{"id": &"teams", "label": "Teams", "group": "WORLD", "script": preload("res://scenes/career_hub/pages/teams_page.gd")},
@@ -47,10 +48,15 @@ var holiday_panel: PopupPanel
 var holiday_choice: OptionButton
 var holiday_simulate: CheckBox
 
+## Sidebar groups the player collapsed (kept for the session, across page and scene changes).
+static var collapsed_groups: Dictionary[String, bool] = {}
+
 var _history: Array[Dictionary] = []
 var _history_index: int = -1
 var _nav_buttons: Dictionary[StringName, Button] = {}
 var _nav_group := ButtonGroup.new()
+var _group_boxes: Dictionary[String, VBoxContainer] = {}
+var _group_headings: Dictionary[String, Button] = {}
 var _date_label: Label
 var _page_title: Label
 var _page_holder: MarginContainer
@@ -218,24 +224,35 @@ func _build_sidebar() -> Control:
 	column.add_child(logo_margin)
 
 	var group := ""
+	var group_box: VBoxContainer
 	for entry: Dictionary in PAGES:
 		if str(entry["group"]).is_empty():
 			continue
 		if str(entry["group"]) != group:
 			group = str(entry["group"])
 			var heading_margin := MarginContainer.new()
-			heading_margin.add_theme_constant_override(&"margin_left", 20)
-			heading_margin.add_theme_constant_override(&"margin_top", 12)
-			heading_margin.add_child(UIFactory.label(group, &"SectionLabel"))
+			heading_margin.add_theme_constant_override(&"margin_top", 8)
+			var heading := UIFactory.button("", &"SidebarHeadingButton")
+			heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			heading.tooltip_text = "Show or hide %s" % group.capitalize()
+			var group_id := group
+			heading.pressed.connect(func() -> void: toggle_group(group_id))
+			heading_margin.add_child(heading)
 			column.add_child(heading_margin)
+			group_box = UIFactory.vbox(2)
+			column.add_child(group_box)
+			_group_boxes[group] = group_box
+			_group_headings[group] = heading
 		var page_id := entry["id"] as StringName
 		var b := UIFactory.button(entry["label"] as String, &"SidebarButton")
 		b.toggle_mode = true
 		b.button_group = _nav_group
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.pressed.connect(func() -> void: navigate(page_id, {}))
-		column.add_child(b)
+		group_box.add_child(b)
 		_nav_buttons[page_id] = b
+	for id: String in _group_boxes:
+		_show_group(id)
 
 	column.add_child(UIFactory.expand_spacer())
 
@@ -247,6 +264,21 @@ func _build_sidebar() -> Control:
 	footer_margin.add_child(main_menu_button)
 	column.add_child(footer_margin)
 	return sidebar
+
+
+## Expands or collapses a sidebar heading's pages. Returns true when the group is now open.
+func toggle_group(group: String) -> bool:
+	if not _group_boxes.has(group):
+		return false
+	collapsed_groups[group] = not bool(collapsed_groups.get(group, false))
+	_show_group(group)
+	return not collapsed_groups[group]
+
+
+func _show_group(group: String) -> void:
+	var collapsed := bool(collapsed_groups.get(group, false))
+	_group_boxes[group].visible = not collapsed
+	_group_headings[group].text = "%s  %s" % ["▸" if collapsed else "▾", group]
 
 
 func _build_top_bar() -> Control:

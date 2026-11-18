@@ -16,6 +16,8 @@ const SandboxBots := preload("res://scenes/fps_sandbox/sandbox_bots.gd")
 var is_paused: bool = false
 ## Present only while a competitive match is running in this runtime.
 var match_director: MatchDirector = null
+## Present only while a training drill is running in this runtime.
+var training_director: TrainingDirector = null
 ## Seconds between the player's death and respawn.
 var respawn_delay: float = 3.0
 ## Recorded shooting numbers for this session (shown in the HUD; not persisted yet).
@@ -52,6 +54,9 @@ func _ready() -> void:
 func _load_level() -> void:
 	if App.has_pending_match():
 		_start_match()
+		return
+	if App.has_pending_training():
+		_start_training()
 		return
 	var playtest := App.is_playtesting()
 	var chosen := App.sandbox_map
@@ -107,6 +112,25 @@ func _start_match() -> void:
 	match_director.match_finished.connect(_on_match_finished)
 
 
+func _start_training() -> void:
+	var drill := App.consume_pending_training()
+	var doc := drill["map"] as MapDocument
+	level.load_map(doc, false)
+	MapLighting.apply(doc.lighting, sun, world_environment.environment)
+	var spawn := level.spawn_point("attack")
+	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
+	var drill_id := drill["drill"] as StringName
+	hud.set_mode("TRAINING · %s" % TrainingDrills.drill_name(drill_id), false)
+	training_director = TrainingDirector.new()
+	training_director.name = "TrainingDirector"
+	add_child(training_director)
+	training_director.begin(drill_id, level, player)
+	training_director.training_finished.connect(func(result: TrainingResult) -> void:
+		training_director.set_result_message(App.report_training_finished(result)))
+	training_director.again_requested.connect(func() -> void: App.start_training(drill_id, App.is_career_training()))
+	training_director.leave_requested.connect(_on_main_menu_requested)
+
+
 func _is_career_fixture() -> bool:
 	return bool(_match_options.get("career_fixture", false))
 
@@ -120,7 +144,8 @@ func _on_match_finished(result: MatchResult) -> void:
 
 ## True while a shop or the match-end screen needs a free mouse cursor.
 func _overlay_owns_mouse() -> bool:
-	return (_sandbox_shop != null and _sandbox_shop.is_buy_menu_open()) or (match_director != null
+	return (_sandbox_shop != null and _sandbox_shop.is_buy_menu_open()) or (training_director != null
+		and training_director.is_finished()) or (match_director != null
 		and (match_director.is_buy_menu_open() or match_director.state.phase == MatchState.Phase.MATCH_END))
 
 
@@ -146,7 +171,7 @@ func _on_practice_match_requested() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if match_director == null and not is_paused:
+	if match_director == null and training_director == null and not is_paused:
 		var shop_open := _sandbox_shop != null and _sandbox_shop.is_buy_menu_open()
 		if shop_open and (event.is_action_pressed(InputActions.PAUSE_MENU) or event.is_action_pressed(InputActions.BUY_MENU)):
 			_close_sandbox_shop()
@@ -267,6 +292,9 @@ func _update_combat_hud() -> void:
 			weapon.reload_progress() if weapon.is_reloading() else -1.0)
 	hud.set_health(player.health.current, player.health.max_health)
 	hud.set_crosshair_gap(_spread_to_pixels(player.weapons.current_spread()))
+	if training_director != null:
+		hud.set_training_stats(training_director.status_text())
+		return
 	hud.set_training_stats("Shots %d · Hits %d · Accuracy %d%% · Headshots %d%% · Kills %d · Damage %d" % [
 		tally.shots, tally.hits, roundi(tally.accuracy() * 100.0), roundi(tally.headshot_rate() * 100.0),
 		tally.kills, tally.damage,
@@ -297,6 +325,9 @@ func _on_target_hit(info: DamageInfo, target: Health, killed: bool) -> void:
 
 func _on_player_died(info: DamageInfo) -> void:
 	if match_director != null:
+		return
+	if training_director != null:
+		respawn_player()
 		return
 	_close_sandbox_shop()
 	_death_cause = "Fell out of the world" if info.cause == DamageInfo.CAUSE_WORLD else "Killed"
@@ -335,6 +366,9 @@ func resume() -> void:
 			hud.set_paused(false)
 			return
 	is_paused = false
+	if training_director != null and training_director.is_finished():
+		hud.set_paused(false)
+		return
 	player.input_enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud.set_paused(false)
@@ -346,7 +380,9 @@ func _on_main_menu_requested() -> void:
 		App.end_playtest()
 		return
 	App.playtest_map = null
-	if _is_career_fixture():
+	if training_director != null and training_director.session != null and not training_director.is_finished():
+		App.report_training_finished(training_director.session.abandon())
+	if _is_career_fixture() or App.is_career_training():
 		App.open_career_hub()
 	else:
 		App.go_to(App.SCENE_MAIN_MENU)

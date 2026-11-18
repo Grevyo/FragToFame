@@ -107,7 +107,7 @@ func _test_career_hub() -> void:
 		&"home": "Home", &"profile": "Player Profile", &"teams": "Teams", &"players": "Players",
 		&"competitions": "Competitions", &"calendar": "Calendar", &"statistics": "Statistics",
 		&"coop": "Co-op (Dev)", &"inbox": "Inbox", &"my_team": "My Team", &"news": "News", &"team": "Team",
-		&"player": "Player", &"compare": "Compare players", &"series": "Match report",
+		&"player": "Player", &"compare": "Compare players", &"series": "Match report", &"training": "Training Ground",
 	}
 	for page_id: StringName in expected_titles:
 		var ok: bool = hub.call("show_page", page_id)
@@ -119,6 +119,10 @@ func _test_career_hub() -> void:
 	# Pages must be replaced, not stacked.
 	var holder := (hub.get("current_page") as Node).get_parent()
 	check(holder.get_child_count() == 1, "only one page is mounted at a time")
+	var world_open: bool = hub.call("toggle_group", "WORLD")
+	var teams_button := (hub.get("_nav_buttons") as Dictionary)[&"teams"] as Button
+	check(not world_open and not teams_button.is_visible_in_tree(), "a sidebar heading collapses its pages")
+	check(bool(hub.call("toggle_group", "WORLD")) and teams_button.is_visible_in_tree(), "and expands them again")
 	var bad: bool = hub.call("show_page", &"does_not_exist")
 	check(not bad, "unknown page id is rejected")
 	var menu_button := hub.get("main_menu_button") as Button

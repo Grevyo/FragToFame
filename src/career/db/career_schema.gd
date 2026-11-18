@@ -21,7 +21,7 @@ extends RefCounted
 ##   human_service / human_purchase  what a human spends their own money on
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 12
+const CURRENT_VERSION: int = 13
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -441,6 +441,19 @@ const MIGRATIONS: Array[PackedStringArray] = [
 		);""",
 		"CREATE INDEX sim_player_map_by_player ON sim_player_map(player_id, day DESC);",
 		"CREATE INDEX sim_player_map_by_series ON sim_player_map(league_fixture_id, map_number);",
+	],
+	# v13 — real training: drills and scrims played in the FPS runtime, with measured results.
+	[
+		"""CREATE TABLE training_session (
+			id INTEGER PRIMARY KEY,
+			player_id TEXT NOT NULL REFERENCES player(id),
+			day INTEGER NOT NULL,
+			drill_id TEXT NOT NULL,
+			score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+			metrics_json TEXT NOT NULL,
+			evidence INTEGER NOT NULL DEFAULT 0
+		);""",
+		"CREATE INDEX training_session_by_player ON training_session(player_id, day DESC);",
 	],
 ]
 

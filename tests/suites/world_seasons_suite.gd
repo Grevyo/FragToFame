@@ -131,11 +131,13 @@ func _test_career(app: Node) -> void:
 	check(CareerSpending.hire(repo, player_id, "coach").is_empty()
 		and repo.player_balance(player_id) == funds - int(CareerSpending.SERVICES["coach"][1]), "hiring a coach pays the first month")
 	check(CareerSpending.hire(repo, player_id, "coach") != "", "a service cannot be hired twice")
-	var focus := &"utility"
+	var focus := &"movement"
 	var seen_before := int(repo.perceived(player_id).get(focus, 0))
-	check(CareerDevelopment.train(repo, player_id, focus).is_empty()
-		and int(repo.perceived(player_id)[focus]) == mini(seen_before + CareerSpending.COACH_TRAINING_GAIN, 100),
-		"with a coach, training raises the attribute by 2")
+	var run := TrainingResult.make(TrainingDrills.MOVEMENT, {"finished": true, "time": 20.0, "par": 30.0}, true)
+	CareerTraining.record(repo, player_id, run)
+	check(int(repo.perceived(player_id)[focus]) == seen_before + clampi(run.score - seen_before,
+		-CareerTraining.COACH_EVIDENCE_STEP, CareerTraining.COACH_EVIDENCE_STEP),
+		"with a coach, a drill's evidence moves the attribute by up to %d" % CareerTraining.COACH_EVIDENCE_STEP)
 	check(CareerSpending.hire(repo, player_id, "pr_agent").is_empty(), "a PR agent is hired")
 	var rep_before := repo.reputation(player_id)
 	var month_funds := repo.player_balance(player_id)

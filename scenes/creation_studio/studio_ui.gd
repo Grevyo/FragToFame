@@ -881,6 +881,10 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 			_option_prop("Team", "team", TEAMS, str(props.get("team", "attack")))
 		"target_dummy":
 			_option_prop("Motion", "motion", DUMMY_MOTIONS, str(props.get("motion", "static")))
+		"course_checkpoint":
+			_number_prop("Order (1 = first)", "order", float(props.get("order", 1)), 1.0, 32.0, 1.0)
+		"course_finish":
+			_number_prop("Par time (s)", "par", float(props.get("par", 30.0)), 5.0, 600.0, 1.0)
 		"callout":
 			_text_prop("Area name", "name", str(props.get("name", "")))
 			_option_prop("Timing role", "role", MapTactical.AREA_ROLES, str(props.get("role", "")))

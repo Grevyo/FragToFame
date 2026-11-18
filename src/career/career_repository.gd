@@ -1225,3 +1225,37 @@ func find_players(text: String, limit: int = 12) -> Array[Dictionary]:
 		LEFT JOIN organisation o ON o.id = c.organisation_id
 		WHERE p.nickname LIKE ? OR (p.first_name || ' ' || p.last_name) LIKE ?
 		ORDER BY p.nickname LIMIT ?;""", [pattern, pattern, limit])
+
+
+# --- Training ----------------------------------------------------------------------------------
+
+## Stores one finished drill or scrim. [param evidence] is the perceived-attribute change it made.
+func insert_training(player_id: String, day: int, drill_id: String, score: int, metrics: Dictionary, evidence: int) -> bool:
+	return db.execute("INSERT INTO training_session (player_id, day, drill_id, score, metrics_json, evidence) VALUES (?, ?, ?, ?, ?, ?);",
+		[player_id, day, drill_id, clampi(score, 0, 100), JSON.stringify(metrics), evidence])
+
+
+## A player's training sessions, newest first ({day, drill_id, score, metrics, evidence}).
+func training_sessions(player_id: String, limit: int = 20, drill_id: String = "") -> Array[Dictionary]:
+	var list: Array[Dictionary] = []
+	for found: Dictionary in db.rows("""SELECT * FROM training_session WHERE player_id = ? AND (? = '' OR drill_id = ?)
+			ORDER BY day DESC, id DESC LIMIT ?;""", [player_id, drill_id, drill_id, limit]):
+		var parsed: Variant = JSON.parse_string(str(found["metrics_json"]))
+		found["metrics"] = parsed if parsed is Dictionary else {}
+		list.append(found)
+	return list
+
+
+## Best score and number of sessions per drill: {drill_id: {best, sessions, average}}.
+func training_bests(player_id: String) -> Dictionary[String, Dictionary]:
+	var bests: Dictionary[String, Dictionary] = {}
+	for found: Dictionary in db.rows("""SELECT drill_id, MAX(score) AS best, COUNT(*) AS sessions, AVG(score) AS average
+			FROM training_session WHERE player_id = ? GROUP BY drill_id;""", [player_id]):
+		bests[str(found["drill_id"])] = found
+	return bests
+
+
+## True when a drill already counted as evidence today.
+func training_evidence_today(player_id: String, drill_id: String, day: int) -> bool:
+	return int(db.scalar("SELECT COUNT(*) FROM training_session WHERE player_id = ? AND drill_id = ? AND day = ? AND evidence <> 0;",
+		[player_id, drill_id, day], 0)) > 0

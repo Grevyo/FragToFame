@@ -99,6 +99,9 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"ai_angle": {"label": "AI hint: angle point", "kind": "hint", "size": Vector3(0.5, 1.0, 0.5), "color": Color("e07be0"), "resizable": false, "group": "Tactics"},
 	# --- Training --------------------------------------------------------------------------------
 	"target_dummy": {"label": "Target dummy", "kind": "marker", "size": Vector3(0.6, 1.8, 0.6), "color": Color("c9b48a"), "resizable": false, "group": "Training"},
+	"course_start": {"label": "Course start", "kind": "zone", "size": Vector3(4, 3, 4), "color": Color(0.3, 0.85, 0.45, 0.25), "resizable": true, "group": "Training"},
+	"course_checkpoint": {"label": "Course checkpoint", "kind": "zone", "size": Vector3(4, 3, 4), "color": Color(0.95, 0.8, 0.25, 0.25), "resizable": true, "group": "Training"},
+	"course_finish": {"label": "Course finish", "kind": "zone", "size": Vector3(4, 3, 4), "color": Color(0.95, 0.35, 0.3, 0.25), "resizable": true, "group": "Training"},
 }
 
 const GROUP_ORDER: Array[String] = ["Structure", "Openings", "Slopes", "Props", "Cover", "Vehicles", "Lights",

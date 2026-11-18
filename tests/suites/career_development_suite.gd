@@ -38,18 +38,23 @@ func _check_career(app: Node) -> void:
 	app.call("open_career_hub")
 	await wait_frames(3)
 	var hub := tree.current_scene
-	hub.call("show_page", &"profile")
-	var train := _button(hub, "Train today")
-	check(train != null, "Player Profile offers a daily training action")
-	if train == null:
-		return
-	train.pressed.emit()
+	hub.call("show_page", &"training")
+	var ground := hub.get("current_page") as CareerTrainingPage
+	check(ground != null and ground.drill_buttons.size() == TrainingDrills.ids().size() and ground.scrim_choice.item_count > 0,
+		"the Training Ground offers every drill and a scrim")
+	check(_button(hub, "Train today") == null, "there is no abstract 'train a stat today' action any more")
+	var flick := TrainingResult.make(TrainingDrills.FLICK, {"kills": 50, "duration": 60.0, "accuracy": 0.7, "headshot_rate": 0.5}, true)
+	var message := CareerTraining.record(repo, player_id, flick)
 	var trained := repo.perceived(player_id)
-	var training := repo.development_today(player_id, CareerDevelopment.TRAINING)
-	check(trained[&"aim"] == human_before[&"aim"] + 1 and training.get("focus") == "aim",
-		"training changes the selected perceived ability and records the day")
-	check(not CareerDevelopment.train(repo, player_id, &"aim").is_empty()
-		and _button(hub, "Train today") == null, "training can run once per career day")
+	var expected := human_before[&"aim"] + clampi(flick.score - human_before[&"aim"], -CareerTraining.EVIDENCE_STEP, CareerTraining.EVIDENCE_STEP)
+	check(trained[&"aim"] == expected and message.begins_with("Saved"),
+		"a played drill is evidence: perceived aim moves toward the drill score (%d → %d, score %d)" % [human_before[&"aim"], trained[&"aim"], flick.score])
+	CareerTraining.record(repo, player_id, flick)
+	var sessions := repo.training_sessions(player_id)
+	check(sessions.size() == 2 and repo.perceived(player_id)[&"aim"] == trained[&"aim"] and int(sessions[0]["evidence"]) == 0,
+		"every session is recorded, but each drill is evidence once a day")
+	check(CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.FLICK, {}, false)).begins_with("Session not completed")
+		and repo.training_sessions(player_id).size() == 2, "an abandoned drill is not recorded")
 	check(repo.abilities(player_id).is_empty() and repo.reputation(player_id) == reputation
 		and int(repo.performance_totals(player_id)["matches"]) == 0,
 		"training keeps true abilities, reputation and match records separate")
@@ -92,7 +97,9 @@ func _check_career(app: Node) -> void:
 		and session.repo.perceived_confidence(subject_id) == 42
 		and not session.repo.last_scout_report(player_id, subject_id).is_empty(),
 		"training and scouting changes survive reopening the save")
-	check(CareerDevelopment.train(session.repo, player_id, &"aim").is_empty()
+	CareerTraining.record(session.repo, player_id, TrainingResult.make(TrainingDrills.REACTION,
+		{"reps_hit": 12, "average_ms": 210.0}, true))
+	check(int(session.repo.training_sessions(player_id)[0]["evidence"]) != 0
 		and CareerDevelopment.scout(session.repo, player_id, subject_id).is_empty()
 		and session.repo.perceived_confidence(subject_id) == 54,
 		"the next career day permits another training session and report")

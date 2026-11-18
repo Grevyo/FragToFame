@@ -336,6 +336,17 @@ static func _zone(piece: Dictionary, size: Vector3, mode: Mode) -> Node3D:
 			paint.material_override = _zone_material(Color(0.95, 0.3, 0.3, 0.18))
 			paint.position.y = 0.011
 			root.add_child(paint)
+		elif type.begins_with("course_"):
+			# Movement course pads stay visible in play: a coloured floor and a caption.
+			var pad := MeshInstance3D.new()
+			var pad_mesh := BoxMesh.new()
+			pad_mesh.size = Vector3(size.x, 0.03, size.z)
+			pad.mesh = pad_mesh
+			var pad_color := PieceCatalog.color(type)
+			pad.material_override = _zone_material(Color(pad_color.r, pad_color.g, pad_color.b, 0.45))
+			pad.position.y = 0.016
+			root.add_child(pad)
+			root.add_child(_caption(_course_caption(type, props), 2.4, 64))
 		return root
 	var box := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
@@ -353,8 +364,19 @@ static func _zone(piece: Dictionary, size: Vector3, mode: Mode) -> Node3D:
 			text = "BUY (%s)" % props.get("team", "?")
 		"callout":
 			text = str(props.get("name", "Callout"))
+		"course_start", "course_checkpoint", "course_finish":
+			text = _course_caption(type, props)
 	root.add_child(_caption(text, size.y + 0.3, 64))
 	return root
+
+
+static func _course_caption(type: String, props: Dictionary) -> String:
+	match type:
+		"course_start":
+			return "START"
+		"course_checkpoint":
+			return "CHECKPOINT %d" % int(props.get("order", 1))
+	return "FINISH"
 
 
 static func _zone_material(color: Color) -> StandardMaterial3D:

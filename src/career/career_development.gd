@@ -22,29 +22,6 @@ static func current_elo(repo: CareerRepository, player_id: String) -> int:
 	return STARTING_ELO.get(StringName(str(profile.get("difficulty", ""))), STARTING_ELO[&"standard"])
 
 
-static func train(repo: CareerRepository, player_id: String, ability: StringName) -> String:
-	if not CareerCatalog.ABILITIES.has(ability) or repo.human_profile(player_id).is_empty():
-		return "Choose a training focus for your career player."
-	var warning: Array[String] = []
-	var saved := repo.transaction(func() -> bool:
-		if not repo.development_today(player_id, TRAINING).is_empty():
-			warning.append("Today's training session is already complete.")
-			return false
-		var rating := repo.perceived(player_id)
-		var before: int = rating.get(ability, 1)
-		if before >= 100:
-			warning.append("This perceived attribute is already at its maximum.")
-			return false
-		var day := repo.current_day()
-		var gain := CareerSpending.COACH_TRAINING_GAIN if CareerSpending.has_service(repo, player_id, "coach") else 1
-		gain = mini(gain, 100 - before)
-		return repo.add_development_activity(player_id, TRAINING, day, player_id, String(ability), gain) \
-			and repo.set_perceived(player_id, {ability: before + gain}, repo.perceived_confidence(player_id), day))
-	if saved:
-		return ""
-	return warning[0] if not warning.is_empty() else "Could not record training."
-
-
 static func scout(repo: CareerRepository, player_id: String, subject_id: String) -> String:
 	var subject := repo.get_player(subject_id)
 	if repo.human_profile(player_id).is_empty() or subject == null or subject.is_human or subject.status != "active":

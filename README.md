@@ -400,6 +400,21 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Start a **Long amateur grind** career: there are no invitations until amateur results build
       your visibility.
 
+### Manual test checklist (Training ground)
+
+- [ ] Sidebar headings (CAREER, ME, WORLD, DATA) collapse and expand when clicked.
+- [ ] Training → Start flick range: a 3-second countdown, then one target at a time; each kill
+      moves it. After 60 s the result screen shows a score, kills, accuracy and headshots, and
+      says it was saved. "Go again" restarts; "Leave training" returns to the hub.
+- [ ] Reaction test: shooting before the target appears counts a false start; the HUD shows
+      each rep's time.
+- [ ] Tracking lane: the strafing target drops and stands up again; damage and accuracy count.
+- [ ] Movement course: the clock starts when you leave START, checkpoints count in order, a
+      fall puts you back on the last checkpoint, FINISH ends the run. Every jump is makeable.
+- [ ] Scrim: pick an organisation, play the MR8 match; the result appears under Recent sessions.
+- [ ] Recent sessions lists every run; the first run of a drill each day shows a "World's view"
+      change, later ones do not.
+
 ### Manual test checklist (Hub layout and navigation)
 
 - [ ] Start or continue a career. The top bar shows Back / Forward, the page title, the date,

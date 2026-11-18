@@ -52,6 +52,7 @@ src/maps/      map document format, builder, validator, storage, edit controller
 src/movement/  shared player/bot movement model, its tuning and CombatantMovementBody (FPS runtime only)
 src/combat/    weapons, spread/recoil, damage, health, hitboxes, hitscan (FPS runtime only)
 src/rules/     competitive match rules, economy, shop (pure; driven by the FPS runtime)
+src/training/  training drills: rules, scoring, TrainingResult (pure; driven by the FPS runtime)
 src/ai/        bot AI: navmesh baking, skills, aim model, BotController (FPS runtime only)
 src/orchestration/    MatchSetup / MatchResult contracts and match runners
 src/net/career_sync/  career-host networking (raw ENet messages) — never uses net/match

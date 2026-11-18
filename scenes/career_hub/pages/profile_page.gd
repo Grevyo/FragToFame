@@ -45,7 +45,7 @@ func _build_spending(session: CareerSession, player_id: String) -> void:
 		card.add_child(row)
 	var camp := UIFactory.hbox(8)
 	var wait := CareerSpending.bootcamp_wait(repo, player_id)
-	var camp_text := UIFactory.label("Bootcamp · %s · a week of real sessions you play: every drill and a scrim within %d days. Finish it and the world trusts its view of you more, and you grow closer to your teammates%s" % [
+	var camp_text := UIFactory.label("Bootcamp · %s · a week of real sessions you play: every drill and a scrim within %d days. How the week goes shapes what the world thinks of you and how your teammates see you%s" % [
 		CareerCatalog.format_money(CareerSpending.BOOTCAMP_COST), CareerSpending.BOOTCAMP_DAYS,
 		"" if wait == 0 else " · next one available in %d days" % wait], &"", true)
 	camp_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL

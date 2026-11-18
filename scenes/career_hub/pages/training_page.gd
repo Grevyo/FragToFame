@@ -23,7 +23,7 @@ func build_page() -> void:
 	var session := career()
 	var repo := session.repo
 	var intro := UIFactory.card(self, "Real training")
-	intro.add_child(UIFactory.label("Every session is played by you in the FPS. Your scores are recorded; the first session of each drill a day is evidence the world uses to judge you. Training never changes how you aim or move: you get better by practising.",
+	intro.add_child(UIFactory.label("Every session is played by you in the FPS. Your scores are recorded, and every session is evidence the world uses to judge you. How much a run says depends on how it went: whether it fits your record or looks like a fluke, how sure the world already is, how often you ran it today and whether a coach reviewed it. Scrims with your team change how your teammates feel about you. Training never changes how you aim or move: you get better by practising.",
 		&"MutedLabel", true))
 	status_label = UIFactory.label("", &"WarningLabel", true)
 	intro.add_child(status_label)
@@ -44,8 +44,10 @@ func build_page() -> void:
 		card.add_child(UIFactory.label("Best %d / 100 · %d sessions · speaks to %s" % [int(best.get("best", 0)), int(best.get("sessions", 0)),
 			CareerCatalog.ability_name(entry["ability"] as StringName).to_lower()] if not best.is_empty()
 			else "Not tried yet · speaks to %s" % CareerCatalog.ability_name(entry["ability"] as StringName).to_lower(), &"", true))
-		if repo.training_evidence_today(session.human_player_id, String(drill), today):
-			card.add_child(UIFactory.label("Today's evidence is in; more sessions still count for your record.", &"MutedLabel", true))
+		var runs := repo.training_count(session.human_player_id, String(drill), today)
+		if runs > 0:
+			card.add_child(UIFactory.label("Run %d time%s today: another run says less about you than the first." % [runs, "" if runs == 1 else "s"],
+				&"MutedLabel", true))
 		var start := UIFactory.button("Start %s" % str(entry["name"]).to_lower(), &"AccentButton")
 		var drill_id := drill
 		start.pressed.connect(func() -> void: start_drill(drill_id))
@@ -79,7 +81,7 @@ func _bootcamp_card(repo: CareerRepository, human_id: String) -> void:
 		text = "Bootcamp complete: all %d sessions played." % total
 	elif bool(camp["active"]):
 		var left := int(camp["end_day"]) - repo.current_day() + 1
-		text = "%d of %d sessions done · %d day%s left (until %s). Each first session of a programme item counts as reviewed evidence, even if today's evidence is already in." % [
+		text = "%d of %d sessions done · %d day%s left (until %s). Programme sessions are reviewed by the camp's staff, so they say more about you; the week is judged as a whole when you finish." % [
 			done.size(), total, left, "" if left == 1 else "s", GameDate.format(int(camp["end_day"]))]
 	else:
 		text = "Your bootcamp ended with %d of %d sessions played." % [done.size(), total]

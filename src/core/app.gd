@@ -366,8 +366,25 @@ func _record_scrim(result: MatchResult) -> String:
 	var human: Dictionary = counts.get(career.human_player_id, {})
 	var metrics := {"won": result.winner_side() == "home",
 		"score_for": result.home_score, "score_against": result.away_score, "opponent": opponent,
-		"kills": int(human.get("kills", 0)), "deaths": int(human.get("deaths", 0))}
+		"kills": int(human.get("kills", 0)), "deaths": int(human.get("deaths", 0)),
+		"rating": MatchStatistics.rating(human) if not human.is_empty() else 0.0,
+		"teammates": _scrim_teammates(result, counts)}
 	return CareerTraining.record(career.repo, career.human_player_id, TrainingResult.make(TrainingDrills.SCRIM, metrics, true))
+
+
+## The human's side in a scrim: [{player_id, kills, deaths, rating}] for each teammate who played.
+func _scrim_teammates(result: MatchResult, counts: Dictionary[String, Dictionary]) -> Array[Dictionary]:
+	var mates: Array[Dictionary] = []
+	var lineup: Variant = (result.events.front() as Dictionary).get("lineup") if not result.events.is_empty() else null
+	if not lineup is Dictionary or not (lineup as Dictionary).has(career.human_player_id):
+		return mates
+	var side := int(lineup[career.human_player_id])
+	for player: Variant in lineup:
+		var id := str(player)
+		if id != career.human_player_id and int(lineup[player]) == side and counts.has(id):
+			mates.append({"player_id": id, "kills": int(counts[id]["kills"]), "deaths": int(counts[id]["deaths"]),
+				"rating": MatchStatistics.rating(counts[id])})
+	return mates
 
 
 ## Opens the FPS runtime on [param doc]; [param session] is restored when the editor reopens.

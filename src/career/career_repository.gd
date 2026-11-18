@@ -1267,9 +1267,24 @@ func training_bests(player_id: String) -> Dictionary[String, Dictionary]:
 
 
 ## True when a drill already counted as evidence today.
-func training_evidence_today(player_id: String, drill_id: String, day: int) -> bool:
-	return int(db.scalar("SELECT COUNT(*) FROM training_session WHERE player_id = ? AND drill_id = ? AND day = ? AND evidence <> 0;",
-		[player_id, drill_id, day], 0)) > 0
+func training_count(player_id: String, drill_id: String, day: int) -> int:
+	return int(db.scalar("SELECT COUNT(*) FROM training_session WHERE player_id = ? AND drill_id = ? AND day = ?;",
+		[player_id, drill_id, day], 0))
+
+
+## Your latest [param limit] scores for a drill, newest first (your record for it).
+func training_scores(player_id: String, drill_id: String, limit: int) -> Array[int]:
+	var scores: Array[int] = []
+	for found: Dictionary in db.rows("SELECT score FROM training_session WHERE player_id = ? AND drill_id = ? ORDER BY day DESC, id DESC LIMIT ?;",
+			[player_id, drill_id, limit]):
+		scores.append(int(found["score"]))
+	return scores
+
+
+## The sessions that counted for a bootcamp booked on [param since_day].
+func bootcamp_sessions(player_id: String, since_day: int) -> Array[Dictionary]:
+	return db.rows("SELECT drill_id, score, day FROM training_session WHERE player_id = ? AND bootcamp = 1 AND day >= ? ORDER BY id;",
+		[player_id, since_day])
 
 
 # --- People -----------------------------------------------------------------------------------

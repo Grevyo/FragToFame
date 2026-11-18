@@ -149,6 +149,27 @@ static func accepts_move(person: Dictionary, from_tier: int, to_tier: int, rng: 
 	return true
 
 
+## How a teammate's feelings toward the human move after a scrim together (about -15..15), from
+## how it went and who they are. [param margin] is the round difference over rounds played
+## (-1..1); ratings are F2F match ratings. A result is felt harder by volatile people when it goes
+## wrong; sociable people warm up anyway; being outplayed by you pleases a humble teammate and
+## stings an ego; carrying you is shrugged off by professionals and resented by the rest; where
+## you already stand and their mood colour all of it.
+static func scrim_reaction(person: Dictionary, margin: float, your_rating: float, their_rating: float, bond: int,
+		rng: RandomNumberGenerator) -> int:
+	var temperament := float(person.get("temperament", 10))
+	var shared := margin * 8.0
+	if shared < 0.0:
+		shared *= 1.0 + (10.0 - temperament) / 15.0
+	var warmth := (float(person.get("sociability", 10)) - 10.0) * 0.2
+	var gap := your_rating - their_rating
+	var pride := gap * 4.0 * (10.0 - float(person.get("ego", 10))) / 10.0 if gap > 0.0 \
+		else gap * 3.0 * (10.0 - float(person.get("professionalism", 10))) / 10.0
+	var history := bond / 40.0
+	var mood := float(person.get("happiness", 0)) / 25.0
+	return clampi(roundi(shared + warmth + pride + history + mood + rng.randf_range(-1.5, 1.5)), -15, 15)
+
+
 ## How two people get on (-5..+4; about 0 for a typical pair).
 static func compatibility(a: Dictionary, b: Dictionary) -> float:
 	var value := 2.2 - absi(int(a.get("sociability", 10)) - int(b.get("sociability", 10))) * 0.35

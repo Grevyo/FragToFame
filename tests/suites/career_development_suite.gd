@@ -31,6 +31,7 @@ func _check_career(app: Node) -> void:
 	var session := app.get("career") as CareerSession
 	var repo := session.repo
 	var player_id := session.human_player_id
+	_check_assess()
 	check(CareerDevelopment.current_elo(repo, player_id) == 1200,
 		"starting amateur ELO reflects the career difficulty")
 	var human_before := repo.perceived(player_id)
@@ -46,13 +47,15 @@ func _check_career(app: Node) -> void:
 	var flick := TrainingResult.make(TrainingDrills.FLICK, {"kills": 50, "duration": 60.0, "accuracy": 0.7, "headshot_rate": 0.5}, true)
 	var message := CareerTraining.record(repo, player_id, flick)
 	var trained := repo.perceived(player_id)
-	var expected := human_before[&"aim"] + clampi(flick.score - human_before[&"aim"], -CareerTraining.EVIDENCE_STEP, CareerTraining.EVIDENCE_STEP)
-	check(trained[&"aim"] == expected and message.begins_with("Saved"),
+	var moved := trained[&"aim"] - human_before[&"aim"]
+	var gap := flick.score - human_before[&"aim"]
+	check(message.begins_with("Saved") and signi(moved) == signi(gap) and absi(moved) <= absi(gap) and (moved != 0 or absi(gap) < 3),
 		"a played drill is evidence: perceived aim moves toward the drill score (%d → %d, score %d)" % [human_before[&"aim"], trained[&"aim"], flick.score])
 	CareerTraining.record(repo, player_id, flick)
 	var sessions := repo.training_sessions(player_id)
-	check(sessions.size() == 2 and repo.perceived(player_id)[&"aim"] == trained[&"aim"] and int(sessions[0]["evidence"]) == 0,
-		"every session is recorded, but each drill is evidence once a day")
+	check(sessions.size() == 2 and absi(int(sessions[0]["evidence"])) <= absi(int(sessions[1]["evidence"])),
+		"every session is recorded; a repeat run the same day says no more than the first")
+	trained = repo.perceived(player_id)
 	check(CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.FLICK, {}, false)).begins_with("Session not completed")
 		and repo.training_sessions(player_id).size() == 2, "an abandoned drill is not recorded")
 	check(repo.abilities(player_id).is_empty() and repo.reputation(player_id) == reputation
@@ -121,7 +124,7 @@ func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> vo
 	var message := CareerTraining.record(repo, player_id, reaction)
 	var first := repo.training_sessions(player_id, 1)[0]
 	check(message.contains("bootcamp session 1 of %d" % CareerSpending.BOOTCAMP_PROGRAMME.size()) and int(first["bootcamp"]) == 1,
-		"a programme session counts for the bootcamp, even after today's evidence is in (%s)" % message)
+		"a programme session counts for the bootcamp and is reviewed by its staff (%s)" % message)
 	check(not CareerTraining.record(repo, player_id, reaction).contains("bootcamp")
 		and int(repo.training_sessions(player_id, 1)[0]["bootcamp"]) == 0, "repeating a done item does not count twice")
 	app.call("open_career_hub")
@@ -131,7 +134,6 @@ func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> vo
 	var ground := hub.get("current_page") as CareerTrainingPage
 	check(ground != null and ground.bootcamp_label != null and ground.bootcamp_label.text.begins_with("1 of 5"),
 		"the Training Ground shows the bootcamp's progress")
-	var confidence := repo.perceived_confidence(player_id)
 	CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.FLICK, {"kills": 40, "duration": 60.0, "accuracy": 0.6}, true))
 	repo.set_current_day(repo.current_day() + 3)
 	CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.TRACKING, {"damage": 900, "duration": 30.0, "accuracy": 0.6}, true))
@@ -141,9 +143,8 @@ func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> vo
 	camp = CareerSpending.bootcamp_state(repo, player_id)
 	check(bool(camp["complete"]) and not bool(camp["active"]) and message.contains("bootcamp complete"),
 		"playing every drill and a scrim within the week completes it (%s)" % message)
-	check(repo.perceived_confidence(player_id) >= mini(confidence + CareerSpending.BOOTCAMP_CONFIDENCE, CareerTraining.CONFIDENCE_LIMIT)
-		and repo.news(5).any(func(n: Dictionary) -> bool: return str(n["headline"]).contains("complete a bootcamp")),
-		"finishing it makes the world more confident in its view of you and makes news")
+	check(message.contains("week") and repo.news(5).any(func(n: Dictionary) -> bool: return str(n["headline"]).contains("complete a bootcamp")),
+		"finishing it is judged on how the week went and makes news")
 	check(CareerSpending.buy_bootcamp(repo, player_id).contains("days"), "the next bootcamp waits for its cooldown")
 	repo.set_current_day(repo.current_day() + CareerSpending.BOOTCAMP_COOLDOWN)
 	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty(), "a later bootcamp can be booked")
@@ -152,6 +153,29 @@ func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> vo
 	check(not bool(camp["active"]) and not bool(camp["complete"]) and (camp["done"] as Array).is_empty()
 		and not CareerTraining.record(repo, player_id, reaction).contains("bootcamp"),
 		"an unplayed bootcamp lapses after its week")
+
+
+## Evidence comes from how a session went, not from fixed steps.
+func _check_assess() -> void:
+	section("How much a session says")
+	var record: Array[int] = [60, 62, 58, 61]
+	var first := CareerTraining.assess(80, 60, 40, record, 0, false)
+	var third := CareerTraining.assess(80, 60, 40, record, 2, false)
+	check(int(first["change"]) > int(third["change"]) and int(third["change"]) >= 0, "a third run today says less than the first (%d vs %d)" % [
+		int(first["change"]), int(third["change"])])
+	var steady := CareerTraining.assess(66, 60, 40, record, 0, false)
+	var fluke := CareerTraining.assess(95, 60, 40, record, 0, false)
+	check(float(steady["trust"]) > float(fluke["trust"]), "a run that fits your record is trusted more than a fluke")
+	check(int(CareerTraining.assess(80, 60, 40, record, 0, true)["change"]) > int(first["change"]),
+		"a reviewed run (coach or bootcamp) is believed more")
+	check(int(CareerTraining.assess(80, 60, 85, record, 0, false)["change"]) < int(first["change"]),
+		"a world that is already sure of you moves less")
+	check(int(CareerTraining.assess(61, 60, 40, record, 0, false)["confidence"]) > 0
+		and int(CareerTraining.assess(20, 60, 40, [20, 22] as Array[int], 0, false)["confidence"]) < 0,
+		"a run that confirms the world's view raises its confidence; one that contradicts it lowers it")
+	check(int(CareerTraining.assess(40, 60, 40, record, 0, false)["change"]) < 0, "a poor run lowers the world's view")
+	check(int(CareerTraining.assess(70, 60, 40, record, 0, false)["change"]) != int(CareerTraining.assess(90, 60, 40, [88, 90] as Array[int], 0, false)["change"]),
+		"how far the view moves depends on the run, not a fixed step")
 
 
 func _button(root: Node, text: String) -> Button:

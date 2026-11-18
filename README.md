@@ -424,8 +424,11 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] Movement course: the clock starts when you leave START, checkpoints count in order, a
       fall puts you back on the last checkpoint, FINISH ends the run. Every jump is makeable.
 - [ ] Scrim: pick an organisation, play the MR8 match; the result appears under Recent sessions.
-- [ ] Recent sessions lists every run; the first run of a drill each day shows a "World's view"
-      change, later ones do not.
+- [ ] Recent sessions lists every run. A "World's view" change follows how the run went: a run
+      near your record moves it more than a fluke, and a repeat the same day moves it less.
+- [ ] Scrim with your own team: the result line can say "closer to …" or "friction with …".
+      A big win warms people up, a heavy loss upsets volatile teammates, and outplaying an
+      ego-driven teammate can annoy them.
 
 ### Manual test checklist (Hub layout and navigation)
 
@@ -482,13 +485,14 @@ from spawn, so rounds often start with a long-range fight.
       records** table with champion, runner-up and third. Pick a champion's player on Players:
       their profile lists the honour.
 - [ ] Win an amateur match: Profile → **Your money** rises by $150.
-- [ ] Hire a **Personal coach**: the first month is charged, and training now raises the chosen
-      attribute by 2. Hire a **PR agent**: on the 1st your reputation rises by 1 and both
+- [ ] Hire a **Personal coach**: the first month is charged, and each drill now says more about
+      you (a bigger "World's view" change for the same run). Hire a **PR agent**: on the 1st your reputation rises by 1 and both
       fees are charged.
 - [ ] Book a **Bootcamp**: nothing changes by itself. The button shows when the next one is
       available, and the Training Ground shows a Bootcamp card (0 of 5, days left).
 - [ ] Play each drill and a scrim within the week: each first session says "bootcamp session
-      N of 5", the last says "bootcamp complete", and a news item appears. A camp left
+      N of 5". The last says "bootcamp complete" with a verdict on the week (strong, in line or
+      rough; steady or erratic) and a confidence change, and a news item appears. A camp left
       unfinished shows "ended with N of 5".
 - [ ] Let your balance run out: on the 1st the services end with a headline.
 

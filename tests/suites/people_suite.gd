@@ -82,6 +82,16 @@ func _test_moods() -> void:
 	for i: int in 200:
 		refused += 0 if CareerPeople.accepts_move(person.merged({"loyalty": 18, "happiness": 20}, true), 2, 2, rng) else 1
 	check(refused > 100, "a loyal, happy player usually turns down a sideways move (%d of 200)" % refused)
+	var steady_rng := _rng(5)
+	var warm := {"sociability": 15, "temperament": 14, "ego": 5, "professionalism": 14, "happiness": 10}
+	var proud := {"sociability": 7, "temperament": 4, "ego": 18, "professionalism": 6, "happiness": -10}
+	check(CareerPeople.scrim_reaction(warm, 0.5, 1.3, 1.0, 0, steady_rng) > 0, "a humble, sociable teammate warms to you after a good win")
+	check(CareerPeople.scrim_reaction(proud, -0.6, 1.0, 1.0, 0, steady_rng) < CareerPeople.scrim_reaction(warm, -0.6, 1.0, 1.0, 0, steady_rng),
+		"a heavy loss hits a volatile teammate harder")
+	check(CareerPeople.scrim_reaction(proud, 0.0, 1.6, 0.8, 0, steady_rng) < CareerPeople.scrim_reaction(warm, 0.0, 1.6, 0.8, 0, steady_rng),
+		"outplaying an ego stings; outplaying a humble teammate earns respect")
+	check(CareerPeople.scrim_reaction(warm, 0.8, 1.2, 1.0, 0, steady_rng) > CareerPeople.scrim_reaction(warm, 0.05, 1.2, 1.0, 0, steady_rng),
+		"a big win brings people closer than a narrow one")
 	var social := {"sociability": 16, "temperament": 14, "ego": 9}
 	var clash := {"sociability": 3, "temperament": 4, "ego": 17}
 	check(CareerPeople.compatibility(social, social) > 2.0 and CareerPeople.compatibility(clash, clash) < 0.0,

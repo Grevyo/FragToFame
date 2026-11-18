@@ -332,8 +332,15 @@ depend on the corresponding gameplay and world simulation systems.
     starts), tracking lane (30 s strafing target) and a movement course (checkpoints, falls
     reset to the last one, par time). Each is played in the FPS and scored 1–100.
   - **Scrims:** MR8 5v5 against an organisation near your tier, your teammates as bots.
-  - Every session is recorded with its measured numbers and personal bests. Each day's first
-    session of a drill is evidence for the world's view of your aim, reaction or movement.
+  - Every session is recorded with its measured numbers and personal bests, and every session
+    is evidence for the world's view of your aim, reaction or movement. There are no fixed
+    steps (owner, 2026-11-18: "it should be based off of how everything goes"). How far a run
+    moves the view depends on its gap from what the world believes, how sure the world is,
+    whether it fits your record or looks like a fluke, how often you ran it today and whether it
+    was reviewed.
+  - Scrims with your own team move each teammate's feelings toward you. The change comes from
+    the result and margin, how you played against them, and who they are: temperament, ego,
+    sociability, professionalism, mood and your existing relationship.
   - Training maps are editable in the Creation Studio (new course start, checkpoint and finish
     pieces). Save schema v13.
 - [x] Offer one scouting report per career day in Players. Reports refine estimates toward AI
@@ -524,13 +531,14 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
     (podiums); player pages list honours.
 - [x] Spending the human's own money (`CareerSpending`), with income from salary, season
       bonuses and amateur wins ($150 each). Effects stay on the career layer only:
-  - personal coach ($600 a month): a drill's daily evidence moves up to 5 points instead of 3;
+  - personal coach ($600 a month): your drills are reviewed, so each one says more about you;
   - PR agent ($400 a month): reputation +1 a month below 70;
   - bootcamp ($2,500, every 180 days): a week-long programme of real sessions you play
-    yourself (every drill and a scrim within 7 days; owner, 2026-11-18). Each programme item
-    counts as reviewed evidence even past the daily limit. Finishing it raises the world's
-    confidence in its view of you and your bond with each teammate. Booking alone changes
-    nothing. Save schema v15.
+    yourself (every drill and a scrim within 7 days; owner, 2026-11-18). Programme sessions
+    are reviewed by the camp's staff. Finishing it judges the week as a whole: confidence
+    follows how steady you were, the verdict follows how you did against your reputation, and
+    each teammate reacts according to their professionalism and how well you worked. Booking
+    alone changes nothing. Save schema v15.
 
   Services you cannot pay end, with a headline.
 - [x] Cup prize money and promotion and relegation from final tables (see M13).
@@ -664,6 +672,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | No fixed rates in training: evidence, confidence, scrim relationships and the bootcamp's outcome all follow how the sessions went and who the people are. |
 | 2026-11-18 | Bootcamp is real training: a week's programme of drills and a scrim you play, tracked on the Training Ground. Save schema v15. |
 | 2026-11-18 | M14: people. Personality, drive, goal, mood, relationships, life events and interviews for every AI professional, feeding the market and match chemistry. Save schema v14. |
 | 2026-11-18 | Real training: flick, reaction, tracking and movement drills and 5v5 scrims played in the FPS, measured and recorded. Collapsible sidebar headings. Save schema v13. |

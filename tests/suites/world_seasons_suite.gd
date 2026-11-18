@@ -134,10 +134,11 @@ func _test_career(app: Node) -> void:
 	var focus := &"movement"
 	var seen_before := int(repo.perceived(player_id).get(focus, 0))
 	var run := TrainingResult.make(TrainingDrills.MOVEMENT, {"finished": true, "time": 20.0, "par": 30.0}, true)
+	var unreviewed := CareerTraining.assess(run.score, seen_before, repo.perceived_confidence(player_id), [] as Array[int], 0, false)
 	CareerTraining.record(repo, player_id, run)
-	check(int(repo.perceived(player_id)[focus]) == seen_before + clampi(run.score - seen_before,
-		-CareerTraining.COACH_EVIDENCE_STEP, CareerTraining.COACH_EVIDENCE_STEP),
-		"with a coach, a drill's evidence moves the attribute by up to %d" % CareerTraining.COACH_EVIDENCE_STEP)
+	var coached := int(repo.perceived(player_id)[focus]) - seen_before
+	check(absi(coached) >= absi(int(unreviewed["change"])) and signi(coached) == signi(run.score - seen_before),
+		"with a coach, a drill says more about you (%+d against %+d unreviewed)" % [coached, int(unreviewed["change"])])
 	check(CareerSpending.hire(repo, player_id, "pr_agent").is_empty(), "a PR agent is hired")
 	var rep_before := repo.reputation(player_id)
 	var month_funds := repo.player_balance(player_id)

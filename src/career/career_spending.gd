@@ -23,10 +23,8 @@ const BOOTCAMP_COOLDOWN: int = 180
 const BOOTCAMP_PROGRAMME: Array[StringName] = [TrainingDrills.FLICK, TrainingDrills.REACTION, TrainingDrills.TRACKING,
 	TrainingDrills.MOVEMENT, TrainingDrills.SCRIM]
 const BOOTCAMP_DAYS: int = 7
-## Finishing the whole programme: more confidence in the world's view of you, and a closer bond
-## with each teammate (a week together).
-const BOOTCAMP_CONFIDENCE: int = 5
-const BOOTCAMP_BOND: int = 10
+## Programme sessions are reviewed by the camp's staff; what finishing it does depends on how
+## the week went ([CareerTraining]).
 ## Amateur match winnings (paid to the human for each win).
 const AMATEUR_WIN_PRIZE: int = 150
 

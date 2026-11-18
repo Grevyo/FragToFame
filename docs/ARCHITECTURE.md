@@ -552,8 +552,14 @@ sit beside small appliers, so the maths is tested without a database:
   expires, as a headline.
 - **Monthly (`WorldDevelopment`):** growth towards potential by age, mechanical decline from 30,
   experience decline from 33 (`player_ability_history` keeps the overall). Perceived values
-  drift towards the truth; confidence grows to the tier cap. Reputation drifts towards the tier
+  drift towards the truth, scaled by `exposure` (maps watched that month, from
+  `sim_player_map`). `confidence_after` closes part of the room to the tier's visibility cap
+  per map watched and lets an unseen player's read go stale. Reputation drifts towards the tier
   range.
+- **Scouting and PR follow evidence:** `CareerDevelopment.scout_report` (pure) weighs the
+  subject's maps in the last 90 days and tier visibility, so thin evidence moves estimates less
+  and can misread. `CareerSpending.pr_effect` (pure) sells the human's month
+  (`form_since`: maps, rating, wins) against the gap between reputation and perceived level.
 - **Money (`WorldFinance`):** balances live in `organisation_finance` and `player_finance`. Every
   movement is a `finance_ledger` row, so a balance always equals its ledger sum. `ensure` gives
   organisations without finances an opening balance, which covers older saves. Monthly: income

@@ -32,6 +32,7 @@ func _check_career(app: Node) -> void:
 	var repo := session.repo
 	var player_id := session.human_player_id
 	_check_assess()
+	_check_scout_report()
 	check(CareerDevelopment.current_elo(repo, player_id) == 1200,
 		"starting amateur ELO reflects the career difficulty")
 	var human_before := repo.perceived(player_id)
@@ -53,8 +54,8 @@ func _check_career(app: Node) -> void:
 		"a played drill is evidence: perceived aim moves toward the drill score (%d → %d, score %d)" % [human_before[&"aim"], trained[&"aim"], flick.score])
 	CareerTraining.record(repo, player_id, flick)
 	var sessions := repo.training_sessions(player_id)
-	check(sessions.size() == 2 and absi(int(sessions[0]["evidence"])) <= absi(int(sessions[1]["evidence"])),
-		"every session is recorded; a repeat run the same day says no more than the first")
+	check(sessions.size() == 2 and signi(int(sessions[0]["evidence"])) * signi(gap) >= 0,
+		"every session is recorded and counts; how much a repeat says is weighed by assess")
 	trained = repo.perceived(player_id)
 	check(CareerTraining.record(repo, player_id, TrainingResult.make(TrainingDrills.FLICK, {}, false)).begins_with("Session not completed")
 		and repo.training_sessions(player_id).size() == 2, "an abandoned drill is not recorded")
@@ -77,14 +78,17 @@ func _check_career(app: Node) -> void:
 	check(scout != null, "an AI player's profile offers scouting")
 	if scout == null:
 		return
+	var gap_before := _distance(opinions, abilities)
 	scout.pressed.emit()
 	var revised := repo.perceived(subject_id)
-	check(absi(revised[&"aim"] - actual) == absi(prior - actual) - 4
-		and repo.perceived_confidence(subject_id) == 42,
-		"the report improves confidence and moves the estimate toward observed ability")
+	var first_confidence := repo.perceived_confidence(subject_id)
+	check(_distance(revised, abilities) < gap_before and absi(revised[&"aim"] - actual) < absi(prior - actual)
+		and first_confidence > 30,
+		"the report improves confidence and moves the estimates toward observed ability (%d → %d off; confidence 30 → %d)" % [
+			gap_before, _distance(revised, abilities), first_confidence])
 	check(repo.abilities(subject_id) == abilities and not revised.has(CareerCatalog.POTENTIAL),
 		"scouting preserves true ability and keeps potential private")
-	check(repo.last_scout_report(player_id, subject_id).get("change") == 12
+	check(repo.last_scout_report(player_id, subject_id).get("change") == first_confidence - 30
 		and not CareerDevelopment.scout(repo, player_id, subject_id).is_empty(),
 		"scouting persists the report and enforces one report per day")
 	check(not CareerDevelopment.scout(repo, player_id, player_id).is_empty(), "scouting refuses human profiles")
@@ -97,14 +101,15 @@ func _check_career(app: Node) -> void:
 	if session == null:
 		return
 	check(session.repo.perceived(player_id)[&"aim"] == trained[&"aim"]
-		and session.repo.perceived_confidence(subject_id) == 42
+		and session.repo.perceived_confidence(subject_id) == first_confidence
 		and not session.repo.last_scout_report(player_id, subject_id).is_empty(),
 		"training and scouting changes survive reopening the save")
 	CareerTraining.record(session.repo, player_id, TrainingResult.make(TrainingDrills.REACTION,
 		{"reps_hit": 12, "average_ms": 210.0}, true))
 	check(int(session.repo.training_sessions(player_id)[0]["evidence"]) != 0
 		and CareerDevelopment.scout(session.repo, player_id, subject_id).is_empty()
-		and session.repo.perceived_confidence(subject_id) == 54,
+		and session.repo.perceived_confidence(subject_id) > first_confidence
+		and session.repo.perceived_confidence(subject_id) - first_confidence <= first_confidence - 30,
 		"the next career day permits another training session and report")
 	await _check_bootcamp(app, session, player_id)
 
@@ -153,6 +158,34 @@ func _check_bootcamp(app: Node, session: CareerSession, player_id: String) -> vo
 	check(not bool(camp["active"]) and not bool(camp["complete"]) and (camp["done"] as Array).is_empty()
 		and not CareerTraining.record(repo, player_id, reaction).contains("bootcamp"),
 		"an unplayed bootcamp lapses after its week")
+
+
+## Total distance between two ability maps (over the first's abilities, potential excluded).
+func _distance(seen: Dictionary, truth: Dictionary) -> int:
+	var total := 0
+	for ability: StringName in CareerCatalog.ABILITIES:
+		if seen.has(ability) and truth.has(ability):
+			total += absi(int(seen[ability]) - int(truth[ability]))
+	return total
+
+
+## Scouting learns as much as there is to watch.
+func _check_scout_report() -> void:
+	section("How much a scouting report learns")
+	var truth: Dictionary = {}
+	var seen: Dictionary = {}
+	for ability: StringName in CareerCatalog.ABILITIES:
+		truth[ability] = 70
+		seen[ability] = 50
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4
+	var watched := CareerDevelopment.scout_report(seen, truth, 30, 14, 1, rng)
+	var unseen := CareerDevelopment.scout_report(seen, truth, 30, 0, 0, rng)
+	check(_distance(watched["revised"], truth) < _distance(unseen["revised"], truth) and int(watched["gain"]) > int(unseen["gain"]),
+		"a regular on a big stage is read better than a player nobody has watched (%d vs %d off)" % [
+			_distance(watched["revised"], truth), _distance(unseen["revised"], truth)])
+	check(int(CareerDevelopment.scout_report(seen, truth, 80, 14, 1, rng)["gain"]) < int(watched["gain"]),
+		"a report adds less confidence when the world is already sure")
 
 
 ## Evidence comes from how a session went, not from fixed steps.

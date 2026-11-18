@@ -9,8 +9,11 @@ const SCOUTING: String = "scouting"
 const STARTING_ELO: Dictionary[StringName, int] = {&"grind": 800, &"standard": 1000, &"prospect": 1200}
 const ELO_K: float = 32.0
 const SCOUT_CONFIDENCE_LIMIT: int = 95
-const SCOUT_CONFIDENCE_GAIN: int = 12
-const SCOUT_STEP: int = 4
+## How visible each tier is to a scout before counting maps (bigger stage, more footage).
+const SCOUT_VISIBILITY: Dictionary[int, float] = {1: 0.2, 2: 0.15, 3: 0.1, 4: 0.05, 0: 0.0}
+## Maps in the last [constant SCOUT_WINDOW] days that give a scout a full picture.
+const SCOUT_FULL_MAPS: float = 12.0
+const SCOUT_WINDOW: int = 90
 
 
 ## Existing careers use the difficulty baseline until their first recorded fixture.
@@ -36,25 +39,45 @@ static func scout(repo: CareerRepository, player_id: String, subject_id: String)
 			warning.append("There is no scouting evidence for this player.")
 			return false
 		var seen := repo.perceived(subject_id)
-		var revised: Dictionary = {}
-		var changed := false
-		for ability: StringName in CareerCatalog.ABILITIES:
-			if truth.has(ability):
-				var estimate: int = seen.get(ability, 50)
-				var actual := truth[ability]
-				revised[ability] = estimate + clampi(actual - estimate, -SCOUT_STEP, SCOUT_STEP)
-				changed = changed or not seen.has(ability) or revised[ability] != estimate
+		var day := repo.current_day()
+		var contract := repo.active_contract(subject_id)
+		var org := repo.get_organisation(contract.organisation_id) if contract != null else null
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%s|scout|%s|%d" % [player_id, subject_id, day])
 		var previous_confidence := repo.perceived_confidence(subject_id)
-		var confidence := _confidence_after(previous_confidence, SCOUT_CONFIDENCE_GAIN)
+		var report := scout_report(seen, truth, previous_confidence, int(repo.form_since(subject_id, day - SCOUT_WINDOW)["maps"]),
+			org.tier if org != null else 0, rng)
+		var revised: Dictionary = report["revised"]
+		var changed := false
+		for ability: Variant in revised:
+			changed = changed or not seen.has(ability) or revised[ability] != seen[ability]
+		var confidence := _confidence_after(previous_confidence, int(report["gain"]))
 		if revised.is_empty() or (not changed and confidence == previous_confidence):
 			warning.append("This player's scouting report is already up to date.")
 			return false
-		var day := repo.current_day()
 		return repo.add_development_activity(player_id, SCOUTING, day, subject_id, "",
 			confidence - previous_confidence) and repo.set_perceived(subject_id, revised, confidence, day))
 	if saved:
 		return ""
 	return warning[0] if not warning.is_empty() else "Could not record the scouting report."
+
+
+## What one scouting report learns: {revised, gain, evidence}. Evidence is how much there is
+## to watch: the player's recent maps plus their tier's visibility. Each estimate moves part of
+## the way to the truth (further with more evidence), and a scout with little to watch can
+## misread. Confidence grows with the evidence and less when the world is already sure. Pure.
+static func scout_report(seen: Dictionary, truth: Dictionary, confidence: int, maps: int, tier: int,
+		rng: RandomNumberGenerator) -> Dictionary:
+	var evidence := clampf(minf(maps / SCOUT_FULL_MAPS, 1.0) * 0.8 + float(SCOUT_VISIBILITY.get(tier, 0.0)), 0.05, 1.0)
+	var share := 0.2 + 0.5 * evidence
+	var revised: Dictionary = {}
+	for ability: StringName in CareerCatalog.ABILITIES:
+		if truth.has(ability):
+			var estimate: int = seen.get(ability, 50)
+			var misread := rng.randf_range(-1.0, 1.0) * (1.0 - evidence) * 4.0
+			revised[ability] = clampi(estimate + roundi((int(truth[ability]) - estimate) * share + misread), 1, 100)
+	var openness := 1.0 - clampf(confidence / 100.0, 0.0, 0.95)
+	return {"revised": revised, "gain": roundi((4.0 + 16.0 * evidence) * openness), "evidence": evidence}
 
 
 ## Called once by fixture publication, inside its transaction and after telemetry validation.

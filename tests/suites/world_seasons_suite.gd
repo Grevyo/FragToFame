@@ -143,8 +143,17 @@ func _test_career(app: Node) -> void:
 	var rep_before := repo.reputation(player_id)
 	var month_funds := repo.player_balance(player_id)
 	check(CareerSpending.monthly(repo, repo.current_day()) and repo.player_balance(player_id) == month_funds - 1000
-		and repo.reputation(player_id) == mini(rep_before + 1, maxi(rep_before, CareerSpending.PR_REPUTATION_CAP)),
-		"each month the services are charged and the PR agent lifts reputation")
+		and absi(repo.reputation(player_id) - rep_before) <= 4,
+		"each month the services are charged and the PR agent works with your month (%d → %d)" % [rep_before, repo.reputation(player_id)])
+	var pr_rng := RandomNumberGenerator.new()
+	pr_rng.seed = 6
+	var busy := {"maps": 10, "rating": 1.3, "wins": 7}
+	var quiet := {"maps": 0, "rating": 0.0, "wins": 0}
+	check(CareerSpending.pr_effect(busy, 40, 60, pr_rng) > CareerSpending.pr_effect(quiet, 40, 60, pr_rng),
+		"a PR agent does more with a strong, busy month than with nothing to sell")
+	check(CareerSpending.pr_effect(busy, 40, 60, pr_rng) > CareerSpending.pr_effect(busy, 58, 60, pr_rng)
+		and CareerSpending.pr_effect(busy, 85, 55, pr_rng) < 0,
+		"spin works when your reputation lags your level and backfires when it is far ahead")
 	var camp_seen := repo.perceived(player_id)
 	check(CareerSpending.buy_bootcamp(repo, player_id).is_empty() and repo.perceived(player_id) == camp_seen
 		and bool(CareerSpending.bootcamp_state(repo, player_id)["active"]),

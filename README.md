@@ -342,7 +342,9 @@ from spawn, so rounds often start with a long-range fight.
 - [ ] From **Career Hub → Player Profile**, pick a focus and choose **Train today**. Check that
       the selected perceived attribute increases and training is marked complete for the day.
 - [ ] From **Players**, select an AI professional and choose **Scout player**. Verify that the
-      report updates confidence and the perceived attributes, and persists after reopening.
+      report updates confidence and the perceived attributes, and persists after reopening. A
+      tier-1 regular is read closely; a player who has barely played is read loosely, and the
+      estimate can even move the wrong way.
 - [ ] Complete an amateur fixture. Check the ELO change on Home and the recorded rating in
       Statistics. Verify that training and scouting are available on the new career day.
 
@@ -486,8 +488,9 @@ from spawn, so rounds often start with a long-range fight.
       their profile lists the honour.
 - [ ] Win an amateur match: Profile → **Your money** rises by $150.
 - [ ] Hire a **Personal coach**: the first month is charged, and each drill now says more about
-      you (a bigger "World's view" change for the same run). Hire a **PR agent**: on the 1st your reputation rises by 1 and both
-      fees are charged.
+      you (a bigger "World's view" change for the same run). Hire a **PR agent**: on the 1st both fees are charged. Your
+      reputation moves with the month you had: a busy, strong month sells best, a quiet one
+      barely moves it, and a reputation far above your level can drop.
 - [ ] Book a **Bootcamp**: nothing changes by itself. The button shows when the next one is
       available, and the Training Ground shows a Bootcamp card (0 of 5, days left).
 - [ ] Play each drill and a scrim within the week: each first session says "bootcamp session

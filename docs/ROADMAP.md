@@ -345,6 +345,8 @@ depend on the corresponding gameplay and world simulation systems.
     pieces). Save schema v13.
 - [x] Offer one scouting report per career day in Players. Reports refine estimates toward AI
       ability and increase confidence while preserving underlying ability and hidden potential.
+      How far they move and how much confidence they add depends on the evidence: the player's
+      maps in the last 90 days and their tier's visibility. Thin evidence can misread.
 - [x] Persist career development in schema v5 and test daily limits, save reload, successful,
       duplicate and failed match publication, and the absence of human simulated abilities.
 - [ ] Manual training, scouting and match progression walkthrough.
@@ -401,8 +403,9 @@ First slice — the living world (`WorldSimulation`, run for every day by `Caree
       range; free agents fade; signed players converge on their organisation.
 - [x] Development: monthly growth towards hidden potential while young (fast to 20, slower to 28),
       decline of mechanical abilities from 30 and of experience abilities from 33. Overall history
-      is recorded. Perceived values drift towards the truth; contracted players gain scouting
-      confidence up to their tier's cap.
+      is recorded. Perceived values drift towards the truth, faster for players the world
+      watched play that month. Confidence grows with maps played, up to their tier's visibility
+      cap, and goes stale in months a player is not seen.
 - [x] Market: expiring contracts are renewed or released (age, role and level decide). Organisations
       short of five starters promote a substitute or sign the best fitting free agent (perceived
       rating, role fit, region). Salaries follow tier and rating.
@@ -532,7 +535,8 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
 - [x] Spending the human's own money (`CareerSpending`), with income from salary, season
       bonuses and amateur wins ($150 each). Effects stay on the career layer only:
   - personal coach ($600 a month): your drills are reviewed, so each one says more about you;
-  - PR agent ($400 a month): reputation +1 a month below 70;
+  - PR agent ($400 a month): sells your month (maps played, rating, wins). It works best while
+    your reputation lags your perceived level and backfires when it runs far ahead;
   - bootcamp ($2,500, every 180 days): a week-long programme of real sessions you play
     yourself (every drill and a scrim within 7 days; owner, 2026-11-18). Programme sessions
     are reviewed by the camp's staff. Finishing it judges the week as a whole: confidence
@@ -672,6 +676,7 @@ Planned scope:
 | 2026-11-17 | M14: organisation finances, transfer fees, human salary and contract talks. Save schema v9. |
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
+| 2026-11-18 | No fixed rates, continued: the PR agent, scouting reports and the world's monthly confidence follow evidence (maps played, form, visibility, the gap between reputation and level). |
 | 2026-11-18 | No fixed rates in training: evidence, confidence, scrim relationships and the bootcamp's outcome all follow how the sessions went and who the people are. |
 | 2026-11-18 | Bootcamp is real training: a week's programme of drills and a scrim you play, tracked on the Training Ground. Save schema v15. |
 | 2026-11-18 | M14: people. Personality, drive, goal, mood, relationships, life events and interviews for every AI professional, feeding the market and match chemistry. Save schema v14. |

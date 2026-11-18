@@ -25,8 +25,8 @@ const LATE_DECLINE_SHARE: float = 0.3
 ## Perceived values move one point towards the truth with this chance plus a confidence share.
 const DRIFT_BASE: float = 0.2
 const DRIFT_CONFIDENCE: float = 0.5
-## Monthly scouting confidence gain for players under contract (capped by their tier).
-const CONFIDENCE_GAIN: int = 1
+## Maps in a month at which opinions drift and confidence grows at full pace.
+const FULL_EXPOSURE_MAPS: float = 8.0
 ## Retirement: chance per year of age past this, certainty-ish at the hard age, extra for
 ## unsigned players who are not good enough to keep going.
 const RETIREMENT_START_AGE: int = 28
@@ -88,9 +88,10 @@ static func develop(truth: Dictionary, age: int, role: StringName, rng: RandomNu
 
 ## Opinion catching up with reality: each perceived ability may move a point towards the truth.
 ## Returns only the abilities that changed.
-static func drift(seen: Dictionary, truth: Dictionary, confidence: int, rng: RandomNumberGenerator) -> Dictionary:
+static func drift(seen: Dictionary, truth: Dictionary, confidence: int, rng: RandomNumberGenerator,
+		exposure: float = 1.0) -> Dictionary:
 	var changes: Dictionary = {}
-	var chance := DRIFT_BASE + DRIFT_CONFIDENCE * clampf(confidence / 100.0, 0.0, 1.0)
+	var chance := (DRIFT_BASE + DRIFT_CONFIDENCE * clampf(confidence / 100.0, 0.0, 1.0)) * clampf(exposure, 0.0, 1.0)
 	for ability: StringName in CareerCatalog.ABILITIES:
 		if not seen.has(ability) or not truth.has(ability):
 			continue
@@ -98,6 +99,21 @@ static func drift(seen: Dictionary, truth: Dictionary, confidence: int, rng: Ran
 		if difference != 0 and rng.randf() < chance:
 			changes[ability] = int(seen[ability]) + signi(difference)
 	return changes
+
+
+## How much the world saw of a player in a month (0.4..1): mostly the maps they played. Even an
+## unseen month leaves something (online play, streams, word of mouth).
+static func exposure(maps: int) -> float:
+	return 0.4 + 0.6 * minf(maps / FULL_EXPOSURE_MAPS, 1.0)
+
+
+## The world's confidence in a player after a month. Every map watched closes part of the
+## room to the tier's visibility ceiling [param cap]; a month unseen lets the view go stale.
+static func confidence_after(confidence: int, maps: int, cap: int, rng: RandomNumberGenerator) -> int:
+	if maps == 0:
+		return confidence - (1 if confidence > cap / 2 and rng.randf() < 0.3 else 0)
+	var room := maxf(cap - confidence, 0.0)
+	return confidence + roundi(room * minf(maps / FULL_EXPOSURE_MAPS, 1.5) * 0.2)
 
 
 ## Chance an AI player retires at the turn of the year.
@@ -116,6 +132,7 @@ static func retirement_chance(age: int, rating: int, has_contract: bool) -> floa
 static func monthly(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
 	var truths := repo.all_abilities()
 	var opinions := repo.all_perceived()
+	var watched := repo.maps_since(day - 30)
 	for found: Dictionary in repo.ai_players():
 		var id := str(found["id"])
 		var truth: Dictionary = truths.get(id, {})
@@ -135,8 +152,9 @@ static func monthly(repo: CareerRepository, day: int, rng: RandomNumberGenerator
 		var confidence := repo.perceived_confidence(id)
 		var tier := int(found["tier"]) if found["tier"] != null else 0
 		var cap: int = CareerStart.TIER_CONFIDENCE.get(tier, CareerStart.TIER_CONFIDENCE[0])
-		var new_confidence := mini(confidence + CONFIDENCE_GAIN, maxi(cap, confidence)) if tier > 0 else confidence
-		var revised := drift(seen, truth, confidence, rng)
+		var maps := int(watched.get(id, 0))
+		var new_confidence := confidence_after(confidence, maps, cap, rng)
+		var revised := drift(seen, truth, confidence, rng, exposure(maps))
 		if revised.is_empty() and new_confidence == confidence:
 			continue
 		seen.merge(revised, true)

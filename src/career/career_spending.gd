@@ -10,10 +10,11 @@ extends RefCounted
 
 ## id → [name, monthly fee, what it does]
 const SERVICES: Dictionary[String, Array] = {
-	"coach": ["Personal coach", 600, "Reviews your drills: each day's first session of a drill teaches the world more about you (larger step)."],
-	"pr_agent": ["PR agent", 400, "Reputation +1 each month while below 70, so organisations notice you sooner."],
+	"coach": ["Personal coach", 600, "Reviews your drills, so each session says more about you to the world."],
+	"pr_agent": ["PR agent", 400, "Sells your month to the scene: the more you played and the better you did, the more your reputation grows. Hype beyond your level backfires."],
 }
-const PR_REPUTATION_CAP: int = 70
+## How far (points) reputation may run ahead of perceived ability before PR spin turns on you.
+const PR_HYPE_RANGE: float = 15.0
 ## Bootcamp: a week-long programme of real sessions, played by you ([CareerTraining]). Booking it
 ## opens the programme; what you get out of it is what you play.
 const BOOTCAMP_ID: String = "bootcamp"
@@ -110,7 +111,25 @@ static func monthly(repo: CareerRepository, day: int) -> bool:
 			continue
 		if not repo.add_player_money(player_id, -fee, day, "expense", service_name(service_id)):
 			return false
-		var reputation := repo.reputation(player_id)
-		if service_id == "pr_agent" and reputation < PR_REPUTATION_CAP and not repo.set_reputation(player_id, reputation + 1, day):
-			return false
+		if service_id == "pr_agent":
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%s|pr|%d" % [player_id, day])
+			var reputation := repo.reputation(player_id)
+			var change := pr_effect(repo.form_since(player_id, day - 30), reputation, repo.perceived_rating(player_id), rng)
+			if change != 0 and not repo.set_reputation(player_id, clampi(reputation + change, 0, 100), day):
+				return false
 	return true
+
+
+## What a month of PR does to reputation. The agent sells the story you gave them: how much you
+## played, how well ([param form] from [method CareerRepository.form_since]) and how often you
+## won. It works best when your reputation lags what the world thinks of your ability; with
+## nothing to sell little happens, and hype far beyond your level backfires. Pure.
+static func pr_effect(form: Dictionary, reputation: int, ability: int, rng: RandomNumberGenerator) -> int:
+	var maps := int(form.get("maps", 0))
+	var material := 0.3
+	if maps > 0:
+		material = clampf(float(form.get("rating", 1.0)), 0.3, 2.0) * (0.6 + 0.4 * minf(maps / 8.0, 1.0)) \
+			+ 0.5 * float(form.get("wins", 0)) / maps
+	var headroom := clampf((ability - reputation) / PR_HYPE_RANGE, -1.5, 1.0)
+	return roundi(material * (1.0 + headroom) * 1.2 + rng.randf_range(-0.5, 0.5))

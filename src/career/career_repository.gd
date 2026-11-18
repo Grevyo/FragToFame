@@ -1272,6 +1272,28 @@ func training_count(player_id: String, drill_id: String, day: int) -> int:
 		[player_id, drill_id, day], 0))
 
 
+## A player's maps since [param since_day]: {maps, rating (average F2F rating), wins}. Simulated
+## lines and played career fixtures both count (a played map is counted once).
+func form_since(player_id: String, since_day: int) -> Dictionary:
+	var sim := db.row("""SELECT COUNT(*) AS maps, COALESCE(SUM(rating), 0) AS total, COALESCE(SUM(won), 0) AS wins
+		FROM sim_player_map WHERE player_id = ? AND day >= ?;""", [player_id, since_day])
+	var played := db.row("""SELECT COUNT(*) AS maps, COALESCE(SUM(r.rating), 0) AS total FROM career_match_rating r
+		JOIN career_fixture f ON f.id = r.fixture_id WHERE r.player_id = ? AND f.scheduled_day >= ?
+		AND NOT EXISTS (SELECT 1 FROM sim_player_map s WHERE s.career_fixture_id = r.fixture_id AND s.player_id = r.player_id);""",
+		[player_id, since_day])
+	var maps := int(sim.get("maps", 0)) + int(played.get("maps", 0))
+	var total := float(sim.get("total", 0.0)) + float(played.get("total", 0.0))
+	return {"maps": maps, "rating": total / maps if maps > 0 else 0.0, "wins": int(sim.get("wins", 0))}
+
+
+## Maps each player was seen playing since [param since_day] (simulated lines), by player id.
+func maps_since(since_day: int) -> Dictionary[String, int]:
+	var counts: Dictionary[String, int] = {}
+	for found: Dictionary in db.rows("SELECT player_id, COUNT(*) AS maps FROM sim_player_map WHERE day >= ? GROUP BY player_id;", [since_day]):
+		counts[str(found["player_id"])] = int(found["maps"])
+	return counts
+
+
 ## Your latest [param limit] scores for a drill, newest first (your record for it).
 func training_scores(player_id: String, drill_id: String, limit: int) -> Array[int]:
 	var scores: Array[int] = []

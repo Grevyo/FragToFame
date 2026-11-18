@@ -74,6 +74,22 @@ func _test_development_rules() -> void:
 	check(WorldDevelopment.overall(seen) == 60, "the world's opinion catches up with the truth over time")
 	check(WorldDevelopment.drift(truth.duplicate(), truth, 90, rng).is_empty(), "an accurate opinion does not move")
 
+	var seen_rng := RandomNumberGenerator.new()
+	seen_rng.seed = 12
+	check(WorldDevelopment.confidence_after(40, 10, 66, seen_rng) > WorldDevelopment.confidence_after(40, 2, 66, seen_rng)
+		and WorldDevelopment.confidence_after(40, 2, 66, seen_rng) > 40,
+		"the more maps the world watches, the surer it gets")
+	check(WorldDevelopment.confidence_after(70, 10, 66, seen_rng) == 70, "confidence does not grow past what a tier lets the world see")
+	var stale := 60
+	for month: int in 12:
+		stale = WorldDevelopment.confidence_after(stale, 0, 66, seen_rng)
+	check(stale < 60, "a player nobody watches becomes a stale read (60 → %d)" % stale)
+	var watched_moves := 0
+	var benched_moves := 0
+	for trial: int in 40:
+		watched_moves += WorldDevelopment.drift(_truth(40, 0), _truth(60, 70), 50, seen_rng, WorldDevelopment.exposure(10)).size()
+		benched_moves += WorldDevelopment.drift(_truth(40, 0), _truth(60, 70), 50, seen_rng, WorldDevelopment.exposure(0)).size()
+	check(watched_moves > benched_moves * 2, "opinions of players who play catch up faster than of benched ones")
 	check(WorldDevelopment.retirement_chance(24, 70, true) == 0.0, "young professionals do not retire")
 	check(WorldDevelopment.retirement_chance(33, 70, true) > WorldDevelopment.retirement_chance(30, 70, true),
 		"retirement gets likelier with age")

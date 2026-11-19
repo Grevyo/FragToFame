@@ -28,6 +28,7 @@ func run() -> void:
 	await _test_studio_tools()
 	await _test_draw_tools()
 	await _test_snap_placement()
+	await _test_lower_floor_snap()
 	await _test_geometry_palette_and_textures()
 	await _test_tactic_compatibility()
 	await _test_playtest_options()
@@ -656,6 +657,21 @@ func _test_analysis() -> void:
 	ledge.add_piece(_piece("stairs_stone", Vector3(10, 0, 13), Vector3(3, 0.6, 4)))
 	var fixed := MapAnalysis.analyse(ledge, host)
 	check(fixed.issues.is_empty() and fixed.is_reachable(Vector3(10, 0.6, 8)), "adding stairs clears the warning (%s)" % str(fixed.issues))
+	var solid_routes := _arena("Solid industrial routes")
+	solid_routes.add_piece(_piece("ramp", Vector3(8, 0, 2), Vector3(5, 5, 16)))
+	solid_routes.add_piece(_piece("stairs", Vector3(-8, 0, 2), Vector3(5, 5, 12), 180))
+	solid_routes.add_piece(_piece("column", Vector3(4, 0, -3), Vector3(3, 4.7, 3)))
+	var industrial := MapAnalysis.analyse(solid_routes, host)
+	check(industrial.issues.is_empty() and industrial.is_reachable(Vector3(8, 2.5, 2))
+		and industrial.is_reachable(Vector3(-8, 2.5, 2)),
+		"solid ramps and stairs stay walkable without reporting pockets inside them or a column (%s)" % str(industrial.issues))
+
+	var steep_map := _arena("Steep stair")
+	steep_map.add_piece(_piece("stairs_stone", Vector3(10, 0, 6), Vector3(3, 4, 8)))
+	var steep := MapAnalysis.analyse(steep_map, host).issues_with("steep_slope")
+	check(MapAnalysis.bot_slope_limit() > 20.0 and MapAnalysis.bot_slope_limit() < 26.6 and steep.size() == 1
+		and str(steep[0]["text"]).contains("lengthen it to"),
+		"a stair steeper than the bots can follow is reported with the length it needs (%s)" % str(steep))
 
 	var off := _arena("Off mesh")
 	off.add_piece(_piece("spawn_attack", Vector3(40, 0, 0)))
@@ -1075,6 +1091,62 @@ func _test_snap_placement() -> void:
 	var platform: String = studio.call("place_at", anchor)
 	check(is_equal_approx(MapDocument.piece_aabb(ctl.document.get_piece(platform)).position.y, anchor.y),
 		"raised platforms place by their base")
+	var view := studio.get_node("MapView") as MapEditorView
+	var doorway := ctl.add_piece(_piece("doorway", Vector3(18, 5, 3), Vector3(8, 4, 0.6), 90,
+		{"opening_width": 5.0, "opening_height": 3.0}))
+	var equipment := ctl.add_piece(_piece("block", Vector3(14, 5, 3)))
+	check(view.pick(Vector3(22, 6, 3), Vector3.LEFT).get("piece_id") == equipment
+		and view.pick(Vector3(22, 6, 6), Vector3.LEFT).get("piece_id") == doorway,
+		"picking through a raised, rotated doorway reaches the equipment, and its frame is selectable")
+	await despawn(studio)
+
+
+func _test_lower_floor_snap() -> void:
+	section("Creation Studio: stacked floors and sloped placement")
+	var studio := spawn_scene(STUDIO)
+	if studio == null:
+		return
+	await wait_frames(2)
+	var ctl := studio.get("controller") as MapEditController
+	var camera := studio.get_node("EditorCamera") as EditorFlyCamera
+	var view := studio.get_node("MapView") as MapEditorView
+	ctl.set_document(MapDocument.create("Lower floor snap"))
+	ctl.add_piece(_piece("ramp", Vector3(4, -4, -4), Vector3(4, 4, 8)))
+	var upper_layer := ctl.add_layer("Upper slab")
+	var slab := _piece("floor", Vector3(4, 1.8, -4), Vector3(6, 0.2, 10))
+	slab["layer"] = upper_layer
+	ctl.add_piece(slab)
+	studio.call("set_overhead", true)
+	studio.call("_set_snap", 1.0)
+	var cursor := camera.unproject_position(Vector3(4.2, -2.2, -3.6))
+	var upper: Variant = studio.call("placement_point", cursor)
+	check(upper is Vector3 and (upper as Vector3).is_equal_approx(Vector3(4, 2, -4)),
+		"the visible upper slab takes precedence (%s)" % str(upper))
+	ctl.set_layer_field(upper_layer, "visible", false)
+	var lower: Variant = studio.call("placement_point", cursor)
+	check(lower is Vector3 and (lower as Vector3).is_equal_approx(Vector3(4, -2, -4)),
+		"hiding the upper layer snaps to the lower ramp at the snapped X/Z (%s)" % str(lower))
+	check(view.pick(Vector3(1, -1, -3.6), Vector3.RIGHT).is_empty(), "the empty space above a ramp does not intercept selection")
+	studio.call("_on_piece_type_selected", "crate")
+	var crate := str(studio.call("place_at", lower))
+	check((ctl.document.get_piece(crate)["position"] as Vector3).is_equal_approx(Vector3(4, -2, -4)),
+		"placing a crate uses the same ramp height as the cursor")
+
+	ctl.add_piece(PolygonSurface.piece(PackedVector3Array([
+		Vector3(14, -4, 0), Vector3(18, -2, 0), Vector3(18, -2, 1.75),
+		Vector3(16, -3, 1.75), Vector3(16, -3, 4), Vector3(14, -4, 4),
+	]), 0.2))
+	var on_surface: Variant = view.surface_anchor(Vector3(17.2, 4, 1.1), Vector3.DOWN, 1.0)
+	check(on_surface is Vector3 and (on_surface as Vector3).is_equal_approx(Vector3(17, -2.5, 1)),
+		"a drawn slope also uses the height at the snapped grid intersection (%s)" % str(on_surface))
+	check(view.surface_anchor(Vector3(17.2, 4, 1.67), Vector3.DOWN, 1.0) == null,
+		"grid snapping never places a piece in a notch in a drawn surface")
+	check(view.surface_anchor(Vector3(17, -4, 1), Vector3.UP, 1.0) == null,
+		"a covered passage ceiling is not treated as a floor when picked from below")
+	ctl.add_piece(_piece("stairs", Vector3(24, -4, 0.2), Vector3(4, 4, 8)))
+	var tread: Variant = view.surface_anchor(Vector3(24.2, 4, 0.47), Vector3.DOWN, 1.0)
+	check(tread is Vector3 and (tread as Vector3).is_equal_approx(Vector3(24, -1.75, 0)),
+		"snapping across a riser uses the destination tread height (%s)" % str(tread))
 	await despawn(studio)
 
 

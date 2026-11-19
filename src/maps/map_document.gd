@@ -105,6 +105,12 @@ static func default_props(type: String) -> Dictionary:
 			return {"opening_width": 2.4, "opening_height": 2.2}
 		"wall_window":
 			return {"opening_width": 1.6, "opening_height": 2.2, "sill_height": 1.0}
+		"gate_portcullis":
+			return {"opening_width": 3.2, "opening_height": 4.0, "clearance": 3.0}
+		"wall_battlement":
+			return {"merlon_height": 0.9}
+		"catwalk":
+			return {"rail_left": true, "rail_right": true}
 	return {}
 
 

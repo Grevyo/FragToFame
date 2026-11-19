@@ -1,7 +1,7 @@
 {
 	"author": "F2F official",
-	"content_hash": "a405b4f4b0b26f40c3f9cc35a48e482bb892ddfd85768cec068f6b617fb5d9ea",
-	"content_version": 1,
+	"content_hash": "252ad00073044954515a2a4d2cb20aca4e3a952c26a26a1bcc62399fcee48629",
+	"content_version": 2,
 	"description": "Desert pottery town. Three lanes: the Salt Road to the Kiln Yard (A), Spice Row through the middle, and the Culvert to the Cistern (B).",
 	"format": "f2f.map",
 	"format_version": 2,
@@ -1556,7 +1556,7 @@
 			"layer": "layer_2",
 			"material": "",
 			"position": [
-				37.5,
+				37.0,
 				0.0,
 				-23.0
 			],
@@ -1565,7 +1565,7 @@
 			"size": [
 				3.0,
 				2.5,
-				5.0
+				6.0
 			],
 			"type": "stairs_stone"
 		},
@@ -3498,5 +3498,5 @@
 			]
 		}
 	],
-	"revision": 1
+	"revision": 2
 }

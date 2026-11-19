@@ -5,6 +5,7 @@ extends Node3D
 ## line, applies editor-only layer visibility and answers picking queries.
 
 const PICK_DISTANCE: float = 2000.0
+const SURFACE_PROBE_MARGIN: float = 0.015
 const OUTLINE_COLOR: Color = Color(1.0, 0.75, 0.2)
 const MEASURE_COLOR: Color = Color(0.4, 0.95, 1.0)
 
@@ -109,49 +110,100 @@ func is_pickable(piece: Dictionary) -> bool:
 	return controller.document.is_layer_visible(layer) and not controller.document.is_layer_locked(layer)
 
 
-## Nearest piece hit by the ray, or {} — returns {"piece_id", "point", "aabb"}.
+## Nearest piece hit by the ray, or {} — returns {"piece_id", "point", "normal"}.
 ## [param solid_only] ignores markers and zones (used for stacking placement and measuring).
-## Pieces on hidden or locked layers and those in [param exclude] are skipped.
+## Hidden layers and excluded pieces are skipped. Locked geometry still provides solid surfaces.
 func pick(origin: Vector3, direction: Vector3, solid_only: bool = false, exclude: Array[String] = []) -> Dictionary:
 	var best: Dictionary = {}
 	var best_distance := INF
+	var end := origin + direction * PICK_DISTANCE
 	for piece: Dictionary in controller.document.pieces:
 		var type := str(piece["type"])
 		if (solid_only and not PieceCatalog.is_solid(type)) or exclude.has(str(piece["id"])):
 			continue
 		if not (controller.document.is_layer_visible(str(piece["layer"])) if solid_only else is_pickable(piece)):
 			continue
-		var box := MapDocument.local_box(piece)
 		var is_zone := PieceCatalog.kind(type) == "zone"
-		if is_zone and not solid_only:
-			# Zones are large; only pick them by their floor so pieces inside stay clickable.
-			box = AABB(box.position, Vector3(box.size.x, 0.05, box.size.z))
-		var xform := MapDocument.piece_transform(piece)
-		var inverse := xform.affine_inverse()
-		var local_origin := inverse * origin
-		var local_end := local_origin + inverse.basis * direction * PICK_DISTANCE
-		var hit: Variant = box.intersects_segment(local_origin, local_end)
-		if hit != null and PieceCatalog.kind(type) == "surface":
-			hit = _pick_surface_mesh(str(piece["id"]), local_origin, local_end)
-		if hit == null:
+		var hit := _intersect_piece(piece, origin, end)
+		if hit.is_empty():
 			continue
-		var point := xform * (hit as Vector3)
-		var distance := origin.distance_to(point)
+		var distance := origin.distance_to(hit["point"])
 		# Prefer non-zone pieces when distances tie closely.
 		if is_zone:
 			distance += 0.25
 		if distance < best_distance:
 			best_distance = distance
-			best = {"piece_id": piece["id"], "point": point, "aabb": MapDocument.piece_aabb(piece)}
+			best = hit
 	return best
 
 
-func _pick_surface_mesh(id: String, start: Vector3, end: Vector3) -> Variant:
+## Keeps a snapped anchor on the upward face under the cursor. A vertical probe at the new X/Z
+## checks nearby support on the same piece, or finds the tread there on a stair run.
+func surface_anchor(origin: Vector3, direction: Vector3, grid: float, exclude: Array[String] = []) -> Variant:
+	var hit := pick(origin, direction, true, exclude)
+	var normal: Vector3 = hit.get("normal", Vector3.ZERO)
+	if normal.y <= 0.001:
+		return null
+	var point: Vector3 = hit["point"]
+	var snapped := MapSnapping.snap_position(point, grid)
+	if snapped == point:
+		return point
+	snapped.y -= normal.dot(snapped - point) / normal.y
+	var piece := controller.document.get_piece(str(hit["piece_id"]))
+	var top := snapped.y
+	var bottom := snapped.y
+	if PieceCatalog.kind(str(piece["type"])) == "stairs":
+		var bounds := MapDocument.piece_aabb(piece)
+		top = bounds.end.y
+		bottom = bounds.position.y
+	var support := _intersect_piece(piece, Vector3(snapped.x, top + SURFACE_PROBE_MARGIN, snapped.z),
+		Vector3(snapped.x, bottom - SURFACE_PROBE_MARGIN, snapped.z))
+	if support.is_empty() or (support["normal"] as Vector3).y <= 0.001:
+		return null
+	snapped.y = (support["point"] as Vector3).y
+	return snapped
+
+
+func _intersect_piece(piece: Dictionary, origin: Vector3, end: Vector3) -> Dictionary:
+	var kind := PieceCatalog.kind(str(piece["type"]))
+	var box := MapDocument.local_box(piece)
+	if kind == "zone":
+		# Zones are large; only pick their floor so pieces inside stay clickable.
+		box.size.y = 0.05
+	var xform := MapDocument.piece_transform(piece)
+	var inverse := xform.affine_inverse()
+	var start := inverse * origin
+	var finish := inverse * end
+	var intersection: Variant = box.intersects_segment(start, finish)
+	if intersection == null:
+		return {}
+	var point := intersection as Vector3
+	var normal := Vector3.UP if start.y > finish.y and is_equal_approx(point.y, box.end.y) else Vector3.ZERO
+	if kind in ["surface", "compound", "ramp", "stairs"]:
+		var geometry := _pick_mesh(str(piece["id"]), start, finish)
+		if geometry.is_empty():
+			return {}
+		point = geometry["point"]
+		normal = geometry["normal"]
+	return {"piece_id": piece["id"], "point": xform * point, "normal": xform.basis * normal}
+
+
+func _pick_mesh(id: String, start: Vector3, end: Vector3) -> Dictionary:
 	var node := node_for(id)
 	if node == null:
-		return null
-	var faces: PackedVector3Array = node.get_meta(&"pick_faces", PackedVector3Array())
-	var nearest: Variant = null
+		return {}
+	if not node.has_meta(&"pick_faces"):
+		# Cache the real geometry behind the broad-phase box. Openings in compound pieces
+		# should let a ray through, just like notches in a drawn surface.
+		var compound_faces := PackedVector3Array()
+		for child: Node in node.find_children("*", "MeshInstance3D", true, false):
+			var visual := child as MeshInstance3D
+			var to_piece := node.global_transform.affine_inverse() * visual.global_transform
+			for vertex: Vector3 in visual.mesh.get_faces():
+				compound_faces.append(to_piece * vertex)
+		node.set_meta(&"pick_faces", compound_faces)
+	var faces: PackedVector3Array = node.get_meta(&"pick_faces")
+	var nearest: Dictionary = {}
 	var nearest_distance := INF
 	for i: int in range(0, faces.size(), 3):
 		var hit: Variant = Geometry3D.segment_intersects_triangle(start, end, faces[i], faces[i + 1], faces[i + 2])
@@ -160,7 +212,10 @@ func _pick_surface_mesh(id: String, start: Vector3, end: Vector3) -> Variant:
 		var distance := start.distance_squared_to(hit)
 		if distance < nearest_distance:
 			nearest_distance = distance
-			nearest = hit
+			var normal := (faces[i + 1] - faces[i]).cross(faces[i + 2] - faces[i]).normalized()
+			if normal.dot(end - start) > 0.0:
+				normal = -normal
+			nearest = {"point": hit, "normal": normal}
 	return nearest
 
 

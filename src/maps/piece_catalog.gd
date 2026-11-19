@@ -40,6 +40,10 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"block": {"label": "Block", "kind": "block", "size": Vector3(2, 2, 2), "color": Color("6b7480"), "resizable": true, "group": "Structure"},
 	"pillar": {"label": "Pillar", "kind": "block", "size": Vector3(0.8, 3, 0.8), "color": Color("5b6370"), "resizable": true, "group": "Structure"},
 	"column": {"label": "Round column", "kind": "compound", "size": Vector3(0.8, 3.5, 0.8), "color": Color("a58a66"), "resizable": true, "group": "Structure", "material": "sandstone"},
+	"wall_battlement": {"label": "Battlement wall", "kind": "compound", "size": Vector3(6, 4, 0.8), "color": Color("8f8a7e"), "resizable": true, "group": "Structure", "material": "granite_blocks"},
+	"tower_round": {"label": "Round tower", "kind": "compound", "size": Vector3(5, 9, 5), "color": Color("8f8a7e"), "resizable": true, "group": "Structure", "material": "granite_blocks"},
+	"catwalk": {"label": "Catwalk", "kind": "compound", "size": Vector3(2, 1.2, 6), "color": Color("4b5057"), "resizable": true, "group": "Structure", "walkable": true, "material": "steel_grating"},
+	"railing": {"label": "Railing", "kind": "compound", "size": Vector3(4, 1.05, 0.08), "color": Color("33363a"), "resizable": true, "group": "Structure", "material": "metal_dark"},
 	"drawn_surface": {"label": "Drawn surface", "kind": "surface", "size": Vector3.ONE, "color": Color("a58a66"), "resizable": true, "group": "", "walkable": true},
 	"mesh_brush": {"label": "Mesh brush", "kind": "surface", "size": Vector3.ONE, "color": Color("a58a66"), "resizable": true, "group": ""},
 	# --- Openings --------------------------------------------------------------------------------
@@ -47,6 +51,7 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"double_door": {"label": "Double doors (open)", "kind": "compound", "size": Vector3(4, 3, 0.4), "color": Color("c8a878"), "resizable": true, "group": "Openings", "material": "adobe"},
 	"arch": {"label": "Arch", "kind": "compound", "size": Vector3(4, 4, 0.6), "color": Color("a58a66"), "resizable": true, "group": "Openings", "material": "sandstone"},
 	"wall_window": {"label": "Window wall", "kind": "compound", "size": Vector3(4, 3, 0.4), "color": Color("c8a878"), "resizable": true, "group": "Openings", "material": "adobe"},
+	"gate_portcullis": {"label": "Gate with raised portcullis", "kind": "compound", "size": Vector3(6, 6, 1.6), "color": Color("8f8a7e"), "resizable": true, "group": "Openings", "material": "granite_blocks"},
 	# --- Slopes ----------------------------------------------------------------------------------
 	"ramp": {"label": "Ramp", "kind": "ramp", "size": Vector3(3, 1.5, 5), "color": Color("b8542a"), "resizable": true, "group": "Slopes", "walkable": true},
 	"ramp_earth": {"label": "Earth ramp", "kind": "ramp", "size": Vector3(4, 1.5, 6), "color": Color("b08a58"), "resizable": true, "group": "Slopes", "walkable": true, "material": "packed_earth"},
@@ -74,9 +79,14 @@ const TYPES: Dictionary[String, Dictionary] = {
 		"color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
 	"stone_trough": {"label": "Stone trough", "kind": "compound", "size": Vector3(1.9, 0.65, 0.86),
 		"color": Color("bdb69f"), "resizable": true, "group": "Props", "material": "limestone"},
+	"pipe_run": {"label": "Pipe run", "kind": "compound", "size": Vector3(6, 0.7, 0.7), "color": Color("6f7a52"), "resizable": true, "group": "Props", "material": "metal_painted"},
+	"storage_tank": {"label": "Storage tank", "kind": "compound", "size": Vector3(4, 6, 4), "color": Color("8f8d86"), "resizable": true, "group": "Props", "material": "metal_painted"},
+	"tree": {"label": "Tree", "kind": "compound", "size": Vector3(4, 7, 4), "color": Color("4f6b3a"), "resizable": true, "group": "Props", "material": "foliage"},
+	"banner": {"label": "Hanging banner", "kind": "compound", "size": Vector3(1.4, 3.2, 0.12), "color": Color("b84a3a"), "resizable": true, "group": "Props", "material": "cloth_red"},
 	# --- Cover (sightline blockers) --------------------------------------------------------------
 	"low_cover": {"label": "Low cover", "kind": "block", "size": Vector3(3, 1.1, 0.4), "color": Color("5b6370"), "resizable": true, "group": "Cover"},
 	"sandbag_wall": {"label": "Sandbag wall", "kind": "compound", "size": Vector3(3, 1.1, 0.8), "color": Color("a8946a"), "resizable": true, "group": "Cover", "material": "burlap"},
+	"shipping_container": {"label": "Shipping container", "kind": "compound", "size": Vector3(2.44, 2.6, 6.1), "color": Color("7c4a32"), "resizable": true, "group": "Cover", "material": "metal_rust"},
 	"market_stall": {"label": "Market stall", "kind": "compound", "size": Vector3(3, 2.6, 1.6), "color": Color("8a6a46"), "resizable": true, "group": "Cover", "material": "planks"},
 	"cloth_screen": {"label": "Cloth screen", "kind": "compound", "size": Vector3(3, 2.6, 0.2), "color": Color("3f6f8f"), "resizable": true, "group": "Cover", "material": "cloth_blue"},
 	# --- Vehicles --------------------------------------------------------------------------------

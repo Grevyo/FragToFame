@@ -667,23 +667,13 @@ func _apply_lighting() -> void:
 	MapLighting.apply(controller.document.lighting, sun, environment)
 
 
-## Snapped grid intersection at the clicked height. Surface snapping uses a solid top only
-## when the snapped intersection still lies on that surface.
+## Snapped grid intersection on the clicked surface or the current build plane.
 func placement_point(screen_position: Vector2, exclude: Array[String] = []) -> Variant:
 	if snap_surface:
-		var origin := camera.project_ray_origin(screen_position)
-		var direction := camera.project_ray_normal(screen_position)
-		var hit := view.pick(origin, direction, true, exclude)
-		if not hit.is_empty():
-			var aabb: AABB = hit["aabb"]
-			var point: Vector3 = hit["point"]
-			if is_equal_approx(point.y, aabb.end.y):
-				var snapped := MapSnapping.snap_position(point, snap_size)
-				var piece := controller.document.get_piece(str(hit["piece_id"]))
-				var local := MapDocument.piece_transform(piece).affine_inverse() * snapped
-				var half := (piece["size"] as Vector3) / 2.0
-				if absf(local.x) <= half.x + 0.001 and absf(local.z) <= half.z + 0.001:
-					return snapped
+		var anchor: Variant = view.surface_anchor(camera.project_ray_origin(screen_position),
+			camera.project_ray_normal(screen_position), snap_size, exclude)
+		if anchor != null:
+			return anchor
 	return _snapped_point_on_plane(screen_position, build_level)
 
 
@@ -1266,10 +1256,10 @@ func drag_offset(delta: Vector3, screen_position: Variant = null) -> Vector3:
 	var primary := _drag_before[_drag_before.size() - 1]
 	if snap_surface and screen_position is Vector2 and not PieceCatalog.is_walkable(str(primary["type"])) \
 			and PieceCatalog.is_solid(str(primary["type"])):
-		var hit := view.pick(camera.project_ray_origin(screen_position as Vector2),
-			camera.project_ray_normal(screen_position as Vector2), true, ids)
-		if not hit.is_empty() and is_equal_approx((hit["point"] as Vector3).y, (hit["aabb"] as AABB).end.y):
-			offset.y = (hit["aabb"] as AABB).end.y - MapSnapping.bounds(_drag_before).position.y
+		var anchor: Variant = view.surface_anchor(camera.project_ray_origin(screen_position as Vector2),
+			camera.project_ray_normal(screen_position as Vector2), 0.0, ids)
+		if anchor != null:
+			offset.y = (anchor as Vector3).y - MapSnapping.bounds(_drag_before).position.y
 	if snap_edge:
 		var moved_box := MapSnapping.bounds(_drag_before)
 		moved_box.position += offset

@@ -20,6 +20,7 @@ func run() -> void:
 	await _test_placement_palette()
 	await _test_studio_layout()
 	await _test_surface_drawing()
+	await _test_geometry_stress()
 	await _test_playtest_round_trip()
 
 
@@ -364,6 +365,127 @@ func _test_surface_drawing() -> void:
 	check((defaults[-2]["pos"] as Vector3).z < 0.0 and (swung[-2]["pos"] as Vector3).z > 0.0
 		and defaults[-1] == swung[-1], "each door leaf can be reversed independently of the other")
 	await despawn(studio)
+
+
+func _test_geometry_stress() -> void:
+	section("Creation Studio geometry stress test")
+	var studio := spawn_scene("res://scenes/creation_studio/creation_studio.tscn")
+	if studio == null:
+		return
+	var ctrl := studio.get("controller") as MapEditController
+	var view := studio.get_node("MapView") as MapEditorView
+	var directory := TEST_DIR.path_join("geometry_stress")
+	studio.set("storage", MapStorage.new(directory))
+	ctrl.set_document(MapDocument.create("Geometry stress test"))
+	_place_fixture(studio, ctrl, "floor", Vector3(23, -0.3, 0), Vector3(44, 0.3, 34))
+	_place_fixture(studio, ctrl, "spawn_attack", Vector3(4, 0, 0), Vector3.ZERO)
+	_place_fixture(studio, ctrl, "spawn_defence", Vector3(41, 0, 0), Vector3.ZERO)
+	_place_fixture(studio, ctrl, "floor", Vector3(20, 2.7, 0), Vector3(8, 0.3, 5))
+	var slope: String = studio.call("draw_surface", PackedVector3Array([
+		Vector3(7, 0, -2), Vector3(16, 3, -2.5), Vector3(16, 3, 2.5),
+		Vector3(11, 4.0 / 3.0, 3), Vector3(7, 0, 2),
+	]))
+	var ledge := Vector3(34, 0.8, 0)
+	_place_fixture(studio, ctrl, "platform", Vector3(34, 0, 0), Vector3(5, 0.8, 5))
+	var arch := _place_fixture(studio, ctrl, "arch", Vector3(33, 0, -10), Vector3(8, 5, 0.6), 32.0)
+	var arch_transform := MapDocument.piece_transform(ctrl.document.get_piece(arch))
+	var forward := arch_transform.basis * Vector3.FORWARD
+	var opening := view.pick(arch_transform * Vector3(0, 1, 3), forward)
+	var jamb := view.pick(arch_transform * Vector3(3.6, 1, 3), forward)
+	check(not slope.is_empty() and str(opening.get("piece_id")) != arch and str(jamb.get("piece_id")) == arch,
+		"the uneven ramp is authorable and a rotated arch has an open centre and solid jambs")
+
+	var valid_brush := {"vertices": [[28, 2.5, 7], [30, 2.5, 7], [30, 3, 10]], "faces": [0, 1, 2]}
+	var flat_line := {"vertices": [[28, 2, 7], [29, 2, 7], [30, 2, 7]], "faces": [0, 1, 2]}
+	var count := ctrl.document.pieces.size()
+	var rejected: Array = studio.call("draw_brushes", [valid_brush, flat_line])
+	check(rejected.is_empty() and ctrl.document.pieces.size() == count,
+		"a brush batch containing a zero-area mesh leaves the document intact")
+	var accepted: Array = studio.call("draw_brushes", [valid_brush])
+	check(accepted.size() == 1, "a valid angled brush is accepted by the same editor operation")
+
+	var save_result: int = studio.call("save_map")
+	var saved_path: String = studio.get("current_path")
+	var fingerprint := ctrl.document.content_fingerprint()
+	var content_version := ctrl.document.content_version
+	var reopened: bool = save_result == OK and studio.call("load_map", saved_path)
+	check(reopened and ctrl.document.content_fingerprint() == fingerprint,
+		"the bridge, uneven ramp, rotated arch and brush survive an editor save and reopen")
+	check(reopened and studio.call("save_map") == OK and ctrl.document.content_version == content_version,
+		"saving the reopened brush geometry preserves the map content version")
+	_wipe_dir(directory)
+	var report: Dictionary = studio.call("validation_report")
+	var analysis := studio.get("analysis") as MapAnalysis
+	check((report["errors"] as Array).is_empty() and analysis != null, "the fixture builds a navigation mesh")
+	if analysis == null:
+		await despawn(studio)
+		return
+	var below_start := Vector3(20, 0, 7)
+	var below_end := Vector3(20, 0, -7)
+	var bridge_top := Vector3(20, 3, 0)
+	check(analysis.path_length(below_start, below_end) > 13.0
+		and analysis.path_length(Vector3(4, 0, 0), bridge_top) > 15.0,
+		"bots have both a lower crossing and a route up the uneven ramp to the bridge")
+	check(analysis.has_issue("bot_unpathable") and analysis.path_length(ledge, Vector3(39, 0, 0)) < 0.0,
+		"the editor identifies the isolated ledge and the bot bake has no drop connection")
+	App.sandbox_map = ctrl.document
+	await despawn(studio)
+
+	var sandbox := spawn_scene("res://scenes/fps_sandbox/fps_sandbox.tscn")
+	if sandbox == null:
+		App.sandbox_map = null
+		return
+	var player := sandbox.get_node("Player") as FirstPersonController
+	player.input_enabled = false
+	player.set_spawn(below_start, 0.0)
+	await wait_physics_frames(8)
+	player.scripted_move = Vector2(0, -1)
+	await wait_physics_frames(115)
+	check(player.global_position.z < -2.5 and absf(player.global_position.y) < 0.1,
+		"the actual player controller passes under the bridge (%s)" % player.global_position)
+	player.scripted_move = Vector2.ZERO
+	player.set_spawn(Vector3(5, 0, 0), 0.0)
+	await wait_physics_frames(8)
+	player.scripted_move = Vector2.RIGHT
+	await wait_physics_frames(180)
+	check(player.global_position.x > 17.0 and absf(player.global_position.y - 3.0) < 0.1,
+		"the actual player controller climbs the uneven ramp onto the bridge (%s)" % player.global_position)
+	player.scripted_move = Vector2.ZERO
+	player.set_spawn(ledge, 0.0)
+	await wait_physics_frames(8)
+	player.scripted_move = Vector2.RIGHT
+	await wait_physics_frames(65)
+	check(player.global_position.x > 36.5 and player.global_position.y < 0.1 and player.is_on_floor(),
+		"the actual player controller can walk off the ledge and land on the lower floor")
+	player.scripted_move = Vector2.ZERO
+	var level := sandbox.get_node("Level") as SandboxLevel
+	level.build_navigation()
+	var bot := BotController.new()
+	bot.setup("geometry_walker", "Geometry walker", &"attack", BotSkill.preset(&"normal"), Color.WHITE)
+	level.add_child(bot)
+	bot.respawn_at(below_start, 0.0)
+	await wait_physics_frames(8)
+	bot.set_goal(below_end)
+	var crossed := await wait_until(func() -> bool: return bot.at_goal(1.0), 5.0)
+	check(crossed and absf(bot.global_position.y) < 0.1, "the runtime bot passes under the bridge")
+	bot.respawn_at(Vector3(4, 0, 0), 0.0)
+	bot.set_goal(bridge_top)
+	var climbed := await wait_until(func() -> bool: return bot.at_goal(1.0), 6.0)
+	check(climbed and absf(bot.global_position.y - 3.0) < 0.1, "the runtime bot walks up the ramp onto the bridge")
+	await despawn(sandbox)
+
+
+func _place_fixture(studio: Node, ctrl: MapEditController, type: String, position: Vector3, size: Vector3,
+		rotation: float = 0.0) -> String:
+	studio.call("_on_piece_type_selected", type)
+	var id: String = studio.call("place_at", position)
+	var piece := ctrl.document.get_piece(id)
+	piece["position"] = position
+	piece["rotation_y"] = rotation
+	if size != Vector3.ZERO:
+		piece["size"] = size
+	ctrl.update_piece(piece, "Set fixture dimensions")
+	return id
 
 
 func _test_playtest_round_trip() -> void:

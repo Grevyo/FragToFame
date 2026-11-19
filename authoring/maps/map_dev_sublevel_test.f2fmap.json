@@ -1,0 +1,555 @@
+{
+	"author": "Frag to Fame",
+	"content_hash": "fb770b559cb0a76828ed74715671830ce9cafd133512ad2d389979ceb1f12a14",
+	"content_version": 1,
+	"description": "Geometry checks for a covered lower passage, stair and ramp access, and a notched surface. Hide the Upper slab layer to inspect the passage from Top View.",
+	"format": "f2f.map",
+	"format_version": 2,
+	"layers": [
+		{
+			"id": "layer_default",
+			"locked": false,
+			"name": "Default",
+			"visible": true
+		},
+		{
+			"id": "layer_1",
+			"locked": false,
+			"name": "Lower floor",
+			"visible": true
+		},
+		{
+			"id": "layer_2",
+			"locked": false,
+			"name": "Covered passage",
+			"visible": true
+		},
+		{
+			"id": "layer_3",
+			"locked": false,
+			"name": "Upper slab",
+			"visible": true
+		},
+		{
+			"id": "layer_4",
+			"locked": false,
+			"name": "Vertical access",
+			"visible": true
+		},
+		{
+			"id": "layer_5",
+			"locked": false,
+			"name": "Notched surface",
+			"visible": true
+		}
+	],
+	"lighting": {},
+	"map_id": "map_dev_sublevel_test",
+	"name": "Sublevel Test Bay (Dev)",
+	"next_group_number": 1,
+	"next_layer_number": 6,
+	"next_piece_number": 26,
+	"next_prefab_number": 1,
+	"pieces": [
+		{
+			"group": "",
+			"id": "pc_3",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-4.30000019073486,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				24.0,
+				0.300000011920929,
+				18.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_4",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-12.0,
+				-4.0,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.400000005960464,
+				3.75,
+				18.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_5",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				12.0,
+				-4.0,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.400000005960464,
+				3.75,
+				18.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_6",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-4.0,
+				-9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				24.0,
+				3.75,
+				0.400000005960464
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_7",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-4.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				24.0,
+				3.75,
+				0.400000005960464
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_8",
+			"layer": "layer_1",
+			"material": "",
+			"position": [
+				0.0,
+				-4.0,
+				7.0
+			],
+			"props": {
+				"team": "attack"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_attack"
+		},
+		{
+			"group": "",
+			"id": "pc_9",
+			"layer": "layer_1",
+			"material": "",
+			"position": [
+				0.0,
+				-4.0,
+				-7.0
+			],
+			"props": {
+				"team": "defence"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.79999995231628,
+				0.800000011920929
+			],
+			"type": "spawn_defence"
+		},
+		{
+			"group": "",
+			"id": "pc_10",
+			"layer": "layer_2",
+			"material": "concrete",
+			"position": [
+				-9.0,
+				-4.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.349999994039536,
+				3.75,
+				8.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_11",
+			"layer": "layer_2",
+			"material": "concrete",
+			"position": [
+				-3.0,
+				-4.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.349999994039536,
+				3.75,
+				8.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_12",
+			"layer": "layer_2",
+			"material": "metal_painted",
+			"position": [
+				-6.0,
+				-4.0,
+				6.0
+			],
+			"props": {
+				"opening_height": 2.8,
+				"opening_width": 4.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.75,
+				0.349999994039536
+			],
+			"type": "doorway"
+		},
+		{
+			"group": "",
+			"id": "pc_13",
+			"layer": "layer_2",
+			"material": "metal_painted",
+			"position": [
+				-6.0,
+				-4.0,
+				-2.0
+			],
+			"props": {
+				"opening_height": 2.8,
+				"opening_width": 4.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				6.0,
+				3.75,
+				0.349999994039536
+			],
+			"type": "doorway"
+		},
+		{
+			"group": "",
+			"id": "pc_14",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-6.0,
+				-0.550000011920929,
+				-0.300000011920929
+			],
+			"props": {
+				"color": "ffd6a9",
+				"energy": 1.5,
+				"range": 7.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_15",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-6.0,
+				-0.550000011920929,
+				4.19999980926514
+			],
+			"props": {
+				"color": "ffd6a9",
+				"energy": 1.5,
+				"range": 7.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_16",
+			"layer": "layer_2",
+			"material": "metal_dark",
+			"position": [
+				-7.69999980926514,
+				-4.0,
+				1.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "crate"
+		},
+		{
+			"group": "",
+			"id": "pc_17",
+			"layer": "layer_2",
+			"material": "",
+			"position": [
+				-6.0,
+				-4.0,
+				2.0
+			],
+			"props": {
+				"name": "Covered Passage",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				5.59999990463257,
+				3.59999990463257,
+				8.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_18",
+			"layer": "layer_3",
+			"material": "metal_dark",
+			"position": [
+				-6.0,
+				-0.25,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.34999990463257,
+				0.25,
+				8.35000038146973
+			],
+			"type": "roof"
+		},
+		{
+			"group": "",
+			"id": "pc_19",
+			"layer": "layer_4",
+			"material": "concrete",
+			"position": [
+				1.5,
+				-4.0,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				4.0,
+				10.0
+			],
+			"type": "ramp"
+		},
+		{
+			"group": "",
+			"id": "pc_20",
+			"layer": "layer_4",
+			"material": "metal_painted",
+			"position": [
+				1.5,
+				-0.25,
+				-6.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				0.25,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_21",
+			"layer": "layer_4",
+			"material": "metal_dark",
+			"position": [
+				7.5,
+				-4.0,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				3.0,
+				4.0,
+				10.0
+			],
+			"type": "stairs"
+		},
+		{
+			"group": "",
+			"id": "pc_22",
+			"layer": "layer_4",
+			"material": "metal_painted",
+			"position": [
+				7.5,
+				-0.25,
+				6.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				0.25,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_23",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				1.5,
+				0.0,
+				-6.5
+			],
+			"props": {
+				"name": "Ramp Landing",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				2.79999995231628,
+				3.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_24",
+			"layer": "layer_4",
+			"material": "",
+			"position": [
+				7.5,
+				0.0,
+				6.5
+			],
+			"props": {
+				"name": "Stair Landing",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				2.79999995231628,
+				3.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_25",
+			"layer": "layer_5",
+			"material": "metal_painted",
+			"position": [
+				-8.5,
+				-4.19999980926514,
+				-6.0
+			],
+			"props": {
+				"outline": [
+					[
+						-0.5,
+						0.117646940052509,
+						-0.5
+					],
+					[
+						0.5,
+						0.99999988079071,
+						-0.5
+					],
+					[
+						0.5,
+						0.99999988079071,
+						-0.0625
+					],
+					[
+						0.0833333358168602,
+						0.632352828979492,
+						-0.0625
+					],
+					[
+						0.0833333358168602,
+						0.632352828979492,
+						0.5
+					],
+					[
+						-0.5,
+						0.117646940052509,
+						0.5
+					]
+				],
+				"thickness": 0.117647055523618
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.70000004768372,
+				4.0
+			],
+			"type": "drawn_surface"
+		}
+	],
+	"prefabs": [],
+	"revision": 1
+}

@@ -191,6 +191,7 @@ func _run(doc: MapDocument, host: Node) -> void:
 		_map = made[0]
 		_region = made[1]
 		_find_components()
+		_check_slopes()
 		_check_objectives()
 		var candidates := _island_candidates()
 		if not candidates.is_empty():
@@ -343,6 +344,26 @@ func _zone_components(piece: Dictionary) -> Dictionary[int, bool]:
 	return found
 
 
+## Steepest stair or ramp the bot navmesh can follow. Along a slope the floor rises
+## tan(angle) x cell size per cell, and a step higher than the bots' climb limit splits the
+## navmesh; the margin covers rasterisation noise.
+static func bot_slope_limit() -> float:
+	return rad_to_deg(atan(NavigationBuilder.AGENT_MAX_CLIMB / NavigationBuilder.CELL_SIZE)) - 2.5
+
+
+func _check_slopes() -> void:
+	for piece: Dictionary in document.pieces:
+		if PieceCatalog.kind(str(piece["type"])) not in ["stairs", "ramp"]:
+			continue
+		var size: Vector3 = piece["size"]
+		var angle := rad_to_deg(atan2(size.y, size.z))
+		if angle > bot_slope_limit():
+			issues.append({"code": "steep_slope", "position": piece["position"],
+				"text": "%s %s is %.0f° steep; bots can only follow %.0f° (lengthen it to %.1f m)." % [
+					PieceCatalog.label(str(piece["type"])), piece["id"], angle, bot_slope_limit(),
+					size.y / tan(deg_to_rad(bot_slope_limit()))]})
+
+
 func _check_objectives() -> void:
 	var targets: Array[Array] = []  # [label, piece, team filter]
 	for site: Dictionary in document.pieces_of_type("bombsite"):
@@ -388,21 +409,50 @@ func _island_candidates() -> Array[Dictionary]:
 			largest[component] = i
 	for component: int in largest:
 		var centre := _polygon_centre(largest[component])
-		if _inside_solid_box(centre):
+		if _inside_solid_piece(centre):
 			continue
 		if PieceCatalog.is_walkable(str(_support_piece(centre).get("type", ""))):
 			found.append({"component": component, "position": centre, "area": _component_area[component]})
 	return found
 
 
-## Box pieces are baked from their faces, so the ground under a building still gets a sealed
-## pocket of navmesh inside it. Nobody can be there; it is not playable floor.
-func _inside_solid_box(point: Vector3) -> bool:
+## The face-based bake can leave sealed navmesh pockets inside solids over a floor.
+func _inside_solid_piece(point: Vector3) -> bool:
 	var probe := point + Vector3(0, 0.5, 0)
 	for piece: Dictionary in document.pieces:
-		if PieceCatalog.kind(str(piece["type"])) == "block" and MapDocument.piece_contains(piece, probe):
-			return true
+		var type := str(piece["type"])
+		var kind := PieceCatalog.kind(type)
+		if kind not in ["block", "ramp", "stairs", "compound"] or not MapDocument.piece_contains(piece, probe):
+			continue
+		var local := MapDocument.piece_transform(piece).affine_inverse() * probe
+		var size: Vector3 = piece["size"]
+		match kind:
+			"block":
+				return true
+			"ramp", "stairs":
+				# Both use a solid wedge that is tallest at the local -Z edge.
+				if local.y < size.y * (0.5 - local.z / size.z):
+					return true
+			"compound":
+				for part: Dictionary in PieceShapes.parts(type, size, piece["props"]):
+					if _part_contains(part, local):
+						return true
 	return false
+
+
+static func _part_contains(part: Dictionary, point: Vector3) -> bool:
+	var angles: Vector3 = part["rot"]
+	var rotation := Basis.from_euler(angles * (PI / 180.0))
+	var local := rotation.inverse() * (point - (part["pos"] as Vector3))
+	var size: Vector3 = part["size"]
+	var half := size / 2.0
+	if absf(local.y) >= half.y:
+		return false
+	if part["shape"] == "cylinder":
+		var scale := lerpf(float(part.get("bottom_radius_scale", 1.0)), float(part.get("top_radius_scale", 1.0)),
+			(local.y + half.y) / size.y)
+		return Vector2(local.x, local.z).length_squared() < pow(half.x * scale, 2.0)
+	return absf(local.x) < half.x and absf(local.z) < half.z
 
 
 ## The solid piece a navmesh point rests on ({} when none is found).

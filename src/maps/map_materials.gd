@@ -36,6 +36,12 @@ const PALETTE: Dictionary[String, Dictionary] = {
 	"limestone": {"label": "Cut limestone", "color": Color("bdb69f"), "pattern": "stone", "repeat": 1.8},
 	"fired_clay": {"label": "Fired clay", "color": Color("a85035"), "pattern": "clay", "repeat": 0.7},
 	"weathered_wood": {"label": "Weathered timber", "color": Color("836549"), "pattern": "planks", "repeat": 1.4},
+	"steel_grating": {"label": "Steel grating", "color": Color("5d6268"), "pattern": "grating", "repeat": 0.6, "metallic": 0.4},
+	"hazard_paint": {"label": "Hazard stripes", "color": Color("d4a62a"), "pattern": "hazard", "repeat": 1.0},
+	"granite_blocks": {"label": "Granite blocks", "color": Color("8f8a7e"), "pattern": "brick", "repeat": 2.4},
+	"mossy_stone": {"label": "Mossy fieldstone", "color": Color("7d8270"), "pattern": "stone", "repeat": 2.0},
+	"foliage": {"label": "Foliage", "color": Color("4f6b3a"), "pattern": "noise", "repeat": 1.2},
+	"slate": {"label": "Slate", "color": Color("4e5560"), "pattern": "tile", "repeat": 0.8},
 	"brass": {"label": "Hammered brass", "color": Color("a58348"), "pattern": "metal", "repeat": 0.8,
 		"roughness": 0.52, "metallic": 0.76},
 }
@@ -116,7 +122,11 @@ static func _textures(id: String, base: Color, pattern: String) -> Array[Image]:
 			var uv := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(TEXTURE_SIZE)
 			var relief := _surface(uv, low, grain, pattern)
 			height[index] = relief.x
-			var tint := Color("954437") if pattern == "stripes" and fposmod(uv.x * 4.0, 1.0) < 0.36 else base
+			var tint := base
+			if pattern == "stripes" and fposmod(uv.x * 4.0, 1.0) < 0.36:
+				tint = Color("954437")
+			elif pattern == "hazard" and fposmod((uv.x + uv.y) * 2.0, 1.0) < 0.5:
+				tint = Color("1d1d1f")
 			var shade := clampf(relief.y, -0.55, 0.22)
 			var pixel := tint.lightened(shade) if shade >= 0.0 else tint.darkened(-shade)
 			albedo.set_pixel(x, y, pixel)
@@ -165,6 +175,13 @@ static func _surface(uv: Vector2, low: float, grain: float, pattern: String) -> 
 			return Vector2(tooling * 0.018 + grain * 0.065, low * 0.23 + grain * 0.1 + tooling * 0.03)
 		"metal":
 			return Vector2(low * 0.12 + grain * 0.08, low * 0.23 + grain * 0.14)
+		"grating":
+			# A square grid of bars over dark gaps.
+			var bars := Vector2(fposmod(uv.x * 8.0, 1.0), fposmod(uv.y * 8.0, 1.0))
+			var bar := maxf(1.0 - smoothstep(0.12, 0.2, bars.x), 1.0 - smoothstep(0.12, 0.2, bars.y))
+			return Vector2(bar * 0.3 + grain * 0.03, (bar - 1.0) * 0.45 + low * 0.12)
+		"hazard":
+			return Vector2(low * 0.06 + grain * 0.05, low * 0.16 + grain * 0.1)
 		"plain":
 			return Vector2.ZERO
 	return Vector2(low * 0.12 + grain * 0.09, low * 0.18 + grain * 0.16)

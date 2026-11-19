@@ -593,6 +593,23 @@ Kilnmarket (official map):
       match. Bots should reach both sites, plant, hold and retake.
 - [ ] **Career Hub → Home**: schedule an amateur match with Kilnmarket selected and play it.
 
+Switchyard and Kestrel Keep (official maps):
+
+- [ ] **FPS Sandbox → map select** lists Kilnmarket, Switchyard and Kestrel Keep.
+- [ ] Switchyard: from the Freight Yard, take the Loading Gate into the Machine Hall (B). Climb
+      the stair tower to the Control Deck (A) and drop back through the hatch. Climb the West
+      Stair, the Freight Ramp and the defenders' Service Stair. Check the Signal Box roof perch
+      and the narrow corridors to the Coal Door and Pump Door.
+- [ ] Kestrel Keep: run the West Gate road, the Breach, the Undercroft tunnel and the Orchard
+      Walk. Walk under both raised portcullises. Climb to the Gatehouse gallery and the
+      Tiltyard rampart and judge their sightlines over the market and site A.
+- [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
+- [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
+      gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,
+      banner). Change the merlon height, portcullis clearance and catwalk railings in the
+      inspector.
+- [ ] Place a stair steeper than 24°: Validate warns and says how long it should be.
+
 ### Manual test checklist (Controls and noclip)
 
 - [ ] **Main menu → Controls**. Click an empty slot next to an action and press a key: both

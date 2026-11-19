@@ -1,7 +1,8 @@
 extends TestSuite
-## Milestone 16, stage C: the first official map (Kilnmarket). It must load as an ordinary map
-## document, validate with no errors or warnings, bake a navmesh, let bots from every spawn reach
-## both sites, host a full bot round (plant and defuse) and preview an authored tactic.
+## Milestone 16: the official maps. Every one must load as an ordinary map document, validate
+## with no errors or warnings, bake a navmesh, give defenders the first contact at each site and
+## let bots from every spawn reach both sites. Kilnmarket, the default, also hosts a full bot
+## round (plant and defuse), previews an authored tactic and keeps its tuned route timings.
 
 const FPS_SANDBOX_SCENE: String = "res://scenes/fps_sandbox/fps_sandbox.tscn"
 const STUDIO: String = "res://scenes/creation_studio/creation_studio.tscn"
@@ -11,16 +12,24 @@ const DEFENCE: String = "Defenders from spawn"
 
 
 func suite_name() -> String:
-	return "Official map: Kilnmarket (Milestone 16)"
+	return "Official maps (Milestone 16)"
 
 
 func run() -> void:
+	check(OfficialMaps.ids().size() >= 3 and OfficialMaps.listing().size() == OfficialMaps.ids().size(),
+		"every registered official map loads (%d)" % OfficialMaps.listing().size())
+	for map_id: String in OfficialMaps.ids():
+		var official := OfficialMaps.load_map(map_id)
+		check(official != null, "%s loads from res://data/maps/official" % map_id)
+		if official == null:
+			continue
+		var analysis: MapAnalysis = await _test_document(official)
+		if analysis != null and map_id == OfficialMaps.DEFAULT_ID:
+			await _test_kilnmarket_timings(analysis)
+		await _test_bots_reach_sites(official)
 	var doc := OfficialMaps.load_map(OfficialMaps.DEFAULT_ID)
-	check(doc != null, "the official map loads from res://data/maps/official")
 	if doc == null:
 		return
-	await _test_document(doc)
-	await _test_bots_reach_sites(doc)
 	await _test_bot_round(doc)
 	await _test_tactic_preview()
 	await _test_map_select()
@@ -30,10 +39,10 @@ func run() -> void:
 			dir.remove(file_name)
 
 
-func _test_document(doc: MapDocument) -> void:
-	section("Document, validation and timings")
-	check(doc.map_id == "map_f2f_kilnmarket" and doc.name == "Kilnmarket" and OfficialMaps.is_official(doc.map_id),
-		"it has a stable official ID and an original name")
+func _test_document(doc: MapDocument) -> MapAnalysis:
+	section("%s: document, validation and timings" % doc.name)
+	check(OfficialMaps.is_official(doc.map_id) and doc.map_id.begins_with("map_f2f_") and not doc.name.is_empty()
+		and not doc.name.contains("Dev"), "it has a stable official ID and an original name")
 	var raw := JSON.parse_string(FileAccess.get_file_as_string(OfficialMaps.path_for(doc.map_id))) as Dictionary
 	check(raw["format"] == MapDocument.FORMAT and int(raw["format_version"]) == MapDocument.FORMAT_VERSION,
 		"it is a normal map document in the current format")
@@ -58,10 +67,10 @@ func _test_document(doc: MapDocument) -> void:
 	for piece: Dictionary in doc.pieces:
 		if PieceCatalog.kind(str(piece["type"])) in ["stairs", "ramp"]:
 			var size: Vector3 = piece["size"]
-			slopes_ok = slopes_ok and rad_to_deg(atan2(size.y, size.z)) < NavigationBuilder.AGENT_MAX_SLOPE - 5.0
-	check(slopes_ok, "every stair and ramp is shallow enough for bots")
-	check(not doc.lighting.is_empty() and not doc.pieces_of_kind("light").is_empty() and doc.layers.size() > 3
-		and not doc.prefabs.is_empty(), "it uses the editor's lighting, lights, layers and prefabs")
+			slopes_ok = slopes_ok and rad_to_deg(atan2(size.y, size.z)) <= MapAnalysis.bot_slope_limit()
+	check(slopes_ok, "every stair and ramp is shallow enough for bots (%.0f° or less)" % MapAnalysis.bot_slope_limit())
+	check(not doc.lighting.is_empty() and not doc.pieces_of_kind("light").is_empty() and doc.layers.size() > 3,
+		"it uses the editor's lighting, lights and layers")
 
 	var host := Node3D.new()
 	tree.root.add_child(host)
@@ -79,9 +88,6 @@ func _test_document(doc: MapDocument) -> void:
 	print(analysis.timing_text())
 	var site_a := float(analysis.timing("Site A", DEFENCE)["seconds"])
 	var site_b := float(analysis.timing("Site B", DEFENCE)["seconds"])
-	var gate := float(analysis.timing("Kiln Gate (entrance A)", ATTACK)["seconds"])
-	var potter := float(analysis.timing("Potter's Door (entrance A)", ATTACK)["seconds"])
-	var culvert := float(analysis.timing("Culvert Mouth (entrance B)", ATTACK)["seconds"])
 	var first_a := INF
 	var first_b := INF
 	for entry: Dictionary in analysis.timings:
@@ -91,6 +97,20 @@ func _test_document(doc: MapDocument) -> void:
 			first_b = minf(first_b, float(entry["seconds"]))
 	check(site_a > 0.0 and site_b > 0.0 and site_a + 2.0 < first_a and site_b + 2.0 < first_b,
 		"defenders reach both sites at least 2 s before attackers reach any entrance (A %.1f vs %.1f, B %.1f vs %.1f)" % [site_a, first_a, site_b, first_b])
+	check(absf(site_a - site_b) < 1.5, "defenders reach the two sites evenly (%.1f s vs %.1f s)" % [site_a, site_b])
+	host.queue_free()
+	await wait_frames(1)
+	return analysis
+
+
+## Kilnmarket's tuned layout: the long and short A routes, even sides, rotations and mid.
+func _test_kilnmarket_timings(analysis: MapAnalysis) -> void:
+	section("Kilnmarket: route timings")
+	var site_a := float(analysis.timing("Site A", DEFENCE)["seconds"])
+	var site_b := float(analysis.timing("Site B", DEFENCE)["seconds"])
+	var gate := float(analysis.timing("Kiln Gate (entrance A)", ATTACK)["seconds"])
+	var potter := float(analysis.timing("Potter's Door (entrance A)", ATTACK)["seconds"])
+	var culvert := float(analysis.timing("Culvert Mouth (entrance B)", ATTACK)["seconds"])
 	check(potter + 1.5 < gate, "the long A approach takes longer than the secondary route (%.1f s vs %.1f s)" % [gate, potter])
 	check(absf(site_a - site_b) < 1.5 and absf(culvert - potter) < 2.0, "the two sides are timed evenly")
 	var rotation := float(analysis.timing("Site A ↔ Site B")["seconds"])
@@ -99,23 +119,22 @@ func _test_document(doc: MapDocument) -> void:
 	var mid_attack := float(analysis.timing("Dogleg (mid)", ATTACK)["seconds"])
 	var mid_defence := float(analysis.timing("Dogleg (mid)", DEFENCE)["seconds"])
 	check(mid_attack > 0.0 and mid_defence > 0.0 and absf(mid_attack - mid_defence) < 3.0, "mid is contested (%.1f s vs %.1f s)" % [mid_attack, mid_defence])
-	host.queue_free()
-	await wait_frames(1)
 
 	check(App.map_by_id(OfficialMaps.DEFAULT_ID) != null and App.map_by_id(MapTemplates.SANDBOX_ARENA_ID) != null
 		and App.map_by_id("map_missing") == null, "fixtures resolve the official map by ID; the Sandbox Arena stays available")
 
 
 func _test_bots_reach_sites(doc: MapDocument) -> void:
-	section("Bots from each spawn reach both sites")
+	section("%s: bots from each spawn reach both sites" % doc.name)
 	var level := SandboxLevel.new()
 	tree.root.add_child(level)
 	level.load_map(doc, false)
 	var region := level.build_navigation()
 	check(region.navigation_mesh.get_polygon_count() > 200, "the runtime bakes the map's navmesh")
 	var map := level.get_world_3d().navigation_map
+	var probe: Vector3 = doc.pieces_of_type("spawn_attack")[0]["position"]
 	var synced := func() -> bool:
-		return NavigationServer3D.map_get_iteration_id(map) > 0 			and NavigationServer3D.map_get_closest_point(map, Vector3(0, 0, 53)).distance_to(Vector3(0, 0, 53)) < 1.0
+		return NavigationServer3D.map_get_iteration_id(map) > 0 			and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) < 1.0
 	await wait_until(synced, 4.0)
 	var bots: Array[BotController] = []
 	var starts: Array[Array] = []

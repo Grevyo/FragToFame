@@ -25,6 +25,26 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 				clampf(float(props.get("sill_height", 1.0)), 0.2, size.y - 0.6))
 		"wall_parapet":
 			return _parapet(size)
+		"wall_battlement":
+			return _battlement(size, props)
+		"tower_round":
+			return _tower(size)
+		"catwalk":
+			return _catwalk(size, props)
+		"railing":
+			return _railing(size)
+		"gate_portcullis":
+			return _portcullis(size, props)
+		"pipe_run":
+			return _pipe_run(size)
+		"storage_tank":
+			return _storage_tank(size)
+		"banner":
+			return _banner(size)
+		"tree":
+			return _tree(size)
+		"shipping_container":
+			return _container(size)
 		"column":
 			return [_cyl(minf(size.x, size.z), size.y, Vector3(0, size.y / 2.0, 0))]
 		"crate_stack":
@@ -346,4 +366,156 @@ static func _cart(size: Vector3) -> Array[Dictionary]:
 			Vector3(side * (size.x / 2.0 - 0.15), 0.775 + (size.y - 0.775) / 2.0, -size.z * 0.125)))
 		list.append(_box(Vector3(0.06, 0.06, size.z * 0.25), Vector3(side * (size.x / 2.0 - 0.3), 0.7, size.z * 0.375), "wood_dark"))
 	list.append(_box(Vector3(0.08, 0.625, 0.08), Vector3(0, 0.3125, -size.z * 0.4), "wood_dark"))
+	return list
+
+
+## A full-height wall crowned with merlons ([code]merlon_height[/code], default 0.9 m).
+static func _battlement(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var merlon := clampf(float(props.get("merlon_height", 0.9)), 0.3, maxf(0.3, size.y - 0.5))
+	var base := size.y - merlon
+	var list: Array[Dictionary] = [_box(Vector3(size.x, base, size.z), Vector3(0, base / 2.0, 0))]
+	var slots := maxi(3, int(round(size.x / 0.8)) | 1)
+	var slot := size.x / float(slots)
+	for i: int in range(0, slots, 2):
+		list.append(_box(Vector3(slot, merlon, size.z),
+			Vector3(-size.x / 2.0 + slot * (float(i) + 0.5), base + merlon / 2.0, 0)))
+	return list
+
+
+## A solid round tower with an overhanging ring and merlons around its top.
+static func _tower(size: Vector3) -> Array[Dictionary]:
+	var diameter := minf(size.x, size.z)
+	var merlon := minf(0.9, size.y * 0.2)
+	var ring := minf(0.5, size.y * 0.1)
+	var body := size.y - merlon - ring
+	var list: Array[Dictionary] = [
+		_cyl(diameter * 0.92, body, Vector3(0, body / 2.0, 0)),
+		_cyl(diameter, ring, Vector3(0, body + ring / 2.0, 0)),
+	]
+	var count := maxi(8, int(round(PI * diameter / 0.9)))
+	count += count % 2
+	var depth := minf(0.5, diameter * 0.12)
+	for i: int in range(0, count, 2):
+		var angle := TAU * float(i) / float(count)
+		var radius := diameter / 2.0 - depth / 2.0
+		list.append(_box(Vector3(PI * diameter / float(count) * 0.95, merlon, depth),
+			Vector3(sin(angle) * radius, body + ring + merlon / 2.0, cos(angle) * radius), "", Vector3(0, rad_to_deg(angle), 0)))
+	return list
+
+
+## A thin walkable deck (its top is 0.12 m above the base) with railings on its long sides.
+## [code]rail_left[/code] / [code]rail_right[/code] switch each side off.
+static func _catwalk(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var deck := minf(0.12, size.y)
+	var list: Array[Dictionary] = [_box(Vector3(size.x, deck, size.z), Vector3(0, deck / 2.0, 0))]
+	var rail_height := size.y - deck
+	if rail_height < 0.3:
+		return list
+	for side: float in [-1.0, 1.0]:
+		if not bool(props.get("rail_left" if side < 0.0 else "rail_right", true)):
+			continue
+		for part: Dictionary in _railing(Vector3(size.z, rail_height, 0.06)):
+			# The railing is built along X; turn it to run along local Z on this side of the deck.
+			var pos: Vector3 = part["pos"]
+			var part_size: Vector3 = part["size"]
+			part["pos"] = Vector3(side * (size.x / 2.0 - 0.03), deck + pos.y, pos.x)
+			part["size"] = Vector3(part_size.z, part_size.y, part_size.x)
+			part["mat"] = "metal_dark"
+			list.append(part)
+	return list
+
+
+## Posts, a top rail and a mid rail: cover you can see and shoot through between the rails.
+static func _railing(size: Vector3) -> Array[Dictionary]:
+	var bar := clampf(size.z, 0.03, 0.08)
+	var list: Array[Dictionary] = []
+	var posts := maxi(2, ceili(size.x / 1.5) + 1)
+	for i: int in posts:
+		var x := -size.x / 2.0 + bar / 2.0 + (size.x - bar) * float(i) / float(posts - 1)
+		list.append(_box(Vector3(bar, size.y, bar), Vector3(x, size.y / 2.0, 0)))
+	for height: float in [size.y - bar / 2.0, size.y * 0.5]:
+		list.append(_box(Vector3(size.x, bar, bar), Vector3(0, height, 0)))
+	return list
+
+
+## A deep gateway whose iron portcullis is raised: its bars hang in the top of the opening down
+## to [code]clearance[/code] (at least 2 m, so people and bots walk under it).
+static func _portcullis(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var width := _opening_width(size, props, 3.2)
+	var top := _opening_height(size, props, 4.0)
+	var list := _opening(size, width, top, 0.0)
+	var clearance := clampf(float(props.get("clearance", top - 1.0)), minf(2.0, top), top)
+	var hang := top - clearance
+	if hang < 0.05:
+		return list
+	var bars := maxi(2, int(width / 0.4))
+	for i: int in bars:
+		var x := -width / 2.0 + width * (float(i) + 0.5) / float(bars)
+		list.append(_box(Vector3(0.07, hang, 0.07), Vector3(x, clearance + hang / 2.0, 0), "metal_dark"))
+	list.append(_box(Vector3(width, 0.1, 0.09), Vector3(0, clearance + 0.05, 0), "metal_dark"))
+	return list
+
+
+## A horizontal pipe along local X. A piece taller than the pipe stands it on legs.
+static func _pipe_run(size: Vector3) -> Array[Dictionary]:
+	var diameter := minf(size.y, size.z)
+	var centre := size.y - diameter / 2.0
+	var list: Array[Dictionary] = [_cyl(diameter, size.x, Vector3(0, centre, 0), "", Vector3(0, 0, 90))]
+	var flanges := maxi(2, int(size.x / 4.0) + 1)
+	for i: int in flanges:
+		var x := -size.x / 2.0 + 0.06 + (size.x - 0.12) * float(i) / float(flanges - 1)
+		list.append(_cyl(diameter * 1.25, 0.12, Vector3(x, centre, 0), "metal_dark", Vector3(0, 0, 90)))
+		if centre - diameter / 2.0 > 0.05:
+			list.append(_box(Vector3(0.12, centre, 0.12), Vector3(x, centre / 2.0, 0), "metal_dark"))
+	return list
+
+
+## A banded vertical tank with a conical cap.
+static func _storage_tank(size: Vector3) -> Array[Dictionary]:
+	var diameter := minf(size.x, size.z)
+	var body := size.y * 0.86
+	var list: Array[Dictionary] = [_cyl(diameter, body, Vector3(0, body / 2.0, 0))]
+	var cap := _cyl(diameter, size.y - body, Vector3(0, body + (size.y - body) / 2.0, 0))
+	cap["top_radius_scale"] = 0.25
+	list.append(cap)
+	for band: float in [0.12, 0.5, 0.82]:
+		list.append(_cyl(diameter * 1.03, 0.14, Vector3(0, body * band, 0), "metal_dark"))
+	return list
+
+
+## A cloth banner hanging from a pole, for a wall face.
+static func _banner(size: Vector3) -> Array[Dictionary]:
+	var pole := minf(0.08, size.y * 0.1)
+	return [
+		_cyl(pole, size.x, Vector3(0, size.y - pole / 2.0, 0), "wood_dark", Vector3(0, 0, 90)),
+		_box(Vector3(size.x * 0.9, size.y - pole, minf(0.04, size.z)), Vector3(0, (size.y - pole) / 2.0, 0)),
+	]
+
+
+## A ribbed shipping container: corner rails, corrugated long sides and a door seam at +Z.
+static func _container(size: Vector3) -> Array[Dictionary]:
+	var rib := 0.05
+	var list: Array[Dictionary] = [_box(Vector3(size.x - rib * 2.0, size.y, size.z), Vector3(0, size.y / 2.0, 0))]
+	var ribs := maxi(2, int(size.z / 0.6))
+	for i: int in ribs:
+		var z := -size.z / 2.0 + size.z * (float(i) + 0.5) / float(ribs)
+		for side: float in [-1.0, 1.0]:
+			list.append(_box(Vector3(rib, size.y * 0.9, 0.16), Vector3(side * (size.x / 2.0 - rib / 2.0), size.y / 2.0, z)))
+	for end: float in [-1.0, 1.0]:
+		list.append(_box(Vector3(size.x, 0.14, 0.14), Vector3(0, size.y - 0.07, end * (size.z / 2.0 - 0.07)), "metal_dark"))
+	list.append(_box(Vector3(0.05, size.y * 0.85, 0.04), Vector3(0, size.y * 0.5, size.z / 2.0 + 0.02), "metal_dark"))
+	return list
+
+
+## A trunk under three tapering layers of foliage. The canopy blocks sight and shots.
+static func _tree(size: Vector3) -> Array[Dictionary]:
+	var diameter := minf(size.x, size.z)
+	var trunk := size.y * 0.35
+	var list: Array[Dictionary] = [_cyl(maxf(0.25, diameter * 0.1), trunk, Vector3(0, trunk / 2.0, 0), "wood_dark")]
+	var layer_height := (size.y - trunk) / 3.0
+	for i: int in 3:
+		var bottom := 1.0 - float(i) * 0.25
+		var layer := _cyl(diameter * bottom, layer_height * 1.2, Vector3(0, trunk + layer_height * (float(i) + 0.5), 0))
+		layer["top_radius_scale"] = 0.45
+		list.append(layer)
 	return list

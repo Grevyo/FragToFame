@@ -64,8 +64,8 @@ static func scout(repo: CareerRepository, player_id: String, subject_id: String)
 
 ## What one scouting report learns: {revised, gain, evidence}. Evidence is how much there is
 ## to watch: the player's recent maps plus their tier's visibility. Each estimate moves part of
-## the way to the truth (further with more evidence), and a scout with little to watch can
-## misread. Confidence grows with the evidence and less when the world is already sure. Pure.
+## the way to the truth (further with more evidence). Thin footage makes that progress less
+## certain. Confidence grows with the evidence and less when the world is already sure. Pure.
 static func scout_report(seen: Dictionary, truth: Dictionary, confidence: int, maps: int, tier: int,
 		rng: RandomNumberGenerator) -> Dictionary:
 	var evidence := clampf(minf(maps / SCOUT_FULL_MAPS, 1.0) * 0.8 + float(SCOUT_VISIBILITY.get(tier, 0.0)), 0.05, 1.0)
@@ -74,9 +74,11 @@ static func scout_report(seen: Dictionary, truth: Dictionary, confidence: int, m
 	for ability: StringName in CareerCatalog.ABILITIES:
 		if truth.has(ability):
 			var estimate: int = seen.get(ability, 50)
+			var actual := int(truth[ability])
 			# The scout sees the truth through the evidence: thin footage blurs what they see.
-			var observed := int(truth[ability]) + rng.randf_range(-1.0, 1.0) * (1.0 - evidence) * 6.0
-			revised[ability] = clampi(estimate + roundi((observed - estimate) * share), 1, 100)
+			var observed := actual + rng.randf_range(-1.0, 1.0) * (1.0 - evidence) * 6.0
+			var next_estimate := estimate + roundi((observed - estimate) * share)
+			revised[ability] = clampi(next_estimate, mini(estimate, actual), maxi(estimate, actual))
 	var openness := 1.0 - clampf(confidence / 100.0, 0.0, 0.95)
 	return {"revised": revised, "gain": roundi((4.0 + 16.0 * evidence) * openness), "evidence": evidence}
 
@@ -97,12 +99,14 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	var rounds := result.home_score + result.away_score
 	var margin := float(result.home_score - result.away_score) / maxf(rounds, 1.0)
 	var reputation := repo.reputation(id)
+	# A result without statistics contributes only its outcome and margin.
+	var rating := 1.0 if counts.is_empty() else MatchStatistics.rating(counts)
+	var next_reputation := clampi(reputation + amateur_reputation(won, expected, margin, rating, reputation), 0, 100)
 	if won and not repo.add_player_money(id, CareerSpending.AMATEUR_WIN_PRIZE, day, "prize", "Amateur match win"):
 		return false
 	if counts.is_empty():
 		return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
-			and repo.set_reputation(id, clampi(reputation + amateur_reputation(won, expected, margin, 0.0, reputation), 0, 100), day)
-	var reputation_change := amateur_reputation(won, expected, margin, MatchStatistics.rating(counts), reputation)
+			and repo.set_reputation(id, next_reputation, day)
 
 	var opinions := repo.perceived(id)
 	var previous_confidence := repo.perceived_confidence(id)
@@ -115,17 +119,17 @@ static func apply_amateur_result(repo: CareerRepository, fixture: CareerFixture,
 	if int(counts["clutch_attempts"]) > 0:
 		_update_opinion(opinions, &"composure", int(counts["clutch_wins"]), int(counts["clutch_attempts"]))
 	return repo.set_amateur_rating(id, next_elo, next_elo - prior_elo, day) \
-		and repo.set_reputation(id, clampi(reputation + reputation_change, 0, 100), day) \
+		and repo.set_reputation(id, next_reputation, day) \
 		and repo.set_perceived(id, opinions, confidence, day)
 
 
 ## How an amateur result moves reputation. What counts is the surprise (a win you were expected
 ## to lose says far more than one you were expected to win; [param expected] is the ELO win
-## chance), the margin (-1..1), and how you played ([param rating], 0 when there is no recorded
-## performance). The amateur scene matters less the better known you already are. Pure.
+## chance), the margin (-1..1), and how you played ([param rating], neutral at 1.0).
+## The amateur scene matters less the better known you already are. Pure.
 static func amateur_reputation(won: bool, expected: float, margin: float, rating: float, reputation: int) -> int:
 	var result_part := (float(won) - expected) * 4.0 + margin * 1.5
-	var performance := (rating - 1.0) * 3.0 if rating > 0.0 else 0.0
+	var performance := (rating - 1.0) * 3.0
 	return roundi((result_part + performance) * clampf(1.1 - reputation / 100.0, 0.2, 1.1))
 
 

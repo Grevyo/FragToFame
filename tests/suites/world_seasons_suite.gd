@@ -150,6 +150,13 @@ func _test_career(app: Node) -> void:
 	check(CareerDevelopment.amateur_reputation(false, 0.8, -0.5, 0.6, 20) < 0
 		and CareerDevelopment.amateur_reputation(false, 0.2, -0.1, 1.2, 20) >= 0,
 		"a bad expected loss costs reputation; a close loss you starred in does not")
+	var counts := MatchStatistics.empty_counts()
+	counts["rounds"] = 5
+	counts["deaths"] = 5
+	var worst_rating := MatchStatistics.rating(counts)
+	check(worst_rating == 0.0 and CareerDevelopment.amateur_reputation(true, 0.75, 0.2, worst_rating, 20) < 0
+		and CareerDevelopment.amateur_reputation(true, 0.75, 0.2, 1.0, 20) > 0,
+		"a zero-rated performance can cost reputation even in a team win")
 	check(CareerDevelopment.amateur_reputation(true, 0.3, 0.4, 1.5, 15) > CareerDevelopment.amateur_reputation(true, 0.3, 0.4, 1.5, 75),
 		"amateur results matter less once you are well known")
 	check(CareerDevelopment.amateur_confidence_gain(30, 24) > CareerDevelopment.amateur_confidence_gain(30, 6)

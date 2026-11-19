@@ -242,18 +242,24 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   mouse drags preview without history and commit once. `MapClipboard` is app-wide, so a copy
   survives opening another map. A placed prefab shares a group ID and selects as one unit.
 - **Snapping.** `MapSnapping` holds the pure rules: grid, angle, surface height, edge offset,
-  group transforms and the measuring readout.
+  group transforms and the measuring readout. `MapEditorView` checks the upward face under the
+  cursor and confirms the snapped point is supported. Sloped faces and stair treads follow
+  their local height, and snapping into a hole falls back to the build plane.
 - **Autosave.** `MapAutosave` writes one recovery file per map ID while there are unsaved
   changes (every 45 s). Saving or discarding removes it; opening the studio offers the newest.
 - **Layers.** Stored in the map but editor-only: hidden layers are not drawn or pickable in the
   editor, locked layers are not pickable, and the runtime builds every piece regardless.
+- **Picking.** `MapEditorView` uses the piece bounds to find candidates, then tests the visible
+  triangles for drawn surfaces, compound pieces, ramps and stairs. Open doors and windows allow
+  selection through the opening.
 - **Structural vs navigation validation.** `MapValidator` stays pure data in `src/maps`.
   `MapAnalysis` lives in `src/ai` because it bakes with `NavigationBuilder`: it builds the map
   under a host node for the duration of the call, bakes, and queries a private navigation map.
   It reports spawns off the navmesh, objectives a team cannot reach, unreachable islands of
   playable floor, and floor that people reach by jump or crouch but bots cannot (found by baking
   a second navmesh for a crouched agent with a 1.1 m climb). All are warnings. Pockets of navmesh
-  sealed inside box pieces and tops of non-walkable pieces are ignored.
+  sealed inside boxes, the solid wedges used by ramps and stairs, and compound geometry are
+  ignored. Tops of non-walkable pieces are also ignored.
 - **Route timings.** From the same analysis: shortest path from each team's spawns to every
   callout area with a timing role (`mid`, `entrance_a`, `entrance_b`) and to each site, site-to-site
   rotations and entrance-to-entrance crossings, at 6.35 m/s and at the rifle's 0.86 mobility.
@@ -270,7 +276,14 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   or left area, a missing or moved anchor and an unreachable step. The editor runs it after a
   save that raised the content version and in Validate; the Tactical Play Creator runs it when
   opening a tactic. Tactic files are written only by `TacticStorage.save`, when the author saves.
-- **Official maps.** `OfficialMaps` lists files in `res://data/maps/official`. They load through
+- **Bot slopes.** `MapAnalysis.bot_slope_limit()` is the steepest stair or ramp the bot navmesh
+  can follow: atan(climb / cell size), less a margin for rasterisation. Steeper pieces get a
+  `steep_slope` warning that gives the length needed.
+- **Authoring sessions.** `tools/map_author_base.gd` holds the shared steps for official map
+  scripts (`tools/author_*.gd`): open the studio, place and edit pieces, validate, save, then
+  publish. `tools/capture_map.gd` saves screenshots of any map (it needs a window).
+- **Official maps.** `OfficialMaps` lists files in `res://data/maps/official` (Kilnmarket,
+  Switchyard, Kestrel Keep). They load through
   `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and
   tactics as shipped; saving creates the player's copy under a new ID. `App.map_by_id` resolves
   official maps, the dev arena and saved maps for practice and career fixtures.
@@ -436,7 +449,8 @@ matches before computing rates. Older score-only fixtures remain in Calendar.
 `CareerDevelopment` updates amateur ELO and the human player's reputation when a recorded
 amateur fixture completes. Nothing moves by a fixed amount:
 - `amateur_reputation` (pure) weighs the surprise of the result against the ELO win chance,
-  the margin and your rating, and counts for less the better known you are.
+  the margin and your rating, and counts for less the better known you are. Simulated results
+  without match statistics use a neutral performance contribution.
 - `amateur_confidence_gain` grows with rounds played and shrinks as the world becomes sure of
   you.
 - Perceived aim, crosshair placement and composure move toward what the match showed by a share
@@ -448,8 +462,8 @@ careers use their difficulty's starting amateur ELO until their first recorded r
 
 Schema v5 also stores one scouting report per career day. (Its abstract "train one attribute
 today" action was replaced in v13 by real training, below.) Scouting moves reported AI estimates
-towards observed ability by up to four points and increases the report's confidence. Scouting
-does not disclose potential or change underlying simulated ability. Recorded match counts,
+towards actual ability by an amount that depends on the evidence and increases the report's
+confidence. Scouting does not disclose potential or change underlying simulated ability. Recorded match counts,
 versioned performance ratings, career opinions and reputation remain separate.
 
 ### People (`src/career/people/`)
@@ -564,8 +578,8 @@ sit beside small appliers, so the maths is tested without a database:
   per map watched and lets an unseen player's read go stale. Reputation drifts towards the tier
   range.
 - **Scouting and PR follow evidence:** `CareerDevelopment.scout_report` (pure) weighs the
-  subject's maps in the last 90 days and tier visibility, so thin evidence moves estimates less
-  and can misread. `CareerSpending.pr_effect` (pure) sells the human's month
+  subject's maps in the last 90 days and tier visibility. Thin evidence can stall an estimate's
+  progress towards actual ability. `CareerSpending.pr_effect` (pure) sells the human's month
   (`form_since`: maps, rating, wins) against the gap between reputation and perceived level.
 - **Money (`WorldFinance`):** balances live in `organisation_finance` and `player_finance`. Every
   movement is a `finance_ledger` row, so a balance always equals its ledger sum. `ensure` gives
@@ -877,6 +891,8 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Palette textures generated in code | Original content, no asset pipeline, reviewable in a diff |
 | 2026-11-15 | Official maps are saved map files in `res://data/maps/official`; saving one makes a copy | Official content uses the community path and cannot be shadowed by a player file |
 | 2026-11-15 | Kilnmarket authored by a session script that drives the Creation Studio scene (`tools/author_kilnmarket.gd`) | A headless agent cannot click; this uses only editor operations and leaves a rebuildable record. To be replaced by hand edits in the editor as the map is iterated |
+| 2026-11-19 | Bot slope limit derived from the navmesh settings, not the agent's max slope | The 46° agent slope never applies to stairs: a 0.1 m climb over a 0.2 m cell splits any slope above about 26°, so validation warns at 24° |
+| 2026-11-19 | Official maps share `tools/map_author_base.gd` | Each map script holds only its own layout; validate, save and publish behave the same for every map |
 | 2026-11-15 | User bindings stored as strings per action and applied to `InputMap`; conflicts scoped by context | Gameplay code keeps using action names; game and editor can reuse keys |
 | 2026-11-15 | Esc is locked to the pause menu | A player can never bind themselves out of the menus |
 | 2026-11-16 | Third-party weapon models (CC BY 4.0) and real weapon names, at the owner's direction | Supersedes "all content original" for weapons only; attribution in CREDITS.md. Two models have no recorded licence (open item) |

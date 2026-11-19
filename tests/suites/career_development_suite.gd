@@ -186,6 +186,18 @@ func _check_scout_report() -> void:
 			_distance(watched["revised"], truth), _distance(unseen["revised"], truth)])
 	check(int(CareerDevelopment.scout_report(seen, truth, 80, 14, 1, rng)["gain"]) < int(watched["gain"]),
 		"a report adds less confidence when the world is already sure")
+	var close_estimates := truth.duplicate()
+	close_estimates[&"aim"] = 69
+	close_estimates[&"composure"] = 71
+	var estimates_stayed_in_bounds := true
+	for seed_value: int in range(8):
+		rng.seed = seed_value
+		var revised: Dictionary = CareerDevelopment.scout_report(close_estimates, truth, 30, 0, 0, rng)["revised"]
+		for ability: StringName in CareerCatalog.ABILITIES:
+			var before := int(close_estimates[ability])
+			var after := int(revised[ability])
+			estimates_stayed_in_bounds = estimates_stayed_in_bounds and after == clampi(after, mini(before, 70), maxi(before, 70))
+	check(estimates_stayed_in_bounds, "thin footage preserves accurate estimates and only moves close estimates toward the truth")
 
 
 ## Evidence comes from how a session went, not from fixed steps.

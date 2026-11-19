@@ -903,9 +903,16 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 		"mesh_brush":
 			_toolbar_button(_inspector, "Edit brush geometry", func() -> void: action_requested.emit(&"edit_brush", str(piece["id"])),
 				"Edit the vertices and faces of this brush")
-		"doorway", "double_door", "arch", "wall_window":
+		"catwalk":
+			_bool_prop("Railing on left side", "rail_left", bool(props.get("rail_left", true)))
+			_bool_prop("Railing on right side", "rail_right", bool(props.get("rail_right", true)))
+		"wall_battlement":
+			_number_prop("Merlon height (m)", "merlon_height", float(props.get("merlon_height", 0.9)), 0.3, 3.0, 0.1)
+		"doorway", "double_door", "arch", "wall_window", "gate_portcullis":
 			_number_prop("Opening width (m)", "opening_width", float(props.get("opening_width", 1.4)), PieceShapes.MIN_OPENING, 16.0, 0.1)
 			_number_prop("Opening height (m)", "opening_height", float(props.get("opening_height", 2.2)), 1.0, 16.0, 0.1)
+			if type == "gate_portcullis":
+				_number_prop("Portcullis clearance (m)", "clearance", float(props.get("clearance", 3.0)), 2.0, 16.0, 0.1)
 			if type == "wall_window":
 				_number_prop("Sill height (m)", "sill_height", float(props.get("sill_height", 1.0)), 0.2, 8.0, 0.1)
 			elif type == "double_door":
@@ -1015,6 +1022,14 @@ func _number_row(caption: String, value: float, min_value: float, max_value: flo
 func _number_prop(caption: String, prop: String, value: float, min_value: float, max_value: float, step: float) -> void:
 	var spin := _number_row(caption, value, min_value, max_value, step)
 	spin.value_changed.connect(func(next: float) -> void: _edit_prop(prop, next))
+
+
+func _bool_prop(caption: String, prop: String, value: bool) -> void:
+	var check := CheckBox.new()
+	check.text = caption
+	check.button_pressed = value
+	check.toggled.connect(func(pressed: bool) -> void: _edit_prop(prop, pressed))
+	_inspector.add_child(check)
 
 
 func _text_prop(caption: String, prop: String, value: String) -> void:

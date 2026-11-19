@@ -17,6 +17,13 @@ static func piece(vertices: Array, faces: Array, two_sided: bool = false) -> Dic
 		if not point.is_finite() or point.abs().length() > 900.0:
 			return {}
 		points.append(point)
+	var has_face := false
+	for i: int in range(0, faces.size(), 3):
+		if _has_area(points[int(faces[i])], points[int(faces[i + 1])], points[int(faces[i + 2])]):
+			has_face = true
+			break
+	if not has_face:
+		return {}
 	var bounds := AABB(points[0], Vector3.ZERO)
 	for point: Vector3 in points:
 		bounds = bounds.expand(point)
@@ -27,8 +34,13 @@ static func piece(vertices: Array, faces: Array, two_sided: bool = false) -> Dic
 	for point: Vector3 in points:
 		var normalised := (point - origin) / size
 		local.append([normalised.x, normalised.y, normalised.z])
+	# Map JSON loads numbers as floats. Store indices the same way so a save and reopen
+	# keeps the gameplay fingerprint, including for brushes created by editor scripts.
+	var stored_faces: Array = []
+	for index: Variant in faces:
+		stored_faces.append(float(index))
 	var result := MapDocument.make_piece("mesh_brush", origin, 0.0, size)
-	result["props"] = {"vertices": local, "faces": faces.duplicate(), "two_sided": two_sided}
+	result["props"] = {"vertices": local, "faces": stored_faces, "two_sided": two_sided}
 	return result
 
 
@@ -45,7 +57,7 @@ static func mesh(size: Vector3, props: Dictionary) -> ArrayMesh:
 		var a := points[int(faces[i])]
 		var b := points[int(faces[i + 1])]
 		var c := points[int(faces[i + 2])]
-		if (b - a).cross(c - a).length_squared() < 1.0e-12:
+		if not _has_area(a, b, c):
 			continue
 		has_faces = true
 		tool.add_vertex(a)
@@ -76,6 +88,10 @@ static func local_points(size: Vector3, props: Dictionary) -> PackedVector3Array
 			return PackedVector3Array()
 		result.append(point * size)
 	return result
+
+
+static func _has_area(a: Vector3, b: Vector3, c: Vector3) -> bool:
+	return (b - a).cross(c - a).length_squared() >= 1.0e-12
 
 
 static func _valid_indices(faces: Array, count: int) -> bool:

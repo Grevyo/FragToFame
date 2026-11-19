@@ -75,8 +75,9 @@ func _run() -> void:
 func _publish(saved_path: String) -> void:
 	var doc := MapStorage.new(STAGING_DIR).load_path(saved_path)
 	doc.map_id = OFFICIAL_ID
-	doc.revision = 1
-	doc.content_version = 1
+	doc.revision = 2
+	# Version 2: the Overlook stair was lengthened so bots can always climb it.
+	doc.content_version = 2
 	doc.content_hash = doc.content_fingerprint()
 	DirAccess.make_dir_recursive_absolute(OfficialMaps.DIRECTORY)
 	var file := FileAccess.open(OfficialMaps.path_for(OFFICIAL_ID), FileAccess.WRITE)
@@ -245,7 +246,8 @@ func _b_side() -> void:
 	put("doorway", Vector3(44, 0, 4), Vector3(4, 3.2, 0.5), 0.0, {"opening_width": 2.4, "opening_height": 2.6}, "sandstone")
 	# Overlook: the raised defender position above the Cistern, reached by stairs from the back.
 	mass("platform", 40, 58, -26, -20, 2.5, "sandstone")
-	put("stairs_stone", Vector3(37.5, 0, -23), Vector3(3, 2.5, 5), 270.0)
+	# 6 m long (22.6°): steeper stairs only bake for bots by luck (MapAnalysis.bot_slope_limit).
+	put("stairs_stone", Vector3(37, 0, -23), Vector3(3, 2.5, 6), 270.0)
 	put("wall_parapet", Vector3(49, 2.5, -20.2), Vector3(18, 1.2, 0.4))
 	_layer("Lights")
 	put("light_lamp", Vector3(36, 2.6, 36), Vector3.ZERO, 0.0, {"energy": 1.8, "range": 9.0})

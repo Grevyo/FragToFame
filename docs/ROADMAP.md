@@ -591,20 +591,24 @@ Gaps against building a full competitive map:
 - [x] Refresh the visible bot navmesh after edits, undo and redo. Run a bot match straight from
       the unsaved map with the chosen side and spawn, then return to the same draft.
 - [ ] Owner walkthrough of the editor checklist and the map (README).
-- [x] Second and third official maps: Switchyard (stacked sites) and Kestrel Keep (stone
+- [x] Second and third official maps: Switchyard (surface A, underground B) and Kestrel Keep (stone
       fortress), both original layouts (owner, 2026-11-18: continue the two drafts). Building
       them added the pieces the editor could not make and a slope warning (below).
 - [ ] Remaining official maps (2–4 more).
 
-**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`): a rail switching station
-whose two sites share one building. The Machine Hall (B) is on the ground and the Control Deck
-(A) is its roof at 5 m. They are joined by a switchback stair tower and a drop hatch over B
-(people only; bots take the stairs). Attackers cross an open Freight Yard (mid, with a gantry
-crane and a Signal Box roof perch) or the Coal Lane and Tank Row flanks. They climb to the deck
-by the West Stair or the Freight Ramp, or enter the hall by the Loading Gate, Coal Door or Pump
-Door. Defenders come up a service stair from the Receiving Yard. Timings: defenders reach A in
-7.0 s and B in 6.3 s; attackers' first A entrance is 11.0 s and first B entrance 8.5 s.
-Rotation between the stacked sites is 6.2 s by the stair tower.
+**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 2): a rail
+switching station built over a turbine vault. Most of the play is on the surface; site B is
+8 m underground. Site A is the Machine Hall, entered by the Loading Gate, Coal Door or Pump Door
+and overlooked by the Control Deck on its roof (5 m, open atrium over the site, reached by a
+stair tower, the West Stair, the deck ramp and the Service Stair). Site B is the Turbine Vault
+(floor at -8 m, 7 m tall, with a gantry 4 m up along its east wall). Six ways down: the Freight
+Ramp in the middle of the yard (attackers' short route), the West Stairwell inside the hall
+(A to B), the defenders' North Stair from the Receiving Yard, the East Culvert ramp from the
+Tank Yard, and two drops for people only: the Coal Chute from the Coal Cut and the Vent beside
+site A. The surface slab is cut with holes (`slab_with_holes` in `tools/map_author_base.gd`) so
+the shafts are open to the sky. Timings: defenders reach A in 6.4 s and B in 6.5 s; attackers'
+first A entrance is 8.9 s (Loading Gate) and first B entrance 8.7 s (Ramp Tunnel), the long
+Culvert 13.2 s. Rotation A to B is 6.6 s by the stairwell.
 
 **Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`): a granite fortress
 above a village. Site A is the Tiltyard, reached by the West Gate road (long, 14.0 s), the Breach
@@ -718,6 +722,7 @@ Planned scope:
 | 2026-11-17 | Transfers run weekly all year. Windows stay the busiest; struggling teams bench a starter and sign someone new mid-season. |
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
 | 2026-11-19 | M16: two more official maps, Switchyard (stacked sites) and Kestrel Keep (stone fortress). Eleven new catalogue pieces, six materials and a steep-slope warning. |
+| 2026-11-19 | Switchyard rework (owner request): play centres on the surface, site B moves 8 m underground to the Turbine Vault, reached by two ramps, two stairs, a coal chute and a vent. Published as revision 2. |
 | 2026-11-18 | No fixed rates: amateur results now move reputation by surprise, margin and rating, and confidence and opinions by the size of the evidence. |
 | 2026-11-18 | No fixed rates, continued: the PR agent, scouting reports and the world's monthly confidence follow evidence (maps played, form, visibility, the gap between reputation and level). |
 | 2026-11-18 | No fixed rates in training: evidence, confidence, scrim relationships and the bootcamp's outcome all follow how the sessions went and who the people are. |

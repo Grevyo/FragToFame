@@ -1,8 +1,8 @@
 {
 	"author": "F2F official",
-	"content_hash": "438e48cf233faa94fd35f9dfe621e6f4fed7847a35483046834c09ee10affbba",
-	"content_version": 1,
-	"description": "Rail switching station. Both bombsites share one building: the Machine Hall (B) on the ground and the Control Deck (A) on its roof, joined by an inner stair and a drop hatch.",
+	"content_hash": "036b01601a0a7e8fa49231d257a6f646d94de7906784838a1eb6c44868b7c366",
+	"content_version": 2,
+	"description": "Rail switching station over a turbine vault. A: the Machine Hall, under the Control Deck. B: the Turbine Vault, 8 m below ground, reached by two ramps, two stairs, a coal chute and a vent.",
 	"format": "f2f.map",
 	"format_version": 2,
 	"layers": [
@@ -21,7 +21,7 @@
 		{
 			"id": "layer_2",
 			"locked": false,
-			"name": "Switch house · Machine Hall",
+			"name": "Switch house · Machine Hall (A)",
 			"visible": true
 		},
 		{
@@ -45,7 +45,7 @@
 		{
 			"id": "layer_6",
 			"locked": false,
-			"name": "Outside routes · stair, ramp, service stair",
+			"name": "Deck routes · west stair, deck ramp, service stair",
 			"visible": true
 		},
 		{
@@ -57,41 +57,59 @@
 		{
 			"id": "layer_8",
 			"locked": false,
-			"name": "Freight Yard",
+			"name": "Underground · Turbine Vault (B)",
 			"visible": true
 		},
 		{
 			"id": "layer_9",
 			"locked": false,
-			"name": "Coal Lane and Boiler Yard",
+			"name": "Underground · ways down",
 			"visible": true
 		},
 		{
 			"id": "layer_10",
 			"locked": false,
-			"name": "Tank Row and Tank Yard",
+			"name": "Underground · tunnels",
 			"visible": true
 		},
 		{
 			"id": "layer_11",
 			"locked": false,
-			"name": "Receiving Yard",
+			"name": "Freight Yard",
 			"visible": true
 		},
 		{
 			"id": "layer_12",
 			"locked": false,
-			"name": "Lights",
+			"name": "Coal Lane and Boiler Yard",
 			"visible": true
 		},
 		{
 			"id": "layer_13",
 			"locked": false,
-			"name": "Gameplay",
+			"name": "Tank Row and Tank Yard",
 			"visible": true
 		},
 		{
 			"id": "layer_14",
+			"locked": false,
+			"name": "Receiving Yard",
+			"visible": true
+		},
+		{
+			"id": "layer_15",
+			"locked": false,
+			"name": "Lights",
+			"visible": true
+		},
+		{
+			"id": "layer_16",
+			"locked": false,
+			"name": "Gameplay",
+			"visible": true
+		},
+		{
+			"id": "layer_17",
 			"locked": false,
 			"name": "Tactics",
 			"visible": true
@@ -99,7 +117,7 @@
 	],
 	"lighting": {
 		"ambient_color": "a9b6c6",
-		"ambient_energy": 0.68,
+		"ambient_energy": 0.62,
 		"sun_color": "e2ecff",
 		"sun_energy": 1.1,
 		"sun_pitch": 38.0,
@@ -108,8 +126,8 @@
 	"map_id": "map_f2f_switchyard",
 	"name": "Switchyard",
 	"next_group_number": 1,
-	"next_layer_number": 15,
-	"next_piece_number": 207,
+	"next_layer_number": 18,
+	"next_piece_number": 326,
 	"next_prefab_number": 1,
 	"pieces": [
 		{
@@ -120,20 +138,438 @@
 			"position": [
 				0.0,
 				-1.0,
-				13.0
+				-39.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
 				92.0,
 				1.0,
-				122.0
+				18.0
 			],
 			"type": "floor"
 		},
 		{
 			"group": "",
 			"id": "pc_4",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-22.0,
+				-1.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				48.0,
+				1.0,
+				20.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_5",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				26.0,
+				-1.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				40.0,
+				1.0,
+				20.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_6",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-30.0,
+				-1.0,
+				-8.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				32.0,
+				1.0,
+				4.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_7",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				17.5,
+				-1.0,
+				-8.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				57.0,
+				1.0,
+				4.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_8",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-30.0,
+				-1.0,
+				-3.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				32.0,
+				1.0,
+				6.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_9",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				7.5,
+				-1.0,
+				-3.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				37.0,
+				1.0,
+				6.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_10",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				-3.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				6.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_11",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-10.0,
+				-1.0,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				72.0,
+				1.0,
+				2.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_12",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				2.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_13",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-20.0,
+				-1.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				52.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_14",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				17.5,
+				-1.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				17.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_15",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_16",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-10.0,
+				-1.0,
+				6.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				72.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_17",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				6.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_18",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-41.0,
+				-1.0,
+				9.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_19",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-3.5,
+				-1.0,
+				9.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				59.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_20",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				9.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_21",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-10.0,
+				-1.0,
+				12.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				72.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_22",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				38.0,
+				-1.0,
+				12.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				3.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_23",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				-24.5,
+				-1.0,
+				24.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				43.0,
+				1.0,
+				20.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_24",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				24.5,
+				-1.0,
+				24.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				43.0,
+				1.0,
+				20.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_25",
+			"layer": "layer_1",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-1.0,
+				54.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				92.0,
+				1.0,
+				40.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_26",
 			"layer": "layer_1",
 			"material": "concrete",
 			"position": [
@@ -152,7 +588,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_5",
+			"id": "pc_27",
 			"layer": "layer_1",
 			"material": "concrete",
 			"position": [
@@ -171,7 +607,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_6",
+			"id": "pc_28",
 			"layer": "layer_1",
 			"material": "concrete",
 			"position": [
@@ -190,7 +626,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_7",
+			"id": "pc_29",
 			"layer": "layer_1",
 			"material": "concrete",
 			"position": [
@@ -209,7 +645,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_8",
+			"id": "pc_30",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -228,7 +664,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_9",
+			"id": "pc_31",
 			"layer": "layer_2",
 			"material": "metal_painted",
 			"position": [
@@ -250,7 +686,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_10",
+			"id": "pc_32",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -269,7 +705,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_11",
+			"id": "pc_33",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -288,7 +724,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_12",
+			"id": "pc_34",
 			"layer": "layer_2",
 			"material": "metal_dark",
 			"position": [
@@ -310,7 +746,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_13",
+			"id": "pc_35",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -329,7 +765,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_14",
+			"id": "pc_36",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -348,7 +784,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_15",
+			"id": "pc_37",
 			"layer": "layer_2",
 			"material": "metal_dark",
 			"position": [
@@ -370,7 +806,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_16",
+			"id": "pc_38",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -389,7 +825,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_17",
+			"id": "pc_39",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -408,7 +844,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_18",
+			"id": "pc_40",
 			"layer": "layer_2",
 			"material": "metal_dark",
 			"position": [
@@ -430,7 +866,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_19",
+			"id": "pc_41",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -449,7 +885,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_20",
+			"id": "pc_42",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -468,7 +904,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_21",
+			"id": "pc_43",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -487,7 +923,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_22",
+			"id": "pc_44",
 			"layer": "layer_2",
 			"material": "concrete",
 			"position": [
@@ -506,26 +942,26 @@
 		},
 		{
 			"group": "",
-			"id": "pc_23",
+			"id": "pc_45",
 			"layer": "layer_2",
 			"material": "metal_painted",
 			"position": [
-				6.0,
+				3.5,
 				0.0,
-				3.70000004768372
+				5.5
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				4.0,
+				3.0,
 				2.70000004768372,
-				3.40000009536743
+				3.0
 			],
 			"type": "block"
 		},
 		{
 			"group": "",
-			"id": "pc_24",
+			"id": "pc_46",
 			"layer": "layer_2",
 			"material": "metal_dark",
 			"position": [
@@ -544,7 +980,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_25",
+			"id": "pc_47",
 			"layer": "layer_2",
 			"material": "hazard_paint",
 			"position": [
@@ -563,13 +999,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_26",
+			"id": "pc_48",
 			"layer": "layer_2",
 			"material": "",
 			"position": [
-				-11.5,
+				-9.0,
 				0.0,
-				0.5
+				7.5
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -582,7 +1018,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_27",
+			"id": "pc_49",
 			"layer": "layer_2",
 			"material": "metal_rust",
 			"position": [
@@ -601,7 +1037,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_28",
+			"id": "pc_50",
 			"layer": "layer_2",
 			"material": "metal_rust",
 			"position": [
@@ -620,7 +1056,45 @@
 		},
 		{
 			"group": "",
-			"id": "pc_29",
+			"id": "pc_51",
+			"layer": "layer_2",
+			"material": "hazard_paint",
+			"position": [
+				7.5,
+				0.0,
+				1.95000004768372
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_52",
+			"layer": "layer_2",
+			"material": "hazard_paint",
+			"position": [
+				9.05000019073486,
+				0.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				3.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_53",
 			"layer": "layer_2",
 			"material": "",
 			"position": [
@@ -643,7 +1117,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_30",
+			"id": "pc_54",
 			"layer": "layer_2",
 			"material": "",
 			"position": [
@@ -666,7 +1140,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_31",
+			"id": "pc_55",
 			"layer": "layer_2",
 			"material": "",
 			"position": [
@@ -689,7 +1163,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_32",
+			"id": "pc_56",
 			"layer": "layer_2",
 			"material": "",
 			"position": [
@@ -712,113 +1186,94 @@
 		},
 		{
 			"group": "",
-			"id": "pc_33",
+			"id": "pc_57",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
 				-3.0,
 				4.69999980926514,
-				-3.5
+				-6.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
 				22.0,
 				0.300000011920929,
-				13.0
+				8.0
 			],
 			"type": "floor"
 		},
 		{
 			"group": "",
-			"id": "pc_34",
+			"id": "pc_58",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
-				-11.0,
+				-10.0,
 				4.69999980926514,
-				4.0
+				1.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				6.0,
+				8.0,
 				0.300000011920929,
-				2.0
+				6.0
 			],
 			"type": "floor"
 		},
 		{
 			"group": "",
-			"id": "pc_35",
+			"id": "pc_59",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
-				1.0,
+				8.0,
 				4.69999980926514,
-				4.0
+				1.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				14.0,
+				12.0,
 				0.300000011920929,
-				2.0
+				6.0
 			],
 			"type": "floor"
 		},
 		{
 			"group": "",
-			"id": "pc_36",
+			"id": "pc_60",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
-				-3.0,
+				0.0,
 				4.69999980926514,
-				7.5
+				7.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				22.0,
+				28.0,
 				0.300000011920929,
-				5.0
+				6.0
 			],
 			"type": "floor"
 		},
 		{
 			"group": "",
-			"id": "pc_37",
-			"layer": "layer_3",
-			"material": "metal_painted",
-			"position": [
-				11.0,
-				4.69999980926514,
-				4.0
-			],
-			"props": {},
-			"rotation_y": 0.0,
-			"size": [
-				6.0,
-				0.300000011920929,
-				12.0
-			],
-			"type": "floor"
-		},
-		{
-			"group": "",
-			"id": "pc_38",
+			"id": "pc_61",
 			"layer": "layer_3",
 			"material": "hazard_paint",
 			"position": [
-				-7.0,
+				-2.0,
 				5.0,
-				5.09999990463257
+				-2.04999995231628
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				2.0,
+				8.0,
 				1.04999995231628,
 				0.0599999986588955
 			],
@@ -826,7 +1281,64 @@
 		},
 		{
 			"group": "",
-			"id": "pc_39",
+			"id": "pc_62",
+			"layer": "layer_3",
+			"material": "hazard_paint",
+			"position": [
+				-2.0,
+				5.0,
+				4.05000019073486
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_63",
+			"layer": "layer_3",
+			"material": "hazard_paint",
+			"position": [
+				-6.05000019073486,
+				5.0,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				6.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_64",
+			"layer": "layer_3",
+			"material": "hazard_paint",
+			"position": [
+				2.04999995231628,
+				5.0,
+				1.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				6.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_65",
 			"layer": "layer_3",
 			"material": "concrete",
 			"position": [
@@ -845,7 +1357,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_40",
+			"id": "pc_66",
 			"layer": "layer_3",
 			"material": "metal_dark",
 			"position": [
@@ -864,7 +1376,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_41",
+			"id": "pc_67",
 			"layer": "layer_3",
 			"material": "metal_dark",
 			"position": [
@@ -883,7 +1395,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_42",
+			"id": "pc_68",
 			"layer": "layer_3",
 			"material": "metal_dark",
 			"position": [
@@ -902,7 +1414,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_43",
+			"id": "pc_69",
 			"layer": "layer_3",
 			"material": "metal_dark",
 			"position": [
@@ -921,13 +1433,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_44",
+			"id": "pc_70",
 			"layer": "layer_3",
 			"material": "metal_dark",
 			"position": [
 				-2.5,
 				5.0,
-				-5.30000019073486
+				-5.69999980926514
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -940,7 +1452,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_45",
+			"id": "pc_71",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
@@ -959,7 +1471,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_46",
+			"id": "pc_72",
 			"layer": "layer_3",
 			"material": "metal_rust",
 			"position": [
@@ -978,7 +1490,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_47",
+			"id": "pc_73",
 			"layer": "layer_3",
 			"material": "metal_painted",
 			"position": [
@@ -997,7 +1509,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_48",
+			"id": "pc_74",
 			"layer": "layer_4",
 			"material": "metal_dark",
 			"position": [
@@ -1016,7 +1528,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_49",
+			"id": "pc_75",
 			"layer": "layer_4",
 			"material": "metal_dark",
 			"position": [
@@ -1035,7 +1547,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_50",
+			"id": "pc_76",
 			"layer": "layer_4",
 			"material": "metal_dark",
 			"position": [
@@ -1054,7 +1566,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_51",
+			"id": "pc_77",
 			"layer": "layer_4",
 			"material": "metal_dark",
 			"position": [
@@ -1073,7 +1585,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_52",
+			"id": "pc_78",
 			"layer": "layer_4",
 			"material": "metal_dark",
 			"position": [
@@ -1092,13 +1604,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_53",
+			"id": "pc_79",
 			"layer": "layer_4",
 			"material": "",
 			"position": [
 				-3.0,
 				8.80000019073486,
-				0.0
+				6.0
 			],
 			"props": {
 				"angle": 60.0,
@@ -1116,13 +1628,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_54",
+			"id": "pc_80",
 			"layer": "layer_4",
 			"material": "",
 			"position": [
 				4.0,
 				8.80000019073486,
-				2.0
+				-5.0
 			],
 			"props": {
 				"angle": 60.0,
@@ -1140,7 +1652,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_55",
+			"id": "pc_81",
 			"layer": "layer_5",
 			"material": "metal_dark",
 			"position": [
@@ -1159,7 +1671,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_56",
+			"id": "pc_82",
 			"layer": "layer_5",
 			"material": "concrete",
 			"position": [
@@ -1178,7 +1690,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_57",
+			"id": "pc_83",
 			"layer": "layer_5",
 			"material": "concrete",
 			"position": [
@@ -1197,7 +1709,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_58",
+			"id": "pc_84",
 			"layer": "layer_5",
 			"material": "metal_dark",
 			"position": [
@@ -1216,7 +1728,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_59",
+			"id": "pc_85",
 			"layer": "layer_5",
 			"material": "concrete",
 			"position": [
@@ -1235,7 +1747,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_60",
+			"id": "pc_86",
 			"layer": "layer_5",
 			"material": "",
 			"position": [
@@ -1254,7 +1766,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_61",
+			"id": "pc_87",
 			"layer": "layer_5",
 			"material": "",
 			"position": [
@@ -1273,7 +1785,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_62",
+			"id": "pc_88",
 			"layer": "layer_5",
 			"material": "concrete",
 			"position": [
@@ -1292,7 +1804,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_63",
+			"id": "pc_89",
 			"layer": "layer_5",
 			"material": "concrete",
 			"position": [
@@ -1311,7 +1823,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_64",
+			"id": "pc_90",
 			"layer": "layer_5",
 			"material": "",
 			"position": [
@@ -1334,7 +1846,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_65",
+			"id": "pc_91",
 			"layer": "layer_6",
 			"material": "metal_dark",
 			"position": [
@@ -1353,7 +1865,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_66",
+			"id": "pc_92",
 			"layer": "layer_6",
 			"material": "concrete",
 			"position": [
@@ -1372,7 +1884,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_67",
+			"id": "pc_93",
 			"layer": "layer_6",
 			"material": "metal_painted",
 			"position": [
@@ -1391,7 +1903,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_68",
+			"id": "pc_94",
 			"layer": "layer_6",
 			"material": "metal_painted",
 			"position": [
@@ -1410,7 +1922,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_69",
+			"id": "pc_95",
 			"layer": "layer_6",
 			"material": "concrete",
 			"position": [
@@ -1429,7 +1941,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_70",
+			"id": "pc_96",
 			"layer": "layer_6",
 			"material": "concrete",
 			"position": [
@@ -1448,7 +1960,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_71",
+			"id": "pc_97",
 			"layer": "layer_6",
 			"material": "metal_painted",
 			"position": [
@@ -1467,7 +1979,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_72",
+			"id": "pc_98",
 			"layer": "layer_6",
 			"material": "metal_painted",
 			"position": [
@@ -1486,7 +1998,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_73",
+			"id": "pc_99",
 			"layer": "layer_6",
 			"material": "metal_dark",
 			"position": [
@@ -1505,7 +2017,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_74",
+			"id": "pc_100",
 			"layer": "layer_6",
 			"material": "",
 			"position": [
@@ -1524,7 +2036,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_75",
+			"id": "pc_101",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1543,7 +2055,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_76",
+			"id": "pc_102",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1562,7 +2074,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_77",
+			"id": "pc_103",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1581,7 +2093,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_78",
+			"id": "pc_104",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1600,7 +2112,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_79",
+			"id": "pc_105",
 			"layer": "layer_7",
 			"material": "metal_rust",
 			"position": [
@@ -1619,7 +2131,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_80",
+			"id": "pc_106",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1638,7 +2150,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_81",
+			"id": "pc_107",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1657,7 +2169,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_82",
+			"id": "pc_108",
 			"layer": "layer_7",
 			"material": "metal_dark",
 			"position": [
@@ -1676,7 +2188,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_83",
+			"id": "pc_109",
 			"layer": "layer_7",
 			"material": "metal_painted",
 			"position": [
@@ -1695,7 +2207,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_84",
+			"id": "pc_110",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1714,7 +2226,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_85",
+			"id": "pc_111",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1733,7 +2245,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_86",
+			"id": "pc_112",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1752,7 +2264,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_87",
+			"id": "pc_113",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1771,7 +2283,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_88",
+			"id": "pc_114",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1790,7 +2302,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_89",
+			"id": "pc_115",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1809,7 +2321,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_90",
+			"id": "pc_116",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -1828,7 +2340,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_91",
+			"id": "pc_117",
 			"layer": "layer_7",
 			"material": "metal_rust",
 			"position": [
@@ -1847,7 +2359,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_92",
+			"id": "pc_118",
 			"layer": "layer_7",
 			"material": "metal_painted",
 			"position": [
@@ -1866,7 +2378,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_93",
+			"id": "pc_119",
 			"layer": "layer_7",
 			"material": "metal_painted",
 			"position": [
@@ -1885,7 +2397,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_94",
+			"id": "pc_120",
 			"layer": "layer_7",
 			"material": "steel_grating",
 			"position": [
@@ -1907,7 +2419,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_95",
+			"id": "pc_121",
 			"layer": "layer_7",
 			"material": "metal_dark",
 			"position": [
@@ -1926,7 +2438,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_96",
+			"id": "pc_122",
 			"layer": "layer_7",
 			"material": "hazard_paint",
 			"position": [
@@ -1945,7 +2457,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_97",
+			"id": "pc_123",
 			"layer": "layer_7",
 			"material": "hazard_paint",
 			"position": [
@@ -1964,7 +2476,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_98",
+			"id": "pc_124",
 			"layer": "layer_7",
 			"material": "hazard_paint",
 			"position": [
@@ -1983,7 +2495,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_99",
+			"id": "pc_125",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -2002,7 +2514,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_100",
+			"id": "pc_126",
 			"layer": "layer_7",
 			"material": "metal_painted",
 			"position": [
@@ -2021,7 +2533,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_101",
+			"id": "pc_127",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
@@ -2040,13 +2552,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_102",
+			"id": "pc_128",
 			"layer": "layer_7",
 			"material": "concrete",
 			"position": [
-				6.0,
+				10.0,
 				0.0,
-				-27.0
+				-33.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -2059,8 +2571,1522 @@
 		},
 		{
 			"group": "",
-			"id": "pc_103",
+			"id": "pc_129",
 			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				3.0,
+				-9.0,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				1.0,
+				20.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_130",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				-8.30000019073486,
+				-8.0,
+				-5.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				10.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_131",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				-8.30000019073486,
+				-8.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				1.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_132",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				-8.30000019073486,
+				-8.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				2.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_133",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				-3.0,
+				-8.0,
+				-10.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_134",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				10.3000001907349,
+				-8.0,
+				-10.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				8.60000038146973,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_135",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				14.3000001907349,
+				-8.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				16.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_136",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				-5.5,
+				-8.0,
+				10.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				5.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_137",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				8.5,
+				-8.0,
+				10.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				11.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_138",
+			"layer": "layer_8",
+			"material": "steel_grating",
+			"position": [
+				12.0,
+				-4.11999988555908,
+				-5.5
+			],
+			"props": {
+				"rail_left": true,
+				"rail_right": true
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				1.22000002861023,
+				9.0
+			],
+			"type": "catwalk"
+		},
+		{
+			"group": "",
+			"id": "pc_139",
+			"layer": "layer_8",
+			"material": "metal_dark",
+			"position": [
+				12.5,
+				-8.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				4.0,
+				10.0
+			],
+			"type": "stairs"
+		},
+		{
+			"group": "",
+			"id": "pc_140",
+			"layer": "layer_8",
+			"material": "metal_painted",
+			"position": [
+				-4.0,
+				-8.0,
+				-6.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.59999990463257,
+				5.5,
+				3.59999990463257
+			],
+			"type": "storage_tank"
+		},
+		{
+			"group": "",
+			"id": "pc_141",
+			"layer": "layer_8",
+			"material": "metal_rust",
+			"position": [
+				7.80000019073486,
+				-8.0,
+				7.59999990463257
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.20000004768372,
+				5.5,
+				3.20000004768372
+			],
+			"type": "storage_tank"
+		},
+		{
+			"group": "",
+			"id": "pc_142",
+			"layer": "layer_8",
+			"material": "metal_rust",
+			"position": [
+				0.0,
+				-3.0,
+				-9.30000019073486
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				0.699999988079071,
+				0.699999988079071
+			],
+			"type": "pipe_run"
+		},
+		{
+			"group": "",
+			"id": "pc_143",
+			"layer": "layer_8",
+			"material": "metal_painted",
+			"position": [
+				-7.40000009536743,
+				-3.59999990463257,
+				0.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				18.0,
+				0.600000023841858,
+				0.600000023841858
+			],
+			"type": "pipe_run"
+		},
+		{
+			"group": "",
+			"id": "pc_144",
+			"layer": "layer_8",
+			"material": "",
+			"position": [
+				-3.0,
+				-8.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.20000004768372,
+				1.20000004768372
+			],
+			"type": "braced_crate"
+		},
+		{
+			"group": "",
+			"id": "pc_145",
+			"layer": "layer_8",
+			"material": "metal_rust",
+			"position": [
+				3.5,
+				-8.0,
+				-3.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.59999990463257,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_146",
+			"layer": "layer_8",
+			"material": "hazard_paint",
+			"position": [
+				0.5,
+				-8.0,
+				6.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.5,
+				1.04999995231628,
+				0.600000023841858
+			],
+			"type": "low_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_147",
+			"layer": "layer_8",
+			"material": "concrete",
+			"position": [
+				5.0,
+				-8.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.20000004768372,
+				7.0,
+				1.20000004768372
+			],
+			"type": "column"
+		},
+		{
+			"group": "",
+			"id": "pc_148",
+			"layer": "layer_8",
+			"material": "",
+			"position": [
+				-4.0,
+				-2.40000009536743,
+				2.0
+			],
+			"props": {
+				"color": "9fd0ff",
+				"energy": 2.8,
+				"range": 11.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_149",
+			"layer": "layer_8",
+			"material": "",
+			"position": [
+				5.0,
+				-2.40000009536743,
+				-4.0
+			],
+			"props": {
+				"color": "9fd0ff",
+				"energy": 2.8,
+				"range": 11.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_150",
+			"layer": "layer_8",
+			"material": "",
+			"position": [
+				8.0,
+				-2.40000009536743,
+				5.0
+			],
+			"props": {
+				"color": "9fd0ff",
+				"energy": 2.8,
+				"range": 11.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_151",
+			"layer": "layer_8",
+			"material": "",
+			"position": [
+				12.0,
+				-2.0,
+				-6.0
+			],
+			"props": {
+				"color": "9fd0ff",
+				"energy": 2.8,
+				"range": 11.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_152",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-11.0,
+				-9.0,
+				-5.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.0,
+				17.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_153",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-12.5,
+				-8.0,
+				-5.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				4.0,
+				10.0
+			],
+			"type": "block"
+		},
+		{
+			"group": "",
+			"id": "pc_154",
+			"layer": "layer_9",
+			"material": "metal_dark",
+			"position": [
+				-12.5,
+				-4.0,
+				-5.0
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				3.0,
+				4.0,
+				10.0
+			],
+			"type": "stairs"
+		},
+		{
+			"group": "",
+			"id": "pc_155",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-11.0,
+				-8.0,
+				-12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				4.0,
+				4.0
+			],
+			"type": "platform"
+		},
+		{
+			"group": "",
+			"id": "pc_156",
+			"layer": "layer_9",
+			"material": "metal_dark",
+			"position": [
+				-9.5,
+				-8.0,
+				-5.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				4.0,
+				10.0
+			],
+			"type": "stairs"
+		},
+		{
+			"group": "",
+			"id": "pc_157",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-11.0,
+				-8.0,
+				-5.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				9.10000038146973,
+				10.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_158",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-14.3000001907349,
+				-8.0,
+				-5.80000019073486
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				17.6000003814697
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_159",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-11.0,
+				-8.0,
+				-14.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_160",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-8.30000019073486,
+				-8.0,
+				-12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				4.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_161",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-11.0,
+				-8.0,
+				3.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				7.0,
+				1.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_162",
+			"layer": "layer_9",
+			"material": "",
+			"position": [
+				-11.0,
+				-2.0,
+				-12.0
+			],
+			"props": {
+				"color": "ffd6a9",
+				"energy": 2.2,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_163",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-8.0,
+				24.0
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				6.0,
+				8.0,
+				20.0
+			],
+			"type": "ramp"
+		},
+		{
+			"group": "",
+			"id": "pc_164",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-3.29999995231628,
+				-8.0,
+				22.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				24.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_165",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				3.29999995231628,
+				-8.0,
+				22.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				24.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_166",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				-3.15000009536743,
+				0.0,
+				24.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				1.10000002384186,
+				20.0
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_167",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				3.15000009536743,
+				0.0,
+				24.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				1.10000002384186,
+				20.0
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_168",
+			"layer": "layer_9",
+			"material": "hazard_paint",
+			"position": [
+				0.0,
+				0.0,
+				13.9499998092651
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_169",
+			"layer": "layer_9",
+			"material": "metal_dark",
+			"position": [
+				4.0,
+				-8.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				8.0,
+				20.0
+			],
+			"type": "stairs"
+		},
+		{
+			"group": "",
+			"id": "pc_170",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				1.70000004768372,
+				-8.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				20.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_171",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				6.30000019073486,
+				-8.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				20.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_172",
+			"layer": "layer_9",
+			"material": "",
+			"position": [
+				1.95000004768372,
+				0.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				20.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_173",
+			"layer": "layer_9",
+			"material": "",
+			"position": [
+				6.05000019073486,
+				0.0,
+				-20.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				20.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_174",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				28.0,
+				-8.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				4.0,
+				8.0,
+				20.0
+			],
+			"type": "ramp"
+		},
+		{
+			"group": "",
+			"id": "pc_175",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				25.7000007629395,
+				-8.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				20.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_176",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				30.2999992370605,
+				-8.0,
+				2.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				24.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_177",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				25.8500003814697,
+				0.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				1.10000002384186,
+				20.0
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_178",
+			"layer": "layer_9",
+			"material": "concrete",
+			"position": [
+				30.1499996185303,
+				0.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				1.10000002384186,
+				20.0
+			],
+			"type": "wall_half"
+		},
+		{
+			"group": "",
+			"id": "pc_179",
+			"layer": "layer_9",
+			"material": "hazard_paint",
+			"position": [
+				28.0,
+				0.0,
+				-6.05000019073486
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_180",
+			"layer": "layer_9",
+			"material": "hazard_paint",
+			"position": [
+				-34.5,
+				0.0,
+				7.94999980926514
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_181",
+			"layer": "layer_9",
+			"material": "hazard_paint",
+			"position": [
+				-34.5,
+				0.0,
+				11.0500001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				1.04999995231628,
+				0.0599999986588955
+			],
+			"type": "railing"
+		},
+		{
+			"group": "",
+			"id": "pc_182",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				0.0,
+				-9.0,
+				12.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				1.0,
+				4.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_183",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-19.0,
+				-9.0,
+				6.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				1.0,
+				4.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_184",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-34.0,
+				-9.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				1.0,
+				10.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_185",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-22.0,
+				-8.0,
+				3.70000004768372
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_186",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-19.0,
+				-8.0,
+				8.30000019073486
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_187",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-38.2999992370605,
+				-8.0,
+				9.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				10.0
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_188",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-34.0,
+				-8.0,
+				14.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_189",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-34.0,
+				-8.0,
+				3.70000004768372
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_190",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				-29.7000007629395,
+				-8.0,
+				11.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				7.0,
+				5.40000009536743
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_191",
+			"layer": "layer_10",
+			"material": "metal_dark",
+			"position": [
+				-36.0,
+				-8.0,
+				5.19999980926514
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				2.59999990463257,
+				2.40000009536743,
+				1.20000004768372
+			],
+			"type": "crate_stack"
+		},
+		{
+			"group": "",
+			"id": "pc_192",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				-20.0,
+				-8.0,
+				7.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_193",
+			"layer": "layer_10",
+			"material": "metal_rust",
+			"position": [
+				-19.0,
+				-2.79999995231628,
+				4.5
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				0.600000023841858,
+				0.600000023841858
+			],
+			"type": "pipe_run"
+		},
+		{
+			"group": "",
+			"id": "pc_194",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				22.0,
+				-9.0,
+				-8.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				1.0,
+				4.0
+			],
+			"type": "floor"
+		},
+		{
+			"group": "",
+			"id": "pc_195",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				22.2999992370605,
+				-8.0,
+				-10.3000001907349
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.6000003814697,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_196",
+			"layer": "layer_10",
+			"material": "concrete",
+			"position": [
+				19.7000007629395,
+				-8.0,
+				-5.69999980926514
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				11.3999996185303,
+				7.0,
+				0.600000023841858
+			],
+			"type": "wall"
+		},
+		{
+			"group": "",
+			"id": "pc_197",
+			"layer": "layer_10",
+			"material": "metal_painted",
+			"position": [
+				22.0,
+				-3.0,
+				-9.39999961853027
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				16.0,
+				0.699999988079071,
+				0.699999988079071
+			],
+			"type": "pipe_run"
+		},
+		{
+			"group": "",
+			"id": "pc_198",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				23.0,
+				-8.0,
+				-7.0
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.5,
+				1.0,
+				1.39999997615814
+			],
+			"type": "barrel_cluster"
+		},
+		{
+			"group": "",
+			"id": "pc_199",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				0.0,
+				-3.0,
+				12.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_200",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				-22.0,
+				-3.0,
+				6.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_201",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				-34.0,
+				-4.0,
+				9.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_202",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				20.0,
+				-3.0,
+				-8.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_203",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				0.0,
+				-3.0,
+				22.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_204",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				28.0,
+				-3.0,
+				4.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_205",
+			"layer": "layer_10",
+			"material": "",
+			"position": [
+				4.0,
+				-3.0,
+				-20.0
+			],
+			"props": {
+				"color": "ffc58a",
+				"energy": 2.4,
+				"range": 10.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.300000011920929,
+				0.300000011920929,
+				0.300000011920929
+			],
+			"type": "light_lamp"
+		},
+		{
+			"group": "",
+			"id": "pc_206",
+			"layer": "layer_11",
 			"material": "",
 			"position": [
 				-10.0,
@@ -2078,8 +4104,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_104",
-			"layer": "layer_8",
+			"id": "pc_207",
+			"layer": "layer_11",
 			"material": "metal_painted",
 			"position": [
 				-10.0,
@@ -2097,8 +4123,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_105",
-			"layer": "layer_8",
+			"id": "pc_208",
+			"layer": "layer_11",
 			"material": "metal_painted",
 			"position": [
 				11.0,
@@ -2116,8 +4142,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_106",
-			"layer": "layer_8",
+			"id": "pc_209",
+			"layer": "layer_11",
 			"material": "",
 			"position": [
 				-15.0,
@@ -2135,8 +4161,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_107",
-			"layer": "layer_8",
+			"id": "pc_210",
+			"layer": "layer_11",
 			"material": "metal_dark",
 			"position": [
 				16.0,
@@ -2154,8 +4180,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_108",
-			"layer": "layer_8",
+			"id": "pc_211",
+			"layer": "layer_11",
 			"material": "",
 			"position": [
 				-4.0,
@@ -2173,11 +4199,11 @@
 		},
 		{
 			"group": "",
-			"id": "pc_109",
-			"layer": "layer_8",
+			"id": "pc_212",
+			"layer": "layer_11",
 			"material": "metal_rust",
 			"position": [
-				-3.0,
+				-7.0,
 				0.0,
 				15.0
 			],
@@ -2192,13 +4218,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_110",
-			"layer": "layer_8",
+			"id": "pc_213",
+			"layer": "layer_11",
 			"material": "",
 			"position": [
-				4.0,
+				7.0,
 				0.0,
-				14.5
+				15.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -2211,13 +4237,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_111",
-			"layer": "layer_8",
+			"id": "pc_214",
+			"layer": "layer_11",
 			"material": "",
 			"position": [
-				-2.0,
+				-6.0,
 				0.0,
-				34.0
+				37.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -2230,8 +4256,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_112",
-			"layer": "layer_9",
+			"id": "pc_215",
+			"layer": "layer_12",
 			"material": "metal_rust",
 			"position": [
 				-37.0,
@@ -2249,8 +4275,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_113",
-			"layer": "layer_9",
+			"id": "pc_216",
+			"layer": "layer_12",
 			"material": "",
 			"position": [
 				-33.0,
@@ -2268,8 +4294,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_114",
-			"layer": "layer_9",
+			"id": "pc_217",
+			"layer": "layer_12",
 			"material": "metal_rust",
 			"position": [
 				-38.0,
@@ -2287,8 +4313,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_115",
-			"layer": "layer_9",
+			"id": "pc_218",
+			"layer": "layer_12",
 			"material": "",
 			"position": [
 				-31.5,
@@ -2306,13 +4332,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_116",
-			"layer": "layer_9",
+			"id": "pc_219",
+			"layer": "layer_12",
 			"material": "metal_dark",
 			"position": [
-				-32.0,
+				-28.0,
 				0.0,
-				11.5
+				16.5
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -2325,8 +4351,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_117",
-			"layer": "layer_9",
+			"id": "pc_220",
+			"layer": "layer_12",
 			"material": "metal_rust",
 			"position": [
 				-31.0,
@@ -2344,8 +4370,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_118",
-			"layer": "layer_9",
+			"id": "pc_221",
+			"layer": "layer_12",
 			"material": "",
 			"position": [
 				-24.0,
@@ -2363,8 +4389,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_119",
-			"layer": "layer_9",
+			"id": "pc_222",
+			"layer": "layer_12",
 			"material": "",
 			"position": [
 				-38.0,
@@ -2382,8 +4408,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_120",
-			"layer": "layer_10",
+			"id": "pc_223",
+			"layer": "layer_13",
 			"material": "",
 			"position": [
 				36.0,
@@ -2401,8 +4427,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_121",
-			"layer": "layer_10",
+			"id": "pc_224",
+			"layer": "layer_13",
 			"material": "metal_rust",
 			"position": [
 				33.0,
@@ -2420,8 +4446,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_122",
-			"layer": "layer_10",
+			"id": "pc_225",
+			"layer": "layer_13",
 			"material": "metal_dark",
 			"position": [
 				38.0,
@@ -2439,27 +4465,27 @@
 		},
 		{
 			"group": "",
-			"id": "pc_123",
-			"layer": "layer_10",
+			"id": "pc_226",
+			"layer": "layer_13",
 			"material": "concrete",
 			"position": [
-				32.0,
+				36.0,
 				0.0,
-				0.0
+				2.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
 			"size": [
-				8.0,
+				7.0,
 				10.0,
-				8.0
+				7.0
 			],
 			"type": "storage_tank"
 		},
 		{
 			"group": "",
-			"id": "pc_124",
-			"layer": "layer_10",
+			"id": "pc_227",
+			"layer": "layer_13",
 			"material": "metal_rust",
 			"position": [
 				36.0,
@@ -2477,13 +4503,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_125",
-			"layer": "layer_10",
+			"id": "pc_228",
+			"layer": "layer_13",
 			"material": "",
 			"position": [
 				31.0,
 				0.0,
-				10.0
+				19.0
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -2496,8 +4522,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_126",
-			"layer": "layer_10",
+			"id": "pc_229",
+			"layer": "layer_13",
 			"material": "metal_painted",
 			"position": [
 				24.5,
@@ -2515,8 +4541,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_127",
-			"layer": "layer_11",
+			"id": "pc_230",
+			"layer": "layer_14",
 			"material": "",
 			"position": [
 				-30.0,
@@ -2534,8 +4560,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_128",
-			"layer": "layer_11",
+			"id": "pc_231",
+			"layer": "layer_14",
 			"material": "",
 			"position": [
 				26.0,
@@ -2553,8 +4579,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_129",
-			"layer": "layer_11",
+			"id": "pc_232",
+			"layer": "layer_14",
 			"material": "metal_painted",
 			"position": [
 				30.0,
@@ -2572,13 +4598,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_130",
-			"layer": "layer_11",
+			"id": "pc_233",
+			"layer": "layer_14",
 			"material": "metal_rust",
 			"position": [
-				10.0,
+				11.0,
 				0.0,
-				-22.0
+				-20.0
 			],
 			"props": {},
 			"rotation_y": 90.0,
@@ -2591,8 +4617,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_131",
-			"layer": "layer_11",
+			"id": "pc_234",
+			"layer": "layer_14",
 			"material": "",
 			"position": [
 				-4.0,
@@ -2610,8 +4636,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_132",
-			"layer": "layer_12",
+			"id": "pc_235",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-17.0,
@@ -2633,8 +4659,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_133",
-			"layer": "layer_12",
+			"id": "pc_236",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				15.0,
@@ -2656,8 +4682,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_134",
-			"layer": "layer_12",
+			"id": "pc_237",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				0.0,
@@ -2679,8 +4705,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_135",
-			"layer": "layer_12",
+			"id": "pc_238",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-10.0,
@@ -2702,8 +4728,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_136",
-			"layer": "layer_12",
+			"id": "pc_239",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				10.0,
@@ -2725,8 +4751,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_137",
-			"layer": "layer_13",
+			"id": "pc_240",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -2746,8 +4772,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_138",
-			"layer": "layer_13",
+			"id": "pc_241",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-2.0,
@@ -2767,8 +4793,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_139",
-			"layer": "layer_13",
+			"id": "pc_242",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				2.0,
@@ -2788,8 +4814,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_140",
-			"layer": "layer_13",
+			"id": "pc_243",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-4.0,
@@ -2809,8 +4835,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_141",
-			"layer": "layer_13",
+			"id": "pc_244",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				4.0,
@@ -2830,8 +4856,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_142",
-			"layer": "layer_13",
+			"id": "pc_245",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -2851,13 +4877,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_143",
-			"layer": "layer_13",
+			"id": "pc_246",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2872,13 +4898,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_144",
-			"layer": "layer_13",
+			"id": "pc_247",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-2.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2893,13 +4919,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_145",
-			"layer": "layer_13",
+			"id": "pc_248",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				2.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2914,13 +4940,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_146",
-			"layer": "layer_13",
+			"id": "pc_249",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-4.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2935,13 +4961,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_147",
-			"layer": "layer_13",
+			"id": "pc_250",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				4.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2956,13 +4982,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_148",
-			"layer": "layer_13",
+			"id": "pc_251",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
 				0.0,
-				-36.0
+				-38.0
 			],
 			"props": {
 				"team": "defence"
@@ -2971,40 +4997,19 @@
 			"size": [
 				24.0,
 				3.0,
-				10.0
+				8.0
 			],
 			"type": "buy_zone"
 		},
 		{
 			"group": "",
-			"id": "pc_149",
-			"layer": "layer_13",
+			"id": "pc_252",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
-				-3.0,
+				-2.0,
 				0.0,
-				3.0
-			],
-			"props": {
-				"site": "B"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				12.0,
-				3.0,
-				9.0
-			],
-			"type": "bombsite"
-		},
-		{
-			"group": "",
-			"id": "pc_150",
-			"layer": "layer_13",
-			"material": "",
-			"position": [
-				1.0,
-				5.0,
-				1.0
+				2.0
 			],
 			"props": {
 				"site": "A"
@@ -3019,8 +5024,29 @@
 		},
 		{
 			"group": "",
-			"id": "pc_151",
-			"layer": "layer_14",
+			"id": "pc_253",
+			"layer": "layer_16",
+			"material": "",
+			"position": [
+				-1.0,
+				-8.0,
+				1.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				3.0,
+				10.0
+			],
+			"type": "bombsite"
+		},
+		{
+			"group": "",
+			"id": "pc_254",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3041,8 +5067,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_152",
-			"layer": "layer_14",
+			"id": "pc_255",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3063,8 +5089,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_153",
-			"layer": "layer_14",
+			"id": "pc_256",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3085,8 +5111,30 @@
 		},
 		{
 			"group": "",
-			"id": "pc_154",
-			"layer": "layer_14",
+			"id": "pc_257",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				36.0
+			],
+			"props": {
+				"name": "Ramp Head",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				10.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_258",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				10.0,
@@ -3107,8 +5155,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_155",
-			"layer": "layer_14",
+			"id": "pc_259",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				10.0,
@@ -3129,8 +5177,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_156",
-			"layer": "layer_14",
+			"id": "pc_260",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-18.0,
@@ -3151,8 +5199,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_157",
-			"layer": "layer_14",
+			"id": "pc_261",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				18.0,
@@ -3160,7 +5208,7 @@
 				20.0
 			],
 			"props": {
-				"name": "Ramp Foot",
+				"name": "Deck Ramp Foot",
 				"role": ""
 			},
 			"rotation_y": 0.0,
@@ -3173,8 +5221,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_158",
-			"layer": "layer_14",
+			"id": "pc_262",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3183,7 +5231,7 @@
 			],
 			"props": {
 				"name": "Loading Gate",
-				"role": "entrance_b"
+				"role": "entrance_a"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3195,8 +5243,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_159",
-			"layer": "layer_14",
+			"id": "pc_263",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-35.0,
@@ -3217,8 +5265,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_160",
-			"layer": "layer_14",
+			"id": "pc_264",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-31.0,
@@ -3239,8 +5287,30 @@
 		},
 		{
 			"group": "",
-			"id": "pc_161",
-			"layer": "layer_14",
+			"id": "pc_265",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-34.5,
+				0.0,
+				9.5
+			],
+			"props": {
+				"name": "Coal Chute",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				3.0,
+				3.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_266",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-30.2999992370605,
@@ -3261,8 +5331,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_162",
-			"layer": "layer_14",
+			"id": "pc_267",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				35.0,
@@ -3283,8 +5353,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_163",
-			"layer": "layer_14",
+			"id": "pc_268",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				31.0,
@@ -3305,8 +5375,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_164",
-			"layer": "layer_14",
+			"id": "pc_269",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				30.7999992370605,
@@ -3327,8 +5397,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_165",
-			"layer": "layer_14",
+			"id": "pc_270",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-15.1499996185303,
@@ -3349,8 +5419,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_166",
-			"layer": "layer_14",
+			"id": "pc_271",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-15.1499996185303,
@@ -3359,7 +5429,7 @@
 			],
 			"props": {
 				"name": "Coal Door",
-				"role": "entrance_b"
+				"role": "entrance_a"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3371,8 +5441,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_167",
-			"layer": "layer_14",
+			"id": "pc_272",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				15.1499996185303,
@@ -3393,8 +5463,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_168",
-			"layer": "layer_14",
+			"id": "pc_273",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				15.1499996185303,
@@ -3403,7 +5473,7 @@
 			],
 			"props": {
 				"name": "Pump Door",
-				"role": "entrance_b"
+				"role": "entrance_a"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3415,8 +5485,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_169",
-			"layer": "layer_14",
+			"id": "pc_274",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3437,8 +5507,30 @@
 		},
 		{
 			"group": "",
-			"id": "pc_170",
-			"layer": "layer_14",
+			"id": "pc_275",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				7.5,
+				0.0,
+				3.5
+			],
+			"props": {
+				"name": "Vent",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				3.0,
+				3.0,
+				3.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_276",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				11.0,
@@ -3459,8 +5551,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_171",
-			"layer": "layer_14",
+			"id": "pc_277",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3473,7 +5565,7 @@
 			},
 			"rotation_y": 0.0,
 			"size": [
-				6.0,
+				4.0,
 				3.0,
 				5.69999980926514
 			],
@@ -3481,8 +5573,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_172",
-			"layer": "layer_14",
+			"id": "pc_278",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3503,8 +5595,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_173",
-			"layer": "layer_14",
+			"id": "pc_279",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3525,8 +5617,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_174",
-			"layer": "layer_14",
+			"id": "pc_280",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-10.0,
@@ -3547,8 +5639,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_175",
-			"layer": "layer_14",
+			"id": "pc_281",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-18.0,
@@ -3569,8 +5661,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_176",
-			"layer": "layer_14",
+			"id": "pc_282",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-17.0,
@@ -3579,7 +5671,7 @@
 			],
 			"props": {
 				"name": "West Landing",
-				"role": "entrance_a"
+				"role": ""
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3591,8 +5683,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_177",
-			"layer": "layer_14",
+			"id": "pc_283",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				18.5,
@@ -3600,7 +5692,7 @@
 				10.0
 			],
 			"props": {
-				"name": "Freight Ramp",
+				"name": "Deck Ramp",
 				"role": ""
 			},
 			"rotation_y": 0.0,
@@ -3613,8 +5705,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_178",
-			"layer": "layer_14",
+			"id": "pc_284",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				17.5,
@@ -3623,7 +5715,7 @@
 			],
 			"props": {
 				"name": "Ramp Top",
-				"role": "entrance_a"
+				"role": ""
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3635,8 +5727,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_179",
-			"layer": "layer_14",
+			"id": "pc_285",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3657,8 +5749,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_180",
-			"layer": "layer_14",
+			"id": "pc_286",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-37.0,
@@ -3679,8 +5771,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_181",
-			"layer": "layer_14",
+			"id": "pc_287",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				37.0,
@@ -3701,83 +5793,259 @@
 		},
 		{
 			"group": "",
-			"id": "pc_182",
-			"layer": "layer_14",
+			"id": "pc_288",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				-1.0,
-				5.0,
-				3.0
-			],
-			"props": {
-				"kind": "plant",
-				"name": "Deck plant open"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				0.5,
-				0.5,
-				0.5
-			],
-			"type": "tactical_anchor"
-		},
-		{
-			"group": "",
-			"id": "pc_183",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				4.0,
-				5.0,
-				-2.0
-			],
-			"props": {
-				"kind": "plant",
-				"name": "Deck plant console"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				0.5,
-				0.5,
-				0.5
-			],
-			"type": "tactical_anchor"
-		},
-		{
-			"group": "",
-			"id": "pc_184",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-2.0,
 				0.0,
+				-8.0,
+				24.0
+			],
+			"props": {
+				"name": "Freight Ramp",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				20.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_289",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				0.0,
+				-8.0,
+				12.0
+			],
+			"props": {
+				"name": "Ramp Tunnel",
+				"role": "entrance_b"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_290",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				3.0,
+				-8.0,
+				0.0
+			],
+			"props": {
+				"name": "Turbine Vault",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				22.0,
+				3.0,
+				20.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_291",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				12.0,
+				-4.0,
+				-5.5
+			],
+			"props": {
+				"name": "Gantry",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.0,
+				9.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_292",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-11.0,
+				-8.0,
+				-3.5
+			],
+			"props": {
+				"name": "West Stairwell",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				13.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_293",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-11.0,
+				-4.0,
+				-12.0
+			],
+			"props": {
+				"name": "Stair Landing",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				6.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_294",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-19.0,
+				-8.0,
 				6.0
 			],
 			"props": {
-				"kind": "plant",
-				"name": "Hall plant gate"
+				"name": "Coal Tunnel",
+				"role": ""
 			},
 			"rotation_y": 0.0,
 			"size": [
-				0.5,
-				0.5,
-				0.5
+				22.0,
+				3.0,
+				4.0
 			],
-			"type": "tactical_anchor"
+			"type": "callout"
 		},
 		{
 			"group": "",
-			"id": "pc_185",
-			"layer": "layer_14",
+			"id": "pc_295",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				-7.0,
+				-34.0,
+				-8.0,
+				9.0
+			],
+			"props": {
+				"name": "Chute Room",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				8.0,
+				3.0,
+				10.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_296",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				4.0,
+				-8.0,
+				-20.0
+			],
+			"props": {
+				"name": "North Stair",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.0,
+				20.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_297",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				20.0,
+				-8.0,
+				-8.0
+			],
+			"props": {
+				"name": "Culvert",
+				"role": "entrance_b"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				12.0,
+				3.0,
+				4.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_298",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				28.0,
+				-8.0,
+				4.0
+			],
+			"props": {
+				"name": "Culvert Ramp",
+				"role": ""
+			},
+			"rotation_y": 0.0,
+			"size": [
+				4.0,
+				3.0,
+				20.0
+			],
+			"type": "callout"
+		},
+		{
+			"group": "",
+			"id": "pc_299",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-5.0,
 				0.0,
 				4.0
 			],
 			"props": {
 				"kind": "plant",
-				"name": "Hall plant hatch"
+				"name": "Hall plant machine"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3789,13 +6057,79 @@
 		},
 		{
 			"group": "",
-			"id": "pc_186",
-			"layer": "layer_14",
+			"id": "pc_300",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
+				1.0,
 				0.0,
+				-1.0
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Hall plant columns"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_301",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-4.0,
+				-8.0,
+				2.0
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Vault plant crates"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_302",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				1.0,
+				-8.0,
+				-1.0
+			],
+			"props": {
+				"kind": "plant",
+				"name": "Vault plant turbine"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_303",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				8.0,
 				0.0,
-				26.0
+				24.0
 			],
 			"props": {
 				"kind": "default",
@@ -3811,17 +6145,17 @@
 		},
 		{
 			"group": "",
-			"id": "pc_187",
-			"layer": "layer_14",
+			"id": "pc_304",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				-18.0,
 				0.0,
-				14.0
+				0.0,
+				37.0
 			],
 			"props": {
 				"kind": "default",
-				"name": "Stair Foot hold"
+				"name": "Ramp Head hold"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3833,39 +6167,17 @@
 		},
 		{
 			"group": "",
-			"id": "pc_188",
-			"layer": "layer_14",
+			"id": "pc_305",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				18.0,
-				0.0,
-				21.0
-			],
-			"props": {
-				"kind": "default",
-				"name": "Ramp Foot hold"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				0.5,
-				0.5,
-				0.5
-			],
-			"type": "tactical_anchor"
-		},
-		{
-			"group": "",
-			"id": "pc_189",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-6.0,
+				-8.0,
 				5.0,
-				-8.0
+				6.0
 			],
 			"props": {
 				"kind": "default",
-				"name": "Deck back post"
+				"name": "Deck perch"
 			},
 			"rotation_y": 0.0,
 			"size": [
@@ -3877,8 +6189,52 @@
 		},
 		{
 			"group": "",
-			"id": "pc_190",
-			"layer": "layer_14",
+			"id": "pc_306",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				12.0,
+				-4.0,
+				-5.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Gantry post"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_307",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-28.0,
+				0.0,
+				12.0
+			],
+			"props": {
+				"kind": "default",
+				"name": "Coal Cut hold"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"type": "tactical_anchor"
+		},
+		{
+			"group": "",
+			"id": "pc_308",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
@@ -3899,35 +6255,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_191",
-			"layer": "layer_14",
+			"id": "pc_309",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				-18.0,
 				0.0,
-				9.0
-			],
-			"props": {
-				"kind": "utility",
-				"name": "Stair smoke"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				0.5,
-				0.5,
-				0.5
-			],
-			"type": "tactical_anchor"
-		},
-		{
-			"group": "",
-			"id": "pc_192",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				18.5,
 				0.0,
-				17.0
+				36.0
 			],
 			"props": {
 				"kind": "utility",
@@ -3943,244 +6277,267 @@
 		},
 		{
 			"group": "",
-			"id": "pc_193",
-			"layer": "layer_14",
+			"id": "pc_310",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				-6.0,
-				5.0,
-				-6.0
-			],
-			"props": {
-				"site": "A"
-			},
-			"rotation_y": 160.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_hold"
-		},
-		{
-			"group": "",
-			"id": "pc_194",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				8.0,
-				5.0,
-				5.0
-			],
-			"props": {
-				"site": "A"
-			},
-			"rotation_y": 270.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_hold"
-		},
-		{
-			"group": "",
-			"id": "pc_195",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-11.0,
-				5.0,
-				6.0
-			],
-			"props": {
-				"site": "A"
-			},
-			"rotation_y": 135.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_hold"
-		},
-		{
-			"group": "",
-			"id": "pc_196",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-6.0,
+				28.0,
 				0.0,
-				-6.0
+				16.0
 			],
 			"props": {
-				"site": "B"
+				"kind": "utility",
+				"name": "Culvert smoke"
 			},
-			"rotation_y": 180.0,
+			"rotation_y": 0.0,
 			"size": [
 				0.5,
-				1.0,
+				0.5,
 				0.5
 			],
-			"type": "ai_hold"
+			"type": "tactical_anchor"
 		},
 		{
 			"group": "",
-			"id": "pc_197",
-			"layer": "layer_14",
+			"id": "pc_311",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				10.0,
+				-15.1999998092651,
 				0.0,
-				3.0
+				2.0
 			],
 			"props": {
-				"site": "B"
+				"kind": "utility",
+				"name": "Coal Door smoke"
 			},
-			"rotation_y": 230.0,
+			"rotation_y": 0.0,
 			"size": [
 				0.5,
-				1.0,
+				0.5,
 				0.5
 			],
-			"type": "ai_hold"
+			"type": "tactical_anchor"
 		},
 		{
 			"group": "",
-			"id": "pc_198",
-			"layer": "layer_14",
+			"id": "pc_312",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				-11.0,
 				0.0,
-				8.0
-			],
-			"props": {
-				"site": "B"
-			},
-			"rotation_y": 120.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_hold"
-		},
-		{
-			"group": "",
-			"id": "pc_199",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-2.5,
-				5.0,
-				-6.59999990463257
-			],
-			"props": {
-				"site": "A"
-			},
-			"rotation_y": 180.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_cover"
-		},
-		{
-			"group": "",
-			"id": "pc_200",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				5.5,
-				5.0,
-				4.59999990463257
-			],
-			"props": {
-				"site": "A"
-			},
-			"rotation_y": 180.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_cover"
-		},
-		{
-			"group": "",
-			"id": "pc_201",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				6.0,
-				0.0,
-				1.39999997615814
-			],
-			"props": {
-				"site": "B"
-			},
-			"rotation_y": 180.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_cover"
-		},
-		{
-			"group": "",
-			"id": "pc_202",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-0.5,
-				0.0,
-				-8.19999980926514
-			],
-			"props": {
-				"site": "B"
-			},
-			"rotation_y": 180.0,
-			"size": [
-				0.5,
-				1.0,
-				0.5
-			],
-			"type": "ai_cover"
-		},
-		{
-			"group": "",
-			"id": "pc_203",
-			"layer": "layer_14",
-			"material": "",
-			"position": [
-				-17.0,
-				5.0,
 				-7.0
 			],
 			"props": {
 				"site": "A"
 			},
-			"rotation_y": 0.0,
+			"rotation_y": 150.0,
 			"size": [
 				0.5,
 				1.0,
 				0.5
 			],
-			"type": "ai_angle"
+			"type": "ai_hold"
 		},
 		{
 			"group": "",
-			"id": "pc_204",
-			"layer": "layer_14",
+			"id": "pc_313",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				17.5,
+				6.5,
+				0.0,
+				-6.5
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 220.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_314",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-8.0,
 				5.0,
-				-1.0
+				-4.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_315",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-6.0,
+				-8.0,
+				-8.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 150.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_316",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				12.0,
+				-4.0,
+				-7.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 225.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_317",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-6.0,
+				-8.0,
+				8.0
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 60.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_hold"
+		},
+		{
+			"group": "",
+			"id": "pc_318",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				3.5,
+				0.0,
+				3.40000009536743
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_319",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-5.0,
+				0.0,
+				-2.59999990463257
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_320",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-3.0,
+				-8.0,
+				2.40000009536743
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_321",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				3.5,
+				-8.0,
+				-1.60000002384186
+			],
+			"props": {
+				"site": "B"
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_cover"
+		},
+		{
+			"group": "",
+			"id": "pc_322",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				0.0,
+				0.0,
+				12.0
 			],
 			"props": {
 				"site": "A"
@@ -4195,12 +6552,33 @@
 		},
 		{
 			"group": "",
-			"id": "pc_205",
-			"layer": "layer_14",
+			"id": "pc_323",
+			"layer": "layer_17",
+			"material": "",
+			"position": [
+				-15.5,
+				0.0,
+				2.0
+			],
+			"props": {
+				"site": "A"
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.5,
+				1.0,
+				0.5
+			],
+			"type": "ai_angle"
+		},
+		{
+			"group": "",
+			"id": "pc_324",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
 				0.0,
-				0.0,
+				-8.0,
 				12.0
 			],
 			"props": {
@@ -4216,13 +6594,13 @@
 		},
 		{
 			"group": "",
-			"id": "pc_206",
-			"layer": "layer_14",
+			"id": "pc_325",
+			"layer": "layer_17",
 			"material": "",
 			"position": [
-				15.0,
-				0.0,
-				6.0
+				18.0,
+				-8.0,
+				-8.0
 			],
 			"props": {
 				"site": "B"
@@ -4237,5 +6615,5 @@
 		}
 	],
 	"prefabs": [],
-	"revision": 1
+	"revision": 2
 }

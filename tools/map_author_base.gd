@@ -22,6 +22,11 @@ func _build() -> void:
 	pass
 
 
+## Override: bump when a published map changes (the revision and content version it ships as).
+func _revision() -> int:
+	return 1
+
+
 ## Override for map-specific checks after validation (return false to fail the session).
 func _check(_analysis: MapAnalysis) -> bool:
 	return true
@@ -75,8 +80,8 @@ func _run() -> void:
 func _publish(saved_path: String, staging: String) -> void:
 	var doc := MapStorage.new(staging).load_path(saved_path)
 	doc.map_id = _official_id()
-	doc.revision = 1
-	doc.content_version = 1
+	doc.revision = _revision()
+	doc.content_version = _revision()
 	doc.content_hash = doc.content_fingerprint()
 	DirAccess.make_dir_recursive_absolute(OfficialMaps.DIRECTORY)
 	var file := FileAccess.open(OfficialMaps.path_for(_official_id()), FileAccess.WRITE)
@@ -115,6 +120,41 @@ func put(type: String, position: Vector3, size: Vector3 = Vector3.ZERO, rotation
 func mass(type: String, x1: float, x2: float, z1: float, z2: float, height: float, material: String = "",
 		base: float = 0.0) -> String:
 	return put(type, Vector3((x1 + x2) / 2.0, base, (z1 + z2) / 2.0), Vector3(x2 - x1, height, z2 - z1), 0.0, {}, material)
+
+
+## Covers x1..x2 by z1..z2 with slabs, leaving rectangular [param holes] ([x1, x2, z1, z2]) open:
+## the cut lines split the rectangle into cells, and each run of solid cells in a band
+## becomes one slab.
+func slab_with_holes(type: String, x1: float, x2: float, z1: float, z2: float, height: float,
+		material: String, base: float, holes: Array) -> void:
+	var xs: Array[float] = [x1, x2]
+	var zs: Array[float] = [z1, z2]
+	for hole: Array in holes:
+		xs.append_array([float(hole[0]), float(hole[1])])
+		zs.append_array([float(hole[2]), float(hole[3])])
+	xs.sort()
+	zs.sort()
+	for j: int in zs.size() - 1:
+		if zs[j + 1] - zs[j] < 0.01:
+			continue
+		var start := -1.0
+		var in_run := false
+		for i: int in xs.size() - 1:
+			if xs[i + 1] - xs[i] < 0.01:
+				continue
+			var centre := Vector2((xs[i] + xs[i + 1]) / 2.0, (zs[j] + zs[j + 1]) / 2.0)
+			var open := false
+			for hole: Array in holes:
+				open = open or (centre.x > float(hole[0]) and centre.x < float(hole[1])
+					and centre.y > float(hole[2]) and centre.y < float(hole[3]))
+			if not open and not in_run:
+				start = xs[i]
+				in_run = true
+			elif open and in_run:
+				mass(type, start, xs[i], zs[j], zs[j + 1], height, material, base)
+				in_run = false
+		if in_run:
+			mass(type, start, xs[xs.size() - 1], zs[j], zs[j + 1], height, material, base)
 
 
 func area(area_name: String, x1: float, x2: float, z1: float, z2: float, role: String = "", base: float = 0.0) -> String:

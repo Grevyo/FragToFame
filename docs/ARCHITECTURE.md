@@ -281,7 +281,9 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   `steep_slope` warning that gives the length needed.
 - **Authoring sessions.** `tools/map_author_base.gd` holds the shared steps for official map
   scripts (`tools/author_*.gd`): open the studio, place and edit pieces, validate, save, then
-  publish. `tools/capture_map.gd` saves screenshots of any map (it needs a window).
+  publish. `slab_with_holes` lays a floor as several slabs around rectangular openings (shafts,
+  ramps and drops between levels); `_revision()` sets the revision a republished map ships as.
+  `tools/capture_map.gd` saves screenshots of any map (it needs a window).
 - **Official maps.** `OfficialMaps` lists files in `res://data/maps/official` (Kilnmarket,
   Switchyard, Kestrel Keep). They load through
   `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and

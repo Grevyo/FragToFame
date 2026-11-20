@@ -58,8 +58,8 @@ func run() -> void:
 	check(home_bot.team == player.health.team and away_bot.team != player.health.team, "bots are split into the two teams")
 	check(home_bot.frozen and away_bot.frozen, "bots are frozen during freeze time")
 	check(squad.bots.values().all(func(bot: BotController) -> bool:
-		return bot.weapons.loadout_ids() == [WeaponCatalog.G17]),
-		"all bots start with the modelled G17")
+		return bot.weapons.loadout_ids() == [WeaponCatalog.G17, EquipmentCatalog.KNIFE]),
+		"all bots start with the modelled G17 and the knife")
 	var defence_spawn := director.level.spawn_points("defence")[0][0] as Vector3
 	check(away_bot.global_position.distance_to(defence_spawn) < 5.0, "opponent bots spawn at the defence spawns")
 	var bought := 0

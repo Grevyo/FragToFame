@@ -24,6 +24,9 @@ var collision: CollisionShape3D
 var head: Node3D
 var weapons: WeaponController
 var hitboxes: Array[Hitbox] = []
+## Seconds of flash blindness left, and the length of the flash that caused it.
+var blind_left: float = 0.0
+var blind_total: float = 0.0
 
 var _walking: bool = false
 var _airborne: bool = false
@@ -44,7 +47,26 @@ func _initialize_movement() -> void:
 	collision.shape = _capsule
 
 
+## Seconds a flash keeps the view fully white before it starts to fade.
+const BLIND_FADE: float = 1.8
+
+
+## Blinds the body for [param seconds] (a weaker flash never shortens a stronger one).
+func apply_flash(seconds: float) -> void:
+	if seconds > blind_left:
+		blind_left = seconds
+		blind_total = seconds
+
+
+## How blind the body is now: 1 = sees only white, 0 = clear. Fades over the last
+## [constant BLIND_FADE] seconds, so a short flash never fully blinds.
+func blind_amount() -> float:
+	return clampf(blind_left / BLIND_FADE, 0.0, 1.0)
+
+
 func _reset_movement() -> void:
+	blind_left = 0.0
+	blind_total = 0.0
 	velocity = Vector3.ZERO
 	crouch_amount = 0.0
 	wants_crouch = false
@@ -59,6 +81,7 @@ func _reset_movement() -> void:
 func _step_movement(direction: Vector2, walking: bool, jump_pressed: bool, delta: float,
 		can_jump: bool) -> void:
 	_walking = walking
+	blind_left = maxf(blind_left - delta, 0.0)
 	if not can_jump:
 		_clear_jump_chain()
 	_update_crouch(delta)

@@ -15,8 +15,8 @@ const M1911: StringName = &"wpn_m1911"
 const MK23: StringName = &"wpn_mk23"
 const DESERT_EAGLE: StringName = &"wpn_desert_eagle"
 
-## Sandbox loadout: primary in slot 1, secondary in slot 2.
-const SANDBOX_LOADOUT: Array[StringName] = [AK47, G17]
+## Sandbox loadout: primary in slot 1, secondary in slot 2, the knife in slot 3.
+const SANDBOX_LOADOUT: Array[StringName] = [AK47, G17, EquipmentCatalog.KNIFE]
 ## Everyone spawns with this sidearm in matches.
 const DEFAULT_SECONDARY: StringName = G17
 
@@ -143,6 +143,7 @@ const DATA: Dictionary[StringName, Dictionary] = {
 static var _cache: Dictionary[StringName, WeaponDefinition] = {}
 
 
+## The firearms (the knife and utility live in [EquipmentCatalog]).
 static func ids() -> Array[StringName]:
 	var list: Array[StringName] = []
 	for id: StringName in DATA:
@@ -151,15 +152,16 @@ static func ids() -> Array[StringName]:
 
 
 static func has(id: StringName) -> bool:
-	return DATA.has(id)
+	return DATA.has(id) or EquipmentCatalog.DATA.has(id)
 
 
-## Returns the shared, read-only definition for [param id], or null if unknown.
+## Returns the shared, read-only definition for [param id] (a firearm, the knife or a piece of
+## utility), or null if unknown.
 static func get_definition(id: StringName) -> WeaponDefinition:
-	if not DATA.has(id):
+	if not has(id):
 		return null
 	if not _cache.has(id):
-		_cache[id] = WeaponDefinition.from_dict(DATA[id])
+		_cache[id] = WeaponDefinition.from_dict(DATA[id] if DATA.has(id) else EquipmentCatalog.DATA[id])
 	return _cache[id]
 
 

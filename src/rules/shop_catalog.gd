@@ -5,6 +5,7 @@ extends RefCounted
 const KIND_WEAPON: StringName = &"weapon"
 const KIND_ARMOUR: StringName = &"armour"
 const KIND_KIT: StringName = &"kit"
+const KIND_UTILITY: StringName = &"utility"
 
 const ARMOUR_VEST: StringName = &"armour_vest"
 const ARMOUR_VEST_HELMET: StringName = &"armour_vest_helmet"
@@ -29,10 +30,25 @@ const ITEMS: Dictionary[StringName, Dictionary] = {
 	ARMOUR_VEST: {"name": "Vest", "price": 650, "kind": KIND_ARMOUR},
 	ARMOUR_VEST_HELMET: {"name": "Vest + helmet", "price": 1000, "kind": KIND_ARMOUR},
 	DEFUSE_KIT: {"name": "Defuse kit (defence)", "price": 400, "kind": KIND_KIT, "side": "defence"},
+	EquipmentCatalog.FLASH: {"name": "Flashbang", "price": 200, "kind": KIND_UTILITY},
+	EquipmentCatalog.SMOKE: {"name": "Smoke grenade", "price": 300, "kind": KIND_UTILITY},
+	EquipmentCatalog.FRAG: {"name": "Frag grenade", "price": 300, "kind": KIND_UTILITY},
+	EquipmentCatalog.FIRE: {"name": "Incendiary", "price": 500, "kind": KIND_UTILITY},
 }
 
 ## Money for killing an enemy.
 const KILL_REWARD: int = 300
+## Kills with these pay differently (a knife kill is a humiliation worth paying for).
+const KILL_REWARDS: Dictionary[StringName, int] = {
+	EquipmentCatalog.KNIFE: 1500,
+	EquipmentCatalog.FIRE: 300,
+	EquipmentCatalog.FRAG: 300,
+}
+
+
+## Money for a kill with [param weapon_id].
+static func kill_reward(weapon_id: StringName) -> int:
+	return KILL_REWARDS.get(weapon_id, KILL_REWARD)
 
 
 static func has_item(id: StringName) -> bool:

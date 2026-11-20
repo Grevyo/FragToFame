@@ -1,7 +1,8 @@
 class_name WeaponEffects
 extends Node3D
-## Presentation only: first-person viewmodel, muzzle flash, tracers and bullet impact marks.
-## Listens to a [WeaponController]; never affects where shots go or what they hit.
+## Presentation only: first-person viewmodel, muzzle flash, tracers, bullet impact marks, knife
+## swings and grenade throws. Listens to a [WeaponController]; never affects where shots go or
+## what they hit.
 
 const MAX_IMPACTS: int = 80
 const IMPACT_LIFETIME: float = 12.0
@@ -9,6 +10,9 @@ const TRACER_LIFETIME: float = 0.06
 const VIEWMODEL_REST := Vector3(0.17, -0.17, -0.3)
 ## Seconds a weapon inspection takes (shows the left side, then the right, then returns).
 const INSPECT_TIME: float = 3.2
+const SLASH_TIME: float = 0.3
+const STAB_TIME: float = 0.55
+const THROW_TIME: float = 0.3
 
 var weapons: WeaponController
 var viewmodel: Node3D
@@ -23,6 +27,14 @@ var _flash_mesh: MeshInstance3D
 var _flash_left: float = 0.0
 var _kick: float = 0.0
 var _inspect_left: float = 0.0
+## Knife swing / grenade throw animation: seconds left and which one.
+var _swing_left: float = 0.0
+var _swing_kind: StringName = &""
+var _swing_side: float = 1.0
+## 0..1: how far a readied grenade is drawn back.
+var _ready_pose: float = 0.0
+## The utility model in hand (null for guns and the knife).
+var utility_model: Node3D = null
 var _impacts: Array[Node3D] = []
 var _tracer_material := StandardMaterial3D.new()
 var _impact_material := StandardMaterial3D.new()
@@ -44,6 +56,8 @@ func bind(controller: WeaponController, camera: Camera3D) -> void:
 	camera.add_child(viewmodel)
 	weapons.shot_fired.connect(_on_shot_fired)
 	weapons.weapon_switched.connect(func(_s: WeaponState) -> void: _build_gun())
+	weapons.melee_swung.connect(_on_melee_swung)
+	weapons.utility_thrown.connect(func(_id: StringName) -> void: _start_swing(&"throw", THROW_TIME))
 	_build_gun()
 
 
@@ -59,6 +73,13 @@ func _process(delta: float) -> void:
 		lower = maxf(lower, weapons.draw_remaining / state.definition.draw_time)
 	viewmodel.position = VIEWMODEL_REST + Vector3(0, -0.18 * lower, 0.06 * _kick)
 	viewmodel.rotation_degrees = Vector3(4.0 * _kick - 35.0 * lower, 0, 0)
+	_ready_pose = move_toward(_ready_pose, 1.0 if weapons.is_throw_readied() else 0.0, delta * 6.0)
+	if _ready_pose > 0.0:
+		viewmodel.position += Vector3(0.02, 0.09, 0.1) * _ready_pose
+		viewmodel.rotation_degrees += Vector3(-30.0, 0, 8.0) * _ready_pose
+	if _swing_left > 0.0:
+		_swing_left = maxf(_swing_left - delta, 0.0)
+		_apply_swing_pose()
 	if _inspect_left > 0.0:
 		_inspect_left = 0.0 if lower > 0.0 else maxf(_inspect_left - delta, 0.0)
 		_apply_inspect_pose(1.0 - _inspect_left / INSPECT_TIME)
@@ -73,7 +94,7 @@ func _process(delta: float) -> void:
 ## is nothing to inspect or the weapon is busy.
 func inspect() -> bool:
 	var state := weapons.current() if weapons != null else null
-	if weapon_visual == null or state == null or state.is_reloading() or weapons.draw_remaining > 0.0:
+	if (weapon_visual == null and utility_model == null) or state == null or state.is_reloading() 			or weapons.draw_remaining > 0.0 or weapons.is_throw_readied():
 		return false
 	_inspect_left = INSPECT_TIME
 	return true
@@ -92,6 +113,38 @@ func _apply_inspect_pose(progress: float) -> void:
 	viewmodel.rotation_degrees += Vector3(8.0, -75.0 * turn, 12.0 * turn) * blend
 
 
+func _on_melee_swung(heavy: bool) -> void:
+	_swing_side = -_swing_side
+	_start_swing(&"stab" if heavy else &"slash", STAB_TIME if heavy else SLASH_TIME)
+
+
+func _start_swing(kind: StringName, seconds: float) -> void:
+	_inspect_left = 0.0
+	_swing_kind = kind
+	_swing_left = seconds
+
+
+## Knife slash (a sideways arc, alternating sides), stab (draw back, thrust) or throw (the arm
+## comes forward and down).
+func _apply_swing_pose() -> void:
+	var duration := STAB_TIME if _swing_kind == &"stab" else (THROW_TIME if _swing_kind == &"throw" else SLASH_TIME)
+	var t := 1.0 - _swing_left / duration
+	match _swing_kind:
+		&"slash":
+			var arc := sin(t * PI)
+			viewmodel.position += Vector3(-0.12 * _swing_side * (t - 0.5) * 2.0, 0.02 * arc, -0.06 * arc)
+			viewmodel.rotation_degrees += Vector3(-10.0 * arc, 55.0 * _swing_side * (t - 0.5), -35.0 * _swing_side * arc)
+		&"stab":
+			var back := smoothstep(0.0, 0.3, t) * (1.0 - smoothstep(0.3, 0.45, t))
+			var thrust := smoothstep(0.3, 0.45, t) * (1.0 - smoothstep(0.6, 1.0, t))
+			viewmodel.position += Vector3(-0.05 * thrust, 0.03 * back, 0.08 * back - 0.2 * thrust)
+			viewmodel.rotation_degrees += Vector3(20.0 * back - 15.0 * thrust, 0, 0)
+		&"throw":
+			var follow := sin(t * PI)
+			viewmodel.position += Vector3(-0.03, -0.15 * t, -0.18 * follow)
+			viewmodel.rotation_degrees += Vector3(-50.0 * follow, 0, 0)
+
+
 ## Re-applies the saved Coat and Magnets to the weapon in hand (after a change in the Armoury).
 func refresh_cosmetics() -> void:
 	if weapon_visual != null:
@@ -105,13 +158,22 @@ func _build_gun() -> void:
 	_gun_root = Node3D.new()
 	viewmodel.add_child(_gun_root)
 	weapon_visual = null
+	utility_model = null
 	_muzzle = null
 	_flash_left = 0.0
 	_inspect_left = 0.0
+	if _swing_kind != &"throw":
+		_swing_left = 0.0
 	var state := weapons.current()
 	if state == null:
 		return
 	var id := state.definition.id
+	if state.definition.is_utility():
+		utility_model = UtilityModels.build(id)
+		utility_model.position = Vector3(-0.02, -0.05, -0.02)
+		utility_model.rotation_degrees = Vector3(-10, 25, -8)
+		_gun_root.add_child(utility_model)
+		return
 	var visual := WeaponVisual.new()
 	_gun_root.add_child(visual)
 	if not visual.setup(id):

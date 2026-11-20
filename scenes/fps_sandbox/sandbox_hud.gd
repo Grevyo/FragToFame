@@ -54,6 +54,11 @@ var _weapon_label: Label
 var _ammo_label: Label
 var _reserve_label: Label
 var _reload_bar: ProgressBar
+var _ammo_row: HBoxContainer
+var _utility_label: Label
+## Full-screen white while flashed, grey while the camera is inside smoke.
+var _flash_overlay: ColorRect
+var _smoke_overlay: ColorRect
 var _health_label: Label
 var _health_bar: ProgressBar
 var _stats_label: Label
@@ -92,6 +97,7 @@ func _ready() -> void:
 	_build_crosshair()
 	_build_hint()
 	_build_debug()
+	_build_vision_overlays()
 	_build_combat_panels()
 	_build_death_overlay()
 	_build_pause_overlay()
@@ -184,11 +190,45 @@ func select_practice_map(map_id: String) -> bool:
 ## Weapon panel: name, magazine / reserve ammo and reload progress (negative = not reloading).
 func set_weapon(weapon_name: String, ammo: int, reserve: int, reload_progress: float) -> void:
 	_weapon_label.text = weapon_name
+	_ammo_row.visible = true
 	_ammo_label.text = str(ammo)
 	_ammo_label.theme_type_variation = &"WarningLabel" if ammo == 0 else &"StatValueLabel"
 	_reserve_label.text = "/ %d" % reserve
 	_reload_bar.visible = reload_progress >= 0.0
 	_reload_bar.value = maxf(reload_progress, 0.0)
+
+
+## The knife or a grenade in hand: its name, and how many are carried ([param count] < 0 hides it).
+func set_equipment(item_name: String, count: int) -> void:
+	_weapon_label.text = item_name if count < 0 else "%s ×%d" % [item_name, count]
+	_ammo_row.visible = false
+	_reload_bar.visible = false
+
+
+## Utility carried, in hand marked with brackets (empty hides the line).
+func set_utility(counts: Dictionary[StringName, int], in_hand: StringName) -> void:
+	var parts: Array[String] = []
+	for id: StringName in counts:
+		var label := WeaponCatalog.recorded_name(id) + (" ×%d" % counts[id] if counts[id] > 1 else "")
+		parts.append("[%s]" % label if id == in_hand else label)
+	_utility_label.text = "  ·  ".join(parts)
+	_utility_label.visible = not parts.is_empty()
+
+
+func utility_text() -> String:
+	return _utility_label.text if _utility_label.visible else ""
+
+
+## [param blind] 0..1 flash whiteout, [param smoke] 0..1 depth inside a smoke cloud.
+func set_vision(blind: float, smoke: float) -> void:
+	_flash_overlay.color.a = blind
+	_flash_overlay.visible = blind > 0.0
+	_smoke_overlay.color.a = 0.92 * smoke
+	_smoke_overlay.visible = smoke > 0.0
+
+
+func vision() -> Vector2:
+	return Vector2(_flash_overlay.color.a if _flash_overlay.visible else 0.0, _smoke_overlay.color.a if _smoke_overlay.visible else 0.0)
 
 
 func set_health(current: int, maximum: int) -> void:
@@ -334,13 +374,16 @@ func _build_combat_panels() -> void:
 	var weapon_column := UIFactory.vbox(2)
 	_weapon_label = UIFactory.label("", &"SectionLabel")
 	weapon_column.add_child(_weapon_label)
-	var ammo_row := UIFactory.hbox(6)
+	_ammo_row = UIFactory.hbox(6)
 	_ammo_label = UIFactory.label("0", &"StatValueLabel")
-	ammo_row.add_child(_ammo_label)
+	_ammo_row.add_child(_ammo_label)
 	_reserve_label = UIFactory.label("/ 0", &"MutedLabel")
 	_reserve_label.size_flags_vertical = Control.SIZE_SHRINK_END
-	ammo_row.add_child(_reserve_label)
-	weapon_column.add_child(ammo_row)
+	_ammo_row.add_child(_reserve_label)
+	weapon_column.add_child(_ammo_row)
+	_utility_label = UIFactory.label("", &"MutedLabel")
+	_utility_label.visible = false
+	weapon_column.add_child(_utility_label)
 	_reload_bar = ProgressBar.new()
 	_reload_bar.max_value = 1.0
 	_reload_bar.show_percentage = false
@@ -391,6 +434,18 @@ func _build_combat_panels() -> void:
 	_feed = UIFactory.vbox(2)
 	right.add_child(_feed)
 	add_child(right)
+
+
+func _build_vision_overlays() -> void:
+	_smoke_overlay = ColorRect.new()
+	_smoke_overlay.color = Color(0.5, 0.54, 0.53, 0.0)
+	_flash_overlay = ColorRect.new()
+	_flash_overlay.color = Color(1, 1, 1, 0.0)
+	for overlay: ColorRect in [_smoke_overlay, _flash_overlay]:
+		overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.visible = false
+		add_child(overlay)
 
 
 func _build_death_overlay() -> void:

@@ -13,6 +13,8 @@ signal died(info: DamageInfo)
 enum Mode { MOVE, ENGAGE, SEARCH }
 
 const LOS_INTERVAL: float = 0.1
+## A bot this blind ([method CombatantMovementBody.blind_amount]) sees nothing.
+const BLIND_SIGHT_LIMIT: float = 0.35
 const SEARCH_TIME: float = 4.0
 const REPATH_INTERVAL: float = 0.5
 ## Idle/navigation turning speed as a fraction of the skill's turn speed.
@@ -236,6 +238,11 @@ func _physics_process(delta: float) -> void:
 func _perceive(delta: float) -> void:
 	if target != null and (not is_instance_valid(target) or target.is_dead):
 		_lose_target(false)
+	if blind_amount() >= BLIND_SIGHT_LIMIT:
+		# Flashed: nothing to see. Keep the last known position and search once vision returns.
+		if target != null:
+			_lose_target(true)
+		return
 	_los_timer -= delta
 	if _los_timer > 0.0:
 		return
@@ -286,10 +293,14 @@ func _lose_target(search: bool) -> void:
 		mode = Mode.MOVE
 
 
-## True if nothing in the world blocks the view from the bot's eyes to [param point].
+## True if nothing in the world, and no smoke, blocks the view from the bot's eyes to
+## [param point].
 func has_line_of_sight(point: Vector3) -> bool:
 	var query := PhysicsRayQueryParameters3D.create(head.global_position, point, Hitscan.LAYER_WORLD, [get_rid()])
-	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+		return false
+	var field := UtilityField.find(self)
+	return field == null or not field.blocks_sight(head.global_position, point)
 
 
 func _angle_off(point: Vector3) -> float:

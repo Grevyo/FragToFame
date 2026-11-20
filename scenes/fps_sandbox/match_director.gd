@@ -70,7 +70,9 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 	player.health.owner_id = local_player_id
 	state.add_player(local_player_id, "You", MatchState.HOME, true)
 	player.weapons.shot_attempted.connect(state.record_shot.bind(local_player_id))
+	player.weapons.utility_thrown.connect(func(id: StringName) -> void: state.record_throw(local_player_id, id))
 	player.health.damaged.connect(state.record_damage.bind(local_player_id))
+	level.utility.combatant_flashed.connect(state.record_flash)
 	if opponents == OPPONENTS_BOTS:
 		var skill := StringName(str(options.get("skill", "normal")))
 		squad = BotSquad.new(self, skill)
@@ -82,6 +84,8 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 		squad.spawn_bots()
 		for bot: BotController in squad.bots.values():
 			bot.weapons.shot_attempted.connect(state.record_shot.bind(bot.bot_id))
+			var thrower := bot.bot_id
+			bot.weapons.utility_thrown.connect(func(id: StringName) -> void: state.record_throw(thrower, id))
 			bot.health.damaged.connect(state.record_damage.bind(bot.bot_id))
 		if bool(options.get("career_fixture", false)):
 			hud.set_notice("%s · MR%d · vs %s" % [setup.competition, setup.max_rounds, setup.away_team_name])
@@ -214,6 +218,8 @@ func _apply_purchase(item_id: StringName) -> void:
 		ShopCatalog.KIND_ARMOUR:
 			player.health.armour = me.armour
 			player.health.has_helmet = me.helmet
+		ShopCatalog.KIND_UTILITY:
+			player.weapons.give_utility(item_id)
 
 
 func _refresh_buy_menu() -> void:
@@ -230,7 +236,14 @@ func _refresh_buy_menu() -> void:
 		if id == ShopCatalog.ARMOUR_VEST_HELMET and me.armour >= ShopCatalog.FULL_ARMOUR and not me.helmet:
 			price = ShopCatalog.HELMET_UPGRADE_PRICE
 			note = "helmet only"
-		if owned:
+		if ShopCatalog.kind(id) == ShopCatalog.KIND_UTILITY:
+			var have := me.utility_count(id)
+			var limit := EquipmentCatalog.carry_limit(id)
+			owned = have >= limit or me.utility.size() >= EquipmentCatalog.UTILITY_CARRY_LIMIT
+			note = "%d/%d" % [have, limit] if have > 0 else ""
+			if me.utility.size() >= EquipmentCatalog.UTILITY_CARRY_LIMIT and have < limit:
+				note = "utility full"
+		elif owned:
 			note = "owned"
 		elif restriction != &"" and restriction != human_side():
 			note = "%s only" % restriction
@@ -310,6 +323,7 @@ func _on_bomb_picked_up(player_id: String) -> void:
 
 func _on_round_started(round_number: int) -> void:
 	_clear_bomb()
+	level.utility.clear()
 	plant_progress = 0.0
 	defuse_progress = 0.0
 	last_buy_message = ""

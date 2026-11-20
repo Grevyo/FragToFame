@@ -115,7 +115,7 @@ func _test_round_flow_and_timers() -> void:
 	check(state.phase == MatchState.Phase.FREEZE and state.round_number == 1, "round 1 starts in freeze time")
 	check(state.teams[MatchState.HOME].side == MatchRules.SIDE_ATTACK, "home attacks first")
 	check(state.bomb_carrier_id == HUMAN, "the human attacker carries the bomb")
-	check(state.get_player(HUMAN).loadout() == [WeaponCatalog.G17], "everyone starts with a pistol")
+	check(state.get_player(HUMAN).loadout() == [WeaponCatalog.G17, EquipmentCatalog.KNIFE], "everyone starts with a pistol and the knife")
 	check(not state.record_kill("a1", HUMAN, WeaponCatalog.G17, false), "no kills during freeze time")
 	_go_live(state)
 	check(state.phase == MatchState.Phase.LIVE, "freeze ends and the round goes live")
@@ -179,7 +179,7 @@ func _test_economy_and_buying() -> void:
 	check(state.get_player("a2").money == a2_money + state.rules.loss_bonus[0], "losers get the first loss bonus")
 	_finish_round_end(state)
 	check(human.armour == 100, "surviving keeps armour")
-	check(state.get_player("h2").armour == 0 and state.get_player("h2").loadout() == [WeaponCatalog.G17],
+	check(state.get_player("h2").armour == 0 and state.get_player("h2").loadout() == [WeaponCatalog.G17, EquipmentCatalog.KNIFE],
 		"dying loses gear")
 	check(not state.get_player("a1").has_kit, "dead defender loses the kit")
 

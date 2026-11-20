@@ -10,6 +10,7 @@ const COUNTERS: Array[String] = [
 	"rounds", "kills", "deaths", "assists", "kast_rounds", "damage", "shots", "hits",
 	"headshot_kills", "first_shots", "first_hits", "opening_kills", "opening_deaths",
 	"trade_kills", "traded_deaths", "clutch_attempts", "clutch_wins", "plants", "defuses",
+	"utility_thrown", "utility_damage", "enemies_flashed", "flash_assists",
 ]
 
 var _totals: Dictionary[String, Dictionary] = {}
@@ -19,6 +20,8 @@ var _contributed: Dictionary[String, bool] = {}
 var _damage_to: Dictionary[String, Dictionary] = {}
 var _round_shots: Dictionary[String, int] = {}
 var _kills: Array[Dictionary] = []
+## Victim -> {"by": thrower, "until": match time the blindness ends} for this round's flashes.
+var _flashed: Dictionary[String, Dictionary] = {}
 var _clutch_players: Dictionary[int, String] = {}
 var _clutch_sizes: Dictionary[int, int] = {}
 var _round: int
@@ -106,6 +109,7 @@ func _start_round(number: int) -> void:
 	_damage_to.clear()
 	_round_shots.clear()
 	_kills.clear()
+	_flashed.clear()
 	_clutch_players.clear()
 	_clutch_sizes.clear()
 	for player: String in _teams:
@@ -137,6 +141,11 @@ func _apply_event(type: String, event: Dictionary) -> void:
 					_add(actor, "first_shots")
 		"damage":
 			_record_damage(actor, event)
+		"utility_thrown":
+			if _alive.get(actor, false):
+				_add(actor, "utility_thrown")
+		"flashed":
+			_record_flash(actor, event)
 		"kill":
 			_record_kill(event)
 		"bomb_planted", "bomb_defused":
@@ -151,7 +160,9 @@ func _record_damage(actor: String, event: Dictionary) -> void:
 			or _teams[actor] == _teams[victim] or hp <= 0:
 		return
 	_add(actor, "damage", hp)
-	if _round_shots.get(actor, 0) > 0:
+	if bool(event.get("utility", false)):
+		_add(actor, "utility_damage", hp)
+	elif _round_shots.get(actor, 0) > 0:
 		_add(actor, "hits")
 		_weapon(actor, str(event.get("weapon", "")))["hits"] += 1
 		if _round_shots[actor] == 1:
@@ -180,6 +191,7 @@ func _record_kill(event: Dictionary) -> void:
 			_add(killer, "opening_kills")
 			_add(victim, "opening_deaths")
 		_credit_assist(killer, victim)
+		_credit_flash_assist(killer, victim, float(event.get("t", 0.0)))
 		_credit_trade(killer, victim, float(event.get("t", 0.0)))
 		_kills.append({"killer": killer, "victim": victim, "t": event.get("t", 0.0), "traded": false})
 	_track_clutches()
@@ -197,6 +209,30 @@ func _credit_assist(killer: String, victim: String) -> void:
 	if not assister.is_empty():
 		_add(assister, "assists")
 		_contributed[assister] = true
+
+
+## Blinding an enemy counts when the flash came from an enemy of the victim and they were alive.
+func _record_flash(actor: String, event: Dictionary) -> void:
+	var victim := str(event.get("victim", ""))
+	if not _teams.has(actor) or not _alive.get(victim, false) or _teams[actor] == _teams.get(victim, -1):
+		return
+	_add(actor, "enemies_flashed")
+	var until := float(event.get("t", 0.0)) + float(event.get("seconds", 0.0))
+	var prior: Dictionary = _flashed.get(victim, {})
+	if prior.is_empty() or float(prior["until"]) < until:
+		_flashed[victim] = {"by": actor, "until": until}
+
+
+## A teammate of the killer who blinded the victim, still blind at the kill, gets a flash
+## assist (and KAST credit for the round).
+func _credit_flash_assist(killer: String, victim: String, time: float) -> void:
+	var flash: Dictionary = _flashed.get(victim, {})
+	if flash.is_empty() or time > float(flash["until"]):
+		return
+	var by := str(flash["by"])
+	if by != killer and _teams.get(by, -1) == _teams[killer]:
+		_add(by, "flash_assists")
+		_contributed[by] = true
 
 
 func _credit_trade(killer: String, victim: String, time: float) -> void:

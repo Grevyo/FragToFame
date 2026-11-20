@@ -160,11 +160,27 @@ Completion criteria:
 - [x] Automated tests: rules suite (armour, loadout, round flow, economy, bomb, halves, overtime,
       event log) and a full scene match (buy, eliminate, plant + detonate, half time, death,
       defuse, match end with a valid `MatchResult`).
+- [x] Utility and the knife (owner, 2026-11-20):
+  - **Knife** (slot 3, always carried): a quick slash that repeats while held and a heavy stab.
+    A hit on a victim facing away is a backstab (a stab in the back kills). Knife kills pay
+    $1,500.
+  - **Utility** (slot 4, press again for the next kind): flashbang ($200, carry 2), smoke
+    ($300), frag ($300) and incendiary ($500); four pieces at most. Hold to ready, release to
+    throw: full, lob (right button) or medium (both). Flight is deterministic.
+  - **Effects:** a frag blast falls off with distance and is stopped by walls. A flash blinds
+    by distance, facing and cover, the screen whites out and flashed bots lose their target.
+    Smoke blocks sight (bots included) but not bullets. An incendiary spreads over the floor
+    and burns anyone standing in it; smoke puts fire out.
+  - **Rules and statistics:** survivors keep unused utility. Throws, flashes and utility damage
+    are logged. Utility thrown, utility damage, enemies flashed and flash assists are counted
+    (flash assists give KAST credit).
+  - Bots carry the knife but do not buy or throw utility yet (team tactics, M7).
 - [ ] Manual practice-match walkthrough (README) by the project owner.
+- [ ] Manual utility and knife walkthrough (README).
 
 Out of scope (later): opponents that fight back (M6 AI), teammates, networked matches (rules run
-on the match host later), dropping/picking up weapons, grenades/utility, spectating dead players,
-career fixtures and their result submission (M10).
+on the match host later), dropping/picking up weapons, spectating dead players, career fixtures
+and their result submission (M10).
 
 ## Milestone 6 — Individual combat and navigation AI 🔶
 
@@ -883,3 +899,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 17 (owner report): ground finishes are cut into the floor, level with the road, instead of 5 cm slabs on top of it. |
 | 2026-11-20 | Cluts revision 18 (owner request): irregular dirt and gravel patches instead of rectangles, more worn dirt, props throughout the map, site A moved to the Harbour Office yard and defenders to the Dispatch Yard. |
 | 2026-11-20 | Lamps and street life on all four maps (owner request): lamp fixtures on every dark spot found by a lighting check, wall-side props along the routes, and on Cluts the doors that led nowhere removed or raised to deck height. Editor: five lamp fixtures and seven street props. |
+| 2026-11-20 | Utility and the knife (owner request): flashbang, smoke, frag and incendiary with deterministic throws, real effects for players and bots, buying, carry limits and utility statistics; a knife with slash, stab and backstabs. Knife models, Coat kits and inspects follow once the knife pack is in. |

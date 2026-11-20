@@ -352,6 +352,51 @@ reported per slot. The same route data can be consumed by future M7 play executi
   `target_dummy` pieces; the maps module stays unaware of combat.
 - **Not yet:** armour, penetration, networked/authoritative damage, player hitboxes, audio.
 
+### Utility and the knife (2026-11-20)
+
+```
+ WeaponController (knife / utility in hand)
+   knife: trigger = slash, secondary = stab ─► short Hitscan fan ─► Health (backstab from facing)
+   utility: hold to ready, release to throw ─► UtilityField.throw(id, origin, velocity, thrower)
+                                                        │
+ UtilityField (one per SandboxLevel, group "utility_field")
+   ThrownGrenade + GrenadeFlight (fixed 1/64 s steps: gravity, bounces, rolling, rest)
+   detonate ─► frag: blast to every Health in the open within range (walls block)
+            ─► flash: CombatantMovementBody.apply_flash(seconds) by distance, facing and cover
+            ─► smoke: ellipsoid cloud; blocks_sight() for bots, smoke_cover() for the screen
+            ─► fire:  floor patches on a grid (same height, no wall between); damage ticks
+   signals: utility_thrown, detonated, combatant_flashed ─► MatchState (record_throw/_flash)
+```
+
+- **Equipment as weapons.** `EquipmentCatalog` holds the knife (`wpn_knife`) and the four kinds
+  of utility (`utl_flash`, `utl_smoke`, `utl_frag`, `utl_fire`) as data. `WeaponCatalog.get_definition`
+  serves them too, so loadouts, the kill feed and statistics name them like any weapon, while
+  `WeaponCatalog.ids()` stays the firearm list. `WeaponDefinition` gained the melee and utility
+  categories (`is_firearm()`, `is_melee()`, `is_utility()`) and an `equipment` parameter block.
+  A kind of utility is one carried entry whose ammo is how many are held.
+- **Deterministic flight.** `GrenadeFlight` always advances in whole 1/64 s steps whatever the
+  frame rate, so a throw from the same spot always lands in the same place. `predict()` returns
+  the path for lineups, a trajectory preview and (later) bots and the Tactical Play Creator.
+- **Effects stay in the FPS runtime.** Damage goes through `Health.apply_damage` with
+  `DamageInfo.CAUSE_UTILITY`; `MatchState.record_damage` marks it so statistics count it as
+  damage and towards assists but never as a bullet hit. Every `Health` joins the
+  `combatant_health` group so area effects can find targets without knowing what owns them.
+- **Sight, not bullets.** Smoke blocks bot line of sight (`BotController.has_line_of_sight` asks
+  the field) and fills the player's view with overlapping soft puffs plus a screen tint inside
+  it; bullets still pass through. A flashed bot (`blind_amount()` ≥ 0.35) perceives nothing and
+  searches the last known position afterwards.
+- **Rules.** `PlayerState.utility` lists unused utility (survivors keep it, death strips it);
+  carry limits are 2 flashbangs, 1 of each other kind, 4 in all. Kill rewards come from
+  `ShopCatalog.kill_reward(weapon)` (knife $1,500). New events: `utility_thrown`, `flashed`, and
+  `utility: true` on utility damage. New counters (stored in the existing `counts_json`, no
+  schema change): `utility_thrown`, `utility_damage`, `enemies_flashed`, `flash_assists`
+  (a flash assist also gives KAST credit).
+- **Presentation.** `UtilityModels` (original procedural models) and `UtilityVisuals` (smoke
+  cloud, flames, bursts) are presentation only; the field takes a model factory from the
+  runtime, so `src/combat` does not depend on `src/cosmetics`.
+- **Not yet:** bots buying and throwing utility (Milestone 7), sounds (no audio assets),
+  networked utility.
+
 ### Competitive rules (Milestone 5)
 
 ```
@@ -913,6 +958,8 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-16 | Magnets are decals on fixed slots, not texture edits | Independent of Coats, work on any future Coat, cheap to add and remove |
 | 2026-11-16 | A Coat swaps albedo only and must match the kit's layout size | Kits export exactly what the game loads; factory normal/roughness maps stay |
 | 2026-11-16 | Cosmetics saved in a player profile file, not the career database | A look follows the player across careers and modes; no schema change |
+| 2026-11-20 | Knife and utility are `WeaponDefinition`s served by `WeaponCatalog.get_definition`; one `UtilityField` per level owns grenades, smoke and fire | One loadout, kill-feed and statistics path for every weapon; one place bots and the HUD ask about smoke and fire |
+| 2026-11-20 | Grenade flight in fixed 1/64 s steps with ray-cast bounces (no `RigidBody3D`) | Same throw, same landing spot at any frame rate: lineups, trajectory preview and AI throws depend on it |
 | 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |
 

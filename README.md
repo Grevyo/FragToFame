@@ -37,9 +37,12 @@ matches. Built with Godot 4.7.2 (typed GDScript, Forward+). Target platform: Win
 | Space | Jump |
 | Shift (hold) | Walk (slower, more accurate, quieter later) |
 | Ctrl or C (hold) | Crouch (slower, more accurate; you stay crouched under low ceilings) |
-| Left click | Fire (or recapture the mouse if it was released) |
+| Left click | Fire · knife slash · full grenade throw (or recapture the mouse if it was released) |
+| Right click | Knife stab · grenade lob (both buttons together: a medium throw) |
 | R | Reload |
-| 1 / 2 · mouse wheel | Primary / secondary · cycle (AK-47 and G17 in the sandbox by default) |
+| 1 / 2 / 3 · mouse wheel | Primary / secondary / knife · cycle (AK-47, G17 and knife in the sandbox by default) |
+| 4 | Utility; press again for the next kind carried |
+| F | Inspect the weapon in hand |
 | B | Buy menu (practice match, in your buy zone during the buy window) |
 | E (hold) | Plant the bomb on a bombsite / defuse a planted bomb (practice match) |
 
@@ -211,6 +214,31 @@ Ports: career sync **24560**, match **24570** (UDP).
       counts down and you respawn at the spawn with full health and ammo.
 - [ ] Creation Studio: the **Training → Target dummy** piece can be placed, set to *strafe* in the
       inspector and shot at in Playtest.
+
+### Manual test checklist (utility and knife)
+
+In the FPS Sandbox, press **B** to take utility (free there), then **4** to hold it.
+
+- [ ] Hold left click to ready a grenade and let go to throw it; right click lobs it, both buttons
+      together throw it medium distance. Throws feel right in distance and arc, bounce off walls
+      and roll to a stop, and the same throw from the same spot lands in the same place.
+- [ ] **Smoke**: pops once it settles, blooms in about a second, hides what is behind it and lasts
+      about 18 s. Walking into it greys the screen. Bots cannot see you through it.
+- [ ] **Flashbang**: looking at it whites the screen for up to about 5 s; turning away, distance or
+      a wall makes it weaker or harmless. A flashed bot stops shooting at you.
+- [ ] **Frag**: hurts within about 7 m, less further off, and not behind a wall. Your own frag
+      hurts you.
+- [ ] **Incendiary**: bursts on the first floor it touches, spreads over the ground (not up walls),
+      burns for 7 s and hurts anyone standing in it. A smoke thrown onto it puts it out; one thrown
+      into a smoke fizzles.
+- [ ] **Knife (3)**: left click slashes (quick, repeats), right click stabs. A stab in the back
+      kills; from the front it takes more. A knife kill in a match pays $1,500.
+- [ ] Practice match: the buy menu sells the four kinds (2 flashbangs, 1 of each other, 4 in all).
+      Unused utility stays with you if you survive and is lost if you die. The kill feed names the
+      grenade or knife.
+- [ ] The weapon panel shows the grenade or knife in hand and lists the utility you carry.
+
+Bots carry the knife but do not buy or throw utility yet (team tactics, Milestone 7).
 
 ### Manual test checklist (Milestone 5 — competitive match rules)
 

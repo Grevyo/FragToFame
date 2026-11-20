@@ -40,21 +40,29 @@ class PlayerState extends RefCounted:
 	var has_kit: bool = false
 	var primary: StringName = &""
 	var secondary: StringName = WeaponCatalog.DEFAULT_SECONDARY
+	## Unused utility carried (a kind may repeat: two flashbangs are two entries).
+	var utility: Array[StringName] = []
 	var kills: int = 0
 	var deaths: int = 0
 
-	## Carried weapons, primary first.
+	## Carried weapons: primary, secondary, the knife, then utility.
 	func loadout() -> Array[StringName]:
 		var ids: Array[StringName] = []
 		if primary != &"":
 			ids.append(primary)
 		if secondary != &"":
 			ids.append(secondary)
+		ids.append(EquipmentCatalog.KNIFE)
+		ids.append_array(utility)
 		return ids
+
+	func utility_count(id: StringName) -> int:
+		return utility.count(id)
 
 	func strip_gear() -> void:
 		primary = &""
 		secondary = WeaponCatalog.DEFAULT_SECONDARY
+		utility.clear()
 		armour = 0
 		helmet = false
 		has_kit = false
@@ -241,6 +249,11 @@ func buy(player_id: String, item_id: StringName) -> String:
 		ShopCatalog.KIND_KIT:
 			if player.has_kit:
 				return "already owned"
+		ShopCatalog.KIND_UTILITY:
+			if player.utility_count(item_id) >= EquipmentCatalog.carry_limit(item_id):
+				return "already carrying the most allowed"
+			if player.utility.size() >= EquipmentCatalog.UTILITY_CARRY_LIMIT:
+				return "carrying %d pieces of utility already" % EquipmentCatalog.UTILITY_CARRY_LIMIT
 	if player.money < cost:
 		return "not enough money"
 	player.money -= cost
@@ -256,6 +269,8 @@ func buy(player_id: String, item_id: StringName) -> String:
 			player.helmet = player.helmet or item_id == ShopCatalog.ARMOUR_VEST_HELMET
 		ShopCatalog.KIND_KIT:
 			player.has_kit = true
+		ShopCatalog.KIND_UTILITY:
+			player.utility.append(item_id)
 	_log("purchase", {"player": player_id, "item": String(item_id), "cost": cost})
 	return ""
 
@@ -267,15 +282,42 @@ func record_shot(weapon_id: StringName, shooter_id: String) -> void:
 		_log("shot", {"player": shooter_id, "weapon": String(weapon_id)})
 
 
-## Uses health actually lost after armour and overkill, before the death event fires.
+## Uses health actually lost after armour and overkill, before the death event fires. Damage
+## from utility (frag, fire) is marked so statistics never count it as a bullet hit.
 func record_damage(info: DamageInfo, victim_id: String) -> void:
-	if phase != Phase.LIVE or info.applied <= 0 or info.cause != DamageInfo.CAUSE_WEAPON:
+	if phase != Phase.LIVE or info.applied <= 0:
+		return
+	if info.cause != DamageInfo.CAUSE_WEAPON and info.cause != DamageInfo.CAUSE_UTILITY:
 		return
 	var attacker := get_player(info.source_id)
 	var victim := get_player(victim_id)
 	if attacker != null and victim != null and attacker.team != victim.team:
-		_log("damage", {"player": attacker.id, "victim": victim_id, "hp": info.applied,
-			"weapon": String(info.weapon_id), "headshot": info.is_headshot()})
+		var data := {"player": attacker.id, "victim": victim_id, "hp": info.applied,
+			"weapon": String(info.weapon_id), "headshot": info.is_headshot()}
+		if info.cause == DamageInfo.CAUSE_UTILITY:
+			data["utility"] = true
+		_log("damage", data)
+
+
+## A grenade left [param player_id]'s hand: one fewer carried. Thrown during freeze time or
+## the live round (any time a grenade can actually be thrown).
+func record_throw(player_id: String, utility_id: StringName) -> void:
+	var player := get_player(player_id)
+	if player == null or not player.alive:
+		return
+	player.utility.erase(utility_id)
+	if phase == Phase.LIVE or phase == Phase.FREEZE:
+		_log("utility_thrown", {"player": player_id, "item": String(utility_id)})
+
+
+## A flash from [param thrower_id] blinded [param victim_id] for [param seconds].
+func record_flash(thrower_id: String, victim_id: String, seconds: float) -> void:
+	var thrower := get_player(thrower_id)
+	var victim := get_player(victim_id)
+	if phase != Phase.LIVE or thrower == null or victim == null or not victim.alive:
+		return
+	_log("flashed", {"player": thrower_id, "victim": victim_id, "seconds": snappedf(seconds, 0.01),
+		"enemy": thrower.team != victim.team})
 
 
 ## Records a death. [param killer_id] may be empty (world) or the victim (suicide).
@@ -291,7 +333,7 @@ func record_kill(victim_id: String, killer_id: String, weapon_id: StringName, he
 	var reward := 0
 	if killer != null and killer != victim and killer.team != victim.team:
 		killer.kills += 1
-		reward = ShopCatalog.KILL_REWARD
+		reward = ShopCatalog.kill_reward(weapon_id)
 		_add_money(killer, reward)
 	_log("kill", {"victim": victim_id, "killer": killer_id, "weapon": String(weapon_id),
 		"headshot": headshot, "reward": reward,

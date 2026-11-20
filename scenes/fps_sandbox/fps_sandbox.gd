@@ -216,6 +216,7 @@ func _process(delta: float) -> void:
 		Engine.get_frames_per_second(),
 	])
 	hud.set_location_text(MapTactical.area_name_at(level.document, p))
+	hud.set_vision(player.blind_amount(), level.utility.smoke_cover(player.camera.global_position) if level.utility != null else 0.0)
 	_update_combat_hud()
 	_update_network_hud()
 	if _respawn_left >= 0.0 and not is_paused:
@@ -236,7 +237,13 @@ func set_sandbox_weapons(primary: StringName, secondary: StringName) -> bool:
 		return false
 	if secondary_definition == null or secondary_definition.category != WeaponDefinition.CATEGORY_SECONDARY:
 		return false
-	player.weapons.set_loadout([primary, secondary])
+	var utility: Array[StringName] = []
+	for id: StringName in EquipmentCatalog.UTILITY:
+		for i: int in player.weapons.utility_count(id):
+			utility.append(id)
+	var loadout: Array[StringName] = [primary, secondary, EquipmentCatalog.KNIFE]
+	loadout.append_array(utility)
+	player.weapons.set_loadout(loadout)
 	return true
 
 
@@ -249,8 +256,11 @@ func _show_sandbox_shop(message: String = "") -> void:
 		add_child(_sandbox_shop)
 	var entries: Array[Dictionary] = []
 	for id: StringName in ShopCatalog.item_ids():
-		if ShopCatalog.kind(id) != ShopCatalog.KIND_KIT:
-			entries.append({"id": id, "name": ShopCatalog.display_name(id), "enabled": true})
+		if ShopCatalog.kind(id) == ShopCatalog.KIND_KIT:
+			continue
+		var full := ShopCatalog.kind(id) == ShopCatalog.KIND_UTILITY 			and player.weapons.utility_count(id) >= EquipmentCatalog.carry_limit(id)
+		entries.append({"id": id, "name": ShopCatalog.display_name(id), "enabled": not full,
+			"note": "full" if full else ""})
 	player.input_enabled = false
 	player.weapons.trigger = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -264,6 +274,8 @@ func _take_sandbox_item(id: StringName) -> void:
 		ShopCatalog.KIND_ARMOUR:
 			player.health.armour = ShopCatalog.FULL_ARMOUR
 			player.health.has_helmet = player.health.has_helmet or id == ShopCatalog.ARMOUR_VEST_HELMET
+		ShopCatalog.KIND_UTILITY:
+			player.weapons.give_utility(id)
 		_:
 			return
 	_show_sandbox_shop("Equipped %s" % ShopCatalog.display_name(id))
@@ -290,9 +302,12 @@ func is_awaiting_respawn() -> bool:
 
 func _update_combat_hud() -> void:
 	var weapon := player.weapons.current()
-	if weapon != null:
+	if weapon != null and weapon.definition.is_firearm():
 		hud.set_weapon(weapon.definition.display_name, weapon.ammo, weapon.reserve,
 			weapon.reload_progress() if weapon.is_reloading() else -1.0)
+	elif weapon != null:
+		hud.set_equipment(weapon.definition.display_name, weapon.ammo if weapon.definition.is_utility() else -1)
+	hud.set_utility(player.weapons.utility_counts(), weapon.definition.id if weapon != null else &"")
 	hud.set_health(player.health.current, player.health.max_health)
 	hud.set_crosshair_gap(_spread_to_pixels(player.weapons.current_spread()))
 	if training_director != null:

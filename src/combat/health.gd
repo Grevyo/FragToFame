@@ -26,8 +26,13 @@ var hitboxes: Array[Hitbox] = []
 var last_death: DamageInfo = null
 
 
+## Every Health in the scene tree joins this group, so area effects (grenades) can find them.
+const GROUP: StringName = &"combatant_health"
+
+
 func _ready() -> void:
 	current = max_health
+	add_to_group(GROUP)
 
 
 ## Applies [param info]; returns the damage actually removed. Ignored once dead.

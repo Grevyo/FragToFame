@@ -54,7 +54,7 @@ func run() -> void:
 	check(director.combatants.size() == 2, "two passive combatants spawned")
 	check(state.phase == MatchState.Phase.FREEZE and state.round_number == 1, "round 1 freeze time")
 	check(player.frozen, "player is frozen during freeze time")
-	check(player.weapons.loadout_ids() == [WeaponCatalog.G17], "player starts with the G17 only")
+	check(player.weapons.loadout_ids() == [WeaponCatalog.G17, EquipmentCatalog.KNIFE], "player starts with the G17 and the knife")
 	var effects := sandbox.get_node("Effects") as WeaponEffects
 	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == WeaponCatalog.G17,
 		"the G17 model matches the starting match loadout")

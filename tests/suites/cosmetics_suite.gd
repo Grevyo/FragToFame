@@ -403,12 +403,13 @@ func _test_first_person() -> void:
 	var hud := sandbox.get_node("Hud") as SandboxHud
 	player.input_enabled = false
 	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == WeaponCatalog.AK47
-		and player.weapons.loadout_ids() == [WeaponCatalog.AK47, WeaponCatalog.G17],
-		"the sandbox starts with a modelled AK-47 and G17")
-	check(hud.choose_sandbox_weapons(&"wpn_m4a1", &"wpn_m1911") and player.weapons.loadout_ids() == [&"wpn_m4a1", &"wpn_m1911"],
-		"the sandbox pause menu equips only the selected primary and secondary")
+		and player.weapons.loadout_ids() == [WeaponCatalog.AK47, WeaponCatalog.G17, EquipmentCatalog.KNIFE],
+		"the sandbox starts with a modelled AK-47, the G17 and the knife")
+	check(hud.choose_sandbox_weapons(&"wpn_m4a1", &"wpn_m1911")
+		and player.weapons.loadout_ids() == [&"wpn_m4a1", &"wpn_m1911", EquipmentCatalog.KNIFE],
+		"the sandbox pause menu equips only the selected primary and secondary (plus the knife)")
 	check(not bool(sandbox.call("set_sandbox_weapons", WeaponCatalog.G17, WeaponCatalog.AK47))
-		and player.weapons.loadout_ids() == [WeaponCatalog.M4A1, WeaponCatalog.M1911],
+		and player.weapons.loadout_ids() == [WeaponCatalog.M4A1, WeaponCatalog.M1911, EquipmentCatalog.KNIFE],
 		"the sandbox refuses swapped categories and retains the loadout")
 	hud.choose_sandbox_weapons(WeaponCatalog.AK47, WeaponCatalog.G17)
 	await wait_frames(2)

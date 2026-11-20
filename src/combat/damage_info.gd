@@ -4,6 +4,8 @@ extends RefCounted
 
 const CAUSE_WEAPON: StringName = &"weapon"
 const CAUSE_WORLD: StringName = &"world"
+## Thrown utility (frag blast, fire); [member weapon_id] names the grenade.
+const CAUSE_UTILITY: StringName = &"utility"
 
 var amount: int = 0
 ## Damage actually removed from health (≤ amount); filled in by [Health].

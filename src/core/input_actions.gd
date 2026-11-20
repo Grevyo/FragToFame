@@ -19,10 +19,14 @@ const EDITOR_DOWN: StringName = &"editor_down"
 const EDITOR_FAST: StringName = &"editor_fast"
 const EDITOR_RESET_VIEW: StringName = &"editor_reset_view"
 const FIRE: StringName = &"fire"
+## Knife stab and grenade lob.
+const SECONDARY_FIRE: StringName = &"secondary_fire"
 const RELOAD: StringName = &"reload"
 const CROUCH: StringName = &"crouch"
 const WEAPON_1: StringName = &"weapon_1"
 const WEAPON_2: StringName = &"weapon_2"
+const WEAPON_3: StringName = &"weapon_3"
+const WEAPON_4: StringName = &"weapon_4"
 const WEAPON_NEXT: StringName = &"weapon_next"
 const WEAPON_PREVIOUS: StringName = &"weapon_previous"
 const INTERACT: StringName = &"interact"
@@ -44,9 +48,12 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"id": WALK, "label": "Walk (hold)", "group": "Movement", "context": "game", "defaults": ["key:4194325"]},
 	{"id": CROUCH, "label": "Crouch (hold)", "group": "Movement", "context": "game", "defaults": ["key:4194326", "key:67"]},
 	{"id": FIRE, "label": "Fire", "group": "Combat", "context": "game", "defaults": ["mouse:1"]},
+	{"id": SECONDARY_FIRE, "label": "Stab / lob grenade", "group": "Combat", "context": "game", "defaults": ["mouse:2"]},
 	{"id": RELOAD, "label": "Reload", "group": "Combat", "context": "game", "defaults": ["key:82"]},
 	{"id": WEAPON_1, "label": "Primary weapon", "group": "Combat", "context": "game", "defaults": ["key:49"]},
 	{"id": WEAPON_2, "label": "Secondary weapon", "group": "Combat", "context": "game", "defaults": ["key:50"]},
+	{"id": WEAPON_3, "label": "Knife", "group": "Combat", "context": "game", "defaults": ["key:51"]},
+	{"id": WEAPON_4, "label": "Utility (press again for the next)", "group": "Combat", "context": "game", "defaults": ["key:52"]},
 	{"id": WEAPON_NEXT, "label": "Next weapon", "group": "Combat", "context": "game", "defaults": ["mouse:5"]},
 	{"id": WEAPON_PREVIOUS, "label": "Previous weapon", "group": "Combat", "context": "game", "defaults": ["mouse:4"]},
 	{"id": INSPECT, "label": "Inspect weapon", "group": "Combat", "context": "game", "defaults": ["key:70"]},

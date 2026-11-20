@@ -10,12 +10,17 @@ enum FireMode { SEMI, AUTO }
 
 const CATEGORY_PRIMARY: StringName = &"primary"
 const CATEGORY_SECONDARY: StringName = &"secondary"
+## The knife: always carried, never bought, never dropped.
+const CATEGORY_MELEE: StringName = &"melee"
+## Thrown utility (grenades); [member magazine_size] is how many of it one player may carry.
+const CATEGORY_UTILITY: StringName = &"utility"
 
 var id: StringName = &""
 var display_name: String = ""
 ## Loadout slot (1 = primary, 2 = secondary, 3 = alternative primary in the sandbox).
 var slot: int = 1
-## Loadout category: a player carries at most one primary and one secondary in matches.
+## Loadout category: a player carries at most one primary and one secondary in matches, always
+## the knife, and up to [constant EquipmentCatalog.UTILITY_CARRY_LIMIT] pieces of utility.
 var category: StringName = CATEGORY_PRIMARY
 var fire_mode: FireMode = FireMode.AUTO
 var damage: float = 30.0
@@ -52,6 +57,8 @@ var recovery_delay: float = 0.12
 var recovery_rate: float = 14.0
 ## Fraction of the recoil offset shown as camera punch (bullets follow the full offset).
 var view_punch: float = 0.5
+## Knife and utility parameters from [EquipmentCatalog] (empty for firearms).
+var equipment: Dictionary = {}
 
 
 static func from_dict(data: Dictionary) -> WeaponDefinition:
@@ -63,29 +70,43 @@ static func from_dict(data: Dictionary) -> WeaponDefinition:
 	d.armour_penetration = float(data.get("armour_penetration", d.armour_penetration))
 	d.fire_mode = FireMode.AUTO if bool(data.get("automatic", true)) else FireMode.SEMI
 	d.mobility = float(data.get("mobility", d.mobility))
-	d.damage = float(data["damage"])
-	d.fire_interval = 60.0 / float(data["rpm"])
-	d.magazine_size = int(data["magazine"])
-	d.reserve_ammo = int(data["reserve"])
-	d.reload_time = float(data["reload_time"])
+	d.damage = float(data.get("damage", d.damage))
+	d.fire_interval = 60.0 / float(data.get("rpm", 60.0 / d.fire_interval))
+	d.magazine_size = int(data.get("magazine", d.magazine_size))
+	d.reserve_ammo = int(data.get("reserve", d.reserve_ammo))
+	d.reload_time = float(data.get("reload_time", d.reload_time))
 	d.draw_time = float(data.get("draw_time", d.draw_time))
 	d.range_m = float(data.get("range", d.range_m))
-	d.falloff_per_10m = float(data["falloff_per_10m"])
-	d.base_spread = float(data["base_spread"])
-	d.run_spread = float(data["run_spread"])
-	d.air_spread = float(data["air_spread"])
+	d.falloff_per_10m = float(data.get("falloff_per_10m", d.falloff_per_10m))
+	d.base_spread = float(data.get("base_spread", d.base_spread))
+	d.run_spread = float(data.get("run_spread", d.run_spread))
+	d.air_spread = float(data.get("air_spread", d.air_spread))
 	d.crouch_multiplier = float(data.get("crouch_multiplier", d.crouch_multiplier))
-	d.bloom_per_shot = float(data["bloom_per_shot"])
-	d.bloom_max = float(data["bloom_max"])
-	d.bloom_recovery = float(data["bloom_recovery"])
+	d.bloom_per_shot = float(data.get("bloom_per_shot", d.bloom_per_shot))
+	d.bloom_max = float(data.get("bloom_max", d.bloom_max))
+	d.bloom_recovery = float(data.get("bloom_recovery", d.bloom_recovery))
 	d.recovery_delay = float(data.get("recovery_delay", d.recovery_delay))
-	d.recovery_rate = float(data["recovery_rate"])
+	d.recovery_rate = float(data.get("recovery_rate", d.recovery_rate))
 	d.view_punch = float(data.get("view_punch", d.view_punch))
-	var ups: Array = data["recoil_up"]
-	var yaws: Array = data["recoil_yaw"]
+	d.equipment = (data.get("equipment", {}) as Dictionary).duplicate(true)
+	var ups: Array = data.get("recoil_up", [])
+	var yaws: Array = data.get("recoil_yaw", [])
 	for i: int in ups.size():
 		d.recoil_pattern.append(Vector2(float(yaws[i]) if i < yaws.size() else 0.0, float(ups[i])))
 	return d
+
+
+## True for guns (they shoot bullets through [WeaponState]); false for the knife and utility.
+func is_firearm() -> bool:
+	return category == CATEGORY_PRIMARY or category == CATEGORY_SECONDARY
+
+
+func is_melee() -> bool:
+	return category == CATEGORY_MELEE
+
+
+func is_utility() -> bool:
+	return category == CATEGORY_UTILITY
 
 
 func is_automatic() -> bool:

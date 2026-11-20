@@ -11,12 +11,14 @@ var targets_root: Node3D
 var dummies: Array[TargetDummy] = []
 ## Created on demand by [method build_navigation] (bots need it; the plain sandbox does not).
 var navigation_region: NavigationRegion3D
+## Grenades, smoke and fire in this level (rebuilt with every map).
+var utility: UtilityField
 
 
 ## Builds [param doc]. Training dummies are only spawned when [param spawn_training] is true
 ## (matches spawn their own combatants).
 func load_map(doc: MapDocument, spawn_training: bool = true) -> void:
-	for node: Node3D in [map_root, targets_root]:
+	for node: Node3D in [map_root, targets_root, utility]:
 		if node != null:
 			remove_child(node)
 			node.queue_free()
@@ -24,6 +26,10 @@ func load_map(doc: MapDocument, spawn_training: bool = true) -> void:
 	document = doc
 	map_root = MapBuilder.build(doc, MapBuilder.Mode.RUNTIME)
 	add_child(map_root)
+	utility = UtilityField.new()
+	utility.name = "Utility"
+	utility.model_factory = UtilityModels.build
+	add_child(utility)
 	targets_root = Node3D.new()
 	targets_root.name = "Targets"
 	add_child(targets_root)

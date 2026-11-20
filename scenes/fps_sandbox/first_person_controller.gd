@@ -24,6 +24,7 @@ var input_enabled: bool = true:
 		input_enabled = value
 		if not value and weapons != null:
 			weapons.trigger = false
+			weapons.secondary_trigger = false
 ## Scripted movement, used instead of the keyboard while [member input_enabled] is false
 ## (tests, cutscenes): x = strafe right, y = backwards, as [method Input.get_vector] returns.
 var scripted_move: Vector2 = Vector2.ZERO
@@ -83,6 +84,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		weapons.select_slot(1)
 	elif event.is_action_pressed(InputActions.WEAPON_2):
 		weapons.select_slot(2)
+	elif event.is_action_pressed(InputActions.WEAPON_3):
+		weapons.select_slot(3)
+	elif event.is_action_pressed(InputActions.WEAPON_4):
+		weapons.select_slot(EquipmentCatalog.UTILITY_SLOT)
 	elif event.is_action_pressed(InputActions.WEAPON_NEXT):
 		weapons.cycle(1)
 	elif event.is_action_pressed(InputActions.WEAPON_PREVIOUS):
@@ -160,6 +165,7 @@ func _physics_process(delta: float) -> void:
 		var active := _accepts_input() and alive
 		wants_crouch = active and Input.is_action_pressed(InputActions.CROUCH)
 		weapons.trigger = active and not frozen and Input.is_action_pressed(InputActions.FIRE)
+		weapons.secondary_trigger = active and not frozen and Input.is_action_pressed(InputActions.SECONDARY_FIRE)
 		if active and not frozen:
 			input_dir = Input.get_vector(InputActions.MOVE_LEFT, InputActions.MOVE_RIGHT,
 				InputActions.MOVE_FORWARD, InputActions.MOVE_BACK)
@@ -172,6 +178,7 @@ func _physics_process(delta: float) -> void:
 	scripted_jump = false
 	var wish := transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
 	_step_movement(Vector2(wish.x, wish.z), walking, jump_pressed, delta, can_jump)
+	weapons.carrier_velocity = velocity
 
 	if global_position.y < kill_height and alive:
 		health.kill(DamageInfo.world(health.current))
@@ -206,6 +213,7 @@ func respawn() -> void:
 
 func _on_died(info: DamageInfo) -> void:
 	weapons.trigger = false
+	weapons.secondary_trigger = false
 	died.emit(info)
 
 

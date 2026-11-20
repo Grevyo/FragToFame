@@ -28,8 +28,10 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 17 | Community content import/export | 3, 9, 16 | ⬜ |
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
 | 19 | Database and Competition Editor | 9, 13 | ⬜ |
+| 20 | Manager Career mode | 9, 13, 14 (live viewing: 7) | ⬜ |
 
-**Execution order (updated 2026-11-15):** 1 → 6 → 9 → 8 → **10 → 13 → 14 → 15 → 16 → 19 → 17 → 18**.
+**Execution order (updated 2026-11-20):** 1 → 6 → 9 → 8 → **10 → 13 → 14 → 20 → 15 → 16 → 19 → 17 → 18**.
+M20 (Manager Career, owner 2026-11-20) comes before M15 so co-op is built for both career types.
 M19 comes before M17 because community databases are made with the editor.
 M7 is deferred while representative maps and gameplay-relevant player traits are developed.
 Those foundations give the team AI real layouts, roles and behaviours to work with when M7 is
@@ -695,6 +697,31 @@ Planned scope:
       generated draft.
 - [ ] Automated tests for every edit operation, validation and round-trip save/load.
 
+## Milestone 20 — Manager Career mode ⬜
+
+**Goal:** A second career type in the same world (see `GAME_VISION.md` section 3A): the human
+manages an organisation instead of playing as a professional.
+
+Planned scope:
+
+- [ ] Career type on the save (player or manager) with a migration; a manager record with
+      reputation and history, separate from player records. `CareerSession` no longer assumes a
+      human player.
+- [ ] Human-run organisations: `WorldMarket`, renewals, roster filling and benching skip them;
+      incoming bids and requests go to the manager's inbox instead.
+- [ ] Squad page: starting five, substitutes, roles and IGL, used by every fixture.
+- [ ] Transfer and contract pages: scouting search, bids with fees, wage offers, renewals and
+      releases, using the existing finances.
+- [ ] Team tactics as real match-engine inputs (style, aggression, utility, economy discipline,
+      per-map approach); the derived player-based tactics rating stays and combines with them.
+- [ ] Staff: coaches, analysts and scouts as persistent people with traits, hired and paid by
+      organisations (also used by AI organisations and the Player Career).
+- [ ] Match day: the manager's fixtures resolve through the match engine with a round-by-round
+      match view and half-time adjustments.
+- [ ] Board expectations by tier and reputation, job security, sackings and job offers.
+- [ ] Automated tests for each system; manual walkthrough of a manager season.
+- [ ] Later (after M7): watch the managed team's matches live in the FPS runtime as a spectator.
+
 ---
 
 ## Progress log
@@ -739,3 +766,4 @@ Planned scope:
 | 2026-11-17 | M13/M14: cups with brackets, promotion and relegation by tier swaps, fuller leagues, transfer offers, renewals, releases and benching for contracted humans, and a different start for every save. Save schema v11. |
 | 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |
+| 2026-11-20 | Owner added a Manager Career mode (M20) alongside the Player Career: the human runs an organisation in the same world. Planned before M15 so co-op covers both. |

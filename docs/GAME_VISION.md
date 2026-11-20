@@ -27,7 +27,14 @@ without a clear technical justification.
 
 ## 1. The fundamental concept
 
-Frag to Fame is a first-person shooter esports **Player Career** simulator. It combines:
+Frag to Fame is a first-person shooter esports career simulator with two career modes in the
+same living world (owner, 2026-11-20):
+
+- **Player Career:** you are one professional and play your own matches in the FPS runtime.
+- **Manager Career:** you run an organisation (squad, tactics, transfers, staff, finances) and
+  your team's matches are simulated or watched, never played by you (see section 3A).
+
+It combines:
 
 - **FIFA Player Career:** You are an individual professional athlete, developing your own career.
 - **Football Manager:** A detailed, persistent sporting world with contracts, scouting,
@@ -189,6 +196,40 @@ Training and match results influence ratings, scouting opinions and reputation.
 
 AI players, however, have underlying simulated mechanical and tactical abilities that genuinely
 influence their gameplay.
+
+---
+
+## 3A. Manager career
+
+A second way to play the same universe (owner, 2026-11-20). The human creates a fictional
+manager and takes charge of an organisation, Football Manager-style. Everything else in the world
+— competitions, the market, AI professionals, news, seasons — is shared with the Player Career.
+
+The manager controls:
+
+- **Squad:** starting five, substitutes, role assignments and the IGL.
+- **Tactics:** team style (aggression, pace, utility use, economy discipline), per-map approach
+  and plays from the Tactical Play Creator. These are real inputs to the match simulator and,
+  later, to the tactical team AI (section 6) — not flat bonuses.
+- **Transfers and contracts:** scouting, offers, fees, wages, renewals, releases, loans of
+  substitutes, all judged on perceived values like the AI organisations.
+- **Staff:** coaches, analysts and scouts with their own traits; they shape training, scouting
+  accuracy and preparation. (Staff also exist in the Player Career world.)
+- **Training and development:** the team's schedule; AI players develop from it.
+- **Finances and the board:** budget, sponsors and prize money, with board expectations by tier
+  and reputation; failing them can cost the job, and managers can be offered other jobs.
+
+Rules:
+
+- The world never makes decisions for a human-run organisation; the AI market sends the human
+  offers and requests instead.
+- A manager's matches are played by AI professionals using their simulated abilities. They are
+  resolved by the round-by-round match engine with a match view; once the tactical team AI
+  exists they can also be watched live in the FPS runtime as a spectator.
+- A manager has reputation and history (trophies, jobs, records) kept separate from any
+  player's.
+- In co-op, managers and players share one world: a friend's human player can sign for, play
+  for or be sold by a friend's managed organisation.
 
 ---
 
@@ -358,8 +399,8 @@ registration, scheduling and qualification rules. All results and historical rec
 
 ## 9. Football Manager-style cooperative career
 
-Multiple humans join one shared persistent career universe, each with an independent player
-career. Friends may join different teams or the same team, receive their own contracts, transfer
+Multiple humans join one shared persistent career universe, each with an independent player or
+manager career (section 3A). Friends may join different teams or the same team, receive their own contracts, transfer
 independently, play together, face each other in official fixtures and meet in championship finals.
 
 ### Critical distinction: career host vs FPS match host

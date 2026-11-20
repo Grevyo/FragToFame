@@ -177,7 +177,11 @@ func surface(outline: Array, top: float, thickness: float, material: String = ""
 ## A floor of any outline with rectangular [param holes] ([x1, x2, z1, z2]) left open. Like
 ## [method slab_with_holes] it cuts the area into bands at the holes' edges; each solid run of
 ## a band is clipped to the outline and drawn with the Draw Surface tool.
-func floor_shape(outline: Array, top: float, thickness: float, material: String, holes: Array = []) -> void:
+## [param regions] ([outline, material] pairs, not overlapping) are parts of the same floor in
+## another material: they are cut out of the base and drawn level with it, so a dirt yard or a
+## flagstone square replaces the base finish instead of sitting on top of it.
+func floor_shape(outline: Array, top: float, thickness: float, material: String, holes: Array = [],
+		regions: Array = []) -> void:
 	var shape := PackedVector2Array(outline)
 	var bounds := Rect2(shape[0], Vector2.ZERO)
 	for corner: Vector2 in shape:
@@ -187,6 +191,11 @@ func floor_shape(outline: Array, top: float, thickness: float, material: String,
 	for hole: Array in holes:
 		xs.append_array([float(hole[0]), float(hole[1])])
 		zs.append_array([float(hole[2]), float(hole[3])])
+	# Band edges at each region's top and bottom, so no band piece ever encloses a whole region
+	# (cutting one out would leave a piece with a hole, which a drawn surface cannot be).
+	for region: Array in regions:
+		for corner: Vector2 in region[0]:
+			zs.append(corner.y)
 	xs.sort()
 	zs.sort()
 	for j: int in zs.size() - 1:
@@ -215,8 +224,29 @@ func floor_shape(outline: Array, top: float, thickness: float, material: String,
 			var band := PackedVector2Array([Vector2(run.x, zs[j]), Vector2(run.y, zs[j]),
 				Vector2(run.y, zs[j + 1]), Vector2(run.x, zs[j + 1])])
 			for piece: PackedVector2Array in Geometry2D.intersect_polygons(band, shape):
-				if absf(_area(piece)) > 0.05:
-					surface(Array(piece), top, thickness, material)
+				_floor_piece(piece, top, thickness, material, regions)
+
+
+## Draws one band piece of a floor: the parts inside each region in that region's material, the
+## rest in [param material].
+func _floor_piece(piece: PackedVector2Array, top: float, thickness: float, material: String, regions: Array) -> void:
+	var rest: Array[PackedVector2Array] = [piece]
+	for region: Array in regions:
+		var cutter := PackedVector2Array(region[0])
+		var remaining: Array[PackedVector2Array] = []
+		for part: PackedVector2Array in rest:
+			for inside: PackedVector2Array in Geometry2D.intersect_polygons(part, cutter):
+				if absf(_area(inside)) > 0.05:
+					surface(Array(inside), top, thickness, str(region[1]))
+			for outside: PackedVector2Array in Geometry2D.clip_polygons(part, cutter):
+				if Geometry2D.is_polygon_clockwise(outside):
+					printerr("Floor region would leave a hole in a band piece: ", region[0])
+				else:
+					remaining.append(outside)
+		rest = remaining
+	for part: PackedVector2Array in rest:
+		if absf(_area(part)) > 0.05:
+			surface(Array(part), top, thickness, material)
 
 
 ## Brush tool: an upright block whose footprint is [param outline] (Vector2 x/z corners).

@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 16): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 17): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -686,6 +686,11 @@ between the Hoist Gate (now a gated opening with granite piers in the wall to th
 yard), a small dispatch office, a cart, crates and the loading dock. Defenders reach A in 8.0 s and
 B in 7.8 s; the first attackers reach the Lane Mouth 3.5 s after defenders reach A; rotating takes
 8.4 s.
+Revision 17 (owner: the new ground textures sat on top of the old floor) makes each finish part of
+the floor itself. Revision 15 had laid the flagstones, gravel and dirt as 5 cm slabs over the sett
+floor, so their raised edges showed. Now the author script cuts each region out of the sett floor
+and draws it level with the road (Draw Surface pieces, as a mapper would in the Creation Studio),
+and the mounds rise straight out of the dirt.
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -836,3 +841,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 14 (owner request): the Lens Delivery corner opened to the Tide Office yard, uneven coping stones, surface relief. Editor: Surface relief on every solid piece, Coping stones piece. |
 | 2026-11-20 | Cluts revision 15 (owner request): sett roads, flagstone squares, gravel lanes and dirt yards with mounds. Editor: five ground textures, the Uneven ground (mounds) piece, Distance haze. Game and editor: shared atmosphere with sky, soft shadows, SDFGI, haze and tonemapping. |
 | 2026-11-20 | Cluts revision 16 (owner request): the Dispatch area rebuilt as one yard with a roofed Goods Ramp house over the B ramp, and site A moved from the loading-dock corner to the middle of the Dispatch Yard. |
+| 2026-11-20 | Cluts revision 17 (owner report): ground finishes are cut into the floor, level with the road, instead of 5 cm slabs on top of it. |

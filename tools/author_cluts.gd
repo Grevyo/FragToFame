@@ -7,7 +7,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 16
+	return 17
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -119,7 +119,9 @@ func _build() -> void:
 		outline.append(_plan(point.x,point.y))
 	# The streets are granite-sett roadway. Shafts at west exchange, northern service bay,
 	# southeast dispatch, the east lane pump stair and the tide well.
-	floor_shape(outline,0,0.6,"granite_setts",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]])
+	# Squares, lanes and yards are parts of the same floor in their own finish, level with the road.
+	floor_shape(outline,0,0.6,"granite_setts",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]],
+		_ground_regions())
 	_harbour_boundary(outline)
 	_ground()
 	# The lines between lanes are the exchange's yard walls: brick on a granite plinth with stone
@@ -646,44 +648,40 @@ func _building_front(a: Vector2, b: Vector2, outside: Vector2, height: float) ->
 
 ## What the ground is made of: sett roadway everywhere carts go (the base floor), flagstone squares
 ## where people gather, gravel along the service lanes and trodden-dirt yards that rise and dip in
-## low mounds. Overlays are 5 cm deep, a step anyone (and any bot) walks over; nothing covers a
-## spawn, buy zone or bombsite.
+## low mounds. Each finish is its own part of the floor, level with the road.
+func _ground_regions() -> Array:
+	return [
+		# Reading Room square and the pavement in front of the south exchange row.
+		[[Vector2(-9,-4.5),Vector2(7,-4.5),Vector2(7,10.3),Vector2(-9,10.3)],"flagstones"],
+		[[Vector2(-17,20.3),Vector2(20,20.3),Vector2(20,22.4),Vector2(-17,22.4)],"flagstones"],
+		# Gravel service lanes behind the north buildings.
+		[[Vector2(-34,-32),Vector2(-9,-32),Vector2(-9,-26),Vector2(-34,-27.5)],"gravel"],
+		[[Vector2(15,-32.5),Vector2(35,-32.5),Vector2(35,-27.4),Vector2(15,-27.4)],"gravel"],
+		# Tide Office yard: dirt all round the well.
+		[[Vector2(-47,-25),Vector2(-34,-25),Vector2(-34,-11),Vector2(-47,-11)],"dirt"],
+		# Weighbridge yard: churned dirt where carts turn.
+		[[Vector2(37.5,-7),Vector2(50.5,-7),Vector2(50.5,17.2),Vector2(37.5,17.2)],"dirt"],
+		# Ramp Yard: a narrow dirt strip along the south wall.
+		[[Vector2(22,31.6),Vector2(39.9,31.6),Vector2(39.9,34.3),Vector2(22,34.3)],"dirt"],
+	]
+
+
+## Mounds in the dirt yards, clear of benches, the well kerb and the weighbridge. Their edges sink
+## just below the ground, so each mound rises straight out of it.
 func _ground() -> void:
 	layer("Ground")
-	# Reading Room square and the pavement in front of the south exchange row.
-	_overlay([Vector2(-9,-4.5),Vector2(7,-4.5),Vector2(7,10.3),Vector2(-9,10.3)],"flagstones")
-	_overlay([Vector2(-17,20.3),Vector2(20,20.3),Vector2(20,22.4),Vector2(-17,22.4)],"flagstones")
-	# Gravel service lanes behind the north buildings.
-	_overlay([Vector2(-34,-32),Vector2(-9,-32),Vector2(-9,-26),Vector2(-34,-27.5)],"gravel")
-	_overlay([Vector2(15,-32.5),Vector2(35,-32.5),Vector2(35,-27.4),Vector2(15,-27.4)],"gravel")
-	# Tide Office yard: dirt all round the well, with mounds clear of the bench and the well kerb.
-	_overlay([Vector2(-47,-25),Vector2(-34,-25),Vector2(-34,-20.3),Vector2(-47,-20.3)],"dirt")
-	_overlay([Vector2(-39.7,-20.3),Vector2(-34,-20.3),Vector2(-34,-15.8),Vector2(-39.7,-15.8)],"dirt")
-	_overlay([Vector2(-47,-20.3),Vector2(-44.3,-20.3),Vector2(-44.3,-15.8),Vector2(-47,-15.8)],"dirt")
-	_overlay([Vector2(-47,-15.8),Vector2(-34,-15.8),Vector2(-34,-11),Vector2(-47,-11)],"dirt")
 	_mounds(Vector3(-37.2,0,-22.7),Vector3(5.4,0.55,4.2),2.2,11,true)
 	_mounds(Vector3(-36.9,0,-18),Vector3(5.0,0.3,4.0),1.8,12,true)
 	_mounds(Vector3(-40.5,0,-13.4),Vector3(12.0,0.5,4.4),2.6,13)
-	# Weighbridge yard: churned dirt where carts turn, mounded away from the weighbridge itself.
-	_overlay([Vector2(37.5,-7),Vector2(50.5,-7),Vector2(50.5,17.2),Vector2(37.5,17.2)],"dirt")
 	_mounds(Vector3(44,0,-2.2),Vector3(10.5,0.8,7.0),3.2,21)
 	_mounds(Vector3(41.4,0,9.2),Vector3(5.6,0.5,5.0),2.4,22,true)
-	# Ramp Yard: a narrow dirt strip along the south wall.
-	_overlay([Vector2(22,31.6),Vector2(39.9,31.6),Vector2(39.9,34.3),Vector2(22,34.3)],"dirt")
 	_mounds(Vector3(30.5,0,33.0),Vector3(15.0,0.3,2.5),2.0,31)
 	layer("Ground plan")
 
 
-const OVERLAY_TOP: float = 0.05
-
-
-func _overlay(outline: Array, material: String) -> void:
-	surface(outline,OVERLAY_TOP,OVERLAY_TOP,material)
-
-
-## A patch of uneven ground on a dirt overlay: [param size].y is the tallest a mound rises.
+## A patch of uneven ground on a dirt yard: [param size].y is the tallest a mound rises.
 func _mounds(at: Vector3, size: Vector3, feature: float, variation: int, oval: bool = false) -> void:
-	put("ground_mounds",Vector3(at.x,OVERLAY_TOP,at.z),size,0,
+	put("ground_mounds",Vector3(at.x,0,at.z),size,0,
 		{"feature":feature,"seed":variation,"edge":minf(1.2,minf(size.x,size.z)*0.3),"oval":oval},"dirt")
 
 

@@ -5,7 +5,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 11
+	return 12
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -117,21 +117,23 @@ func _build() -> void:
 		outline.append(_plan(point.x,point.y))
 	# Shafts at west exchange, northern service bay, and southeast dispatch.
 	# Shafts at west exchange, northern service bay, southeast dispatch and the east lane pump stair.
-	floor_shape(outline,0,0.6,"stone_paving",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1]])
+	floor_shape(outline,0,0.6,"stone_paving",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]])
 	_harbour_boundary(outline)
-	_trace([Vector2(15,194),Vector2(72,194),Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],"granite_blocks")
-	_trace([Vector2(167,209),Vector2(170,140),Vector2(205,134),Vector2(293,136),Vector2(400,146)],"mud_brick")
-	_trace([Vector2(580,122),Vector2(564,95),Vector2(459,98),Vector2(457,147),Vector2(512,147),Vector2(633,166),Vector2(676,163)],"concrete")
-	_trace([Vector2(309,209),Vector2(393,209),Vector2(470,218),Vector2(576,220),Vector2(575,355)],"limewash")
-	_trace([Vector2(357,259),Vector2(426,256),Vector2(462,265),Vector2(498,266),Vector2(503,282),Vector2(502,355)],"mud_brick")
-	_trace([Vector2(405,290),Vector2(405,355),Vector2(321,357),Vector2(303,369)],"slate")
-	_trace([Vector2(137,235),Vector2(170,248),Vector2(200,273),Vector2(221,307),Vector2(227,327),Vector2(226,355)],"brass")
-	_trace([Vector2(21,273),Vector2(52,249),Vector2(79,248),Vector2(109,272),Vector2(131,310),Vector2(138,354),Vector2(160,354)],"limestone")
-	_trace([Vector2(24,345),Vector2(28,345)],"concrete")
-	_trace([Vector2(123,351),Vector2(133,354)],"concrete")
-	_trace([Vector2(200,359),Vector2(256,359),Vector2(276,381)],"weathered_wood")
-	_trace([Vector2(224,407),Vector2(242,426)],"slate")
-	_trace([Vector2(628,523),Vector2(629,460),Vector2(600,463),Vector2(572,456),Vector2(546,436),Vector2(539,415),Vector2(644,415),Vector2(645,438),Vector2(642,448)],"concrete",4.45,{0:[[0.6,2.9]]})
+	# Street walls are the faces of the exchange's buildings: each run has its own height and
+	# roofline (pitched with chimneys, or flat with a cornice), upper windows and shuttered doors.
+	_facade([Vector2(15,194),Vector2(72,194),Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],"granite_blocks",6.4,"gable","slate")
+	_facade([Vector2(167,209),Vector2(170,140),Vector2(205,134),Vector2(293,136),Vector2(400,146)],"mud_brick",5.3,"flat","limestone")
+	_facade([Vector2(580,122),Vector2(564,95),Vector2(459,98),Vector2(457,147),Vector2(512,147),Vector2(633,166),Vector2(676,163)],"concrete",7.6,"flat","concrete")
+	_facade([Vector2(309,209),Vector2(393,209),Vector2(470,218),Vector2(576,220),Vector2(575,355)],"limewash",6.2,"gable","tile_terracotta")
+	_facade([Vector2(357,259),Vector2(426,256),Vector2(462,265),Vector2(498,266),Vector2(503,282),Vector2(502,355)],"mud_brick",4.9,"flat","sandstone")
+	_facade([Vector2(405,290),Vector2(405,355),Vector2(321,357),Vector2(303,369)],"slate",3.3,"coping","granite_blocks")
+	_facade([Vector2(137,235),Vector2(170,248),Vector2(200,273),Vector2(221,307),Vector2(227,327),Vector2(226,355)],"plaster_white",5.6,"gable","tile_terracotta")
+	_facade([Vector2(200,359),Vector2(256,359),Vector2(276,381)],"weathered_wood",2.9,"coping","weathered_wood")
+	_facade([Vector2(224,407),Vector2(242,426)],"slate",3.0,"coping","granite_blocks")
+	_facade([Vector2(628,523),Vector2(629,460),Vector2(600,463),Vector2(572,456),Vector2(546,436),Vector2(539,415),Vector2(644,415),Vector2(645,438),Vector2(642,448)],"concrete",5.8,"flat","concrete",{0:[[0.6,2.9]]})
+	_receiving_house()
+	_tide_well()
+	_raised_ground()
 	_lower()
 	_harbour_basin()
 	_skyline()
@@ -207,6 +209,7 @@ func _harbour_boundary(outline: Array) -> void:
 			var footprint := [a,b,b+seam_b*depth,a+seam_a*depth]
 			var height := 5.6 if i%2 == 0 else 6.8
 			prism(footprint,0,height,"mud_brick" if i%2 == 0 else "limewash")
+			_gable(a+seam_a*1.2,b+seam_b*1.2,3.1,height-0.02,1.3,"slate" if i%2 == 0 else "tile_terracotta")
 			var bays := maxi(1,floori(length/6.0))
 			for j in bays:
 				var window := a+along*(j+0.5)*length/bays-outside*0.09
@@ -231,6 +234,8 @@ func _lower() -> void:
 			doors[i] = [[6,12]]
 		if outline[i] == Vector2(18,-4):
 			doors[i] = [[14.7,19.3]]
+		if outline[i] == Vector2(-46,-11):
+			doors[i] = [[0.9,9.6]]
 	walls_around(outline,4.4,-5,"concrete",doors)
 	var bypass := [Vector2(-32,-2),Vector2(-27,-2),Vector2(-27,3),Vector2(-9,3),
 		Vector2(-9,8),Vector2(5,8),Vector2(5,14),Vector2(-15,14),Vector2(-15,9),Vector2(-32,9)]
@@ -269,14 +274,6 @@ func _pump_stair() -> void:
 
 func _fixtures() -> void:
 	layer("Exchange fittings")
-	# Light-tight stair head for carrying boxed glass negatives down to the wash room.
-	layer("Plate receiving house")
-	for piece: Dictionary in MapPrefabs.stair_house():
-		put(piece.type,Vector3(-40,0,4.4)+Vector3(piece.position),piece.size,0,{},piece.material)
-	_sign("PLATE RECEIVING",Vector3(-40,3.04,10.85),5.4,0.52)
-	lamp(Vector3(-40,2.9,7.6),1.6,8,"ffd09b")
-	_sign("DARKROOM   /   LOWER LEVEL",Vector3(-40,2.83,-1),5.1,0.4)
-	area("Receiving House",-43,-37,8,11)
 	layer("Exchange fittings")
 	# The small iris instrument occupies the reading court inside the central dogleg.
 	var hub := Vector2(3,4)
@@ -315,7 +312,7 @@ func _fixtures() -> void:
 	put("braced_crate",Vector3(48,0,12.8),Vector3(2.1,1.45,1.5),-7)
 	put("vehicle_cart",Vector3(47.5,0,16),Vector3.ZERO,11)
 	area("Weighbridge",44,49,11,17)
-	area("Lens Delivery",-40,-34,-7,-1)
+	area("Lens Delivery",-41,-33,-10,-5)
 	for x: int in range(-12,6):
 		mass("wall",x,x+0.09,-14.4,-14.06,0.1,"brass",-0.09)
 	mass("wall",-13,6,-14.06,-13.94,0.1,"brass",-0.088)
@@ -415,3 +412,173 @@ func _check(analysis: MapAnalysis) -> bool:
 		if distance < 0 or distance > 26:
 			return false
 	return analysis.issues.is_empty()
+
+
+## A run of street wall with a roofline. [param cap]: "gable" (pitched roof with chimneys),
+## "flat" (cornice) or "coping" (a low yard wall's capping stones).
+func _facade(points: Array, material: String, height: float, cap: String, cap_material: String,
+		gaps: Dictionary = {}) -> void:
+	var corners: Array = []
+	for pt: Vector2 in points:
+		corners.append(_plan(pt.x,pt.y))
+	_joined_walls(corners,false,height,0,material,0.65,gaps)
+	match cap:
+		"gable":
+			for i in corners.size()-1:
+				var a: Vector2 = corners[i]
+				var b: Vector2 = corners[i+1]
+				_gable(a,b,1.45,height-0.02,1.1,cap_material)
+				if a.distance_to(b) >= 7.0:
+					_chimney(a.lerp(b,0.5),height+0.6,1.9,material)
+		"flat":
+			_joined_walls(corners,false,0.36,height-0.06,cap_material,0.95,{})
+		_:
+			_joined_walls(corners,false,0.2,height-0.04,cap_material,0.8,{})
+	if height >= 4.8:
+		_dress_wall(corners,height,gaps)
+
+
+## Pitched roof ridge along a wall top (a triangular prism with open gable ends).
+func _gable(a: Vector2, b: Vector2, width: float, base: float, rise: float, material: String) -> void:
+	var side := (b-a).normalized().orthogonal()*width*0.5
+	var vertices: Array = []
+	for pt: Vector2 in [a-side,b-side,b+side,a+side]:
+		vertices.append([pt.x,base,pt.y])
+	for pt: Vector2 in [a,b]:
+		vertices.append([pt.x,base+rise,pt.y])
+	_convex_shell(vertices,[0,1,2,0,2,3,0,1,5,0,5,4,3,2,5,3,5,4,0,3,4,1,2,5],material)
+
+
+## A brick stack through a ridge, with a stone cap.
+func _chimney(at: Vector2, base: float, height: float, material: String) -> void:
+	prism([at+Vector2(-0.45,-0.45),at+Vector2(0.45,-0.45),at+Vector2(0.45,0.45),at+Vector2(-0.45,0.45)],
+		base-0.8,height+0.8,material)
+	prism([at+Vector2(-0.58,-0.58),at+Vector2(0.58,-0.58),at+Vector2(0.58,0.58),at+Vector2(-0.58,0.58)],
+		base+height,0.18,"granite_blocks")
+
+
+## Upper-floor windows on both faces and the odd shuttered door at street level.
+func _dress_wall(corners: Array, height: float, gaps: Dictionary) -> void:
+	var count := 0
+	for i in corners.size()-1:
+		var a: Vector2 = corners[i]
+		var b: Vector2 = corners[i+1]
+		var length := a.distance_to(b)
+		if length < 4.0:
+			continue
+		var along := (b-a)/length
+		var normal := along.orthogonal()
+		var yaw := rad_to_deg(atan2(-along.y,along.x))
+		var bays := floori((length-2.0)/4.6)
+		for j in maxi(bays,1):
+			var t := length*0.5 if bays <= 1 else 1.0+(length-2.0)*(j+0.5)/bays
+			var blocked := false
+			for gap: Array in gaps.get(i,[]):
+				if t > float(gap[0])-1.2 and t < float(gap[1])+1.2:
+					blocked = true
+			if blocked:
+				continue
+			for face: int in [-1,1]:
+				var p: Vector2 = a+along*t+normal*face*0.41
+				put("shutter_panel",Vector3(p.x,height-2.55,p.y),Vector3(1.25,1.35,0.16),yaw,{"slats":6})
+				count += 1
+				if count % 5 == 0:
+					put("shutter_panel",Vector3(p.x,0,p.y),Vector3(1.2,2.25,0.16),yaw,{"slats":11,"tilt":10},"weathered_wood")
+
+
+## The plate receiving house: its curved street wall is the building's outer face. A wide
+## doorway on the quay side opens onto the West Shaft stair; a side door leads to a packing room
+## with a view down the stairwell.
+func _receiving_house() -> void:
+	layer("Plate receiving house")
+	var curve: Array = []
+	for pt: Vector2 in [Vector2(21,273),Vector2(52,249),Vector2(79,248),Vector2(109,272),Vector2(131,310),Vector2(138,354)]:
+		curve.append(_plan(pt.x,pt.y))
+	var front_z: float = (curve[5] as Vector2).y
+	var east_end: float = (curve[5] as Vector2).x
+	var house: Array = curve.duplicate()
+	house[0] = Vector2(-45.85,(curve[0] as Vector2).y)
+	house.append(Vector2(-45.85,front_z))
+	# Front doorways in metres from the east corner: the packing-room door and the stair (6.4 m).
+	var side_door := [east_end+32.0, east_end+34.2]
+	var stair_door := [east_end+36.8, east_end+43.2]
+	_joined_walls(house,true,7.2,0,"limestone",0.65,{5:[side_door,stair_door]})
+	for door: Array in [[side_door,2.6],[stair_door,3.6]]:
+		var span: Array = door[0]
+		var from := Vector2(east_end-float(span[0])+0.1,front_z)
+		var to := Vector2(east_end-float(span[1])-0.1,front_z)
+		wall_line(from,to,7.2-float(door[1]),float(door[1]),"limestone",[],"wall",0.64)
+	_joined_walls(house,true,0.26,3.45,"granite_blocks",0.82,{})
+	var eaves: Array = []
+	for ring: PackedVector2Array in Geometry2D.offset_polygon(PackedVector2Array(house),0.45):
+		for v: Vector2 in ring:
+			eaves.append(v)
+		break
+	prism(eaves,7.15,0.4,"slate")
+	_joined_walls([curve[5],_plan(160,354)],false,4.45,0,"limestone",0.65,{})
+	# Upper windows face the curved lane and the quay.
+	for i in curve.size()-1:
+		var a: Vector2 = curve[i]
+		var b: Vector2 = curve[i+1]
+		var along := (b-a).normalized()
+		var p: Vector2 = a.lerp(b,0.5)+along.orthogonal()*0.41
+		put("shutter_panel",Vector3(p.x,4.5,p.y),Vector3(1.3,1.5,0.16),rad_to_deg(atan2(-along.y,along.x)),{"slats":6})
+	for x: float in [-44.0,-33.9]:
+		put("shutter_panel",Vector3(x,4.5,front_z+0.41),Vector3(1.3,1.5,0.16),0,{"slats":6})
+	_sign("PLATE RECEIVING",Vector3(-40,4.15,front_z+0.37),5.4,0.6)
+	_sign("PACKING",Vector3(-33.1,2.85,front_z+0.37),2.0,0.4)
+	_sign("DARKROOM   /   LOWER LEVEL",Vector3(-40,2.9,-3.95),5.1,0.4)
+	lamp(Vector3(-40,5.6,4),1.8,10,"ffd09b")
+	lamp(Vector3(-33.5,3.2,3),1.4,8,"ffd09b")
+	# A stone bench fills the strip between the stairwell and the quay wall.
+	mass("wall",-45.55,-43.0,-0.9,10.05,1.0,"granite_blocks")
+	# Packing room: a rail along the stairwell, shelves and boxed plates.
+	wall_line(Vector2(-36.85,-2.6),Vector2(-36.85,5.5),1.05,0,"metal_dark",[],"wall",0.12)
+	put("market_shelf",Vector3(-31.95,0,3.58),Vector3(3,2.2,0.7),-60.5)
+	put("braced_crate",Vector3(-35.4,0,0.6),Vector3(1.6,1.1,1.1),12)
+	put("crate_stack",Vector3(-32.4,0,7.6),Vector3(2.2,2.2,1.1),90)
+	area("Packing Room",-36.5,-31.5,0,9.5)
+	area("Receiving House",-43,-37,8,11)
+	layer("Ground plan")
+
+
+## The tide office's gauge well: an open shaft in the yard drops 5 m into the gauge chamber,
+## which joins the plate works beside the West Shaft stair.
+func _tide_well() -> void:
+	layer("Tide well")
+	for wall: Array in [[Vector2(-44.1,-16),Vector2(-44.1,-20.1)],[Vector2(-44.1,-20.1),Vector2(-39.9,-20.1)],[Vector2(-39.9,-20.1),Vector2(-39.9,-16)]]:
+		wall_line(wall[0],wall[1],0.85,0,"granite_blocks",[],"wall",0.25)
+	put("pipe_run",Vector3(-42,0.85,-20.1),Vector3(4.6,0.18,0.18),0,{},"brass")
+	_sign("TIDE WELL  /  KEEP CLEAR",Vector3(-42,0.9,-19.95),3.6,0.45)
+	surface([Vector2(-46,-24.5),Vector2(-35.5,-24.5),Vector2(-35.5,-11),Vector2(-46,-11)],-5,0.8,"granite_blocks")
+	wall_line(Vector2(-46.1,-11.4),Vector2(-46.1,-24.5),4.4,-5,"granite_blocks")
+	wall_line(Vector2(-46.1,-24.6),Vector2(-35.5,-24.6),4.4,-5,"granite_blocks")
+	wall_line(Vector2(-35.4,-24.5),Vector2(-35.4,-11.4),4.4,-5,"granite_blocks")
+	put("storage_tank",Vector3(-37.6,-5,-22.4),Vector3(2.2,3.2,2.2),0,{},"metal_painted")
+	put("pipe_run",Vector3(-41,-1.8,-23.95),Vector3(5,0.3,0.3),0,{},"metal_rust")
+	put("stone_trough",Vector3(-44.6,-5,-14),Vector3(1.2,0.9,3),90,{},"granite_blocks")
+	mass("wall",-45.8,-35.7,-24.3,-24.2,0.1,"brass",-2.0)
+	lamp(Vector3(-41,-1.8,-15),1.8,9,"a6d6ff")
+	area("Gauge Chamber",-45.5,-36,-24,-11.5,"",-5)
+	layer("Ground plan")
+
+
+## Level changes that make the streets read as a working place: a raised terrace along the
+## south hall and a loading dock in the dispatch yard.
+func _raised_ground() -> void:
+	layer("Terraces and docks")
+	put("platform",Vector3(6,0,24.05),Vector3(16,1.4,3.1),0,{},"granite_blocks")
+	put("stairs",Vector3(-3.9,0,24.05),Vector3(3.1,1.4,3.8),270,{},"granite_blocks")
+	put("stairs",Vector3(15.9,0,24.05),Vector3(3.1,1.4,3.8),90,{},"granite_blocks")
+	for x: float in [1.0,6.0,11.0]:
+		put("railing",Vector3(x,1.4,22.55),Vector3(3.2,1.0,0.08))
+	put("crate_stack",Vector3(9.2,1.4,24.7),Vector3(2.2,2.2,1.1))
+	put("barrel_cluster",Vector3(2.4,1.4,24.8),Vector3(1.5,1.0,1.2))
+	put("awning",Vector3(6,1.4,24.6),Vector3(5,2.6,2.2),180)
+	area("Exchange Terrace",-2,14,22.5,25.6,"",1.4)
+	put("platform",Vector3(48.25,0,33.525),Vector3(8.5,1.2,2.45),0,{},"concrete")
+	put("stairs",Vector3(42.6,0,33.525),Vector3(2.45,1.2,3.0),270,{},"steel_grating")
+	put("crate_stack",Vector3(50.8,1.2,34.15),Vector3(2.2,2.2,1.0))
+	put("barrel_cluster",Vector3(46.4,1.2,34.2),Vector3(1.5,1.0,0.95))
+	area("Loading Dock",44,52.5,32.5,34.6,"",1.2)
+	layer("Ground plan")

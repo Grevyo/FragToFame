@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 11): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 12): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -634,6 +634,14 @@ Pump Stair (third ways into A and B) without changing the traced layout: defende
 8.6 s and B in 7.7 s; attackers reach their first A entrance in 11.9 s and first B entrance in
 13.4 s; rotating takes 7.6 s. Its pieces: iron paling fence, freight gate, louvred shutter,
 lettered enamel sign, transit telescope, time ball and a covered stair prefab.
+Revision 12 (owner: make it feel like a real place) turns the street walls into building faces
+with their own heights (3–7.6 m), pitched ridges with chimneys or flat cornices, upper windows and
+shuttered doors, and pitched roofs on the perimeter buildings. The Plate Receiving House is now a
+two-storey building whose outer wall is the curved lane wall, with a slate roof, the stair door
+on the quay and a side door to a packing room over the stairwell. The Tide Office corner, once a
+dead end, has the Tide Well: an open shaft that drops 5 m into the Gauge Chamber, which joins the
+plate works beside the West Shaft stair. A raised Exchange Terrace (1.4 m, stairs at both ends)
+lines the south hall and a loading dock (1.2 m) stands in the Dispatch Yard.
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -779,3 +787,4 @@ Planned scope:
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |
 | 2026-11-20 | Owner added a Manager Career mode (M20) alongside the Player Career: the human runs an organisation in the same world. Planned before M15 so co-op covers both. |
 | 2026-11-20 | Cluts revision 11 (owner: develop it, keep the layout): the Yard Door gives A a third entrance from the Ramp Yard, and the Pump Stair gives B a third from the east lane. Defenders' site times are now 0.9 s apart instead of the 1.5 s limit. |
+| 2026-11-20 | Cluts revision 12 (owner request): building faces with varied heights, rooflines and windows; the Plate Receiving House rebuilt into the curved wall; the Tide Well drop from the dead-end Tide Office corner into a new Gauge Chamber; a raised terrace and a loading dock. |

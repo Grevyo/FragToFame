@@ -610,6 +610,10 @@ Switchyard and Kestrel Keep (official maps):
       (along the Ramp Yard beside the Dispatch ramp). Reach the Darkroom (B) by the West Shaft
       stair and Cable Passage, the Dispatch ramp, the North Stair and the Pump Stair in the east
       lane. Check the lettered signs read correctly and judge the defenders' 7.7 s to B.
+- [ ] Cluts (revision 12): walk round the Plate Receiving House (curved wall, roof, stair door
+      and Packing Room), drop down the Tide Well into the Gauge Chamber and walk back through
+      the plate works, climb the Exchange Terrace and the A loading dock, and judge whether the
+      streets now read as a real place (wall heights, rooflines, windows).
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

@@ -7,7 +7,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 14
+	return 15
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -110,17 +110,18 @@ func prism(outline: Array, base: float, height: float, material: String = "") ->
 
 func _build() -> void:
 	controller.set_metadata("Cluts","F2F official","A harbour chronometer exchange. From the ticket quay, thread the exchange corridors to the dispatch yard or take the glass-plate stairs below the harbour office.")
-	controller.set_lighting({"sun_yaw":135.0,"sun_pitch":47.0,"ambient_color":"cbd9eb","ambient_energy":0.7})
+	controller.set_lighting({"sun_yaw":135.0,"sun_pitch":47.0,"sun_energy":1.15,"sun_color":"fff0d8","ambient_color":"cbd9eb","ambient_energy":0.55,"haze":0.3})
 	layer("Ground plan")
 	var outline: Array = []
 	for point: Vector2 in [Vector2(9,48),Vector2(120,47),Vector2(220,53),Vector2(470,40),
 			Vector2(720,36),Vector2(711,265),Vector2(731,530),Vector2(504,524),
 			Vector2(503,465),Vector2(250,470),Vector2(245,430),Vector2(26,427),Vector2(12,200)]:
 		outline.append(_plan(point.x,point.y))
-	# Shafts at west exchange, northern service bay, and southeast dispatch.
-	# Shafts at west exchange, northern service bay, southeast dispatch and the east lane pump stair.
-	floor_shape(outline,0,0.6,"stone_paving",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]])
+	# The streets are granite-sett roadway. Shafts at west exchange, northern service bay,
+	# southeast dispatch, the east lane pump stair and the tide well.
+	floor_shape(outline,0,0.6,"granite_setts",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]])
 	_harbour_boundary(outline)
+	_ground()
 	# The lines between lanes are the exchange's yard walls: brick on a granite plinth with stone
 	# coping and piers, granite along the quay. They stand 3.6 m or more so nobody can jump-peek.
 	# The quay wall no longer closes off the Tide Office yard from Lens Delivery.
@@ -403,9 +404,10 @@ func _plate_lab() -> void:
 ## Surface relief by finish (the Inspector's "Surface relief" on every piece): masonry and timber
 ## read deep, smooth finishes stay near the palette default.
 func _set_relief() -> void:
-	var depth: Dictionary[String, float] = {"mud_brick": 2.4, "granite_blocks": 2.6, "limestone": 2.0,
-		"stone_paving": 2.0, "slate": 1.8, "concrete": 1.6, "limewash": 1.5, "plaster_white": 1.5,
-		"weathered_wood": 2.0, "wood_dark": 1.8, "steel_grating": 1.6, "tile_terracotta": 1.8}
+	var depth: Dictionary[String, float] = {"mud_brick": 1.5, "granite_blocks": 1.7, "limestone": 1.4,
+		"stone_paving": 1.3, "slate": 1.4, "concrete": 1.3, "limewash": 1.3, "plaster_white": 1.3,
+		"weathered_wood": 1.6, "wood_dark": 1.5, "steel_grating": 1.4, "tile_terracotta": 1.4,
+		"granite_setts": 1.6, "flagstones": 1.4, "dirt": 1.8, "gravel": 1.8}
 	var edits: Array[Dictionary] = []
 	for piece: Dictionary in controller.document.pieces:
 		var finish := str(piece.get("material", ""))
@@ -638,3 +640,46 @@ func _building_front(a: Vector2, b: Vector2, outside: Vector2, height: float) ->
 			else:
 				var sill := 0.9 if storey == 0 else 3.4+(storey-1)*2.95
 				put("window",Vector3(spot.x,sill,spot.y),Vector3(1.15,1.6,0.3),yaw,{"panes_x":2,"panes_y":3})
+
+
+## What the ground is made of: sett roadway everywhere carts go (the base floor), flagstone squares
+## where people gather, gravel along the service lanes and trodden-dirt yards that rise and dip in
+## low mounds. Overlays are 5 cm deep, a step anyone (and any bot) walks over; nothing covers a
+## spawn, buy zone or bombsite.
+func _ground() -> void:
+	layer("Ground")
+	# Reading Room square and the pavement in front of the south exchange row.
+	_overlay([Vector2(-9,-4.5),Vector2(7,-4.5),Vector2(7,10.3),Vector2(-9,10.3)],"flagstones")
+	_overlay([Vector2(-17,20.3),Vector2(20,20.3),Vector2(20,22.4),Vector2(-17,22.4)],"flagstones")
+	# Gravel service lanes behind the north buildings.
+	_overlay([Vector2(-34,-32),Vector2(-9,-32),Vector2(-9,-26),Vector2(-34,-27.5)],"gravel")
+	_overlay([Vector2(15,-32.5),Vector2(35,-32.5),Vector2(35,-27.4),Vector2(15,-27.4)],"gravel")
+	# Tide Office yard: dirt all round the well, with mounds clear of the bench and the well kerb.
+	_overlay([Vector2(-47,-25),Vector2(-34,-25),Vector2(-34,-20.3),Vector2(-47,-20.3)],"dirt")
+	_overlay([Vector2(-39.7,-20.3),Vector2(-34,-20.3),Vector2(-34,-15.8),Vector2(-39.7,-15.8)],"dirt")
+	_overlay([Vector2(-47,-20.3),Vector2(-44.3,-20.3),Vector2(-44.3,-15.8),Vector2(-47,-15.8)],"dirt")
+	_overlay([Vector2(-47,-15.8),Vector2(-34,-15.8),Vector2(-34,-11),Vector2(-47,-11)],"dirt")
+	_mounds(Vector3(-37.2,0,-22.7),Vector3(5.4,0.55,4.2),2.2,11,true)
+	_mounds(Vector3(-36.9,0,-18),Vector3(5.0,0.3,4.0),1.8,12,true)
+	_mounds(Vector3(-40.5,0,-13.4),Vector3(12.0,0.5,4.4),2.6,13)
+	# Weighbridge yard: churned dirt where carts turn, mounded away from the weighbridge itself.
+	_overlay([Vector2(37.5,-7),Vector2(50.5,-7),Vector2(50.5,17.2),Vector2(37.5,17.2)],"dirt")
+	_mounds(Vector3(44,0,-2.2),Vector3(10.5,0.8,7.0),3.2,21)
+	_mounds(Vector3(41.4,0,9.2),Vector3(5.6,0.5,5.0),2.4,22,true)
+	# Ramp Yard: a narrow dirt strip along the south wall.
+	_overlay([Vector2(22,31.2),Vector2(37.4,31.2),Vector2(37.4,34),Vector2(22,34)],"dirt")
+	_mounds(Vector3(29.5,0,32.6),Vector3(13.0,0.25,2.6),2.0,31)
+	layer("Ground plan")
+
+
+const OVERLAY_TOP: float = 0.05
+
+
+func _overlay(outline: Array, material: String) -> void:
+	surface(outline,OVERLAY_TOP,OVERLAY_TOP,material)
+
+
+## A patch of uneven ground on a dirt overlay: [param size].y is the tallest a mound rises.
+func _mounds(at: Vector3, size: Vector3, feature: float, variation: int, oval: bool = false) -> void:
+	put("ground_mounds",Vector3(at.x,OVERLAY_TOP,at.z),size,0,
+		{"feature":feature,"seed":variation,"edge":minf(1.2,minf(size.x,size.z)*0.3),"oval":oval},"dirt")

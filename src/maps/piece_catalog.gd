@@ -56,6 +56,7 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"ramp": {"label": "Ramp", "kind": "ramp", "size": Vector3(3, 1.5, 5), "color": Color("b8542a"), "resizable": true, "group": "Slopes", "walkable": true},
 	"ramp_earth": {"label": "Earth ramp", "kind": "ramp", "size": Vector3(4, 1.5, 6), "color": Color("b08a58"), "resizable": true, "group": "Slopes", "walkable": true, "material": "packed_earth"},
 	"stairs": {"label": "Stairs", "kind": "stairs", "size": Vector3(2, 1.5, 3), "color": Color("b8542a"), "resizable": true, "group": "Slopes", "walkable": true},
+	"ground_mounds": {"label": "Uneven ground (mounds)", "kind": "surface", "size": Vector3(8, 0.6, 8), "color": Color("7a6248"), "resizable": true, "group": "Slopes", "walkable": true, "material": "dirt"},
 	"stairs_stone": {"label": "Stone stairs", "kind": "stairs", "size": Vector3(3, 1.5, 4), "color": Color("a58a66"), "resizable": true, "group": "Slopes", "walkable": true, "material": "sandstone"},
 	# --- Props -----------------------------------------------------------------------------------
 	"crate": {"label": "Crate", "kind": "block", "size": Vector3(1.2, 1.2, 1.2), "color": Color("8a6a46"), "resizable": true, "group": "Props"},

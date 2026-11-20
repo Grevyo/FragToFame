@@ -617,6 +617,7 @@ func set_overhead(enabled: bool) -> void:
 		else MapSnapping.bounds(controller.document.pieces).get_center()
 	camera.set_overhead(enabled, focus)
 	ui.overhead_check.set_pressed_no_signal(enabled)
+	_apply_lighting()
 
 
 func _on_piece_changed(piece_id: String) -> void:
@@ -664,6 +665,10 @@ func _apply_lighting() -> void:
 	environment.ambient_light_source = _default_ambient[0]
 	environment.ambient_light_color = _default_ambient[1]
 	environment.ambient_light_energy = _default_ambient[2]
+	MapLighting.apply_atmosphere(controller.document.lighting, sun, environment)
+	# The plan view looks down from high above: haze would wash the whole map out.
+	if camera.overhead:
+		environment.fog_enabled = false
 	MapLighting.apply(controller.document.lighting, sun, environment)
 
 

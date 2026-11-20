@@ -33,6 +33,11 @@ const PALETTE: Dictionary[String, Dictionary] = {
 	"glass": {"label": "Window glass", "color": Color("2c3a44"), "pattern": "plain", "repeat": 1.0, "roughness": 0.12},
 	"water": {"label": "Water", "color": Color("2f5f6a"), "pattern": "plain", "repeat": 1.0, "roughness": 0.35},
 	"cobblestone": {"label": "Worn cobblestone", "color": Color("8d8070"), "pattern": "cobbles", "repeat": 1.6},
+	"granite_setts": {"label": "Granite setts (road)", "color": Color("6e6b66"), "pattern": "setts", "repeat": 1.2},
+	"dirt": {"label": "Trodden dirt", "color": Color("6f5a43"), "pattern": "dirt", "repeat": 3.0},
+	"gravel": {"label": "Loose gravel", "color": Color("8b867b"), "pattern": "gravel", "repeat": 0.7},
+	"grass_worn": {"label": "Worn grass", "color": Color("5b6a3a"), "pattern": "grass", "repeat": 1.6},
+	"flagstones": {"label": "Flagstone pavement", "color": Color("8e8a80"), "pattern": "flags", "repeat": 2.4},
 	"limewash": {"label": "Aged limewash", "color": Color("d9c9ac"), "pattern": "plaster", "repeat": 2.0},
 	"limestone": {"label": "Cut limestone", "color": Color("bdb69f"), "pattern": "stone", "repeat": 1.8},
 	"fired_clay": {"label": "Fired clay", "color": Color("a85035"), "pattern": "clay", "repeat": 0.7},
@@ -153,6 +158,12 @@ static func _textures(id: String, base: Color, pattern: String) -> Array[Image]:
 				tint = Color("954437")
 			elif pattern == "hazard" and fposmod((uv.x + uv.y) * 2.0, 1.0) < 0.5:
 				tint = Color("1d1d1f")
+			elif pattern == "grass":
+				# Bare, trodden earth shows through in patches.
+				tint = base.lerp(Color("6a5640"), smoothstep(0.05, 0.3, low))
+			elif pattern == "dirt" or pattern == "gravel":
+				# Stones in the dirt and individual pebbles vary in colour.
+				tint = base.lerp(Color("8f8a80"), _cells(uv, 14.0 if pattern == "dirt" else 16.0).z * (0.4 if pattern == "dirt" else 0.3) * clampf(relief.x * 4.0, 0.0, 1.0))
 			var shade := clampf(relief.y, -0.55, 0.22)
 			var pixel := tint.lightened(shade) if shade >= 0.0 else tint.darkened(-shade)
 			albedo.set_pixel(x, y, pixel)
@@ -190,8 +201,23 @@ static func _tile_noise(seed_value: int, frequency: float) -> PackedByteArray:
 ## Returns physical relief and an independent brightness adjustment.
 static func _surface(uv: Vector2, low: float, grain: float, pattern: String) -> Vector2:
 	match pattern:
-		"brick", "tile", "cobbles":
+		"brick", "tile", "cobbles", "setts", "flags":
 			return _masonry(uv, low, grain, pattern)
+		"gravel":
+			# Packed rounded pebbles: each Voronoi cell is a stone, domed toward its centre.
+			var cell := _cells(uv, 16.0)
+			var dome := smoothstep(0.0, 0.45, cell.y - cell.x)
+			return Vector2(dome * 0.16 + grain * 0.05, (dome - 1.0) * 0.2 + grain * 0.16 + (cell.z - 0.5) * 0.26 + low * 0.12)
+		"dirt":
+			# Uneven earth with ruts, damp patches and the odd embedded stone.
+			var stones := _cells(uv, 14.0)
+			var stone := smoothstep(0.1, 0.3, stones.y - stones.x) * (1.0 if stones.z > 0.88 else 0.0)
+			var rut := sin(TAU * (uv.x * 2.0 + low * 0.9)) * 0.5
+			return Vector2(low * 0.2 + grain * 0.12 + rut * 0.04 + stone * 0.14,
+				low * 0.32 + grain * 0.2 - smoothstep(0.1, 0.3, -low) * 0.18 + stone * 0.08)
+		"grass":
+			var blades := sin(TAU * (uv.x * 46.0 + grain * 2.6)) * sin(TAU * (uv.y * 31.0 + low * 3.0))
+			return Vector2(blades * 0.05 + grain * 0.08 + low * 0.1, blades * 0.12 + grain * 0.22 + low * 0.16)
 		"planks":
 			var groove := smoothstep(0.015, 0.055, absf(fposmod(uv.x * 4.0 + 0.5, 1.0) - 0.5))
 			var fibre := sin(TAU * (uv.x * 38.0 + sin(TAU * uv.y * 2.0) * 0.22 + low * 1.2))
@@ -231,9 +257,15 @@ static func _surface(uv: Vector2, low: float, grain: float, pattern: String) -> 
 
 
 static func _masonry(uv: Vector2, low: float, grain: float, pattern: String) -> Vector2:
-	var rows := 4.0 if pattern != "tile" else 3.0
-	var columns := 2.0 if pattern == "brick" else rows
-	var offset := 0.5 if pattern != "tile" and int(floorf(uv.y * rows)) % 2 != 0 else 0.0
+	var rows: float = {"tile": 3.0, "setts": 8.0, "flags": 2.0}.get(pattern, 4.0)
+	var columns: float = {"brick": 2.0, "setts": 5.0, "flags": 3.0}.get(pattern, rows)
+	var row := int(floorf(uv.y * rows))
+	var offset := 0.5 if pattern != "tile" and row % 2 != 0 else 0.0
+	if pattern == "flags":
+		offset = 0.37 if row % 2 != 0 else 0.0
+	elif pattern == "setts":
+		# Hand-laid courses: each row's joints land somewhere new.
+		offset = fposmod(float(row) * 0.618 + 0.13, 1.0)
 	var cell := Vector2(fposmod(uv.x * columns + offset, 1.0), fposmod(uv.y * rows, 1.0))
 	var edges := cell.min(Vector2.ONE - cell)
 	var approach := minf(edges.x, edges.y)
@@ -241,8 +273,41 @@ static func _masonry(uv: Vector2, low: float, grain: float, pattern: String) -> 
 		var round_corner := (Vector2(0.14, 0.14) - edges).max(Vector2.ZERO).length()
 		approach = minf(approach, 0.14 - round_corner)
 	var bevel := smoothstep(0.025, 0.1, approach + grain * 0.04)
+	if pattern == "setts":
+		# Small split-granite blocks: domed, each a little darker or lighter than its neighbours.
+		var cell_id := Vector2(floorf(uv.x * columns + offset), floorf(uv.y * rows))
+		var shade := fposmod(sin(cell_id.dot(Vector2(12.9898, 78.233))) * 43758.5453, 1.0) - 0.5
+		bevel = smoothstep(0.03, 0.22, approach + grain * 0.08)
+		return Vector2(bevel * 0.24 + grain * 0.08, (bevel - 1.0) * 0.22 + grain * 0.16 + shade * 0.1 + low * 0.24)
 	return Vector2(bevel * 0.25 + grain * 0.06 + low * 0.04,
 		(bevel - 1.0) * 0.37 + grain * 0.13 + low * 0.26)
+
+
+## Tiling Voronoi cells over [param uv] with [param count] cells per side: x = distance to the
+## nearest feature point, y = to the second nearest (in cell units), z = a per-cell random value.
+static func _cells(uv: Vector2, count: float) -> Vector3:
+	var scaled := uv * count
+	var home := scaled.floor()
+	var first := 9.0
+	var second := 9.0
+	var value := 0.0
+	for dy: int in range(-1, 2):
+		for dx: int in range(-1, 2):
+			var cell := home + Vector2(dx, dy)
+			var wrapped := Vector2(fposmod(cell.x, count), fposmod(cell.y, count))
+			var jitter := Vector2(_cell_hash(wrapped, 1.7), _cell_hash(wrapped, 9.1))
+			var distance := scaled.distance_to(cell + Vector2(0.15, 0.15) + jitter * 0.7)
+			if distance < first:
+				second = first
+				first = distance
+				value = _cell_hash(wrapped, 4.3)
+			elif distance < second:
+				second = distance
+	return Vector3(first, second, value)
+
+
+static func _cell_hash(cell: Vector2, salt: float) -> float:
+	return fposmod(sin(cell.dot(Vector2(127.1, 311.7)) + salt * 74.7) * 43758.5453, 1.0)
 
 
 ## Sample across the wrapped edges so normal-map gradients also tile.

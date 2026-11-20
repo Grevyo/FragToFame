@@ -814,7 +814,8 @@ func _build_map_properties(doc: MapDocument, file_path: String) -> void:
 			next[key] = spins[key].value
 		action_requested.emit(&"lighting", next)
 	for row: Array in [["Sun direction (°)", "sun_yaw", 5.0], ["Sun height (°)", "sun_pitch", 5.0],
-			["Sun strength", "sun_energy", 0.1], ["Ambient light", "ambient_energy", 0.05]]:
+			["Sun strength", "sun_energy", 0.1], ["Ambient light", "ambient_energy", 0.05],
+			["Distance haze", "haze", 0.05]]:
 		var key := str(row[1])
 		var spin := _number_row(str(row[0]), float(settings[key]), MapLighting.LIMITS[key].x, MapLighting.LIMITS[key].y, float(row[2]))
 		spin.value_changed.connect(emit_lighting.unbind(1))
@@ -900,6 +901,12 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 		"coping_stones":
 			_number_prop("Stone length (m)", "stone_length", float(props.get("stone_length", 0.9)), 0.4, 2.0, 0.05)
 			_number_prop("Variation seed", "seed", float(props.get("seed", 0)), 0, 999, 1)
+		"ground_mounds":
+			_inspector.add_child(UIFactory.label("Height (Y) is the tallest a mound may rise. Slopes stay walkable: mounds too steep for that are lowered.", &"MutedLabel", true))
+			_number_prop("Distance between mounds (m)", "feature", float(props.get("feature", 3.0)), 0.5, 40.0, 0.1)
+			_number_prop("Flat border (m)", "edge", float(props.get("edge", 1.0)), 0.0, 20.0, 0.1)
+			_number_prop("Variation seed", "seed", float(props.get("seed", 0)), 0, 999, 1)
+			_bool_prop("Oval patch", "oval", bool(props.get("oval", false)))
 		"door":
 			_number_prop("Panels", "panels", float(props.get("panels", 2)), 1, 4, 1)
 			_bool_prop("Fanlight", "fanlight", bool(props.get("fanlight", true)))

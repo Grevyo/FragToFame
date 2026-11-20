@@ -282,6 +282,68 @@ func _test_building_dressing() -> void:
 	built.free()
 
 
+	section("Ground textures and uneven ground")
+	for id: String in ["dirt", "gravel", "granite_setts", "grass_worn", "flagstones"]:
+		var ground := MapMaterials.material(id)
+		check(ground != null and ground.normal_enabled and ground.ao_texture != null, "%s is a relief ground texture" % id)
+	check(MapMaterials.material("dirt").albedo_texture.get_image().get_data()
+		!= MapMaterials.material("gravel").albedo_texture.get_image().get_data(), "dirt and gravel are different surfaces")
+	check(PieceCatalog.is_walkable("ground_mounds") and PieceCatalog.kind("ground_mounds") == "surface"
+		and PieceCatalog.default_material("ground_mounds") == "dirt", "uneven ground is a walkable dirt surface piece")
+	var patch_size := Vector3(10, 0.9, 7)
+	var patch_props := MapDocument.default_props("ground_mounds")
+	patch_props["seed"] = 4
+	var grid := GroundMounds.heights(patch_size, patch_props)
+	var values: PackedFloat32Array = grid[2]
+	var columns: int = grid[0]
+	var rows: int = grid[1]
+	var rim_flat := true
+	for column: int in columns + 1:
+		rim_flat = rim_flat and is_equal_approx(values[column], -GroundMounds.EDGE_SINK) and is_equal_approx(values[rows * (columns + 1) + column], -GroundMounds.EDGE_SINK)
+	var highest := 0.0
+	for value: float in values:
+		highest = maxf(highest, value)
+	check(rim_flat, "uneven ground sinks just below the floor at its edges, so no seam shows")
+	check(highest > 0.25 and highest <= patch_size.y + 0.001, "mounds rise without exceeding the piece height (%.2f m)" % highest)
+	var steep := GroundMounds.heights(Vector3(6, 4, 6), {"feature": 1.0, "seed": 2, "edge": 0.5})
+	var mounds := MapBuilder.build_piece(_piece("ground_mounds", Vector3.ZERO, Vector3(6, 4, 6), 0.0, {"feature": 1.0, "seed": 2, "edge": 0.5}), MapBuilder.Mode.RUNTIME)
+	var visual := mounds.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var faces := visual.mesh.get_faces()
+	var worst := 0.0
+	var upward := true
+	for i: int in range(0, faces.size(), 3):
+		var face_normal := (faces[i + 2] - faces[i]).cross(faces[i + 1] - faces[i]).normalized()
+		if absf(face_normal.y) > 0.2:
+			worst = maxf(worst, rad_to_deg(face_normal.angle_to(Vector3.UP)))
+			upward = upward and face_normal.y > 0.0
+	check(worst <= GroundMounds.MAX_SLOPE_DEGREES + 0.01 and (steep[2] as PackedFloat32Array).size() > 0,
+		"even tall, tight mounds are lowered to a walkable slope (steepest %.1f°)" % worst)
+	check(upward, "the ground's faces point up")
+	var collider := mounds.find_children("*", "CollisionShape3D", true, false)[0] as CollisionShape3D
+	check((collider.shape as ConcavePolygonShape3D).get_faces() == faces, "uneven ground collides exactly where it is drawn")
+	mounds.free()
+	var again_grid := GroundMounds.heights(patch_size, patch_props)
+	patch_props["seed"] = 5
+	check(again_grid[2] == values and GroundMounds.heights(patch_size, patch_props)[2] != values,
+		"one seed gives the same ground and another seed different ground")
+	var tiny := MapDocument.create("Tiny ground")
+	tiny.add_piece(_piece("ground_mounds", Vector3.ZERO, Vector3(0.2, 0.5, 4)))
+	check(MapValidator.validate(tiny)["errors"].any(func(e: String) -> bool: return e.contains("uneven ground")),
+		"the validator rejects uneven ground too small to form")
+
+	section("Atmosphere")
+	var sky_sun := DirectionalLight3D.new()
+	var outdoors := Environment.new()
+	MapLighting.apply_atmosphere({"haze": 0.5, "sun_color": "ffd8a8"}, sky_sun, outdoors)
+	check(sky_sun.shadow_enabled and sky_sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS,
+		"the sun casts soft split shadows")
+	check(outdoors.background_mode == Environment.BG_SKY and outdoors.sky != null and outdoors.ssao_enabled
+		and outdoors.sdfgi_enabled and outdoors.fog_enabled, "maps get a sky, occlusion, global illumination and haze")
+	MapLighting.apply_atmosphere({"haze": 0.0}, sky_sun, outdoors)
+	check(not outdoors.fog_enabled, "haze 0 turns the haze off")
+	sky_sun.free()
+
+
 func _test_snapping() -> void:
 	section("Snapping and measuring")
 	check(MapSnapping.snap_position(Vector3(1.3, 0.7, -2.6), 0.5) == Vector3(1.5, 0.7, -2.5), "grid snap keeps height")

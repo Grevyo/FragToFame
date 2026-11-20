@@ -36,7 +36,7 @@ func _run() -> void:
 	var controller := studio.get("controller") as MapEditController
 	for entry: Dictionary in doc.layers.duplicate():
 		var layer_name := str(entry["name"])
-		if layer_name.contains("Tactics") or layer_name.contains("Gameplay") or layer_name.contains("hide"):
+		if layer_name.contains("Tactics") or layer_name.contains("Gameplay") or layer_name.contains("Match") or layer_name.contains("hide"):
 			controller.set_layer_field(str(entry["id"]), "visible", false)
 	(studio.get("ui") as StudioUI).hide()
 	var camera := studio.get("camera") as EditorFlyCamera

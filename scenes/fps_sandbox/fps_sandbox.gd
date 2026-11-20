@@ -63,6 +63,7 @@ func _load_level() -> void:
 	App.sandbox_map = null
 	var doc := App.playtest_map if playtest else (chosen if chosen != null else MapTemplates.sandbox_arena())
 	level.load_map(doc)
+	MapLighting.apply_atmosphere(doc.lighting, sun, world_environment.environment)
 	MapLighting.apply(doc.lighting, sun, world_environment.environment)
 	# The editor can playtest as either team from any spawn.
 	var options := App.playtest_options if playtest else {}
@@ -92,6 +93,7 @@ func _start_match() -> void:
 	var doc := match_data[2] as MapDocument
 	_match_options = (match_data[3] as Dictionary).duplicate(true)
 	level.load_map(doc, false)
+	MapLighting.apply_atmosphere(doc.lighting, sun, world_environment.environment)
 	MapLighting.apply(doc.lighting, sun, world_environment.environment)
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))
@@ -116,6 +118,7 @@ func _start_training() -> void:
 	var drill := App.consume_pending_training()
 	var doc := drill["map"] as MapDocument
 	level.load_map(doc, false)
+	MapLighting.apply_atmosphere(doc.lighting, sun, world_environment.environment)
 	MapLighting.apply(doc.lighting, sun, world_environment.environment)
 	var spawn := level.spawn_point("attack")
 	player.set_spawn(spawn[0] as Vector3, float(spawn[1]))

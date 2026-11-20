@@ -46,6 +46,8 @@ static func validate(doc: MapDocument) -> Dictionary:
 			errors.append("%s has an invalid surface outline." % id)
 		elif type == "mesh_brush" and BrushGeometry.mesh(size, piece["props"]) == null:
 			errors.append("%s has invalid brush geometry." % id)
+		elif type == "ground_mounds" and GroundMounds.mesh(size, piece["props"]) == null:
+			errors.append("%s is too small to form uneven ground." % id)
 		elif PieceCatalog.is_solid(type):
 			solid_count += 1
 		match type:

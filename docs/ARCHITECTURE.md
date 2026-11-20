@@ -235,7 +235,8 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   normal maps with mipmaps. World-space mapping keeps repeats aligned across neighbouring pieces.
   The Inspector uses 32 px swatches. A piece's material falls back to its type default, then to the dev
   checker. `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
-  empty settings leave the scene defaults. `light_lamp` and `light_spot` pieces emit in both.
+  empty settings leave the scene defaults. `MapLighting.apply_atmosphere` sets the shared look
+  (sky, shadows, SSAO, SDFGI, haze, glow, tonemap) in both, so the editor shows what the game draws. `light_lamp` and `light_spot` pieces emit in both.
 - **Editing.** Every edit is a list of piece before/after states recorded as one undo step:
   group move/rotate/duplicate/delete, paste, prefab placement, grouping, material and layer
   changes. Lighting, layers and prefabs are document state recorded the same way. Gizmo and
@@ -916,3 +917,17 @@ returns a cached variant of the palette material that shares its albedo, normal 
 textures and only changes `normal_scale` and `ao_light_affect`, so relief costs no texture
 generation. Height (parallax) mapping is deliberately not used: Godot does not support it with
 the world-space triplanar mapping every map surface relies on.
+
+### Ground and atmosphere (2026-11-20)
+
+- **Uneven ground** (`ground_mounds`, `GroundMounds`) is a `surface`-kind piece: a height grid
+  (0.5 m cells, at most 96 per side) from seeded simplex noise, eased to the edges, drawn as one
+  sheet that is also its trimesh collider. Edges and hollows sit 2 cm below the base
+  (`EDGE_SINK`) so the floor hides the join. Slopes are measured per drawn triangle and the whole
+  patch is scaled down if any exceeds 21°, under the navmesh's walkable limit, so bots never
+  find an unwalkable mound. The navmesh bakes it like any static collider.
+- **Atmosphere** is code, not scene settings: `MapLighting.apply_atmosphere` configures the
+  `Environment` and sun in the FPS scene and the Creation Studio. Global illumination uses SDFGI
+  (real time, no baking), because maps are user-made in the shipped editor and LightmapGI can only
+  bake in the Godot editor. SDFGI and soft shadows cost GPU time; a graphics quality setting that
+  can lower or disable them is still to be added.

@@ -56,7 +56,14 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 			for i: int in parts.size():
 				_add_part(holder, parts[i], surface, "Part%d" % i, relief)
 		"surface":
-			var mesh := BrushGeometry.mesh(size, props) if type == "mesh_brush" else PolygonSurface.build_mesh(size, props)
+			var mesh: ArrayMesh
+			match type:
+				"mesh_brush":
+					mesh = BrushGeometry.mesh(size, props)
+				"ground_mounds":
+					mesh = GroundMounds.mesh(size, props)
+				_:
+					mesh = PolygonSurface.build_mesh(size, props)
 			holder = _drawn_surface(mesh, surface, mode)
 		"ramp":
 			holder = _ramp(size, surface)

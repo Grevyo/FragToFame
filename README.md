@@ -623,6 +623,12 @@ Switchyard and Kestrel Keep (official maps):
       brick, granite and paving relief up close and at a distance, and the uneven coping.
 - [ ] **Creation Studio**: set Surface relief on a brick wall to 0, 1 and 3 and compare; place
       Coping stones and change their stone length and seed.
+- [ ] Cluts (revision 15): walk the sett roads, the gravel lanes and the dirt yards; run and jump
+      over the mounds in the Tide Office and Weighbridge yards and check nothing snags; judge the
+      new lighting indoors (Receiving House, plate works) and outdoors, and the frame rate.
+- [ ] **Creation Studio**: place Uneven ground (mounds) on a floor and change its height,
+      distance between mounds, flat border, seed and oval option; try the five new ground
+      textures; change Distance haze in the map's lighting.
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

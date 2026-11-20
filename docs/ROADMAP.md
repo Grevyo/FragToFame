@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 14): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 15): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -659,6 +659,23 @@ occlusion map that keeps grooves dark in direct light, sharing the palette's tex
 parallax depth is not available because Godot does not support height maps with the editor's
 world-space triplanar mapping. Also **Coping stones**: a run of separate, uneven capping stones
 (stone length and a variation seed in the Inspector).
+Revision 15 (owner: change the ground and give it features; dirt should mound up and down, roads
+should be solid; the map needs to look like a real place, perhaps with better lighting) lays the
+streets in granite-sett roadway, puts flagstones in the Reading Room square and along the south
+exchange row, gravel in the two service lanes behind the north buildings, and trodden dirt in the
+Tide Office yard, the Weighbridge yard and the Ramp Yard, where low mounds (0.25–0.8 m) rise and dip.
+Masonry relief is toned down so mortar no longer reads as drawn lines. Timings are unchanged
+(defenders reach A 3.5 s and B 5.8 s before the first attackers).
+The editor gained what this needed: ground textures **Granite setts (road)**, **Trodden dirt**,
+**Loose gravel**, **Worn grass** and **Flagstone pavement**, and the **Uneven ground (mounds)**
+piece (Slopes group): height is the tallest a mound may rise, with distance between mounds, flat
+border, variation seed and an oval option in the Inspector. Its edges and hollows sink 2 cm below
+the base so the join with the floor follows the mounds, it collides exactly where it is drawn, and
+mounds too steep to walk (over 21°) are lowered so players and bots cross all of it. Every map now
+also gets the shared **atmosphere** (editor and game alike): a sky tinted by the sun, soft
+four-split sun shadows, ambient occlusion, real-time global illumination (SDFGI) so rooms and
+covered passages fall into shade, distance haze (new **Distance haze** lighting setting), gentle
+bloom and filmic tonemapping. The overhead plan view turns the haze off.
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -807,3 +824,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 12 (owner request): building faces with varied heights, rooflines and windows; the Plate Receiving House rebuilt into the curved wall; the Tide Well drop from the dead-end Tide Office corner into a new Gauge Chamber; a raised terrace and a loading dock. |
 | 2026-11-20 | Cluts revision 13 (owner request): yard walls with piers instead of thin buildings, a consistent brick, granite and limestone palette, and real windows and doors on the buildings. New editor pieces: Window, Door, Wall pier; new glass material. |
 | 2026-11-20 | Cluts revision 14 (owner request): the Lens Delivery corner opened to the Tide Office yard, uneven coping stones, surface relief. Editor: Surface relief on every solid piece, Coping stones piece. |
+| 2026-11-20 | Cluts revision 15 (owner request): sett roads, flagstone squares, gravel lanes and dirt yards with mounds. Editor: five ground textures, the Uneven ground (mounds) piece, Distance haze. Game and editor: shared atmosphere with sky, soft shadows, SDFGI, haze and tonemapping. |

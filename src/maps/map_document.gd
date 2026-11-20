@@ -111,6 +111,10 @@ static func default_props(type: String) -> Dictionary:
 			return {"merlon_height": 0.9}
 		"catwalk":
 			return {"rail_left": true, "rail_right": true}
+		"window":
+			return {"panes_x": 2, "panes_y": 2, "shutters": false}
+		"door":
+			return {"panels": 2, "fanlight": true}
 	return {}
 
 

@@ -30,6 +30,7 @@ const PALETTE: Dictionary[String, Dictionary] = {
 	"cloth_red": {"label": "Red cloth", "color": Color("b84a3a"), "pattern": "woven", "repeat": 1.5},
 	"cloth_blue": {"label": "Blue cloth", "color": Color("3f6f8f"), "pattern": "woven", "repeat": 1.5},
 	"cloth_striped": {"label": "Striped cloth", "color": Color("d8c38a"), "pattern": "stripes", "repeat": 1.0},
+	"glass": {"label": "Window glass", "color": Color("2c3a44"), "pattern": "plain", "repeat": 1.0, "roughness": 0.12},
 	"water": {"label": "Water", "color": Color("2f5f6a"), "pattern": "plain", "repeat": 1.0, "roughness": 0.35},
 	"cobblestone": {"label": "Worn cobblestone", "color": Color("8d8070"), "pattern": "cobbles", "repeat": 1.6},
 	"limewash": {"label": "Aged limewash", "color": Color("d9c9ac"), "pattern": "plaster", "repeat": 2.0},

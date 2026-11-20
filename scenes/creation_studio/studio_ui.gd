@@ -890,6 +890,13 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 		"shutter_panel":
 			_number_prop("Slat count", "slats", float(props.get("slats", 8)), 2, 20, 1)
 			_number_prop("Slat tilt (degrees)", "tilt", float(props.get("tilt", 25)), 0, 70, 1)
+		"window":
+			_number_prop("Panes across", "panes_x", float(props.get("panes_x", 2)), 1, 6, 1)
+			_number_prop("Panes down", "panes_y", float(props.get("panes_y", 2)), 1, 6, 1)
+			_bool_prop("Open shutters", "shutters", bool(props.get("shutters", false)))
+		"door":
+			_number_prop("Panels", "panels", float(props.get("panels", 2)), 1, 4, 1)
+			_bool_prop("Fanlight", "fanlight", bool(props.get("fanlight", true)))
 		"enamel_sign":
 			_text_prop("Lettering", "text", str(props.get("text", "Sign")))
 		"callout":

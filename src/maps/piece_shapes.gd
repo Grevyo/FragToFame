@@ -82,6 +82,12 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 			return body
 		"transit_scope":
 			return _transit_scope(size)
+		"window":
+			return _window(size, props)
+		"door":
+			return _door(size, props)
+		"wall_pier":
+			return _wall_pier(size)
 		"stone_trough":
 			return _stone_trough(size)
 		"sandbag_wall":
@@ -596,3 +602,73 @@ static func _transit_scope(size: Vector3) -> Array[Dictionary]:
 	for fraction: float in [-0.4, 0.15, 0.46]:
 		parts.append(_cyl(diameter * 1.18, length * 0.07, pivot + axis * length * fraction, "metal_dark", rotation))
 	return parts
+
+
+## A glazed window set into a wall face: stone sill and head, a timber frame, glazing bars and
+## optional open shutters. The piece's back (local -Z) sits on the wall; the sill projects.
+static func _window(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var w := size.x
+	var h := size.y
+	var d := size.z
+	var across := clampi(int(props.get("panes_x", 2)), 1, 6)
+	var down := clampi(int(props.get("panes_y", 2)), 1, 6)
+	var bar := minf(0.09, w * 0.1)
+	var back := -d / 2.0
+	var parts: Array[Dictionary] = [
+		_box(Vector3(w - 2 * bar, h - 2 * bar, 0.03), Vector3(0, h / 2.0, back + 0.05), "glass"),
+		_box(Vector3(w + 0.16, 0.08, d), Vector3(0, 0.04, 0), "limestone"),
+		_box(Vector3(w + 0.22, 0.14, d * 0.55), Vector3(0, h - 0.07, back + d * 0.275), "limestone"),
+	]
+	for side: int in [-1, 1]:
+		parts.append(_box(Vector3(bar, h - 0.22, d * 0.4), Vector3(side * (w - bar) / 2.0, 0.08 + (h - 0.22) / 2.0, back + d * 0.2)))
+	parts.append(_box(Vector3(w - 2 * bar, bar, d * 0.4), Vector3(0, 0.08 + bar / 2.0, back + d * 0.2)))
+	parts.append(_box(Vector3(w - 2 * bar, bar * 0.8, d * 0.4), Vector3(0, h - 0.14 - bar * 0.4, back + d * 0.2)))
+	var inner := Vector2(w - 2 * bar, h - 0.22 - bar * 1.8)
+	for i in range(1, across):
+		parts.append(_box(Vector3(0.035, inner.y, 0.05), Vector3(-inner.x / 2.0 + inner.x * i / across, 0.08 + bar + inner.y / 2.0, back + 0.09)))
+	for i in range(1, down):
+		parts.append(_box(Vector3(inner.x, 0.035, 0.05), Vector3(0, 0.08 + bar + inner.y * i / down, back + 0.09)))
+	if bool(props.get("shutters", false)):
+		for side: int in [-1, 1]:
+			parts.append(_box(Vector3(w * 0.5, h - 0.24, 0.04), Vector3(side * (w * 0.75 + 0.14), 0.1 + (h - 0.24) / 2.0, back + 0.03)))
+	return parts
+
+
+## A closed door in a stone frame: jambs and head, a panelled leaf, a brass handle, an optional
+## glazed fanlight and a shallow step (low enough to walk over).
+static func _door(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var w := size.x
+	var h := size.y
+	var d := size.z
+	var back := -d / 2.0
+	var jamb := minf(0.14, w * 0.12)
+	var fan := 0.36 if bool(props.get("fanlight", true)) and h > 2.2 else 0.0
+	var leaf_h := h - jamb - fan
+	var leaf_w := w - 2 * jamb
+	var parts: Array[Dictionary] = []
+	for side: int in [-1, 1]:
+		parts.append(_box(Vector3(jamb, h, d * 0.7), Vector3(side * (w - jamb) / 2.0, h / 2.0, back + d * 0.35), "limestone"))
+	parts.append(_box(Vector3(w + 0.1, jamb, d * 0.75), Vector3(0, h - jamb / 2.0, back + d * 0.375), "limestone"))
+	parts.append(_box(Vector3(leaf_w, leaf_h, 0.06), Vector3(0, leaf_h / 2.0, back + 0.06)))
+	var count := clampi(int(props.get("panels", 2)), 1, 4)
+	var gap := 0.12
+	var panel_h := (leaf_h - gap * (count + 1)) / count
+	for i in count:
+		parts.append(_box(Vector3(leaf_w - 0.24, panel_h, 0.03), Vector3(0, gap + panel_h / 2.0 + i * (panel_h + gap), back + 0.105)))
+	parts.append(_box(Vector3(0.05, 0.05, 0.08), Vector3(leaf_w * 0.36, leaf_h * 0.47, back + 0.13), "brass"))
+	if fan > 0.0:
+		parts.append(_box(Vector3(leaf_w, fan - 0.06, 0.03), Vector3(0, leaf_h + fan / 2.0, back + 0.05), "glass"))
+		parts.append(_box(Vector3(leaf_w, 0.06, 0.08), Vector3(0, leaf_h + 0.03, back + 0.07), "limestone"))
+	parts.append(_box(Vector3(w + 0.2, 0.08, d + 0.25), Vector3(0, 0.04, back + (d + 0.25) / 2.0), "granite_blocks"))
+	return parts
+
+
+## A masonry pier for yard walls and gateways: granite base, shaft and an overhanging stone cap.
+static func _wall_pier(size: Vector3) -> Array[Dictionary]:
+	var base := minf(0.5, size.y * 0.2)
+	var cap := minf(0.24, size.y * 0.1)
+	return [
+		_box(Vector3(size.x + 0.1, base, size.z + 0.1), Vector3(0, base / 2.0, 0), "granite_blocks"),
+		_box(Vector3(size.x, size.y - base - cap + 0.04, size.z), Vector3(0, base - 0.02 + (size.y - base - cap + 0.04) / 2.0, 0)),
+		_box(Vector3(size.x + 0.16, cap, size.z + 0.16), Vector3(0, size.y - cap / 2.0, 0), "limestone"),
+	]

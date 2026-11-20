@@ -5,7 +5,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 12
+	return 13
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -119,18 +119,18 @@ func _build() -> void:
 	# Shafts at west exchange, northern service bay, southeast dispatch and the east lane pump stair.
 	floor_shape(outline,0,0.6,"stone_paving",[[-43,-37,-3,10],[16,29,-24,-19],[26,39,25,31],[33,37,-14,-1],[-44,-40,-20,-16]])
 	_harbour_boundary(outline)
-	# Street walls are the faces of the exchange's buildings: each run has its own height and
-	# roofline (pitched with chimneys, or flat with a cornice), upper windows and shuttered doors.
-	_facade([Vector2(15,194),Vector2(72,194),Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],"granite_blocks",6.4,"gable","slate")
-	_facade([Vector2(167,209),Vector2(170,140),Vector2(205,134),Vector2(293,136),Vector2(400,146)],"mud_brick",5.3,"flat","limestone")
-	_facade([Vector2(580,122),Vector2(564,95),Vector2(459,98),Vector2(457,147),Vector2(512,147),Vector2(633,166),Vector2(676,163)],"concrete",7.6,"flat","concrete")
-	_facade([Vector2(309,209),Vector2(393,209),Vector2(470,218),Vector2(576,220),Vector2(575,355)],"limewash",6.2,"gable","tile_terracotta")
-	_facade([Vector2(357,259),Vector2(426,256),Vector2(462,265),Vector2(498,266),Vector2(503,282),Vector2(502,355)],"mud_brick",4.9,"flat","sandstone")
-	_facade([Vector2(405,290),Vector2(405,355),Vector2(321,357),Vector2(303,369)],"slate",3.3,"coping","granite_blocks")
-	_facade([Vector2(137,235),Vector2(170,248),Vector2(200,273),Vector2(221,307),Vector2(227,327),Vector2(226,355)],"plaster_white",5.6,"gable","tile_terracotta")
-	_facade([Vector2(200,359),Vector2(256,359),Vector2(276,381)],"weathered_wood",2.9,"coping","weathered_wood")
-	_facade([Vector2(224,407),Vector2(242,426)],"slate",3.0,"coping","granite_blocks")
-	_facade([Vector2(628,523),Vector2(629,460),Vector2(600,463),Vector2(572,456),Vector2(546,436),Vector2(539,415),Vector2(644,415),Vector2(645,438),Vector2(642,448)],"concrete",5.8,"flat","concrete",{0:[[0.6,2.9]]})
+	# The lines between lanes are the exchange's yard walls: brick on a granite plinth with stone
+	# coping and piers, granite along the quay. They stand 3.6 m or more so nobody can jump-peek.
+	_yard_wall([Vector2(15,194),Vector2(72,194),Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],3.8,"granite")
+	_yard_wall([Vector2(167,209),Vector2(170,140),Vector2(205,134),Vector2(293,136),Vector2(400,146)],4.2,"brick")
+	_yard_wall([Vector2(580,122),Vector2(564,95),Vector2(459,98),Vector2(457,147),Vector2(512,147),Vector2(633,166),Vector2(676,163)],4.6,"brick")
+	_yard_wall([Vector2(309,209),Vector2(393,209),Vector2(470,218),Vector2(576,220),Vector2(575,355)],3.8,"brick")
+	_yard_wall([Vector2(357,259),Vector2(426,256),Vector2(462,265),Vector2(498,266),Vector2(503,282),Vector2(502,355)],3.6,"brick")
+	_yard_wall([Vector2(405,290),Vector2(405,355),Vector2(321,357),Vector2(303,369)],3.6,"brick")
+	_yard_wall([Vector2(137,235),Vector2(170,248),Vector2(200,273),Vector2(221,307),Vector2(227,327),Vector2(226,355)],4.0,"brick")
+	_yard_wall([Vector2(200,359),Vector2(256,359),Vector2(276,381)],3.6,"brick")
+	_yard_wall([Vector2(224,407),Vector2(242,426)],3.6,"brick")
+	_yard_wall([Vector2(628,523),Vector2(629,460),Vector2(600,463),Vector2(572,456),Vector2(546,436),Vector2(539,415),Vector2(644,415),Vector2(645,438),Vector2(642,448)],3.8,"brick",{0:[[0.6,2.9]]},[1,8])
 	_receiving_house()
 	_tide_well()
 	_raised_ground()
@@ -207,13 +207,14 @@ func _harbour_boundary(outline: Array) -> void:
 		else:
 			var depth := 2.4
 			var footprint := [a,b,b+seam_b*depth,a+seam_a*depth]
-			var height := 5.6 if i%2 == 0 else 6.8
-			prism(footprint,0,height,"mud_brick" if i%2 == 0 else "limewash")
-			_gable(a+seam_a*1.2,b+seam_b*1.2,3.1,height-0.02,1.3,"slate" if i%2 == 0 else "tile_terracotta")
-			var bays := maxi(1,floori(length/6.0))
-			for j in bays:
-				var window := a+along*(j+0.5)*length/bays-outside*0.09
-				put("shutter_panel",Vector3(window.x,2.7,window.y),Vector3(1.8,1.25,0.16),yaw,{"slats":5})
+			var height: float = {2: 6.6, 4: 9.4, 6: 6.2, 8: 7.8, 9: 5.8}.get(i, 6.4)
+			var brick := i in [2, 6, 9]
+			prism(footprint,0,height,"mud_brick" if brick else "limewash")
+			_joined_walls([a+seam_a*0.02,b+seam_b*0.02],false,0.26,2.95,"limestone",0.3,{})
+			_gable(a+seam_a*1.2,b+seam_b*1.2,3.1,height-0.02,1.3,"slate" if brick else "tile_terracotta")
+			if length >= 12.0:
+				_chimney((a+seam_a*1.2).lerp(b+seam_b*1.2,0.3),height+0.7,1.6,"mud_brick")
+			_building_front(a,b,outside,height)
 	layer("Ground plan")
 
 
@@ -294,17 +295,18 @@ func _fixtures() -> void:
 
 	put("stone_bench",Vector3(-28,0,-24),Vector3(4,1,1))
 	put("market_shelf",Vector3(-23,0,-23.4),Vector3(3,2,0.8))
-	put("shutter_panel",Vector3(-17,1,-24),Vector3(8,2.4,0.3),0,{"slats":12})
-	_sign("CHRONOMETER EXCHANGE",Vector3(-17,3.65,-24),8,0.6)
-	put("shutter_panel",Vector3(0,1,-9.46),Vector3(6,2,0.3),0,{"slats":8})
-	_sign("CHRONOMETER RETURNS",Vector3(0,3.5,-9.52),6,0.45)
+	put("freight_gate",Vector3(-17,0,-24.3),Vector3(4.4,2.9,0.36),-2.3)
+	_sign("CHRONOMETER EXCHANGE",Vector3(-17,3.0,-24.1),6.5,0.55,-2.3)
+	put("freight_gate",Vector3(0,0,-9.38),Vector3(4,2.9,0.36),0)
+	_sign("CHRONOMETER RETURNS",Vector3(0,3.0,-9.18),5,0.45)
 	put("stone_bench",Vector3(2,0,-8.35),Vector3(4,0.9,1))
-	put("shutter_panel",Vector3(33,1,18.22),Vector3(8,2.5,0.3),0,{"slats":13})
-	_sign("GLASS PLATES  /  GOODS IN",Vector3(33,3.8,18.25),7,0.55)
+	put("freight_gate",Vector3(33,0,18.38),Vector3(5,2.9,0.36),0)
+	_sign("GLASS PLATES  /  GOODS IN",Vector3(33,3.0,18.18),6,0.5,180)
 	# The old public entrance is now a gauging room and a waiting bench on the quay.
 	mass("building",-46,-38,-30,-25,4.1,"limewash")
 	mass("roof",-46.3,-37.7,-30.3,-24.7,0.24,"slate",4.1)
-	put("shutter_panel",Vector3(-42,1.02,-24.82),Vector3(4,1.65,0.28),0,{"slats":9})
+	put("door",Vector3(-43.6,0,-24.85),Vector3(1.2,2.5,0.3),0,{"panels":2,"fanlight":true})
+	put("window",Vector3(-40.4,0.9,-24.85),Vector3(1.8,1.5,0.3),0,{"panes_x":3,"panes_y":2})
 	_sign("TIDE OFFICE   /   SOUNDINGS",Vector3(-42,3.12,-24.92),6.8,0.48)
 	put("stone_bench",Vector3(-42,0,-22.9),Vector3(3.3,0.74,0.8))
 	area("Tide Office",-46,-38,-24,-20)
@@ -414,30 +416,6 @@ func _check(analysis: MapAnalysis) -> bool:
 	return analysis.issues.is_empty()
 
 
-## A run of street wall with a roofline. [param cap]: "gable" (pitched roof with chimneys),
-## "flat" (cornice) or "coping" (a low yard wall's capping stones).
-func _facade(points: Array, material: String, height: float, cap: String, cap_material: String,
-		gaps: Dictionary = {}) -> void:
-	var corners: Array = []
-	for pt: Vector2 in points:
-		corners.append(_plan(pt.x,pt.y))
-	_joined_walls(corners,false,height,0,material,0.65,gaps)
-	match cap:
-		"gable":
-			for i in corners.size()-1:
-				var a: Vector2 = corners[i]
-				var b: Vector2 = corners[i+1]
-				_gable(a,b,1.45,height-0.02,1.1,cap_material)
-				if a.distance_to(b) >= 7.0:
-					_chimney(a.lerp(b,0.5),height+0.6,1.9,material)
-		"flat":
-			_joined_walls(corners,false,0.36,height-0.06,cap_material,0.95,{})
-		_:
-			_joined_walls(corners,false,0.2,height-0.04,cap_material,0.8,{})
-	if height >= 4.8:
-		_dress_wall(corners,height,gaps)
-
-
 ## Pitched roof ridge along a wall top (a triangular prism with open gable ends).
 func _gable(a: Vector2, b: Vector2, width: float, base: float, rise: float, material: String) -> void:
 	var side := (b-a).normalized().orthogonal()*width*0.5
@@ -455,35 +433,6 @@ func _chimney(at: Vector2, base: float, height: float, material: String) -> void
 		base-0.8,height+0.8,material)
 	prism([at+Vector2(-0.58,-0.58),at+Vector2(0.58,-0.58),at+Vector2(0.58,0.58),at+Vector2(-0.58,0.58)],
 		base+height,0.18,"granite_blocks")
-
-
-## Upper-floor windows on both faces and the odd shuttered door at street level.
-func _dress_wall(corners: Array, height: float, gaps: Dictionary) -> void:
-	var count := 0
-	for i in corners.size()-1:
-		var a: Vector2 = corners[i]
-		var b: Vector2 = corners[i+1]
-		var length := a.distance_to(b)
-		if length < 4.0:
-			continue
-		var along := (b-a)/length
-		var normal := along.orthogonal()
-		var yaw := rad_to_deg(atan2(-along.y,along.x))
-		var bays := floori((length-2.0)/4.6)
-		for j in maxi(bays,1):
-			var t := length*0.5 if bays <= 1 else 1.0+(length-2.0)*(j+0.5)/bays
-			var blocked := false
-			for gap: Array in gaps.get(i,[]):
-				if t > float(gap[0])-1.2 and t < float(gap[1])+1.2:
-					blocked = true
-			if blocked:
-				continue
-			for face: int in [-1,1]:
-				var p: Vector2 = a+along*t+normal*face*0.41
-				put("shutter_panel",Vector3(p.x,height-2.55,p.y),Vector3(1.25,1.35,0.16),yaw,{"slats":6})
-				count += 1
-				if count % 5 == 0:
-					put("shutter_panel",Vector3(p.x,0,p.y),Vector3(1.2,2.25,0.16),yaw,{"slats":11,"tilt":10},"weathered_wood")
 
 
 ## The plate receiving house: its curved street wall is the building's outer face. A wide
@@ -521,10 +470,13 @@ func _receiving_house() -> void:
 		var a: Vector2 = curve[i]
 		var b: Vector2 = curve[i+1]
 		var along := (b-a).normalized()
-		var p: Vector2 = a.lerp(b,0.5)+along.orthogonal()*0.41
-		put("shutter_panel",Vector3(p.x,4.5,p.y),Vector3(1.3,1.5,0.16),rad_to_deg(atan2(-along.y,along.x)),{"slats":6})
-	for x: float in [-44.0,-33.9]:
-		put("shutter_panel",Vector3(x,4.5,front_z+0.41),Vector3(1.3,1.5,0.16),0,{"slats":6})
+		var p: Vector2 = a.lerp(b,0.5)+along.orthogonal()*0.475
+		var facing := rad_to_deg(atan2(-along.y,along.x))+180.0
+		put("window",Vector3(p.x,4.2,p.y),Vector3(1.2,1.7,0.3),facing,{"panes_x":2,"panes_y":3})
+		if a.distance_to(b) > 4.5:
+			put("window",Vector3(p.x,1.0,p.y),Vector3(1.2,1.5,0.3),facing,{"panes_x":2,"panes_y":2,"shutters":true})
+	for x: float in [-44.4,-34.6,-31.0]:
+		put("window",Vector3(x,4.2,front_z+0.475),Vector3(1.2,1.7,0.3),0,{"panes_x":2,"panes_y":3})
 	_sign("PLATE RECEIVING",Vector3(-40,4.15,front_z+0.37),5.4,0.6)
 	_sign("PACKING",Vector3(-33.1,2.85,front_z+0.37),2.0,0.4)
 	_sign("DARKROOM   /   LOWER LEVEL",Vector3(-40,2.9,-3.95),5.1,0.4)
@@ -582,3 +534,65 @@ func _raised_ground() -> void:
 	put("barrel_cluster",Vector3(46.4,1.2,34.2),Vector3(1.5,1.0,0.95))
 	area("Loading Dock",44,52.5,32.5,34.6,"",1.2)
 	layer("Ground plan")
+
+
+## A yard wall along a traced line: body, plinth and coping drawn as mitred runs, with piers at
+## every corner, at least every 5 m and either side of each gateway. [param family]: "brick" or
+## "granite" (quay walls). Corners listed in [param bare] get no pier (tight openings).
+func _yard_wall(points: Array, height: float, family: String, gaps: Dictionary = {}, bare: Array = []) -> void:
+	var corners: Array = []
+	for pt: Vector2 in points:
+		corners.append(_plan(pt.x,pt.y))
+	var body := "mud_brick" if family == "brick" else "granite_blocks"
+	_joined_walls(corners,false,height,0,body,0.65,gaps)
+	_joined_walls(corners,false,0.24,height-0.04,"limestone" if family == "brick" else "granite_blocks",0.84,gaps)
+	if family == "brick":
+		_joined_walls(corners,false,0.5,0,"granite_blocks",0.73,gaps)
+	for i in corners.size():
+		var at: Vector2 = corners[i]
+		var before: Vector2 = (at-Vector2(corners[maxi(i-1,0)])).normalized() if i > 0 else Vector2.ZERO
+		var after: Vector2 = (Vector2(corners[mini(i+1,corners.size()-1)])-at).normalized() if i < corners.size()-1 else Vector2.ZERO
+		var dir := (before+after).normalized()
+		if not bare.has(i):
+			_pier(at,dir,height,body)
+		if i == corners.size()-1:
+			break
+		var b: Vector2 = corners[i+1]
+		var length := at.distance_to(b)
+		var along := (b-at)/length
+		var spans: Array = gaps.get(i,[])
+		var count := ceili(length/5.0)
+		for k in range(1,count):
+			var t := length*k/count
+			var clear := true
+			for gap: Array in spans:
+				if t > float(gap[0])-1.0 and t < float(gap[1])+1.0:
+					clear = false
+			if clear:
+				_pier(at+along*t,along,height,body)
+		for gap: Array in spans:
+			for t: float in [float(gap[0])-0.45,float(gap[1])+0.45]:
+				if t > 0.6 and t < length-0.6:
+					_pier(at+along*t,along,height,body)
+
+
+func _pier(at: Vector2, along: Vector2, height: float, material: String) -> void:
+	put("wall_pier",Vector3(at.x,0,at.y),Vector3(0.9,height+0.45,0.9),rad_to_deg(atan2(-along.y,along.x)),{},material)
+
+
+## Windows on each storey of a perimeter building's street face, with a door every third bay at
+## street level. [param outside] points away from the playable side.
+func _building_front(a: Vector2, b: Vector2, outside: Vector2, height: float) -> void:
+	var length := a.distance_to(b)
+	var along := (b-a)/length
+	var yaw := rad_to_deg(atan2(-along.y,along.x))
+	var bays := maxi(1,floori(length/3.6))
+	var storeys := clampi(floori(height/2.95),1,3)
+	for j in bays:
+		var spot: Vector2 = a+along*(j+0.5)*length/bays-outside*0.15
+		for storey in storeys:
+			if storey == 0 and j % 3 == 1:
+				put("door",Vector3(spot.x,0,spot.y),Vector3(1.2,2.5,0.3),yaw,{"panels":2,"fanlight":true})
+			else:
+				var sill := 0.9 if storey == 0 else 3.4+(storey-1)*2.95
+				put("window",Vector3(spot.x,sill,spot.y),Vector3(1.15,1.6,0.3),yaw,{"panes_x":2,"panes_y":3})

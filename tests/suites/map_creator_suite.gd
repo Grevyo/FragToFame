@@ -17,6 +17,7 @@ func run() -> void:
 	_test_format()
 	_test_catalogue()
 	_test_detailed_materials()
+	_test_building_dressing()
 	_test_snapping()
 	_test_controller_groups()
 	_test_clipboard_and_prefabs()
@@ -223,6 +224,36 @@ func _test_detailed_materials() -> void:
 		"brick mortar is visibly darker and has a normal gradient along its edge")
 	check(MapMaterials.material("brass").metallic > 0.5 and MapMaterials.material("brass").roughness < masonry.roughness,
 		"brass and stone use different lighting responses")
+
+
+func _test_building_dressing() -> void:
+	section("Windows, doors and wall piers")
+	for type: String in ["window", "door", "wall_pier"]:
+		check(PieceCatalog.has_type(type) and PieceCatalog.is_solid(type), "%s is a solid catalogue piece" % type)
+	var plain := PieceShapes.parts("window", Vector3(1.2, 1.6, 0.3), {"panes_x": 1, "panes_y": 1, "shutters": false})
+	var barred := PieceShapes.parts("window", Vector3(1.2, 1.6, 0.3), {"panes_x": 3, "panes_y": 2, "shutters": false})
+	var shuttered := PieceShapes.parts("window", Vector3(1.2, 1.6, 0.3), {"panes_x": 3, "panes_y": 2, "shutters": true})
+	check(barred.size() == plain.size() + 3, "glazing bars follow panes across and down (%d, %d)" % [plain.size(), barred.size()])
+	check(shuttered.size() == barred.size() + 2, "open shutters add two leaves")
+	var glazed := false
+	for part: Dictionary in plain:
+		glazed = glazed or str(part["mat"]) == "glass"
+	check(glazed and MapMaterials.has_material("glass"), "windows are glazed with the glass material")
+	var door := PieceShapes.parts("door", Vector3(1.2, 2.4, 0.3), {"panels": 3, "fanlight": true})
+	var low := PieceShapes.parts("door", Vector3(1.2, 2.0, 0.3), {"panels": 3, "fanlight": true})
+	check(low.size() == door.size() - 2, "a door too short for a fanlight leaves it out")
+	var step_ok := false
+	for part: Dictionary in door:
+		if str(part["mat"]) == "granite_blocks":
+			step_ok = (part["size"] as Vector3).y <= 0.1
+	check(step_ok, "the door step is low enough for bots to walk over")
+	var pier := PieceShapes.parts("wall_pier", Vector3(0.9, 3.6, 0.9), {})
+	var top := 0.0
+	for part: Dictionary in pier:
+		top = maxf(top, (part["pos"] as Vector3).y + (part["size"] as Vector3).y / 2.0)
+	check(pier.size() == 3 and is_equal_approx(top, 3.6), "a wall pier has base, shaft and cap and stands its full height")
+	check(MapDocument.default_props("window").has("panes_x") and MapDocument.default_props("door").has("panels"),
+		"window and door defaults are editable properties")
 
 
 func _test_snapping() -> void:

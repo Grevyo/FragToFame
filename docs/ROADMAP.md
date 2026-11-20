@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 12): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 13): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -642,6 +642,15 @@ on the quay and a side door to a packing room over the stairwell. The Tide Offic
 dead end, has the Tide Well: an open shaft that drops 5 m into the Gauge Chamber, which joins the
 plate works beside the West Shaft stair. A raised Exchange Terrace (1.4 m, stairs at both ends)
 lines the south hall and a loading dock (1.2 m) stands in the Dispatch Yard.
+Revision 13 (owner: thin walls dressed as buildings made no sense, and louvred shutters were
+standing in for windows and doors) makes every line between lanes a yard wall: brick on a granite
+plinth with limestone coping (granite along the quay), 3.6–4.6 m so nobody can jump-peek over,
+with piers at corners, every 5 m and either side of gateways. Only real buildings carry windows
+and doors: the perimeter blocks (now 5.8–9.4 m, one to three storeys, string course, pitched roofs,
+chimneys), the Plate Receiving House and the Tide Office. Shop shutters on yard walls became
+closed yard gates. The editor gained the pieces this needed: **Window** (framed and glazed, panes
+across and down, optional open shutters), **Door** (closed, stone frame, panelled leaf, optional
+fanlight, walkable step) and **Wall pier** (granite base, shaft, stone cap), plus a glass material.
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -788,3 +797,4 @@ Planned scope:
 | 2026-11-20 | Owner added a Manager Career mode (M20) alongside the Player Career: the human runs an organisation in the same world. Planned before M15 so co-op covers both. |
 | 2026-11-20 | Cluts revision 11 (owner: develop it, keep the layout): the Yard Door gives A a third entrance from the Ramp Yard, and the Pump Stair gives B a third from the east lane. Defenders' site times are now 0.9 s apart instead of the 1.5 s limit. |
 | 2026-11-20 | Cluts revision 12 (owner request): building faces with varied heights, rooflines and windows; the Plate Receiving House rebuilt into the curved wall; the Tide Well drop from the dead-end Tide Office corner into a new Gauge Chamber; a raised terrace and a loading dock. |
+| 2026-11-20 | Cluts revision 13 (owner request): yard walls with piers instead of thin buildings, a consistent brick, granite and limestone palette, and real windows and doors on the buildings. New editor pieces: Window, Door, Wall pier; new glass material. |

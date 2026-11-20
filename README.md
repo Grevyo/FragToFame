@@ -614,6 +614,11 @@ Switchyard and Kestrel Keep (official maps):
       and Packing Room), drop down the Tide Well into the Gauge Chamber and walk back through
       the plate works, climb the Exchange Terrace and the A loading dock, and judge whether the
       streets now read as a real place (wall heights, rooflines, windows).
+- [ ] Cluts (revision 13): check the yard walls (piers, plinth, coping) read as walls, not
+      buildings, and that you cannot see over them when jumping. Check the perimeter buildings'
+      windows and doors face the streets.
+- [ ] **Creation Studio**: place a Window, a Door and a Wall pier. Change the window's panes and
+      shutters and the door's panels and fanlight in the inspector; walk over a door step.
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

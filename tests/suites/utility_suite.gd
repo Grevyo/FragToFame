@@ -13,6 +13,7 @@ func suite_name() -> String:
 func run() -> void:
 	_test_catalog()
 	_test_flash_maths()
+	_test_inspects()
 	_test_rules()
 	_test_statistics()
 	await _test_runtime()
@@ -51,6 +52,24 @@ func _test_flash_maths() -> void:
 	var far := UtilityField.flash_seconds(params, Vector3(0, 1.6, -18), eye, Vector3.FORWARD)
 	check(far < facing and far > 0.0, "a distant flash blinds for less (%.2f s)" % far)
 	check(UtilityField.flash_seconds(params, Vector3(0, 1.6, -40), eye, Vector3.FORWARD) == 0.0, "out of range does nothing")
+
+
+func _test_inspects() -> void:
+	section("Inspections")
+	var ids: Array[StringName] = [&"__default__"]
+	ids.append_array(InspectLibrary.INSPECTS.keys())
+	for id: StringName in ids:
+		var start := InspectLibrary.sample(id, 0.0)
+		var finish := InspectLibrary.sample(id, 1.0)
+		var turns := finish["rot"] as Vector3
+		var whole := Vector3(fposmod(turns.x, 360.0), fposmod(turns.y, 360.0), fposmod(turns.z, 360.0))
+		check((start["pos"] as Vector3).is_zero_approx() and (start["rot"] as Vector3).is_zero_approx()
+			and (finish["pos"] as Vector3).is_zero_approx() and whole.is_zero_approx(),
+			"%s starts and ends at rest" % id)
+	check(EquipmentCatalog.UTILITY.all(func(id: StringName) -> bool: return InspectLibrary.has_inspect(id)),
+		"every kind of utility has its own inspection")
+	var frag_top := InspectLibrary.sample(EquipmentCatalog.FRAG, 0.3)
+	check((frag_top["pos"] as Vector3).y > 0.15, "the frag is tossed up during its inspection")
 
 
 func _test_rules() -> void:
@@ -169,6 +188,15 @@ func _test_runtime() -> void:
 		"slot 4 again moves on to the smoke")
 	await wait_physics_frames(1)
 	check(effects.utility_model != null, "the grenade is shown in the hand")
+	weapons.draw_remaining = 0.0
+	check(effects.inspect() and effects.is_inspecting(), "a grenade in hand can be inspected")
+	effects.set("_inspect_left", InspectLibrary.seconds(EquipmentCatalog.SMOKE) * 0.6)
+	await wait_frames(2)
+	var item_root := effects.get("_gun_root") as Node3D
+	check(not item_root.transform.is_equal_approx(Transform3D.IDENTITY), "the smoke plays its own inspection")
+	effects.set("_inspect_left", 0.01)
+	await wait_frames(3)
+	check(not effects.is_inspecting() and item_root.transform.is_equal_approx(Transform3D.IDENTITY), "and returns to rest")
 	player.face_point(player.head.global_position + Vector3(0, 0.3, -5))
 	await wait_physics_frames(40)
 	weapons.trigger = true

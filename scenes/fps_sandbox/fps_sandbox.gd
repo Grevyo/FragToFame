@@ -258,7 +258,8 @@ func _show_sandbox_shop(message: String = "") -> void:
 	for id: StringName in ShopCatalog.item_ids():
 		if ShopCatalog.kind(id) == ShopCatalog.KIND_KIT:
 			continue
-		var full := ShopCatalog.kind(id) == ShopCatalog.KIND_UTILITY 			and player.weapons.utility_count(id) >= EquipmentCatalog.carry_limit(id)
+		var full := ShopCatalog.kind(id) == ShopCatalog.KIND_UTILITY \
+			and player.weapons.utility_count(id) >= EquipmentCatalog.carry_limit(id)
 		entries.append({"id": id, "name": ShopCatalog.display_name(id), "enabled": not full,
 			"note": "full" if full else ""})
 	player.input_enabled = false

@@ -237,6 +237,8 @@ In the FPS Sandbox, press **B** to take utility (free there), then **4** to hold
       Unused utility stays with you if you survive and is lost if you die. The kill feed names the
       grenade or knife.
 - [ ] The weapon panel shows the grenade or knife in hand and lists the utility you carry.
+- [ ] **F** with each grenade in hand plays its own inspection: the frag is tossed and caught, the
+      flashbang turned to read its side, the smoke shaken like a can, the incendiary swirled.
 
 Bots carry the knife but do not buy or throw utility yet (team tactics, Milestone 7).
 

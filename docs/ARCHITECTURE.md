@@ -394,6 +394,10 @@ reported per slot. The same route data can be consumed by future M7 play executi
 - **Presentation.** `UtilityModels` (original procedural models) and `UtilityVisuals` (smoke
   cloud, flames, bursts) are presentation only; the field takes a model factory from the
   runtime, so `src/combat` does not depend on `src/cosmetics`.
+- **Inspections as data.** `InspectLibrary` holds each item's inspection as a short list of
+  eased pose keys (offset, rotation, optional pivot as a share of the item's size, e.g. a knife's
+  finger ring). `WeaponEffects` plays it on the item's own root, so recoil, draw and swing poses
+  on the viewmodel are untouched. Items without an entry use the default left-then-right turn.
 - **Not yet:** bots buying and throwing utility (Milestone 7), sounds (no audio assets),
   networked utility.
 

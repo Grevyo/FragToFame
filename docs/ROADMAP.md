@@ -175,6 +175,8 @@ Completion criteria:
     are logged. Utility thrown, utility damage, enemies flashed and flash assists are counted
     (flash assists give KAST credit).
   - Bots carry the knife but do not buy or throw utility yet (team tactics, M7).
+  - **Inspections** are data (`InspectLibrary`): each grenade has its own; guns keep the
+    left-then-right turn.
 - [ ] Manual practice-match walkthrough (README) by the project owner.
 - [ ] Manual utility and knife walkthrough (README).
 

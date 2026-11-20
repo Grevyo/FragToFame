@@ -428,10 +428,10 @@ func _test_first_person() -> void:
 	check(held_ok, "all ten weapons can be held and show their model in first person")
 	player.weapons.draw_remaining = 0.0
 	check(effects.inspect() and effects.is_inspecting(), "the weapon can be inspected")
-	var rest := effects.viewmodel.rotation_degrees
-	effects.set("_inspect_left", WeaponEffects.INSPECT_TIME * 0.7)
+	effects.set("_inspect_left", InspectLibrary.DEFAULT_SECONDS * 0.3)
 	await wait_frames(2)
-	check(absf(effects.viewmodel.rotation_degrees.y - rest.y) > 20.0, "inspection turns the weapon to show its side")
+	var item_root := effects.get("_gun_root") as Node3D
+	check(absf(item_root.rotation_degrees.y) > 20.0, "inspection turns the weapon to show its side")
 	var press := InputEventKey.new()
 	press.physical_keycode = KEY_F
 	press.pressed = true

@@ -407,7 +407,8 @@ func _in_any_smoke(point: Vector3) -> bool:
 ## Floor under a smoke: within its radius and between just below its base and its top.
 static func _under(smoke: Smoke, point: Vector3) -> bool:
 	var rise := point.y - smoke.centre.y
-	return rise > -1.0 and rise < smoke.height 		and Vector2(point.x - smoke.centre.x, point.z - smoke.centre.z).length() <= smoke.radius + 0.3
+	return rise > -1.0 and rise < smoke.height \
+		and Vector2(point.x - smoke.centre.x, point.z - smoke.centre.z).length() <= smoke.radius + 0.3
 
 
 ## [param point] in the smoke's unit-sphere space, at [param size] of its current growth.

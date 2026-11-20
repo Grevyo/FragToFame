@@ -254,6 +254,32 @@ func _test_building_dressing() -> void:
 	check(pier.size() == 3 and is_equal_approx(top, 3.6), "a wall pier has base, shaft and cap and stands its full height")
 	check(MapDocument.default_props("window").has("panes_x") and MapDocument.default_props("door").has("panels"),
 		"window and door defaults are editable properties")
+	var stones := PieceShapes.parts("coping_stones", Vector3(4.5, 0.24, 0.84), {"stone_length": 0.9, "seed": 3})
+	var again := PieceShapes.parts("coping_stones", Vector3(4.5, 0.24, 0.84), {"stone_length": 0.9, "seed": 3})
+	var heights: Dictionary[float, bool] = {}
+	var same := stones.size() == again.size()
+	for i in stones.size():
+		heights[snappedf((stones[i]["size"] as Vector3).y, 0.001)] = true
+		same = same and stones[i]["size"] == again[i]["size"]
+	check(stones.size() == 5 and heights.size() > 1 and same, "coping stones are separate, uneven and repeatable for one seed")
+
+	section("Surface relief")
+	var flat := MapMaterials.material("mud_brick", 0.0)
+	var normal := MapMaterials.material("mud_brick")
+	var deep := MapMaterials.material("mud_brick", 2.5)
+	check(not flat.normal_enabled and normal.normal_enabled and deep.normal_scale > normal.normal_scale * 2.4,
+		"relief 0 is flat and higher relief deepens the bumps (%.2f vs %.2f)" % [deep.normal_scale, normal.normal_scale])
+	check(deep.ao_enabled and deep.ao_texture != null and deep.albedo_texture == normal.albedo_texture,
+		"relief shades grooves with an occlusion map and shares the palette textures")
+	check(MapMaterials.material("mud_brick", 2.5) == deep and MapMaterials.material("glass", 3.0).normal_enabled == false,
+		"relief variants are cached, and plain materials stay smooth")
+	var relief_wall := _piece("wall", Vector3.ZERO, Vector3(4, 3, 0.4), 0.0, {"relief": 2.5})
+	relief_wall["material"] = "mud_brick"
+	var built := MapBuilder.build_piece(relief_wall, MapBuilder.Mode.RUNTIME)
+	var mesh := built.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	check(is_equal_approx((mesh.material_override as StandardMaterial3D).normal_scale, deep.normal_scale),
+		"a piece's relief property reaches the built mesh")
+	built.free()
 
 
 func _test_snapping() -> void:

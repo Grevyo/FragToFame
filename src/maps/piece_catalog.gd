@@ -87,6 +87,8 @@ const TYPES: Dictionary[String, Dictionary] = {
 		"color": Color("4f3a28"), "resizable": true, "group": "Openings", "material": "wood_dark"},
 	"door": {"label": "Door (closed, framed)", "kind": "compound", "size": Vector3(1.2, 2.4, 0.3),
 		"color": Color("4f3a28"), "resizable": true, "group": "Openings", "material": "wood_dark"},
+	"coping_stones": {"label": "Coping stones (uneven)", "kind": "compound", "size": Vector3(4, 0.24, 0.84),
+		"color": Color("bdb69f"), "resizable": true, "group": "Structure", "material": "limestone"},
 	"wall_pier": {"label": "Wall pier", "kind": "compound", "size": Vector3(0.9, 3.6, 0.9),
 		"color": Color("9a6a48"), "resizable": true, "group": "Structure", "material": "mud_brick"},
 	"enamel_sign": {"label": "Lettered enamel sign", "kind": "block", "size": Vector3(3, 0.65, 0.08),

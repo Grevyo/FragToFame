@@ -860,6 +860,9 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 	var group := str(piece.get("group", ""))
 	_inspector.add_child(UIFactory.label("%s  ·  %s%s" % [piece["id"], kind, "  ·  " + group if not group.is_empty() else ""], &"MutedLabel"))
 	_texture_field([piece])
+	if PieceCatalog.is_solid(type):
+		_number_prop("Surface relief (0 flat, 1 normal, 3 deep)", "relief",
+			float((piece.get("props", {}) as Dictionary).get("relief", 1.0)), 0.0, MapMaterials.RELIEF_MAX, 0.1)
 	var p: Vector3 = piece["position"]
 	_inspector.add_child(UIFactory.label("POSITION (bottom centre)", &"SectionLabel"))
 	_vector_row(["pos_x", "pos_y", "pos_z"], p, -256.0, 256.0)
@@ -894,6 +897,9 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 			_number_prop("Panes across", "panes_x", float(props.get("panes_x", 2)), 1, 6, 1)
 			_number_prop("Panes down", "panes_y", float(props.get("panes_y", 2)), 1, 6, 1)
 			_bool_prop("Open shutters", "shutters", bool(props.get("shutters", false)))
+		"coping_stones":
+			_number_prop("Stone length (m)", "stone_length", float(props.get("stone_length", 0.9)), 0.4, 2.0, 0.05)
+			_number_prop("Variation seed", "seed", float(props.get("seed", 0)), 0, 999, 1)
 		"door":
 			_number_prop("Panels", "panels", float(props.get("panels", 2)), 1, 4, 1)
 			_bool_prop("Fanlight", "fanlight", bool(props.get("fanlight", true)))

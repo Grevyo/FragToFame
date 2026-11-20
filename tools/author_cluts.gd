@@ -1,11 +1,13 @@
 extends "res://tools/map_author_base.gd"
 
+var _coping_seed: int = 0
+
 func _official_id() -> String:
 	return "map_f2f_cluts"
 
 
 func _revision() -> int:
-	return 13
+	return 14
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -121,7 +123,8 @@ func _build() -> void:
 	_harbour_boundary(outline)
 	# The lines between lanes are the exchange's yard walls: brick on a granite plinth with stone
 	# coping and piers, granite along the quay. They stand 3.6 m or more so nobody can jump-peek.
-	_yard_wall([Vector2(15,194),Vector2(72,194),Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],3.8,"granite")
+	# The quay wall no longer closes off the Tide Office yard from Lens Delivery.
+	_yard_wall([Vector2(104,184),Vector2(104,98),Vector2(120,92),Vector2(166,94),Vector2(182,101),Vector2(290,105)],3.8,"granite")
 	_yard_wall([Vector2(167,209),Vector2(170,140),Vector2(205,134),Vector2(293,136),Vector2(400,146)],4.2,"brick")
 	_yard_wall([Vector2(580,122),Vector2(564,95),Vector2(459,98),Vector2(457,147),Vector2(512,147),Vector2(633,166),Vector2(676,163)],4.6,"brick")
 	_yard_wall([Vector2(309,209),Vector2(393,209),Vector2(470,218),Vector2(576,220),Vector2(575,355)],3.8,"brick")
@@ -138,6 +141,7 @@ func _build() -> void:
 	_harbour_basin()
 	_skyline()
 	_fixtures()
+	_set_relief()
 	layer("Match layout")
 	# Start at the quay end of the line so a teammate collecting a dropped
 	# bomb can turn toward dispatch without retracing across the carrier.
@@ -396,6 +400,24 @@ func _plate_lab() -> void:
 
 
 
+## Surface relief by finish (the Inspector's "Surface relief" on every piece): masonry and timber
+## read deep, smooth finishes stay near the palette default.
+func _set_relief() -> void:
+	var depth: Dictionary[String, float] = {"mud_brick": 2.4, "granite_blocks": 2.6, "limestone": 2.0,
+		"stone_paving": 2.0, "slate": 1.8, "concrete": 1.6, "limewash": 1.5, "plaster_white": 1.5,
+		"weathered_wood": 2.0, "wood_dark": 1.8, "steel_grating": 1.6, "tile_terracotta": 1.8}
+	var edits: Array[Dictionary] = []
+	for piece: Dictionary in controller.document.pieces:
+		var finish := str(piece.get("material", ""))
+		if finish.is_empty():
+			finish = PieceCatalog.default_material(str(piece["type"]))
+		if PieceCatalog.is_solid(str(piece["type"])) and depth.has(finish):
+			var after := piece.duplicate(true)
+			(after["props"] as Dictionary)["relief"] = depth[finish]
+			edits.append(after)
+	controller.update_pieces(edits,"Edit properties")
+
+
 func _check(analysis: MapAnalysis) -> bool:
 	# Test the three descents and Cable Passage directly so a long detour cannot mask a closed shaft.
 	var routes := [
@@ -545,7 +567,7 @@ func _yard_wall(points: Array, height: float, family: String, gaps: Dictionary =
 		corners.append(_plan(pt.x,pt.y))
 	var body := "mud_brick" if family == "brick" else "granite_blocks"
 	_joined_walls(corners,false,height,0,body,0.65,gaps)
-	_joined_walls(corners,false,0.24,height-0.04,"limestone" if family == "brick" else "granite_blocks",0.84,gaps)
+	_coping(corners,height,"limestone" if family == "brick" else "granite_blocks",gaps)
 	if family == "brick":
 		_joined_walls(corners,false,0.5,0,"granite_blocks",0.73,gaps)
 	for i in corners.size():
@@ -574,6 +596,26 @@ func _yard_wall(points: Array, height: float, family: String, gaps: Dictionary =
 			for t: float in [float(gap[0])-0.45,float(gap[1])+0.45]:
 				if t > 0.6 and t < length-0.6:
 					_pier(at+along*t,along,height,body)
+
+
+## Uneven capping stones along each solid stretch of wall, overlapping at corners.
+func _coping(corners: Array, height: float, material: String, gaps: Dictionary) -> void:
+	for i in corners.size()-1:
+		var a: Vector2 = corners[i]
+		var b: Vector2 = corners[i+1]
+		var length := a.distance_to(b)
+		var along := (b-a)/length
+		var cuts: Array = [0.0]
+		for gap: Array in gaps.get(i,[]):
+			cuts.append_array(gap)
+		cuts.append(length)
+		for k in range(0,cuts.size(),2):
+			var from := float(cuts[k])-(0.3 if k == 0 else 0.0)
+			var to := float(cuts[k+1])+(0.3 if k+2 == cuts.size() else 0.0)
+			var centre := a+along*(from+to)/2.0
+			_coping_seed += 1
+			put("coping_stones",Vector3(centre.x,height-0.04,centre.y),Vector3(to-from,0.24,0.84),
+				rad_to_deg(atan2(-along.y,along.x)),{"stone_length":0.85,"seed":_coping_seed},material)
 
 
 func _pier(at: Vector2, along: Vector2, height: float, material: String) -> void:

@@ -908,3 +908,11 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-16 | Cosmetics saved in a player profile file, not the career database | A look follows the player across careers and modes; no schema change |
 | 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |
+
+### Surface relief (2026-11-20)
+
+Every solid piece may carry `props.relief` (0–3, default 1). `MapMaterials.material(id, relief)`
+returns a cached variant of the palette material that shares its albedo, normal and occlusion
+textures and only changes `normal_scale` and `ao_light_affect`, so relief costs no texture
+generation. Height (parallax) mapping is deliberately not used: Godot does not support it with
+the world-space triplanar mapping every map surface relies on.

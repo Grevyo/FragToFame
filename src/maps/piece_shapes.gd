@@ -88,6 +88,8 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 			return _door(size, props)
 		"wall_pier":
 			return _wall_pier(size)
+		"coping_stones":
+			return _coping_stones(size, props)
 		"stone_trough":
 			return _stone_trough(size)
 		"sandbag_wall":
@@ -672,3 +674,22 @@ static func _wall_pier(size: Vector3) -> Array[Dictionary]:
 		_box(Vector3(size.x, size.y - base - cap + 0.04, size.z), Vector3(0, base - 0.02 + (size.y - base - cap + 0.04) / 2.0, 0)),
 		_box(Vector3(size.x + 0.16, cap, size.z + 0.16), Vector3(0, size.y - cap / 2.0, 0), "limestone"),
 	]
+
+
+## A run of individual capping stones: each a little lower, shifted or tipped than the last, with
+## thin joints, so a wall top is never one flat slab. The same seed always gives the same stones.
+static func _coping_stones(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var target := clampf(float(props.get("stone_length", 0.9)), 0.4, 2.0)
+	var count := maxi(1, roundi(size.x / target))
+	var pitch := size.x / count
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([int(props.get("seed", 0)), count])
+	var parts: Array[Dictionary] = []
+	for i in count:
+		var height := size.y * rng.randf_range(0.8, 1.0)
+		var depth := size.z * rng.randf_range(0.94, 1.0)
+		var shift := rng.randf_range(-0.02, 0.02)
+		var tip := Vector3(rng.randf_range(-1.2, 1.2), 0, rng.randf_range(-1.5, 1.5))
+		parts.append(_box(Vector3(pitch - 0.025, height, depth),
+			Vector3(-size.x / 2.0 + pitch * (i + 0.5), height / 2.0, shift), "", tip))
+	return parts

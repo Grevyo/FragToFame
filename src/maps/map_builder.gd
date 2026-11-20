@@ -33,12 +33,13 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 	var kind := PieceCatalog.kind(type)
 	var size: Vector3 = piece["size"]
 	var props: Dictionary = piece.get("props", {})
-	var surface := MapMaterials.for_piece(type, str(piece.get("material", "")))
+	var relief := float(props.get("relief", 1.0))
+	var surface := MapMaterials.for_piece(type, str(piece.get("material", "")), relief)
 	var holder: Node3D
 	match kind:
 		"block":
 			holder = Node3D.new()
-			_add_part(holder, {"shape": "box", "size": size, "pos": Vector3(0, size.y / 2.0, 0), "rot": Vector3.ZERO, "mat": ""}, surface, "Body")
+			_add_part(holder, {"shape": "box", "size": size, "pos": Vector3(0, size.y / 2.0, 0), "rot": Vector3.ZERO, "mat": ""}, surface, "Body", relief)
 			if type == "enamel_sign":
 				var lettering := Label3D.new()
 				lettering.text = str(props.get("text", "Sign"))
@@ -53,7 +54,7 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 			holder = Node3D.new()
 			var parts := PieceShapes.parts(type, size, props)
 			for i: int in parts.size():
-				_add_part(holder, parts[i], surface, "Part%d" % i)
+				_add_part(holder, parts[i], surface, "Part%d" % i, relief)
 		"surface":
 			var mesh := BrushGeometry.mesh(size, props) if type == "mesh_brush" else PolygonSurface.build_mesh(size, props)
 			holder = _drawn_surface(mesh, surface, mode)
@@ -113,7 +114,7 @@ static func build_preview(pieces: Array[Dictionary], override: Material = null) 
 
 
 ## One solid part: a StaticBody3D holding a mesh and a collider of exactly the same shape.
-static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_name: String) -> void:
+static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_name: String, relief: float = 1.0) -> void:
 	var body := StaticBody3D.new()
 	body.name = part_name
 	body.position = part["pos"]
@@ -146,7 +147,7 @@ static func _add_part(parent: Node3D, part: Dictionary, surface: Material, part_
 	var instance := MeshInstance3D.new()
 	instance.name = "Mesh"
 	instance.mesh = mesh
-	var fixed := MapMaterials.material(str(part.get("mat", "")))
+	var fixed := MapMaterials.material(str(part.get("mat", "")), relief)
 	instance.material_override = fixed if fixed != null else surface
 	body.add_child(instance)
 	var collision := CollisionShape3D.new()

@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 13): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 14): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -651,6 +651,14 @@ chimneys), the Plate Receiving House and the Tide Office. Shop shutters on yard 
 closed yard gates. The editor gained the pieces this needed: **Window** (framed and glazed, panes
 across and down, optional open shutters), **Door** (closed, stone frame, panelled leaf, optional
 fanlight, walkable step) and **Wall pier** (granite base, shaft, stone cap), plus a glass material.
+Revision 14 (owner: open up the walled corner by Lens Delivery; surfaces too flat) removes the
+quay wall between Lens Delivery and the Tide Office yard, caps every yard wall with uneven
+individual stones, and sets surface relief on every finish (masonry deepest). New in the editor:
+**Surface relief** on every solid piece (Inspector, 0 flat to 3 deep): deeper normal maps plus an
+occlusion map that keeps grooves dark in direct light, sharing the palette's textures. True
+parallax depth is not available because Godot does not support height maps with the editor's
+world-space triplanar mapping. Also **Coping stones**: a run of separate, uneven capping stones
+(stone length and a variation seed in the Inspector).
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -798,3 +806,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 11 (owner: develop it, keep the layout): the Yard Door gives A a third entrance from the Ramp Yard, and the Pump Stair gives B a third from the east lane. Defenders' site times are now 0.9 s apart instead of the 1.5 s limit. |
 | 2026-11-20 | Cluts revision 12 (owner request): building faces with varied heights, rooflines and windows; the Plate Receiving House rebuilt into the curved wall; the Tide Well drop from the dead-end Tide Office corner into a new Gauge Chamber; a raised terrace and a loading dock. |
 | 2026-11-20 | Cluts revision 13 (owner request): yard walls with piers instead of thin buildings, a consistent brick, granite and limestone palette, and real windows and doors on the buildings. New editor pieces: Window, Door, Wall pier; new glass material. |
+| 2026-11-20 | Cluts revision 14 (owner request): the Lens Delivery corner opened to the Tide Office yard, uneven coping stones, surface relief. Editor: Surface relief on every solid piece, Coping stones piece. |

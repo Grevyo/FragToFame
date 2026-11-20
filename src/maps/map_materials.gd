@@ -65,20 +65,37 @@ static func ids() -> Array[String]:
 	return list
 
 
-## Shared material for a palette id, or null when the id is unknown.
-static func material(id: String) -> StandardMaterial3D:
-	if _cache.has(id):
-		return _cache[id]
+## Surface relief range for pieces (property "relief"): 0 is flat, 1 the palette's normal
+## depth, 3 the deepest.
+const RELIEF_MAX: float = 3.0
+const BASE_NORMAL_SCALE: float = 0.72
+
+
+## Shared material for a palette id, or null when the id is unknown. [param relief] scales the
+## surface's bumps: deeper normals, and grooves (mortar, joints, plank gaps) shaded by an occlusion
+## map so they stay dark in direct light. Each relief step shares the palette's textures.
+static func material(id: String, relief: float = 1.0) -> StandardMaterial3D:
+	var step := snappedf(clampf(relief, 0.0, RELIEF_MAX), 0.1)
+	var key := id if is_equal_approx(step, 1.0) else "%s@%.1f" % [id, step]
+	if _cache.has(key):
+		return _cache[key]
 	if not PALETTE.has(id):
 		return null
+	if key != id:
+		var base := material(id)
+		var variant := base.duplicate() as StandardMaterial3D
+		_apply_relief(variant, step, str(PALETTE[id]["pattern"]))
+		_cache[key] = variant
+		return variant
 	var entry := PALETTE[id]
 	var made := StandardMaterial3D.new()
 	var textures := _textures(id, entry["color"] as Color, str(entry["pattern"]))
 	made.albedo_texture = ImageTexture.create_from_image(textures[0])
-	made.normal_enabled = str(entry["pattern"]) != "plain"
-	if made.normal_enabled:
+	if str(entry["pattern"]) != "plain":
 		made.normal_texture = ImageTexture.create_from_image(textures[1])
-		made.normal_scale = 0.72
+		made.ao_texture = ImageTexture.create_from_image(textures[2])
+		made.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	_apply_relief(made, 1.0, str(entry["pattern"]))
 	made.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	made.uv1_triplanar = true
 	made.uv1_world_triplanar = true
@@ -88,6 +105,14 @@ static func material(id: String) -> StandardMaterial3D:
 	made.metallic = float(entry.get("metallic", 0.0))
 	_cache[id] = made
 	return made
+
+
+static func _apply_relief(made: StandardMaterial3D, relief: float, pattern: String) -> void:
+	var bumpy := pattern != "plain" and relief > 0.0
+	made.normal_enabled = bumpy
+	made.normal_scale = BASE_NORMAL_SCALE * relief
+	made.ao_enabled = bumpy
+	made.ao_light_affect = clampf(0.2 * relief, 0.0, 0.6)
 
 
 ## A small copy of the world texture for the Inspector dropdown.
@@ -102,9 +127,9 @@ static func swatch(id: String) -> Texture2D:
 
 
 ## The material a piece is drawn with: its own id, else the type default, else the dev checker.
-static func for_piece(type: String, material_id: String) -> StandardMaterial3D:
+static func for_piece(type: String, material_id: String, relief: float = 1.0) -> StandardMaterial3D:
 	var id := material_id if has_material(material_id) else PieceCatalog.default_material(type)
-	var made := material(id)
+	var made := material(id, relief)
 	return made if made != null else BlockBuilder.checker_material(PieceCatalog.color(type))
 
 
@@ -132,7 +157,24 @@ static func _textures(id: String, base: Color, pattern: String) -> Array[Image]:
 			var pixel := tint.lightened(shade) if shade >= 0.0 else tint.darkened(-shade)
 			albedo.set_pixel(x, y, pixel)
 	albedo.generate_mipmaps()
-	return [albedo, _normal_map(height)]
+	return [albedo, _normal_map(height), _occlusion_map(height)]
+
+
+## Occlusion from relief: the lowest parts of the surface (grooves) are darkest.
+static func _occlusion_map(height: PackedFloat32Array) -> Image:
+	var low := INF
+	var high := -INF
+	for value: float in height:
+		low = minf(low, value)
+		high = maxf(high, value)
+	var span := maxf(high - low, 0.0001)
+	var image := Image.create_empty(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGB8)
+	for y: int in TEXTURE_SIZE:
+		for x: int in TEXTURE_SIZE:
+			var lit := 0.35 + 0.65 * pow((height[y * TEXTURE_SIZE + x] - low) / span, 0.6)
+			image.set_pixel(x, y, Color(lit, lit, lit))
+	image.generate_mipmaps()
+	return image
 
 
 static func _tile_noise(seed_value: int, frequency: float) -> PackedByteArray:

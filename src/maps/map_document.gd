@@ -115,6 +115,8 @@ static func default_props(type: String) -> Dictionary:
 			return {"panes_x": 2, "panes_y": 2, "shutters": false}
 		"door":
 			return {"panels": 2, "fanlight": true}
+		"coping_stones":
+			return {"stone_length": 0.9, "seed": 0}
 	return {}
 
 

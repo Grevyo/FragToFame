@@ -9,7 +9,7 @@ extends RefCounted
 ##   "marker"    gameplay point (spawns, training targets) — invisible as geometry in matches;
 ##               the FPS runtime spawns its own entities (e.g. target dummies) from them
 ##   "zone"      gameplay volume (bombsite, buy zone, callout area) — non-solid
-##   "light"     placeable light source — non-solid
+##   "light"     placeable light source — non-solid (no fixture; use a lamp fixture to show one)
 ##   "anchor"    tactical anchor point with a stable ID (plant, default, utility)
 ##   "hint"      optional AI hint point (cover, hold, angle)
 ##
@@ -104,6 +104,13 @@ const TYPES: Dictionary[String, Dictionary] = {
 	"storage_tank": {"label": "Storage tank", "kind": "compound", "size": Vector3(4, 6, 4), "color": Color("8f8d86"), "resizable": true, "group": "Props", "material": "metal_painted"},
 	"tree": {"label": "Tree", "kind": "compound", "size": Vector3(4, 7, 4), "color": Color("4f6b3a"), "resizable": true, "group": "Props", "material": "foliage"},
 	"banner": {"label": "Hanging banner", "kind": "compound", "size": Vector3(1.4, 3.2, 0.12), "color": Color("b84a3a"), "resizable": true, "group": "Props", "material": "cloth_red"},
+	"pallet": {"label": "Wooden pallet", "kind": "compound", "size": Vector3(1.2, 0.15, 1.0), "color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"sack_pile": {"label": "Pile of sacks", "kind": "compound", "size": Vector3(1.6, 0.8, 1.1), "color": Color("a8946a"), "resizable": true, "group": "Props", "material": "burlap"},
+	"planter": {"label": "Planter box", "kind": "compound", "size": Vector3(1.6, 1.0, 0.6), "color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"park_bench": {"label": "Park bench", "kind": "compound", "size": Vector3(1.8, 0.9, 0.62), "color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"notice_board": {"label": "Notice board", "kind": "compound", "size": Vector3(1.4, 2.1, 0.14), "color": Color("836549"), "resizable": true, "group": "Props", "material": "weathered_wood"},
+	"bollard": {"label": "Iron bollard", "kind": "compound", "size": Vector3(0.3, 0.95, 0.3), "color": Color("33363a"), "resizable": true, "group": "Props", "material": "metal_dark"},
+	"washing_line": {"label": "Washing line", "kind": "compound", "size": Vector3(5, 3.0, 0.2), "color": Color("8d8a66"), "resizable": true, "group": "Props", "material": "canvas"},
 	# --- Cover (sightline blockers) --------------------------------------------------------------
 	"low_cover": {"label": "Low cover", "kind": "block", "size": Vector3(3, 1.1, 0.4), "color": Color("5b6370"), "resizable": true, "group": "Cover"},
 	"sandbag_wall": {"label": "Sandbag wall", "kind": "compound", "size": Vector3(3, 1.1, 0.8), "color": Color("a8946a"), "resizable": true, "group": "Cover", "material": "burlap"},
@@ -117,6 +124,19 @@ const TYPES: Dictionary[String, Dictionary] = {
 	# --- Lights ----------------------------------------------------------------------------------
 	"light_lamp": {"label": "Lamp light", "kind": "light", "size": Vector3(0.3, 0.3, 0.3), "color": Color("ffd9a0"), "resizable": false, "group": "Lights"},
 	"light_spot": {"label": "Spot light (down)", "kind": "light", "size": Vector3(0.3, 0.3, 0.3), "color": Color("fff1d6"), "resizable": false, "group": "Lights"},
+	# Lamp fixtures: solid pieces that carry their own light ("light": defaults, "light_at": where the
+	# light sits as a fraction of the piece size from its bottom-centre origin). The back of a wall
+	# fixture is its -Z face: put that against the wall.
+	"lamp_wall": {"label": "Wall lantern", "kind": "compound", "size": Vector3(0.36, 0.8, 0.5), "color": Color("33363a"), "resizable": true, "group": "Lights", "material": "metal_dark",
+		"light": {"energy": 1.6, "range": 8.0, "color": "ffcf8a"}, "light_at": Vector3(0, 0.5, 0.14)},
+	"lamp_post": {"label": "Street lamp", "kind": "compound", "size": Vector3(0.5, 3.8, 0.5), "color": Color("33363a"), "resizable": true, "group": "Lights", "material": "metal_dark",
+		"light": {"energy": 2.2, "range": 11.0, "color": "ffcf8a"}, "light_at": Vector3(0, 0.885, 0)},
+	"lamp_hanging": {"label": "Hanging lamp", "kind": "compound", "size": Vector3(0.6, 0.9, 0.6), "color": Color("4b5057"), "resizable": true, "group": "Lights", "material": "metal_painted",
+		"light": {"energy": 1.8, "range": 9.0, "color": "ffd9a0"}, "light_at": Vector3(0, 0.06, 0)},
+	"lamp_bulkhead": {"label": "Caged bulkhead lamp", "kind": "compound", "size": Vector3(0.34, 0.24, 0.16), "color": Color("6f7a52"), "resizable": true, "group": "Lights", "material": "metal_painted",
+		"light": {"energy": 1.5, "range": 8.0, "color": "f4ecd6"}, "light_at": Vector3(0, 0.5, 0.6)},
+	"brazier": {"label": "Brazier", "kind": "compound", "size": Vector3(0.8, 1.1, 0.8), "color": Color("33363a"), "resizable": true, "group": "Lights", "material": "metal_dark",
+		"light": {"energy": 2.2, "range": 8.0, "color": "ff9a4a"}, "light_at": Vector3(0, 1.1, 0)},
 	# --- Gameplay --------------------------------------------------------------------------------
 	"spawn_attack": {"label": "Attacker spawn", "kind": "marker", "size": Vector3(0.8, 1.8, 0.8), "color": Color("ff6a2a"), "resizable": false, "group": "Gameplay", "team": "attack"},
 	"spawn_defence": {"label": "Defender spawn", "kind": "marker", "size": Vector3(0.8, 1.8, 0.8), "color": Color("2ec4d6"), "resizable": false, "group": "Gameplay", "team": "defence"},
@@ -173,6 +193,21 @@ static func color(type: String) -> Color:
 
 static func default_material(type: String) -> String:
 	return str(info(type).get("material", ""))
+
+
+## Lamp fixtures carry a light of their own (see "light" in TYPES).
+static func is_fixture(type: String) -> bool:
+	return info(type).has("light")
+
+
+## Default light settings of a lamp fixture: energy, range and colour.
+static func fixture_light(type: String) -> Dictionary:
+	return (info(type).get("light", {}) as Dictionary).duplicate()
+
+
+## Where a fixture's light sits, relative to the piece origin, for a piece of [param size].
+static func fixture_light_position(type: String, size: Vector3) -> Vector3:
+	return (info(type).get("light_at", Vector3.ZERO) as Vector3) * size
 
 
 static func is_resizable(type: String) -> bool:

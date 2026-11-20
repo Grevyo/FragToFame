@@ -48,6 +48,10 @@ const PALETTE: Dictionary[String, Dictionary] = {
 	"mossy_stone": {"label": "Mossy fieldstone", "color": Color("7d8270"), "pattern": "stone", "repeat": 2.0},
 	"foliage": {"label": "Foliage", "color": Color("4f6b3a"), "pattern": "noise", "repeat": 1.2},
 	"slate": {"label": "Slate", "color": Color("4e5560"), "pattern": "tile", "repeat": 0.8},
+	"lamp_glass": {"label": "Lit lamp glass", "color": Color("ffe2a8"), "pattern": "plain", "repeat": 1.0,
+		"roughness": 0.2, "emission": Color("ffcf8a"), "emission_energy": 2.4},
+	"embers": {"label": "Glowing embers", "color": Color("5a2414"), "pattern": "noise", "repeat": 0.5,
+		"emission": Color("ff7a2a"), "emission_energy": 3.0},
 	"brass": {"label": "Hammered brass", "color": Color("a58348"), "pattern": "metal", "repeat": 0.8,
 		"roughness": 0.52, "metallic": 0.76},
 }
@@ -108,6 +112,10 @@ static func material(id: String, relief: float = 1.0) -> StandardMaterial3D:
 	made.uv1_scale = Vector3(scale, scale, scale)
 	made.roughness = float(entry.get("roughness", 0.86))
 	made.metallic = float(entry.get("metallic", 0.0))
+	if entry.has("emission"):
+		made.emission_enabled = true
+		made.emission = entry["emission"] as Color
+		made.emission_energy_multiplier = float(entry.get("emission_energy", 1.0))
 	_cache[id] = made
 	return made
 

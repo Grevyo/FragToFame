@@ -104,7 +104,205 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 			return _car(size)
 		"vehicle_cart":
 			return _cart(size)
+		"lamp_wall":
+			return _wall_lantern(size)
+		"lamp_post":
+			return _street_lamp(size)
+		"lamp_hanging":
+			return _hanging_lamp(size)
+		"lamp_bulkhead":
+			return _bulkhead(size)
+		"brazier":
+			return _brazier(size)
+		"pallet":
+			return _pallet(size)
+		"sack_pile":
+			return _sack_pile(size)
+		"planter":
+			return _planter(size)
+		"park_bench":
+			return _park_bench(size)
+		"notice_board":
+			return _notice_board(size)
+		"bollard":
+			return _bollard(size)
+		"washing_line":
+			return _washing_line(size)
 	return [_box(size, Vector3(0, size.y / 2.0, 0))]
+
+
+# --- Lamp fixtures (their light comes from PieceCatalog "light_at") ------------------------------
+
+## A lantern on a bracket: the back plate sits on the piece's -Z face, the lantern hangs in front.
+static func _wall_lantern(size: Vector3) -> Array[Dictionary]:
+	var w := size.x
+	var h := size.y
+	var z := size.z * 0.5 - w * 0.5
+	var parts: Array[Dictionary] = [
+		_box(Vector3(w * 0.45, h * 0.36, 0.03), Vector3(0, h * 0.76, -size.z * 0.5 + 0.015)),
+		_box(Vector3(0.04, 0.05, size.z * 0.98), Vector3(0, h * 0.94, 0)),
+		_box(Vector3(w * 0.95, h * 0.1, w * 0.95), Vector3(0, h * 0.8, z)),
+		_box(Vector3(w * 0.7, h * 0.48, w * 0.7), Vector3(0, h * 0.5, z), "lamp_glass"),
+		_box(Vector3(w * 0.8, h * 0.08, w * 0.8), Vector3(0, h * 0.22, z)),
+		_box(Vector3(0.05, h * 0.16, 0.05), Vector3(0, h * 0.1, z)),
+	]
+	for x: float in [-1.0, 1.0]:
+		for zz: float in [-1.0, 1.0]:
+			parts.append(_box(Vector3(0.03, h * 0.5, 0.03), Vector3(x * w * 0.37, h * 0.5, z + zz * w * 0.37)))
+	return parts
+
+
+static func _street_lamp(size: Vector3) -> Array[Dictionary]:
+	var w := minf(size.x, size.z)
+	var h := size.y
+	var cap := _cyl(w, h * 0.04, Vector3(0, h * 0.96, 0))
+	cap["top_radius_scale"] = 0.3
+	var parts: Array[Dictionary] = [
+		_cyl(w * 0.8, h * 0.1, Vector3(0, h * 0.05, 0)),
+		_cyl(w * 0.28, h * 0.72, Vector3(0, h * 0.46, 0)),
+		_cyl(w * 0.6, h * 0.03, Vector3(0, h * 0.835, 0)),
+		_box(Vector3(w * 0.62, h * 0.11, w * 0.62), Vector3(0, h * 0.885, 0), "lamp_glass"),
+		cap,
+		_cyl(w * 0.12, h * 0.02, Vector3(0, h * 0.99, 0)),
+	]
+	for x: float in [-1.0, 1.0]:
+		for z: float in [-1.0, 1.0]:
+			parts.append(_box(Vector3(0.03, h * 0.11, 0.03), Vector3(x * w * 0.32, h * 0.885, z * w * 0.32)))
+	return parts
+
+
+## Hangs from a ceiling: the top of the piece touches it, the bulb is at the bottom.
+static func _hanging_lamp(size: Vector3) -> Array[Dictionary]:
+	var w := minf(size.x, size.z)
+	var h := size.y
+	var shade := _cyl(w, h * 0.25, Vector3(0, h * 0.275, 0))
+	shade["top_radius_scale"] = 0.25
+	return [
+		_cyl(w * 0.3, h * 0.04, Vector3(0, h * 0.98, 0), "metal_dark"),
+		_cyl(0.03, h * 0.6, Vector3(0, h * 0.7, 0), "metal_dark"),
+		shade,
+		_cyl(w * 0.3, h * 0.12, Vector3(0, h * 0.1, 0), "lamp_glass"),
+	]
+
+
+## A caged industrial wall lamp; its back is the -Z face.
+static func _bulkhead(size: Vector3) -> Array[Dictionary]:
+	var w := size.x
+	var h := size.y
+	var d := size.z
+	var parts: Array[Dictionary] = [
+		_box(Vector3(w, h, d * 0.25), Vector3(0, h * 0.5, -d * 0.375)),
+		_box(Vector3(w * 0.8, h * 0.75, d * 0.6), Vector3(0, h * 0.5, d * 0.05), "lamp_glass"),
+		_box(Vector3(w * 0.86, 0.02, 0.02), Vector3(0, h * 0.5, d * 0.42), "metal_dark"),
+	]
+	for x: float in [-0.25, 0.0, 0.25]:
+		parts.append(_box(Vector3(0.02, h * 0.8, 0.02), Vector3(x * w, h * 0.5, d * 0.42), "metal_dark"))
+	return parts
+
+
+static func _brazier(size: Vector3) -> Array[Dictionary]:
+	var w := minf(size.x, size.z)
+	var h := size.y
+	var bowl := _cyl(w, h * 0.25, Vector3(0, h * 0.825, 0))
+	bowl["bottom_radius_scale"] = 0.6
+	var parts: Array[Dictionary] = [bowl, _cyl(w * 0.86, h * 0.05, Vector3(0, h * 0.93, 0), "embers")]
+	for x: float in [-1.0, 1.0]:
+		for z: float in [-1.0, 1.0]:
+			parts.append(_box(Vector3(0.05, h * 0.72, 0.05), Vector3(x * w * 0.28, h * 0.36, z * w * 0.28)))
+	return parts
+
+
+# --- Street props --------------------------------------------------------------------------------
+
+static func _pallet(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = []
+	for z: float in [-0.43, 0.0, 0.43]:
+		parts.append(_box(Vector3(size.x, size.y * 0.66, size.z * 0.14), Vector3(0, size.y * 0.33, z * size.z)))
+	for i: int in 5:
+		parts.append(_box(Vector3(size.x * 0.14, size.y * 0.34, size.z),
+			Vector3((float(i) / 4.0 - 0.5) * size.x * 0.86, size.y * 0.83, 0)))
+	return parts
+
+
+static func _sack_pile(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = []
+	for i: int in 3:
+		parts.append(_box(Vector3(size.x * 0.33, size.y * 0.48, size.z * 0.9),
+			Vector3((float(i) - 1.0) * size.x * 0.33, size.y * 0.24, 0), "", Vector3(0, (float(i) - 1.0) * 5.0, 0)))
+	parts.append(_box(Vector3(size.x * 0.33, size.y * 0.48, size.z * 0.8), Vector3(-size.x * 0.17, size.y * 0.72, 0), "", Vector3(0, 8, 4)))
+	parts.append(_box(Vector3(size.x * 0.33, size.y * 0.48, size.z * 0.8), Vector3(size.x * 0.17, size.y * 0.72, 0), "", Vector3(0, -6, -3)))
+	return parts
+
+
+static func _planter(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = [
+		_box(Vector3(size.x, size.y * 0.55, size.z), Vector3(0, size.y * 0.275, 0)),
+		_box(Vector3(size.x * 0.92, size.y * 0.04, size.z * 0.85), Vector3(0, size.y * 0.56, 0), "dirt"),
+	]
+	for x: float in [-0.3, 0.0, 0.3]:
+		var shrub := _cyl(size.z * 0.9, size.y * 0.45, Vector3(x * size.x, size.y * 0.775, 0), "foliage")
+		shrub["top_radius_scale"] = 0.6
+		parts.append(shrub)
+	return parts
+
+
+## The seat faces +Z; the back rest is at -Z.
+static func _park_bench(size: Vector3) -> Array[Dictionary]:
+	var parts: Array[Dictionary] = []
+	for x: float in [-1.0, 1.0]:
+		parts.append(_box(Vector3(0.06, size.y * 0.85, size.z * 0.9), Vector3(x * size.x * 0.45, size.y * 0.425, 0), "metal_dark"))
+	for z: float in [0.3, 0.1, -0.1]:
+		parts.append(_box(Vector3(size.x * 0.97, size.y * 0.06, size.z * 0.17), Vector3(0, size.y * 0.5, z * size.z)))
+	for y: float in [0.7, 0.88]:
+		parts.append(_box(Vector3(size.x * 0.97, size.y * 0.12, size.z * 0.06), Vector3(0, size.y * y, -size.z * 0.38), "", Vector3(-10, 0, 0)))
+	return parts
+
+
+## Two posts, a board with notices on its +Z face and a small drip rail on top.
+static func _notice_board(size: Vector3) -> Array[Dictionary]:
+	var d := size.z
+	var parts: Array[Dictionary] = [
+		_box(Vector3(size.x * 0.85, size.y * 0.42, d * 0.4), Vector3(0, size.y * 0.64, 0)),
+		_box(Vector3(size.x * 0.95, size.y * 0.04, d), Vector3(0, size.y * 0.87, 0), "wood_dark"),
+	]
+	for x: float in [-1.0, 1.0]:
+		parts.append(_box(Vector3(0.09, size.y * 0.89, 0.09), Vector3(x * size.x * 0.45, size.y * 0.445, 0), "wood_dark"))
+	var notes: Array[Vector3] = [Vector3(-0.26, 0.7, 0), Vector3(0.0, 0.62, 5), Vector3(0.24, 0.72, -4), Vector3(-0.1, 0.52, 3)]
+	for note: Vector3 in notes:
+		parts.append(_box(Vector3(size.x * 0.16, size.y * 0.12, 0.012),
+			Vector3(note.x * size.x, note.y * size.y, d * 0.2 + 0.008), "plaster_white", Vector3(0, 0, note.z)))
+	return parts
+
+
+static func _bollard(size: Vector3) -> Array[Dictionary]:
+	var w := minf(size.x, size.z)
+	var cap := _cyl(w * 1.1, size.y * 0.08, Vector3(0, size.y * 0.89, 0))
+	cap["top_radius_scale"] = 0.5
+	return [
+		_cyl(w, size.y * 0.85, Vector3(0, size.y * 0.425, 0)),
+		_cyl(w * 1.06, size.y * 0.05, Vector3(0, size.y * 0.2, 0)),
+		cap,
+	]
+
+
+## Two poles and a line with washing pegged out; the washing hangs above head height.
+static func _washing_line(size: Vector3) -> Array[Dictionary]:
+	var line_y := size.y * 0.93
+	var parts: Array[Dictionary] = [
+		_box(Vector3(size.x, 0.015, 0.015), Vector3(0, line_y, 0), "metal_dark"),
+	]
+	for x: float in [-1.0, 1.0]:
+		parts.append(_cyl(0.08, size.y, Vector3(x * (size.x * 0.5 - 0.04), size.y * 0.5, 0), "wood_dark"))
+	var cloths: Array[String] = ["", "cloth_striped", "cloth_blue", "limewash", "cloth_red"]
+	var count := clampi(int(size.x / 1.2), 1, 8)
+	for i: int in count:
+		var width := minf(size.x / count * 0.75, 1.0)
+		var drop := minf(0.75 if i % 2 == 0 else 0.55, line_y - 2.0)
+		if drop <= 0.05:
+			continue
+		parts.append(_box(Vector3(width, drop, 0.02),
+			Vector3((float(i) + 0.5) / count * size.x - size.x * 0.5, line_y - drop * 0.5, 0), cloths[i % cloths.size()]))
+	return parts
 
 
 static func _paling_fence(size: Vector3, props: Dictionary) -> Array[Dictionary]:

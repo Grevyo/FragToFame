@@ -21,6 +21,11 @@ func _official_id() -> String:
 	return "map_f2f_kestrel_keep"
 
 
+## Revision 2: lamp fixtures in its dark corners and everyday props along the walls.
+func _revision() -> int:
+	return 2
+
+
 func _build() -> void:
 	controller.set_metadata("Kestrel Keep", "F2F official",
 		"Granite fortress above a village. A: the Tiltyard, by the West Gate road or the Breach. B: the Cloister, by the Orchard Walk or the Undercroft. Both open onto the Bailey behind the Gatehouse.")
@@ -35,6 +40,7 @@ func _build() -> void:
 	_inner_ward()
 	_market()
 	_village()
+	_lamps_and_props()
 	_gameplay()
 	_callouts()
 	_tactical()
@@ -324,3 +330,102 @@ func _check(analysis: MapAnalysis) -> bool:
 		printerr("The rampart or the gallery cannot be reached.")
 		return false
 	return analysis.issues.is_empty()
+
+
+## Lamp fixtures wherever reachable floor sat in shade with no lamp in reach (each placed on the
+## nearest wall, or hung from the ceiling indoors), and everyday clutter against walls along the
+## routes, clear of doors, stairs, bombsites, spawns and timing chokepoints.
+func _lamps_and_props() -> void:
+	layer("Lamps")
+	for entry: Array in [
+		["lamp_hanging", Vector3(-26.00, 3.10, -29.00), 0.0],
+		["lamp_wall", Vector3(-4.00, 2.10, -45.75), 0.0],
+		["lamp_wall", Vector3(36.00, 2.10, -29.75), 0.0],
+		["lamp_wall", Vector3(52.00, 2.10, -29.75), 0.0],
+		["lamp_wall", Vector3(55.86, 2.10, -7.25), -33.0],
+		["lamp_wall", Vector3(62.97, 2.10, -6.00), -129.0],
+		["lamp_wall", Vector3(63.75, 2.10, 3.00), -90.0],
+		# Shaded lanes and yards (open to the sky, but in shadow with no lamp in reach).
+		["lamp_wall", Vector3(-60.00, 2.10, -44.75), 0.0],
+		["lamp_wall", Vector3(-58.00, 2.10, -2.75), 0.0],
+		["lamp_wall", Vector3(-58.41, 2.10, -26.25), 180.0],
+		["lamp_wall", Vector3(-50.25, 2.10, 23.00), -90.0],
+		["lamp_wall", Vector3(-52.00, 2.10, 39.75), 180.0],
+		["lamp_wall", Vector3(-50.25, 2.10, 7.00), -90.0],
+		["lamp_wall", Vector3(-48.00, 2.10, -44.75), 0.0],
+		["lamp_wall", Vector3(-38.00, 2.10, 39.75), 180.0],
+		["lamp_wall", Vector3(-36.00, 2.10, -29.75), 0.0],
+		["lamp_wall", Vector3(-33.40, 2.10, -2.15), 0.0],
+		["lamp_wall", Vector3(-32.25, 2.10, 29.00), -90.0],
+		["lamp_wall", Vector3(-32.25, 2.10, 15.00), -90.0],
+		["lamp_wall", Vector3(-30.65, 2.10, -15.14), -90.0],
+		["lamp_wall", Vector3(-26.00, 2.10, 39.75), 180.0],
+		["lamp_wall", Vector3(-22.00, 2.10, -2.75), 0.0],
+		["lamp_wall", Vector3(-20.00, 2.10, -20.75), 0.0],
+		["lamp_wall", Vector3(-16.00, 2.10, 32.25), 0.0],
+		["lamp_wall", Vector3(-12.00, 2.10, -43.45), 0.0],
+		["lamp_wall", Vector3(-19.75, 2.10, 57.00), 90.0],
+		["lamp_wall", Vector3(-10.00, 2.10, -31.05), 180.0],
+		["lamp_wall", Vector3(-8.56, 2.10, 2.77), 69.0],
+		["lamp_wall", Vector3(-10.00, 2.10, 32.25), 0.0],
+		["lamp_wall", Vector3(-2.75, 2.10, -30.00), 90.0],
+		["lamp_wall", Vector3(4.00, 2.10, -31.05), 180.0],
+		["lamp_wall", Vector3(9.93, 2.10, 4.01), -16.0],
+		["lamp_wall", Vector3(6.00, 2.10, 21.75), 180.0],
+		["lamp_wall", Vector3(12.00, 2.10, -43.45), 0.0],
+		["lamp_wall", Vector3(23.75, 2.10, 11.00), -90.0],
+		["lamp_wall", Vector3(16.00, 2.10, 32.25), 0.0],
+		["lamp_wall", Vector3(22.00, 2.10, -2.75), 0.0],
+		["lamp_wall", Vector3(19.75, 2.10, 49.00), -90.0],
+		["lamp_wall", Vector3(19.75, 2.10, 59.00), -90.0],
+		["lamp_wall", Vector3(23.75, 2.10, 19.00), -90.0],
+		["lamp_wall", Vector3(29.35, 2.10, -25.00), -90.0],
+		["lamp_wall", Vector3(28.00, 2.10, 32.25), 0.0],
+		["lamp_wall", Vector3(29.35, 2.10, -11.00), -90.0],
+		["lamp_wall", Vector3(32.75, 2.10, 1.00), -90.0],
+		["lamp_wall", Vector3(32.25, 2.10, 13.00), 90.0],
+		["lamp_wall", Vector3(32.25, 2.10, 25.00), 90.0],
+		["lamp_wall", Vector3(42.00, 2.10, -44.75), 0.0],
+		["lamp_wall", Vector3(42.00, 2.10, 34.25), 0.0],
+		["lamp_wall", Vector3(52.00, 2.10, -44.75), 0.0],
+		["lamp_wall", Vector3(50.25, 2.10, 33.00), 90.0],
+		["lamp_wall", Vector3(63.75, 2.10, 17.00), -90.0],
+		["lamp_wall", Vector3(63.75, 2.10, 27.00), -90.0],
+		["lamp_wall", Vector3(65.75, 2.10, -39.00), -90.0],
+		["lamp_wall", Vector3(63.75, 2.10, 37.00), -90.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+	layer("Street life")
+	for entry: Array in [
+		["sack_pile", Vector3(28.00, 0.00, 32.61), 0.0],
+		["coopered_barrel", Vector3(60.00, 0.00, -31.27), 180.0],
+		["pottery_jar", Vector3(46.00, 0.00, 39.54), 180.0],
+		["planter", Vector3(18.00, 0.00, -4.36), 180.0],
+		["notice_board", Vector3(-8.00, 0.00, 21.87), 180.0],
+		["stone_trough", Vector3(14.00, 0.00, 21.51), 180.0],
+		["brazier", Vector3(11.59, 4.50, -4.46), 180.0],
+		["sack_pile", Vector3(-40.00, 0.00, 34.61), 0.0],
+		["coopered_barrel", Vector3(-16.00, 0.00, 32.47), 0.0],
+		["pottery_jar", Vector3(42.00, 0.00, -4.46), 180.0],
+		["planter", Vector3(-50.00, 0.00, 39.64), 180.0],
+		["notice_board", Vector3(10.00, 0.00, 32.13), 0.0],
+		["stone_trough", Vector3(30.00, 0.00, 5.51), 180.0],
+		["brazier", Vector3(-26.00, 0.00, -4.46), 180.0],
+		["sack_pile", Vector3(-28.00, 0.00, 32.61), 0.0],
+		["coopered_barrel", Vector3(-11.65, 0.00, 4.00), -30.0],
+		["pottery_jar", Vector3(-6.00, 0.00, -8.46), 180.0],
+		["planter", Vector3(-60.64, 0.00, -7.00), 90.0],
+		["notice_board", Vector3(11.48, 0.00, 3.71), 30.0],
+		["stone_trough", Vector3(-40.00, 0.00, -29.51), 0.0],
+		["brazier", Vector3(18.00, 0.00, -29.54), 0.0],
+		["sack_pile", Vector3(-20.00, 0.00, -31.41), 180.0],
+		["coopered_barrel", Vector3(28.00, 0.00, -29.53), 0.0],
+		["pottery_jar", Vector3(6.00, 0.00, 21.54), 180.0],
+		["planter", Vector3(-18.00, 0.00, -4.36), 180.0],
+		["notice_board", Vector3(32.87, 0.00, -9.00), -90.0],
+		["stone_trough", Vector3(60.00, 0.00, -9.51), 0.0],
+		["brazier", Vector3(38.00, 0.00, 39.54), 180.0],
+		["sack_pile", Vector3(-62.00, 0.00, 39.39), 180.0],
+		["coopered_barrel", Vector3(-30.00, 0.00, -31.27), 180.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))

@@ -1,7 +1,7 @@
 {
 	"author": "F2F official",
-	"content_hash": "abebc06412dd5a80a6b1de450e3a2566b00031567467bcba37cc7ec320be6b98",
-	"content_version": 18,
+	"content_hash": "f3f84065fd64cfd0203e4378b85e92f5b7b985cd9b9a4545c73cdb373f098320",
+	"content_version": 19,
 	"description": "A harbour chronometer exchange. From the ticket quay, thread the exchange corridors to the dispatch yard or take the glass-plate stairs below the harbour office.",
 	"format": "f2f.map",
 	"format_version": 2,
@@ -93,6 +93,18 @@
 		{
 			"id": "layer_14",
 			"locked": false,
+			"name": "Lamps",
+			"visible": true
+		},
+		{
+			"id": "layer_15",
+			"locked": false,
+			"name": "Street life",
+			"visible": true
+		},
+		{
+			"id": "layer_16",
+			"locked": false,
 			"name": "Match layout",
 			"visible": true
 		}
@@ -109,8 +121,8 @@
 	"map_id": "map_f2f_cluts",
 	"name": "Cluts",
 	"next_group_number": 1,
-	"next_layer_number": 15,
-	"next_piece_number": 826,
+	"next_layer_number": 17,
+	"next_piece_number": 931,
 	"next_prefab_number": 1,
 	"pieces": [
 		{
@@ -10024,7 +10036,7 @@
 			"material": "",
 			"position": [
 				51.3577117919922,
-				0.899999976158142,
+				2.09999990463257,
 				34.797550201416
 			],
 			"props": {
@@ -10072,7 +10084,7 @@
 			"material": "",
 			"position": [
 				47.3852119445801,
-				0.0,
+				1.20000004768372,
 				34.6925506591797
 			],
 			"props": {
@@ -11109,7 +11121,7 @@
 			"material": "",
 			"position": [
 				11.5781478881836,
-				0.899999976158142,
+				2.29999995231628,
 				25.9444732666016
 			],
 			"props": {
@@ -11157,7 +11169,7 @@
 			"material": "",
 			"position": [
 				7.64259243011475,
-				0.899999976158142,
+				2.29999995231628,
 				26.0222511291504
 			],
 			"props": {
@@ -11205,7 +11217,7 @@
 			"material": "",
 			"position": [
 				3.70703721046448,
-				0.0,
+				1.39999997615814,
 				26.1000289916992
 			],
 			"props": {
@@ -11252,7 +11264,7 @@
 			"material": "",
 			"position": [
 				-0.22851736843586,
-				0.899999976158142,
+				2.29999995231628,
 				26.177806854248
 			],
 			"props": {
@@ -26424,7 +26436,7 @@
 			"layer": "layer_7",
 			"material": "",
 			"position": [
-				2.40000009536743,
+				0.600000023841858,
 				1.39999997615814,
 				24.7999992370605
 			],
@@ -26545,7 +26557,7 @@
 			"layer": "layer_7",
 			"material": "",
 			"position": [
-				46.4000015258789,
+				45.2999992370605,
 				1.20000004768372,
 				34.2000007629395
 			],
@@ -30824,7 +30836,7 @@
 			"position": [
 				12.0,
 				-3.54999995231628,
-				18.4500007629395
+				19.5499992370605
 			],
 			"props": {},
 			"rotation_y": 0.0,
@@ -30843,7 +30855,7 @@
 			"position": [
 				7.0,
 				-5.0,
-				17.7999992370605
+				18.9500007629395
 			],
 			"props": {
 				"relief": 1.3
@@ -30864,7 +30876,7 @@
 			"position": [
 				7.0,
 				-3.70000004768372,
-				18.0799999237061
+				19.1000003814697
 			],
 			"props": {},
 			"rotation_y": 90.0,
@@ -30883,7 +30895,7 @@
 			"position": [
 				11.0,
 				-5.0,
-				17.7999992370605
+				18.9500007629395
 			],
 			"props": {
 				"relief": 1.3
@@ -30904,7 +30916,7 @@
 			"position": [
 				11.0,
 				-3.70000004768372,
-				18.0799999237061
+				19.1000003814697
 			],
 			"props": {},
 			"rotation_y": 90.0,
@@ -30923,7 +30935,7 @@
 			"position": [
 				15.0,
 				-5.0,
-				17.7999992370605
+				18.9500007629395
 			],
 			"props": {
 				"relief": 1.3
@@ -30944,7 +30956,7 @@
 			"position": [
 				15.0,
 				-3.70000004768372,
-				18.0799999237061
+				19.1000003814697
 			],
 			"props": {},
 			"rotation_y": 90.0,
@@ -33821,16 +33833,18 @@
 			"position": [
 				-17.0,
 				0.0,
-				-24.2999992370605
+				-24.3799991607666
 			],
-			"props": {},
+			"props": {
+				"relief": 1.6
+			},
 			"rotation_y": 357.7,
 			"size": [
-				4.40000009536743,
-				2.90000009536743,
-				0.360000014305115
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
 			],
-			"type": "freight_gate"
+			"type": "notice_board"
 		},
 		{
 			"group": "",
@@ -33838,64 +33852,26 @@
 			"layer": "layer_12",
 			"material": "",
 			"position": [
-				-17.0,
-				3.0,
-				-24.1000003814697
+				-14.3999996185303,
+				2.29999995231628,
+				-24.2999992370605
 			],
 			"props": {
-				"text": "CHRONOMETER EXCHANGE"
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
 			},
 			"rotation_y": 357.7,
 			"size": [
-				6.5,
-				0.550000011920929,
-				0.0799999982118607
+				0.360000014305115,
+				0.800000011920929,
+				0.5
 			],
-			"type": "enamel_sign"
+			"type": "lamp_wall"
 		},
 		{
 			"group": "",
 			"id": "pc_690",
-			"layer": "layer_12",
-			"material": "",
-			"position": [
-				0.0,
-				0.0,
-				-9.38000011444092
-			],
-			"props": {},
-			"rotation_y": 0.0,
-			"size": [
-				4.0,
-				2.90000009536743,
-				0.360000014305115
-			],
-			"type": "freight_gate"
-		},
-		{
-			"group": "",
-			"id": "pc_691",
-			"layer": "layer_12",
-			"material": "",
-			"position": [
-				0.0,
-				3.0,
-				-9.18000030517578
-			],
-			"props": {
-				"text": "CHRONOMETER RETURNS"
-			},
-			"rotation_y": 0.0,
-			"size": [
-				5.0,
-				0.449999988079071,
-				0.0799999982118607
-			],
-			"type": "enamel_sign"
-		},
-		{
-			"group": "",
-			"id": "pc_692",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -33916,47 +33892,74 @@
 		},
 		{
 			"group": "",
-			"id": "pc_693",
+			"id": "pc_691",
+			"layer": "layer_12",
+			"material": "",
+			"position": [
+				-1.20000004768372,
+				2.29999995231628,
+				-9.30000019073486
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_692",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
 				33.0,
 				0.0,
-				18.3799991607666
+				18.4899997711182
 			],
-			"props": {},
-			"rotation_y": 0.0,
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 180.0,
 			"size": [
-				5.0,
-				2.90000009536743,
-				0.360000014305115
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
 			],
-			"type": "freight_gate"
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_693",
+			"layer": "layer_12",
+			"material": "",
+			"position": [
+				30.6000003814697,
+				2.29999995231628,
+				18.2999992370605
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
 		},
 		{
 			"group": "",
 			"id": "pc_694",
-			"layer": "layer_12",
-			"material": "",
-			"position": [
-				33.0,
-				3.0,
-				18.1800003051758
-			],
-			"props": {
-				"text": "GLASS PLATES  /  GOODS IN"
-			},
-			"rotation_y": 180.0,
-			"size": [
-				6.0,
-				0.5,
-				0.0799999982118607
-			],
-			"type": "enamel_sign"
-		},
-		{
-			"group": "",
-			"id": "pc_695",
 			"layer": "layer_12",
 			"material": "limewash",
 			"position": [
@@ -33977,7 +33980,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_696",
+			"id": "pc_695",
 			"layer": "layer_12",
 			"material": "slate",
 			"position": [
@@ -33998,7 +34001,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_697",
+			"id": "pc_696",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34021,7 +34024,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_698",
+			"id": "pc_697",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34045,7 +34048,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_699",
+			"id": "pc_698",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34066,7 +34069,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_700",
+			"id": "pc_699",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34087,7 +34090,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_701",
+			"id": "pc_700",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34109,7 +34112,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_702",
+			"id": "pc_701",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34130,7 +34133,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_703",
+			"id": "pc_702",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34149,7 +34152,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_704",
+			"id": "pc_703",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34171,7 +34174,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_705",
+			"id": "pc_704",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34193,7 +34196,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_706",
+			"id": "pc_705",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34212,7 +34215,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_707",
+			"id": "pc_706",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34231,7 +34234,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_708",
+			"id": "pc_707",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34250,7 +34253,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_709",
+			"id": "pc_708",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34269,7 +34272,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_710",
+			"id": "pc_709",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34288,7 +34291,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_711",
+			"id": "pc_710",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34307,7 +34310,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_712",
+			"id": "pc_711",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34326,7 +34329,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_713",
+			"id": "pc_712",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34345,7 +34348,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_714",
+			"id": "pc_713",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34364,7 +34367,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_715",
+			"id": "pc_714",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34383,7 +34386,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_716",
+			"id": "pc_715",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34402,7 +34405,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_717",
+			"id": "pc_716",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34421,7 +34424,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_718",
+			"id": "pc_717",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34440,7 +34443,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_719",
+			"id": "pc_718",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34459,7 +34462,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_720",
+			"id": "pc_719",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34478,7 +34481,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_721",
+			"id": "pc_720",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34497,7 +34500,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_722",
+			"id": "pc_721",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34516,7 +34519,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_723",
+			"id": "pc_722",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34535,7 +34538,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_724",
+			"id": "pc_723",
 			"layer": "layer_12",
 			"material": "brass",
 			"position": [
@@ -34554,7 +34557,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_725",
+			"id": "pc_724",
 			"layer": "layer_12",
 			"material": "mud_brick",
 			"position": [
@@ -34575,7 +34578,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_726",
+			"id": "pc_725",
 			"layer": "layer_12",
 			"material": "limestone",
 			"position": [
@@ -34596,7 +34599,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_727",
+			"id": "pc_726",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34615,7 +34618,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_728",
+			"id": "pc_727",
 			"layer": "layer_12",
 			"material": "slate",
 			"position": [
@@ -34636,7 +34639,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_729",
+			"id": "pc_728",
 			"layer": "layer_12",
 			"material": "slate",
 			"position": [
@@ -34657,7 +34660,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_730",
+			"id": "pc_729",
 			"layer": "layer_12",
 			"material": "slate",
 			"position": [
@@ -34678,7 +34681,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_731",
+			"id": "pc_730",
 			"layer": "layer_12",
 			"material": "",
 			"position": [
@@ -34699,7 +34702,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_732",
+			"id": "pc_731",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34718,7 +34721,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_733",
+			"id": "pc_732",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34737,7 +34740,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_734",
+			"id": "pc_733",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34758,7 +34761,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_735",
+			"id": "pc_734",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34777,7 +34780,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_736",
+			"id": "pc_735",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34796,7 +34799,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_737",
+			"id": "pc_736",
 			"layer": "layer_13",
 			"material": "limestone",
 			"position": [
@@ -34817,7 +34820,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_738",
+			"id": "pc_737",
 			"layer": "layer_13",
 			"material": "limestone",
 			"position": [
@@ -34838,7 +34841,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_739",
+			"id": "pc_738",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34857,7 +34860,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_740",
+			"id": "pc_739",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34876,7 +34879,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_741",
+			"id": "pc_740",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34895,7 +34898,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_742",
+			"id": "pc_741",
 			"layer": "layer_13",
 			"material": "limestone",
 			"position": [
@@ -34916,7 +34919,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_743",
+			"id": "pc_742",
 			"layer": "layer_13",
 			"material": "limestone",
 			"position": [
@@ -34937,7 +34940,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_744",
+			"id": "pc_743",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34956,7 +34959,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_745",
+			"id": "pc_744",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34975,7 +34978,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_746",
+			"id": "pc_745",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -34996,7 +34999,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_747",
+			"id": "pc_746",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35015,7 +35018,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_748",
+			"id": "pc_747",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35034,7 +35037,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_749",
+			"id": "pc_748",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35053,7 +35056,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_750",
+			"id": "pc_749",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35072,7 +35075,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_751",
+			"id": "pc_750",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35091,7 +35094,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_752",
+			"id": "pc_751",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35110,7 +35113,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_753",
+			"id": "pc_752",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35129,7 +35132,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_754",
+			"id": "pc_753",
 			"layer": "layer_13",
 			"material": "limewash",
 			"position": [
@@ -35150,7 +35153,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_755",
+			"id": "pc_754",
 			"layer": "layer_13",
 			"material": "slate",
 			"position": [
@@ -35171,7 +35174,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_756",
+			"id": "pc_755",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35194,7 +35197,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_757",
+			"id": "pc_756",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35218,7 +35221,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_758",
+			"id": "pc_757",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35239,7 +35242,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_759",
+			"id": "pc_758",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35262,7 +35265,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_760",
+			"id": "pc_759",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35283,7 +35286,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_761",
+			"id": "pc_760",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35302,7 +35305,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_762",
+			"id": "pc_761",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35321,7 +35324,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_763",
+			"id": "pc_762",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35340,7 +35343,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_764",
+			"id": "pc_763",
 			"layer": "layer_13",
 			"material": "granite_blocks",
 			"position": [
@@ -35361,7 +35364,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_765",
+			"id": "pc_764",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35380,7 +35383,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_766",
+			"id": "pc_765",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35399,7 +35402,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_767",
+			"id": "pc_766",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35418,7 +35421,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_768",
+			"id": "pc_767",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35437,7 +35440,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_769",
+			"id": "pc_768",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35456,7 +35459,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_770",
+			"id": "pc_769",
 			"layer": "layer_13",
 			"material": "granite_blocks",
 			"position": [
@@ -35477,7 +35480,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_771",
+			"id": "pc_770",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35496,7 +35499,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_772",
+			"id": "pc_771",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35515,7 +35518,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_773",
+			"id": "pc_772",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35534,7 +35537,7 @@
 		},
 		{
 			"group": "",
-			"id": "pc_774",
+			"id": "pc_773",
 			"layer": "layer_13",
 			"material": "",
 			"position": [
@@ -35553,8 +35556,2362 @@
 		},
 		{
 			"group": "",
+			"id": "pc_774",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-42.0,
+				-1.5,
+				-20.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
 			"id": "pc_775",
 			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-42.0,
+				-1.5,
+				-6.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_776",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-45.4500007629395,
+				-1.94000005722046,
+				-0.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_777",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-42.75,
+				0.370000004768372,
+				5.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_778",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-38.0,
+				6.25,
+				9.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_779",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-36.0,
+				-1.5,
+				-18.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_780",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-34.0,
+				-1.5,
+				-8.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_781",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-34.0,
+				-1.5,
+				-2.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_782",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-36.0,
+				-1.5,
+				5.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_783",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.0,
+				-1.5,
+				-10.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_784",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.0,
+				-1.5,
+				-2.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_785",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.0,
+				2.09999990463257,
+				11.6400003433228
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_786",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-16.0,
+				-1.5,
+				-20.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_787",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-12.0,
+				-1.5,
+				7.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_788",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-8.0,
+				-1.5,
+				-20.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_789",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-8.0,
+				-1.5,
+				-12.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_790",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				4.0,
+				-1.5,
+				-8.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_791",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				4.0,
+				-1.5,
+				-2.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_792",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				4.0,
+				-1.5,
+				11.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_793",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				10.0,
+				-1.5,
+				5.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_794",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				8.0,
+				-1.5,
+				15.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_795",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				10.0,
+				-1.5,
+				-24.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_796",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				10.0,
+				-1.5,
+				-10.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_797",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				16.0,
+				-1.5,
+				9.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_798",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				16.0,
+				-1.5,
+				-8.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_799",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				18.0,
+				-1.5,
+				17.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_800",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				18.0,
+				-1.5,
+				-24.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_801",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				22.0,
+				-1.5,
+				1.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_802",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				24.0,
+				-1.5,
+				-16.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_803",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				24.0,
+				-1.5,
+				9.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_804",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				24.0,
+				-1.5,
+				27.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_805",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				28.0,
+				-1.5,
+				-24.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_806",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				26.0,
+				-1.5,
+				31.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_807",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				28.0,
+				-1.5,
+				-0.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_808",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				30.0,
+				-1.5,
+				-18.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_809",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				32.0,
+				-1.5,
+				7.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_810",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				34.0,
+				-1.5,
+				13.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_811",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				36.0,
+				-1.5,
+				31.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_812",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				36.0,
+				-1.5,
+				-0.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_813",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				36.0,
+				-1.5,
+				23.5
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_814",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-38.7900009155273,
+				2.09999990463257,
+				-24.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_815",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-42.9500007629395,
+				2.09999990463257,
+				10.1700000762939
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_816",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-34.8199996948242,
+				2.15000009536743,
+				-12.7399997711182
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_817",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-32.0099983215332,
+				2.09999990463257,
+				-32.1100006103516
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 357.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_818",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-24.6700000762939,
+				2.09999990463257,
+				-18.4899997711182
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 88.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_819",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-23.4200000762939,
+				2.09999990463257,
+				-2.08999991416931
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 320.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_820",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.4500007629395,
+				2.09999990463257,
+				-31.2900009155273
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 357.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_821",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.1399993896484,
+				2.09999990463257,
+				5.53000020980835
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 287.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_822",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-12.0100002288818,
+				2.09999990463257,
+				-19.5499992370605
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 359.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_823",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-7.21999979019165,
+				2.09999990463257,
+				-32.0999984741211
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 3.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_824",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-6.0,
+				2.09999990463257,
+				-9.23999977111816
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_825",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				1.98000001907349,
+				2.09999990463257,
+				-18.6499996185303
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 355.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_826",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				6.01000022888184,
+				2.09999990463257,
+				-32.7900009155273
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 3.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_827",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				7.11999988555908,
+				2.09999990463257,
+				5.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_828",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				11.9700002670288,
+				2.09999990463257,
+				-8.67000007629395
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 353.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_829",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				16.0100002288818,
+				2.09999990463257,
+				-33.310001373291
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 3.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_830",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				20.6800003051758,
+				2.09999990463257,
+				3.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 269.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_831",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				18.1299991607666,
+				2.09999990463257,
+				-18.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_832",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				22.0,
+				2.09999990463257,
+				-7.88000011444092
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 359.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_833",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				31.3299999237061,
+				2.09999990463257,
+				11.1999998092651
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_834",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				25.0499992370605,
+				2.09999990463257,
+				31.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_835",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				28.0,
+				2.09999990463257,
+				-33.3199996948242
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 1.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_836",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				29.9599990844727,
+				2.09999990463257,
+				-16.8899993896484
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 351.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_837",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				31.0100002288818,
+				2.09999990463257,
+				-0.5
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_838",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				34.0,
+				2.09999990463257,
+				19.4799995422363
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_839",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				34.0099983215332,
+				2.09999990463257,
+				34.2400016784668
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 178.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_840",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				38.0,
+				2.09999990463257,
+				-33.4799995422363
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 1.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_841",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				46.0200004577637,
+				2.09999990463257,
+				-15.6999998092651
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 4.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_842",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				50.0,
+				2.09999990463257,
+				18.3199996948242
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_843",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				51.0900001525879,
+				2.09999990463257,
+				-22.5100002288818
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 268.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_844",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				50.0800018310547,
+				2.24000000953674,
+				-1.51999998092651
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 274.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_845",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				50.7599983215332,
+				2.09999990463257,
+				7.51999998092651
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 274.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_846",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				52.4199981689453,
+				2.09999990463257,
+				29.5200004577637
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 274.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_847",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				10.4099998474121,
+				0.0,
+				22.1299991607666
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 180.0,
+			"size": [
+				1.79999995231628,
+				0.899999976158142,
+				0.620000004768372
+			],
+			"type": "park_bench"
+		},
+		{
+			"group": "",
+			"id": "pc_848",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-22.0,
+				-5.0,
+				8.09000015258789
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_849",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-14.2200002670288,
+				-5.0,
+				9.5
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_850",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-20.0,
+				0.0,
+				20.5499992370605
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 179.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_851",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-26.8199996948242,
+				0.0,
+				11.1499996185303
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_852",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-6.0,
+				-5.0,
+				-22.3799991607666
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				1.45000004768372,
+				1.85000002384186,
+				0.519999980926514
+			],
+			"type": "market_shelf"
+		},
+		{
+			"group": "",
+			"id": "pc_853",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				4.0,
+				-5.0,
+				8.77000045776367
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_854",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				20.0100002288818,
+				0.0,
+				-33.0699996948242
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 1.0,
+			"size": [
+				1.79999995231628,
+				0.899999976158142,
+				0.620000004768372
+			],
+			"type": "park_bench"
+		},
+		{
+			"group": "",
+			"id": "pc_855",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				22.2299995422363,
+				-5.0,
+				-0.5
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_856",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-18.0,
+				-5.0,
+				-22.2299995422363
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_857",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-27.8600006103516,
+				-5.0,
+				3.21000003814697
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				2.40000009536743,
+				1.0,
+				1.0
+			],
+			"type": "crate_long"
+		},
+		{
+			"group": "",
+			"id": "pc_858",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-15.6199998855591,
+				-5.0,
+				-6.5
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 270.0,
+			"size": [
+				1.45000004768372,
+				1.85000002384186,
+				0.519999980926514
+			],
+			"type": "market_shelf"
+		},
+		{
+			"group": "",
+			"id": "pc_859",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				4.19999980926514,
+				0.0,
+				3.36999988555908
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 120.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_860",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				0.0,
+				-5.0,
+				-2.91000008583069
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_861",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-10.2200002670288,
+				-5.0,
+				-12.5
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_862",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				50.5,
+				0.0,
+				5.53000020980835
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 274.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_863",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-15.3800001144409,
+				0.0,
+				-31.3199996948242
+			],
+			"props": {},
+			"rotation_y": 3.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_864",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				38.0,
+				0.0,
+				-33.5999984741211
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 1.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_865",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				20.0,
+				-5.0,
+				19.0499992370605
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_866",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-22.0,
+				-5.0,
+				-10.0900001525879
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_867",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-46.5699996948242,
+				0.0,
+				-8.52000045776367
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 94.0,
+			"size": [
+				1.79999995231628,
+				0.899999976158142,
+				0.620000004768372
+			],
+			"type": "park_bench"
+		},
+		{
+			"group": "",
+			"id": "pc_868",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-38.0,
+				0.00999999977648258,
+				-24.6399993896484
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_869",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-6.0,
+				-5.0,
+				13.3800001144409
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 180.0,
+			"size": [
+				1.45000004768372,
+				1.85000002384186,
+				0.519999980926514
+			],
+			"type": "market_shelf"
+		},
+		{
+			"group": "",
+			"id": "pc_870",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-24.0,
+				-5.0,
+				-2.76999998092651
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_871",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-36.310001373291,
+				-5.0,
+				-16.5
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_872",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-46.8899993896484,
+				0.0,
+				-18.5100002288818
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 91.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_873",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				22.2299995422363,
+				0.0,
+				29.4899997711182
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 91.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_874",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				48.0099983215332,
+				0.0,
+				-33.5200004577637
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 1.0,
+			"size": [
+				1.79999995231628,
+				0.899999976158142,
+				0.620000004768372
+			],
+			"type": "park_bench"
+		},
+		{
+			"group": "",
+			"id": "pc_875",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-32.0,
+				-5.0,
+				-10.3800001144409
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				1.45000004768372,
+				1.85000002384186,
+				0.519999980926514
+			],
+			"type": "market_shelf"
+		},
+		{
+			"group": "",
+			"id": "pc_876",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				1.5900000333786,
+				0.0,
+				21.8899993896484
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_877",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				23.9099998474121,
+				-5.0,
+				7.5
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_878",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				-13.4200000762939,
+				0.0,
+				25.4300003051758
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 97.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_879",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
+				6.0,
+				-5.0,
+				-10.2299995422363
+			],
+			"props": {
+				"relief": 1.6
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_880",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-40.0,
@@ -35574,8 +37931,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_776",
-			"layer": "layer_14",
+			"id": "pc_881",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-38.0,
@@ -35595,8 +37952,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_777",
-			"layer": "layer_14",
+			"id": "pc_882",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-36.0,
@@ -35616,8 +37973,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_778",
-			"layer": "layer_14",
+			"id": "pc_883",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-34.0,
@@ -35637,8 +37994,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_779",
-			"layer": "layer_14",
+			"id": "pc_884",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-32.0,
@@ -35658,8 +38015,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_780",
-			"layer": "layer_14",
+			"id": "pc_885",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-36.0,
@@ -35679,8 +38036,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_781",
-			"layer": "layer_14",
+			"id": "pc_886",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				45.5,
@@ -35700,8 +38057,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_782",
-			"layer": "layer_14",
+			"id": "pc_887",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				43.5,
@@ -35721,8 +38078,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_783",
-			"layer": "layer_14",
+			"id": "pc_888",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				47.5,
@@ -35742,8 +38099,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_784",
-			"layer": "layer_14",
+			"id": "pc_889",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.5,
@@ -35763,8 +38120,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_785",
-			"layer": "layer_14",
+			"id": "pc_890",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				49.5,
@@ -35784,8 +38141,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_786",
-			"layer": "layer_14",
+			"id": "pc_891",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				45.5,
@@ -35805,8 +38162,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_787",
-			"layer": "layer_14",
+			"id": "pc_892",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				43.0,
@@ -35826,8 +38183,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_788",
-			"layer": "layer_14",
+			"id": "pc_893",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.0,
@@ -35848,8 +38205,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_789",
-			"layer": "layer_14",
+			"id": "pc_894",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				45.0,
@@ -35869,8 +38226,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_790",
-			"layer": "layer_14",
+			"id": "pc_895",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				45.0,
@@ -35891,8 +38248,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_791",
-			"layer": "layer_14",
+			"id": "pc_896",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				45.0,
@@ -35912,8 +38269,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_792",
-			"layer": "layer_14",
+			"id": "pc_897",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				31.0,
@@ -35933,8 +38290,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_793",
-			"layer": "layer_14",
+			"id": "pc_898",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				29.0,
@@ -35955,8 +38312,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_794",
-			"layer": "layer_14",
+			"id": "pc_899",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				29.0,
@@ -35976,8 +38333,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_795",
-			"layer": "layer_14",
+			"id": "pc_900",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				33.0,
@@ -35998,8 +38355,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_796",
-			"layer": "layer_14",
+			"id": "pc_901",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				33.0,
@@ -36019,8 +38376,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_797",
-			"layer": "layer_14",
+			"id": "pc_902",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-32.0,
@@ -36041,8 +38398,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_798",
-			"layer": "layer_14",
+			"id": "pc_903",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-31.0,
@@ -36063,8 +38420,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_799",
-			"layer": "layer_14",
+			"id": "pc_904",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.0,
@@ -36085,8 +38442,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_800",
-			"layer": "layer_14",
+			"id": "pc_905",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				42.0,
@@ -36107,8 +38464,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_801",
-			"layer": "layer_14",
+			"id": "pc_906",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				13.0,
@@ -36129,8 +38486,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_802",
-			"layer": "layer_14",
+			"id": "pc_907",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				14.0,
@@ -36151,8 +38508,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_803",
-			"layer": "layer_14",
+			"id": "pc_908",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-36.5,
@@ -36173,8 +38530,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_804",
-			"layer": "layer_14",
+			"id": "pc_909",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				43.5,
@@ -36195,8 +38552,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_805",
-			"layer": "layer_14",
+			"id": "pc_910",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				32.5,
@@ -36217,8 +38574,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_806",
-			"layer": "layer_14",
+			"id": "pc_911",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				33.5,
@@ -36239,8 +38596,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_807",
-			"layer": "layer_14",
+			"id": "pc_912",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				44.0,
@@ -36261,8 +38618,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_808",
-			"layer": "layer_14",
+			"id": "pc_913",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-1.0,
@@ -36283,8 +38640,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_809",
-			"layer": "layer_14",
+			"id": "pc_914",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-0.5,
@@ -36305,8 +38662,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_810",
-			"layer": "layer_14",
+			"id": "pc_915",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-15.0,
@@ -36327,8 +38684,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_811",
-			"layer": "layer_14",
+			"id": "pc_916",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-29.0,
@@ -36349,8 +38706,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_812",
-			"layer": "layer_14",
+			"id": "pc_917",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				46.5,
@@ -36371,8 +38728,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_813",
-			"layer": "layer_14",
+			"id": "pc_918",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				46.0,
@@ -36393,8 +38750,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_814",
-			"layer": "layer_14",
+			"id": "pc_919",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.0,
@@ -36415,8 +38772,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_815",
-			"layer": "layer_14",
+			"id": "pc_920",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-40.0,
@@ -36437,8 +38794,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_816",
-			"layer": "layer_14",
+			"id": "pc_921",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-12.0,
@@ -36459,8 +38816,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_817",
-			"layer": "layer_14",
+			"id": "pc_922",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				31.0,
@@ -36481,8 +38838,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_818",
-			"layer": "layer_14",
+			"id": "pc_923",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				26.5,
@@ -36503,8 +38860,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_819",
-			"layer": "layer_14",
+			"id": "pc_924",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				28.5,
@@ -36525,8 +38882,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_820",
-			"layer": "layer_14",
+			"id": "pc_925",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				33.2000007629395,
@@ -36547,8 +38904,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_821",
-			"layer": "layer_14",
+			"id": "pc_926",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				32.5,
@@ -36569,8 +38926,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_822",
-			"layer": "layer_14",
+			"id": "pc_927",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				31.5,
@@ -36591,8 +38948,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_823",
-			"layer": "layer_14",
+			"id": "pc_928",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.5,
@@ -36613,8 +38970,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_824",
-			"layer": "layer_14",
+			"id": "pc_929",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				30.7999992370605,
@@ -36635,8 +38992,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_825",
-			"layer": "layer_14",
+			"id": "pc_930",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.0,
@@ -36657,5 +39014,5 @@
 		}
 	],
 	"prefabs": [],
-	"revision": 18
+	"revision": 19
 }

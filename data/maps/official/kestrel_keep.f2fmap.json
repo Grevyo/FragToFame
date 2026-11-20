@@ -1,7 +1,7 @@
 {
 	"author": "F2F official",
-	"content_hash": "d2f188006a41723f6d32fb05500f615bc7adae2cca0a88a0dcb9d774f062a479",
-	"content_version": 1,
+	"content_hash": "df8bc3449c677dc36f890dff0868a537975b4126ba48a3724df49ca8cbf9daba",
+	"content_version": 2,
 	"description": "Granite fortress above a village. A: the Tiltyard, by the West Gate road or the Breach. B: the Cloister, by the Orchard Walk or the Undercroft. Both open onto the Bailey behind the Gatehouse.",
 	"format": "f2f.map",
 	"format_version": 2,
@@ -87,11 +87,23 @@
 		{
 			"id": "layer_13",
 			"locked": false,
-			"name": "Gameplay",
+			"name": "Lamps",
 			"visible": true
 		},
 		{
 			"id": "layer_14",
+			"locked": false,
+			"name": "Street life",
+			"visible": true
+		},
+		{
+			"id": "layer_15",
+			"locked": false,
+			"name": "Gameplay",
+			"visible": true
+		},
+		{
+			"id": "layer_16",
 			"locked": false,
 			"name": "Tactics",
 			"visible": true
@@ -108,8 +120,8 @@
 	"map_id": "map_f2f_kestrel_keep",
 	"name": "Kestrel Keep",
 	"next_group_number": 1,
-	"next_layer_number": 15,
-	"next_piece_number": 237,
+	"next_layer_number": 17,
+	"next_piece_number": 321,
 	"next_prefab_number": 1,
 	"pieces": [
 		{
@@ -3303,6 +3315,1834 @@
 			"layer": "layer_13",
 			"material": "",
 			"position": [
+				-26.0,
+				3.09999990463257,
+				-29.0
+			],
+			"props": {
+				"color": "ffd9a0",
+				"energy": 1.8,
+				"range": 9.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.600000023841858,
+				0.899999976158142,
+				0.600000023841858
+			],
+			"type": "lamp_hanging"
+		},
+		{
+			"group": "",
+			"id": "pc_166",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-4.0,
+				2.09999990463257,
+				-45.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_167",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				36.0,
+				2.09999990463257,
+				-29.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_168",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				52.0,
+				2.09999990463257,
+				-29.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_169",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				55.8600006103516,
+				2.09999990463257,
+				-7.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 327.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_170",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				62.9700012207031,
+				2.09999990463257,
+				-6.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 231.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_171",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				63.75,
+				2.09999990463257,
+				3.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_172",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-60.0,
+				2.09999990463257,
+				-44.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_173",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-58.0,
+				2.09999990463257,
+				-2.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_174",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-58.4099998474121,
+				2.09999990463257,
+				-26.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_175",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-50.25,
+				2.09999990463257,
+				23.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_176",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-52.0,
+				2.09999990463257,
+				39.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_177",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-50.25,
+				2.09999990463257,
+				7.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_178",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-48.0,
+				2.09999990463257,
+				-44.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_179",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-38.0,
+				2.09999990463257,
+				39.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_180",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-36.0,
+				2.09999990463257,
+				-29.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_181",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-33.4000015258789,
+				2.09999990463257,
+				-2.15000009536743
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_182",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-32.25,
+				2.09999990463257,
+				29.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_183",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-32.25,
+				2.09999990463257,
+				15.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_184",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-30.6499996185303,
+				2.09999990463257,
+				-15.1400003433228
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_185",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-26.0,
+				2.09999990463257,
+				39.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_186",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-22.0,
+				2.09999990463257,
+				-2.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_187",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-20.0,
+				2.09999990463257,
+				-20.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_188",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-16.0,
+				2.09999990463257,
+				32.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_189",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-12.0,
+				2.09999990463257,
+				-43.4500007629395
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_190",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-19.75,
+				2.09999990463257,
+				57.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_191",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-10.0,
+				2.09999990463257,
+				-31.0499992370605
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_192",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-8.5600004196167,
+				2.09999990463257,
+				2.76999998092651
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 69.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_193",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-10.0,
+				2.09999990463257,
+				32.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_194",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				-2.75,
+				2.09999990463257,
+				-30.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_195",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				4.0,
+				2.09999990463257,
+				-31.0499992370605
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_196",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				9.93000030517578,
+				2.09999990463257,
+				4.01000022888184
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 344.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_197",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				6.0,
+				2.09999990463257,
+				21.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_198",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				12.0,
+				2.09999990463257,
+				-43.4500007629395
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_199",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				23.75,
+				2.09999990463257,
+				11.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_200",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				16.0,
+				2.09999990463257,
+				32.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_201",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				22.0,
+				2.09999990463257,
+				-2.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_202",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				19.75,
+				2.09999990463257,
+				49.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_203",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				19.75,
+				2.09999990463257,
+				59.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_204",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				23.75,
+				2.09999990463257,
+				19.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_205",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				29.3500003814697,
+				2.09999990463257,
+				-25.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_206",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				28.0,
+				2.09999990463257,
+				32.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_207",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				29.3500003814697,
+				2.09999990463257,
+				-11.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_208",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				32.75,
+				2.09999990463257,
+				1.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_209",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				32.25,
+				2.09999990463257,
+				13.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_210",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				32.25,
+				2.09999990463257,
+				25.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_211",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				42.0,
+				2.09999990463257,
+				-44.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_212",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				42.0,
+				2.09999990463257,
+				34.25
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_213",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				52.0,
+				2.09999990463257,
+				-44.75
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_214",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				50.25,
+				2.09999990463257,
+				33.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 90.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_215",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				63.75,
+				2.09999990463257,
+				17.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_216",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				63.75,
+				2.09999990463257,
+				27.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_217",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				65.75,
+				2.09999990463257,
+				-39.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_218",
+			"layer": "layer_13",
+			"material": "",
+			"position": [
+				63.75,
+				2.09999990463257,
+				37.0
+			],
+			"props": {
+				"color": "ffcf8a",
+				"energy": 1.6,
+				"range": 8.0
+			},
+			"rotation_y": 270.0,
+			"size": [
+				0.360000014305115,
+				0.800000011920929,
+				0.5
+			],
+			"type": "lamp_wall"
+		},
+		{
+			"group": "",
+			"id": "pc_219",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				28.0,
+				0.0,
+				32.6100006103516
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_220",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				60.0,
+				0.0,
+				-31.2700004577637
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_221",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				46.0,
+				0.0,
+				39.5400009155273
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				0.939999997615814,
+				0.800000011920929
+			],
+			"type": "pottery_jar"
+		},
+		{
+			"group": "",
+			"id": "pc_222",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				18.0,
+				0.0,
+				-4.3600001335144
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_223",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-8.0,
+				0.0,
+				21.8700008392334
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_224",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				14.0,
+				0.0,
+				21.5100002288818
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.89999997615814,
+				0.649999976158142,
+				0.860000014305115
+			],
+			"type": "stone_trough"
+		},
+		{
+			"group": "",
+			"id": "pc_225",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				11.5900001525879,
+				4.5,
+				-4.46000003814697
+			],
+			"props": {
+				"color": "ff9a4a",
+				"energy": 2.2,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "brazier"
+		},
+		{
+			"group": "",
+			"id": "pc_226",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-40.0,
+				0.0,
+				34.6100006103516
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_227",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-16.0,
+				0.0,
+				32.4700012207031
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_228",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				42.0,
+				0.0,
+				-4.46000003814697
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				0.939999997615814,
+				0.800000011920929
+			],
+			"type": "pottery_jar"
+		},
+		{
+			"group": "",
+			"id": "pc_229",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-50.0,
+				0.0,
+				39.6399993896484
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_230",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				10.0,
+				0.0,
+				32.1300010681152
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_231",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				30.0,
+				0.0,
+				5.51000022888184
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.89999997615814,
+				0.649999976158142,
+				0.860000014305115
+			],
+			"type": "stone_trough"
+		},
+		{
+			"group": "",
+			"id": "pc_232",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-26.0,
+				0.0,
+				-4.46000003814697
+			],
+			"props": {
+				"color": "ff9a4a",
+				"energy": 2.2,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "brazier"
+		},
+		{
+			"group": "",
+			"id": "pc_233",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-28.0,
+				0.0,
+				32.6100006103516
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_234",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-11.6499996185303,
+				0.0,
+				4.0
+			],
+			"props": {},
+			"rotation_y": 330.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_235",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-6.0,
+				0.0,
+				-8.46000003814697
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				0.939999997615814,
+				0.800000011920929
+			],
+			"type": "pottery_jar"
+		},
+		{
+			"group": "",
+			"id": "pc_236",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-60.6399993896484,
+				0.0,
+				-7.0
+			],
+			"props": {},
+			"rotation_y": 90.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_237",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				11.4799995422363,
+				0.0,
+				3.71000003814697
+			],
+			"props": {},
+			"rotation_y": 30.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_238",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-40.0,
+				0.0,
+				-29.5100002288818
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.89999997615814,
+				0.649999976158142,
+				0.860000014305115
+			],
+			"type": "stone_trough"
+		},
+		{
+			"group": "",
+			"id": "pc_239",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				18.0,
+				0.0,
+				-29.5400009155273
+			],
+			"props": {
+				"color": "ff9a4a",
+				"energy": 2.2,
+				"range": 8.0
+			},
+			"rotation_y": 0.0,
+			"size": [
+				0.800000011920929,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "brazier"
+		},
+		{
+			"group": "",
+			"id": "pc_240",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-20.0,
+				0.0,
+				-31.4099998474121
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_241",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				28.0,
+				0.0,
+				-29.5300006866455
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_242",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				6.0,
+				0.0,
+				21.5400009155273
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				0.939999997615814,
+				0.800000011920929
+			],
+			"type": "pottery_jar"
+		},
+		{
+			"group": "",
+			"id": "pc_243",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-18.0,
+				0.0,
+				-4.3600001335144
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				1.0,
+				0.600000023841858
+			],
+			"type": "planter"
+		},
+		{
+			"group": "",
+			"id": "pc_244",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				32.8699989318848,
+				0.0,
+				-9.0
+			],
+			"props": {},
+			"rotation_y": 270.0,
+			"size": [
+				1.39999997615814,
+				2.09999990463257,
+				0.140000000596046
+			],
+			"type": "notice_board"
+		},
+		{
+			"group": "",
+			"id": "pc_245",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				60.0,
+				0.0,
+				-9.51000022888184
+			],
+			"props": {},
+			"rotation_y": 0.0,
+			"size": [
+				1.89999997615814,
+				0.649999976158142,
+				0.860000014305115
+			],
+			"type": "stone_trough"
+		},
+		{
+			"group": "",
+			"id": "pc_246",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				38.0,
+				0.0,
+				39.5400009155273
+			],
+			"props": {
+				"color": "ff9a4a",
+				"energy": 2.2,
+				"range": 8.0
+			},
+			"rotation_y": 180.0,
+			"size": [
+				0.800000011920929,
+				1.10000002384186,
+				0.800000011920929
+			],
+			"type": "brazier"
+		},
+		{
+			"group": "",
+			"id": "pc_247",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-62.0,
+				0.0,
+				39.3899993896484
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				1.60000002384186,
+				0.800000011920929,
+				1.10000002384186
+			],
+			"type": "sack_pile"
+		},
+		{
+			"group": "",
+			"id": "pc_248",
+			"layer": "layer_14",
+			"material": "",
+			"position": [
+				-30.0,
+				0.0,
+				-31.2700004577637
+			],
+			"props": {},
+			"rotation_y": 180.0,
+			"size": [
+				0.819999992847443,
+				1.02999997138977,
+				0.819999992847443
+			],
+			"type": "coopered_barrel"
+		},
+		{
+			"group": "",
+			"id": "pc_249",
+			"layer": "layer_15",
+			"material": "",
+			"position": [
 				0.0,
 				0.0,
 				50.0
@@ -3320,8 +5160,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_166",
-			"layer": "layer_13",
+			"id": "pc_250",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-2.0,
@@ -3341,8 +5181,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_167",
-			"layer": "layer_13",
+			"id": "pc_251",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				2.0,
@@ -3362,8 +5202,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_168",
-			"layer": "layer_13",
+			"id": "pc_252",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-4.0,
@@ -3383,8 +5223,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_169",
-			"layer": "layer_13",
+			"id": "pc_253",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				4.0,
@@ -3404,8 +5244,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_170",
-			"layer": "layer_13",
+			"id": "pc_254",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				0.0,
@@ -3425,8 +5265,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_171",
-			"layer": "layer_13",
+			"id": "pc_255",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				0.0,
@@ -3446,8 +5286,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_172",
-			"layer": "layer_13",
+			"id": "pc_256",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-2.0,
@@ -3467,8 +5307,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_173",
-			"layer": "layer_13",
+			"id": "pc_257",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				2.0,
@@ -3488,8 +5328,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_174",
-			"layer": "layer_13",
+			"id": "pc_258",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-4.0,
@@ -3509,8 +5349,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_175",
-			"layer": "layer_13",
+			"id": "pc_259",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				4.0,
@@ -3530,8 +5370,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_176",
-			"layer": "layer_13",
+			"id": "pc_260",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				0.0,
@@ -3551,8 +5391,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_177",
-			"layer": "layer_13",
+			"id": "pc_261",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				-44.0,
@@ -3572,8 +5412,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_178",
-			"layer": "layer_13",
+			"id": "pc_262",
+			"layer": "layer_15",
 			"material": "",
 			"position": [
 				44.0,
@@ -3593,8 +5433,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_179",
-			"layer": "layer_14",
+			"id": "pc_263",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -3615,8 +5455,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_180",
-			"layer": "layer_14",
+			"id": "pc_264",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -3637,8 +5477,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_181",
-			"layer": "layer_14",
+			"id": "pc_265",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-35.0,
@@ -3659,8 +5499,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_182",
-			"layer": "layer_14",
+			"id": "pc_266",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				35.0,
@@ -3681,8 +5521,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_183",
-			"layer": "layer_14",
+			"id": "pc_267",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-57.0,
@@ -3703,8 +5543,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_184",
-			"layer": "layer_14",
+			"id": "pc_268",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-54.0,
@@ -3725,8 +5565,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_185",
-			"layer": "layer_14",
+			"id": "pc_269",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-36.0,
@@ -3747,8 +5587,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_186",
-			"layer": "layer_14",
+			"id": "pc_270",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-35.5,
@@ -3769,8 +5609,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_187",
-			"layer": "layer_14",
+			"id": "pc_271",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -3791,8 +5631,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_188",
-			"layer": "layer_14",
+			"id": "pc_272",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -3813,8 +5653,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_189",
-			"layer": "layer_14",
+			"id": "pc_273",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				1.5,
@@ -3835,8 +5675,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_190",
-			"layer": "layer_14",
+			"id": "pc_274",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -3857,8 +5697,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_191",
-			"layer": "layer_14",
+			"id": "pc_275",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -3879,8 +5719,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_192",
-			"layer": "layer_14",
+			"id": "pc_276",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				57.0,
@@ -3901,8 +5741,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_193",
-			"layer": "layer_14",
+			"id": "pc_277",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				54.0,
@@ -3923,8 +5763,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_194",
-			"layer": "layer_14",
+			"id": "pc_278",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-45.5,
@@ -3945,8 +5785,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_195",
-			"layer": "layer_14",
+			"id": "pc_279",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-63.5,
@@ -3967,8 +5807,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_196",
-			"layer": "layer_14",
+			"id": "pc_280",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-56.0,
@@ -3989,8 +5829,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_197",
-			"layer": "layer_14",
+			"id": "pc_281",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-30.0,
@@ -4011,8 +5851,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_198",
-			"layer": "layer_14",
+			"id": "pc_282",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -4033,8 +5873,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_199",
-			"layer": "layer_14",
+			"id": "pc_283",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				10.5,
@@ -4055,8 +5895,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_200",
-			"layer": "layer_14",
+			"id": "pc_284",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				30.0,
@@ -4077,8 +5917,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_201",
-			"layer": "layer_14",
+			"id": "pc_285",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				43.2000007629395,
@@ -4099,8 +5939,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_202",
-			"layer": "layer_14",
+			"id": "pc_286",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				43.5,
@@ -4121,8 +5961,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_203",
-			"layer": "layer_14",
+			"id": "pc_287",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				55.0,
@@ -4143,8 +5983,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_204",
-			"layer": "layer_14",
+			"id": "pc_288",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -4165,8 +6005,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_205",
-			"layer": "layer_14",
+			"id": "pc_289",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -4187,8 +6027,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_206",
-			"layer": "layer_14",
+			"id": "pc_290",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-46.0,
@@ -4209,8 +6049,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_207",
-			"layer": "layer_14",
+			"id": "pc_291",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				46.0,
@@ -4231,8 +6071,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_208",
-			"layer": "layer_14",
+			"id": "pc_292",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-41.0,
@@ -4253,8 +6093,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_209",
-			"layer": "layer_14",
+			"id": "pc_293",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-47.0,
@@ -4275,8 +6115,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_210",
-			"layer": "layer_14",
+			"id": "pc_294",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				41.0,
@@ -4297,8 +6137,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_211",
-			"layer": "layer_14",
+			"id": "pc_295",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				48.0,
@@ -4319,8 +6159,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_212",
-			"layer": "layer_14",
+			"id": "pc_296",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-57.0,
@@ -4341,8 +6181,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_213",
-			"layer": "layer_14",
+			"id": "pc_297",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-36.0,
@@ -4363,8 +6203,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_214",
-			"layer": "layer_14",
+			"id": "pc_298",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -4385,8 +6225,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_215",
-			"layer": "layer_14",
+			"id": "pc_299",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-4.0,
@@ -4407,8 +6247,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_216",
-			"layer": "layer_14",
+			"id": "pc_300",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -4429,8 +6269,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_217",
-			"layer": "layer_14",
+			"id": "pc_301",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				57.0,
@@ -4451,8 +6291,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_218",
-			"layer": "layer_14",
+			"id": "pc_302",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-54.0,
@@ -4473,8 +6313,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_219",
-			"layer": "layer_14",
+			"id": "pc_303",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-35.5,
@@ -4495,8 +6335,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_220",
-			"layer": "layer_14",
+			"id": "pc_304",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				0.0,
@@ -4517,8 +6357,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_221",
-			"layer": "layer_14",
+			"id": "pc_305",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -4539,8 +6379,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_222",
-			"layer": "layer_14",
+			"id": "pc_306",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				54.0,
@@ -4561,8 +6401,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_223",
-			"layer": "layer_14",
+			"id": "pc_307",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-63.5,
@@ -4582,8 +6422,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_224",
-			"layer": "layer_14",
+			"id": "pc_308",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-38.0,
@@ -4603,8 +6443,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_225",
-			"layer": "layer_14",
+			"id": "pc_309",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-52.0,
@@ -4624,8 +6464,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_226",
-			"layer": "layer_14",
+			"id": "pc_310",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				52.0,
@@ -4645,8 +6485,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_227",
-			"layer": "layer_14",
+			"id": "pc_311",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -4666,8 +6506,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_228",
-			"layer": "layer_14",
+			"id": "pc_312",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-3.0,
@@ -4687,8 +6527,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_229",
-			"layer": "layer_14",
+			"id": "pc_313",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-40.0,
@@ -4708,8 +6548,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_230",
-			"layer": "layer_14",
+			"id": "pc_314",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-46.0,
@@ -4729,8 +6569,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_231",
-			"layer": "layer_14",
+			"id": "pc_315",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				44.0,
@@ -4750,8 +6590,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_232",
-			"layer": "layer_14",
+			"id": "pc_316",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				50.0,
@@ -4771,8 +6611,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_233",
-			"layer": "layer_14",
+			"id": "pc_317",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-54.0,
@@ -4792,8 +6632,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_234",
-			"layer": "layer_14",
+			"id": "pc_318",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				-35.5,
@@ -4813,8 +6653,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_235",
-			"layer": "layer_14",
+			"id": "pc_319",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				36.0,
@@ -4834,8 +6674,8 @@
 		},
 		{
 			"group": "",
-			"id": "pc_236",
-			"layer": "layer_14",
+			"id": "pc_320",
+			"layer": "layer_16",
 			"material": "",
 			"position": [
 				54.0,
@@ -4855,5 +6695,5 @@
 		}
 	],
 	"prefabs": [],
-	"revision": 1
+	"revision": 2
 }

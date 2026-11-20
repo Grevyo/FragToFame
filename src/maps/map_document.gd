@@ -72,6 +72,8 @@ static func normalise_rotation(degrees: float) -> float:
 
 
 static func default_props(type: String) -> Dictionary:
+	if PieceCatalog.is_fixture(type):
+		return PieceCatalog.fixture_light(type)
 	match type:
 		"bombsite":
 			return {"site": "A"}

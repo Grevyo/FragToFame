@@ -48,6 +48,7 @@ func _run() -> void:
 	_a_side()
 	_mid()
 	_b_side()
+	_lamps_and_props()
 	_spawns_and_zones()
 	_callouts()
 	_tactical()
@@ -75,9 +76,10 @@ func _run() -> void:
 func _publish(saved_path: String) -> void:
 	var doc := MapStorage.new(STAGING_DIR).load_path(saved_path)
 	doc.map_id = OFFICIAL_ID
-	doc.revision = 2
+	doc.revision = 3
 	# Version 2: the Overlook stair was lengthened so bots can always climb it.
-	doc.content_version = 2
+	# Version 3: lamp fixtures in its dark corners and everyday props along the walls.
+	doc.content_version = 3
 	doc.content_hash = doc.content_fingerprint()
 	DirAccess.make_dir_recursive_absolute(OfficialMaps.DIRECTORY)
 	var file := FileAccess.open(OfficialMaps.path_for(OFFICIAL_ID), FileAccess.WRITE)
@@ -355,3 +357,72 @@ func _tactical() -> void:
 	put("ai_angle", Vector3(-25, 1.5, -1), Vector3.ZERO, 0.0, {"site": "A"})
 	put("ai_angle", Vector3(44, 0, 6), Vector3.ZERO, 0.0, {"site": "B"})
 	put("ai_angle", Vector3(31, 0, -15), Vector3.ZERO, 0.0, {"site": "B"})
+
+
+## Lamp fixtures wherever reachable floor sat in shade with no lamp in reach (each placed on the
+## nearest wall, or hung from the ceiling indoors), and everyday clutter against walls along the
+## routes, clear of doors, stairs, bombsites, spawns and timing chokepoints.
+func _lamps_and_props() -> void:
+	_layer("Lamps")
+	for entry: Array in [
+		["lamp_hanging", Vector3(-2.00, 3.10, -16.00), 0.0],
+		["lamp_wall", Vector3(34.25, 2.10, 26.00), 90.0],
+		# Shaded lanes and yards (open to the sky, but in shadow with no lamp in reach).
+		["lamp_wall", Vector3(-55.75, 2.10, -20.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, -8.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, 4.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, 18.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, 28.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, 42.00), 90.0],
+		["lamp_wall", Vector3(-55.75, 2.10, 50.00), 90.0],
+		["lamp_wall", Vector3(-39.75, 2.10, -28.00), 90.0],
+		["lamp_wall", Vector3(-38.00, 2.10, 47.25), 0.0],
+		["lamp_wall", Vector3(-32.00, 2.10, -35.75), 0.0],
+		["lamp_wall", Vector3(-24.00, 2.10, 47.25), 0.0],
+		["lamp_wall", Vector3(-20.00, 2.10, 16.25), 0.0],
+		["lamp_wall", Vector3(-20.00, 2.10, -35.75), 0.0],
+		["lamp_wall", Vector3(-10.00, 2.10, 44.25), 0.0],
+		["lamp_wall", Vector3(-12.00, 2.10, 16.25), 0.0],
+		["lamp_wall", Vector3(-2.00, 2.10, -39.75), 0.0],
+		["lamp_wall", Vector3(-7.75, 2.10, 30.83), 90.0],
+		["lamp_wall", Vector3(0.25, 2.10, 4.00), 90.0],
+		["lamp_wall", Vector3(3.81, 2.10, -21.50), 180.0],
+		["lamp_wall", Vector3(6.00, 2.10, 44.25), 0.0],
+		["lamp_wall", Vector3(10.00, 2.10, -39.75), 0.0],
+		["lamp_wall", Vector3(16.00, 2.10, -17.75), 0.0],
+		["lamp_wall", Vector3(20.00, 2.10, 47.25), 0.0],
+		["lamp_wall", Vector3(22.00, 2.10, -35.75), 0.0],
+		["lamp_wall", Vector3(30.25, 2.10, -18.83), 90.0],
+		["lamp_wall", Vector3(30.00, 2.10, 47.25), 0.0],
+		["lamp_wall", Vector3(32.00, 2.10, -35.75), 0.0],
+		["lamp_wall", Vector3(30.25, 2.10, -4.00), 90.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+	_layer("Street life")
+	for entry: Array in [
+		["sack_pile", Vector3(-22.00, 0.00, -17.39), 0.0],
+		["sack_pile", Vector3(-44.00, 0.00, 54.39), 180.0],
+		["market_shelf", Vector3(-18.00, 0.00, 54.68), 180.0],
+		["pottery_jar", Vector3(45.00, 0.00, -19.54), 0.0],
+		["barrel_cluster", Vector3(-46.76, 0.00, 17.00), -90.0],
+		["pottery_jar", Vector3(-11.00, 0.00, -12.46), 180.0],
+		["braced_crate", Vector3(18.00, 0.00, -17.37), 0.0],
+		["pottery_jar", Vector3(35.54, 0.00, -31.00), -90.0],
+		["sack_pile", Vector3(-55.39, 0.00, -24.00), 90.0],
+		["market_shelf", Vector3(56.00, 0.00, -19.68), 0.0],
+		["pottery_jar", Vector3(-0.46, 0.00, 33.00), -90.0],
+		["barrel_cluster", Vector3(-27.00, 0.00, -30.76), 180.0],
+		["planter", Vector3(7.64, 0.00, -4.00), -90.0],
+		["braced_crate", Vector3(-55.36, 0.00, -17.00), 90.0],
+		["pottery_jar", Vector3(57.54, 0.00, -11.00), -90.0],
+		["sack_pile", Vector3(-27.39, 0.00, 20.00), 90.0],
+		["market_shelf", Vector3(22.00, 0.00, 47.32), 0.0],
+		["pottery_jar", Vector3(-32.00, 0.00, 47.46), 0.0],
+		["market_shelf", Vector3(34.32, 0.00, 29.00), 90.0],
+		["planter", Vector3(30.36, 0.00, -8.00), 90.0],
+		["braced_crate", Vector3(28.00, 0.00, -30.63), 180.0],
+		["pottery_jar", Vector3(12.00, 0.00, -12.46), 180.0],
+		["sack_pile", Vector3(-0.61, 0.00, 17.00), -90.0],
+		["braced_crate", Vector3(45.00, 0.00, 19.37), 180.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))

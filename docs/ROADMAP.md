@@ -598,7 +598,7 @@ Gaps against building a full competitive map:
       them added the pieces the editor could not make and a slope warning (below).
 - [ ] Remaining official maps (2–4 more).
 
-**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 3): a rail
+**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 4): a rail
 switching station over a turbine works, about 120 × 160 m inside an irregular fifteen-sided
 perimeter. Most of the play is on the surface; site B is 8 m underground. Site A is the Machine
 Hall, a seven-sided shed with five ways in (Loading Gate, the Breach in its angled south-west
@@ -616,7 +616,7 @@ and brushes, so little of the map is square. Timings: defenders reach A in 8.8 s
 8.6 s; attackers' first A entrance is 11.5 s (Loading Gate) and first B entrance 11.2 s (Main
 Door); the long Culvert flank is 15.6 s. Rotation A to B is 7.5 s.
 
-**Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`): a granite fortress
+**Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`, revision 2): a granite fortress
 above a village. Site A is the Tiltyard, reached by the West Gate road (long, 14.0 s), the Breach
 in the curtain wall (short, 10.9 s) or the Bailey Arch. Site B is the Cloister, reached by the
 Orchard Walk and Lych Gate (13.9 s), the Undercroft tunnel (10.7 s) or the Bailey Arch. The
@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 18): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -703,6 +703,33 @@ and the Harbour Gate. Defenders now spawn in the Dispatch Yard. Defenders reach 
 6.2 s after defenders reach B; rotating takes 8.5 s. The author script's floor cutting also became
 robust to awkward shapes (it cleans near-duplicate points, splits shapes with holes and falls back
 to convex pieces when Draw Surface would refuse an outline).
+Revision 19 (owner: light the dark spots on every map, more props to make it feel alive, and no
+doors on walls that lead nowhere) removes the three closed freight gates that were stuck flat
+against yard walls (Chronometer Exchange, Chronometer Returns and Glass Plates / Goods In): the
+walls only divide one lane from another, so a door in them led nowhere. Notice boards and wall
+lanterns take their place. The doors and ground-floor windows behind the Exchange Terrace and the
+loading dock now open at deck height instead of below it, and the barrels in front of those doors
+moved aside. The plate-room baths now stand against the wall, closing a crouch-only gap behind
+them. Lamps and props were added to all four maps; see "Lamps and street life" below. Timings
+are unchanged (defenders lead by 6.3 s at A and 6.2 s at B).
+
+**Lamps and street life (all maps, 2026-11-20).** Every map was checked for dark spots: each
+reachable floor point (2 m grid, bot navmesh) that is in the sun's shadow and out of reach of
+every lamp. Lamp fixtures now cover those spots, on the nearest wall or hung from the ceiling
+indoors, with wider spacing in shaded open-air lanes. Shaded, unlit floor fell from 22% to 3% on
+Cluts (mostly the plate works), from 9% to 5% on Switchyard (the vault and the machine hall), and
+from 3% to 2% on Kestrel Keep and Kilnmarket. These counts leave out open-air shade, which is
+lit separately with wider spacing. Between 24 and 34 props per map now stand against walls along the
+routes: benches, planters, sacks, notice boards and barrels in the town; crates, barrel clusters
+and sacks in the industrial areas; jars and shelves in the market; sacks, barrels, troughs and
+braziers in the keep. Props keep at least 3 m of open floor in front of them and stay clear of
+doors, stairs, bombsites, spawns and timing chokepoints. Every map was re-authored and passed
+navigation, timing and the bots-reach-both-sites test. The editor gained the pieces this needed:
+**Lights**: Wall lantern, Street lamp, Hanging lamp, Caged bulkhead lamp and Brazier (solid
+fixtures with their own light; Brightness, Light range and Light colour in the Inspector).
+**Props**: Wooden pallet, Pile of sacks, Planter box, Park bench, Notice board, Iron bollard and
+Washing line (the washing hangs at or above 2 m). Two new materials, Lit lamp glass and Glowing
+embers, glow on their own.
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -855,3 +882,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 16 (owner request): the Dispatch area rebuilt as one yard with a roofed Goods Ramp house over the B ramp, and site A moved from the loading-dock corner to the middle of the Dispatch Yard. |
 | 2026-11-20 | Cluts revision 17 (owner report): ground finishes are cut into the floor, level with the road, instead of 5 cm slabs on top of it. |
 | 2026-11-20 | Cluts revision 18 (owner request): irregular dirt and gravel patches instead of rectangles, more worn dirt, props throughout the map, site A moved to the Harbour Office yard and defenders to the Dispatch Yard. |
+| 2026-11-20 | Lamps and street life on all four maps (owner request): lamp fixtures on every dark spot found by a lighting check, wall-side props along the routes, and on Cluts the doors that led nowhere removed or raised to deck height. Editor: five lamp fixtures and seven street props. |

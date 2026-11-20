@@ -7,7 +7,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 18
+	return 19
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -145,6 +145,7 @@ func _build() -> void:
 	_skyline()
 	_fixtures()
 	_street_props()
+	_lamps_and_props()
 	_set_relief()
 	layer("Match layout")
 	# Start at the quay end of the line so a teammate collecting a dropped
@@ -310,13 +311,13 @@ func _fixtures() -> void:
 
 	put("stone_bench",Vector3(-28,0,-24),Vector3(4,1,1))
 	put("market_shelf",Vector3(-23,0,-23.4),Vector3(3,2,0.8))
-	put("freight_gate",Vector3(-17,0,-24.3),Vector3(4.4,2.9,0.36),-2.3)
-	_sign("CHRONOMETER EXCHANGE",Vector3(-17,3.0,-24.1),6.5,0.55,-2.3)
-	put("freight_gate",Vector3(0,0,-9.38),Vector3(4,2.9,0.36),0)
-	_sign("CHRONOMETER RETURNS",Vector3(0,3.0,-9.18),5,0.45)
+	# Yard walls only divide lanes, so they carry notices and lamps, never doors to nowhere.
+	put("notice_board",Vector3(-17,0,-24.38),Vector3.ZERO,-2.3)
+	put("lamp_wall",Vector3(-14.4,2.3,-24.3),Vector3.ZERO,-2.3)
 	put("stone_bench",Vector3(2,0,-8.35),Vector3(4,0.9,1))
-	put("freight_gate",Vector3(33,0,18.38),Vector3(5,2.9,0.36),0)
-	_sign("GLASS PLATES  /  GOODS IN",Vector3(33,3.0,18.18),6,0.5,180)
+	put("lamp_wall",Vector3(-1.2,2.3,-9.3),Vector3.ZERO,0)
+	put("notice_board",Vector3(33,0,18.49),Vector3.ZERO,180)
+	put("lamp_wall",Vector3(30.6,2.3,18.3),Vector3.ZERO,180)
 	# The old public entrance is now a gauging room and a waiting bench on the quay.
 	mass("building",-46,-38,-30,-25,4.1,"limewash")
 	mass("roof",-46.3,-37.7,-30.3,-24.7,0.24,"slate",4.1)
@@ -389,11 +390,12 @@ func _skyline() -> void:
 
 func _plate_lab() -> void:
 	layer("Plate washing and flood repairs")
-	# Three baths progress along one feed pipe. Plates hang from the drying rail downstream.
-	put("pipe_run",Vector3(12,-3.55,18.45),Vector3(12,0.16,0.16),0,{},"brass")
+	# Three baths progress along one feed pipe. Plates hang from the drying rail downstream. The
+	# baths stand against the wall, so there is no crouch-only gap behind them.
+	put("pipe_run",Vector3(12,-3.55,19.55),Vector3(12,0.16,0.16),0,{},"brass")
 	for x: int in [7,11,15]:
-		put("stone_trough",Vector3(x,-5,17.8),Vector3(3,0.95,1.45),0,{},"plaster_white")
-		put("pipe_run",Vector3(x,-3.7,18.08),Vector3(0.95,0.12,0.12),90,{},"brass")
+		put("stone_trough",Vector3(x,-5,18.95),Vector3(3,0.95,1.45),0,{},"plaster_white")
+		put("pipe_run",Vector3(x,-3.7,19.1),Vector3(0.95,0.12,0.12),90,{},"brass")
 	put("market_shelf",Vector3(21,-5,17.8),Vector3(4,2.8,1.2),0,{},"metal_dark")
 	for x: float in [19.7,20.15,20.6,21.05,21.95,22.4]:
 		put("wall",Vector3(x,-3.4768,17.8),Vector3(0.06,0.80,0.75),-9,{},"slate")
@@ -559,13 +561,13 @@ func _raised_ground() -> void:
 	for x: float in [1.0,6.0,11.0]:
 		put("railing",Vector3(x,1.4,22.55),Vector3(3.2,1.0,0.08))
 	put("crate_stack",Vector3(9.2,1.4,24.7),Vector3(2.2,2.2,1.1))
-	put("barrel_cluster",Vector3(2.4,1.4,24.8),Vector3(1.5,1.0,1.2))
+	put("barrel_cluster",Vector3(0.6,1.4,24.8),Vector3(1.5,1.0,1.2))
 	put("awning",Vector3(6,1.4,24.6),Vector3(5,2.6,2.2),180)
 	area("Exchange Terrace",-2,14,22.5,25.6,"",1.4)
 	put("platform",Vector3(48.25,0,33.525),Vector3(8.5,1.2,2.45),0,{},"concrete")
 	put("stairs",Vector3(42.6,0,33.525),Vector3(2.45,1.2,3.0),270,{},"steel_grating")
 	put("crate_stack",Vector3(50.8,1.2,34.15),Vector3(2.2,2.2,1.0))
-	put("barrel_cluster",Vector3(46.4,1.2,34.2),Vector3(1.5,1.0,0.95))
+	put("barrel_cluster",Vector3(45.3,1.2,34.2),Vector3(1.5,1.0,0.95))
 	area("Loading Dock",44,52.5,32.5,34.6,"",1.2)
 	layer("Ground plan")
 
@@ -644,12 +646,23 @@ func _building_front(a: Vector2, b: Vector2, outside: Vector2, height: float) ->
 	var storeys := clampi(floori(height/2.95),1,3)
 	for j in bays:
 		var spot: Vector2 = a+along*(j+0.5)*length/bays-outside*0.15
+		var base := _deck_height(spot)
 		for storey in storeys:
 			if storey == 0 and j % 3 == 1:
-				put("door",Vector3(spot.x,0,spot.y),Vector3(1.2,2.5,0.3),yaw,{"panels":2,"fanlight":true})
+				put("door",Vector3(spot.x,base,spot.y),Vector3(1.2,2.5,0.3),yaw,{"panels":2,"fanlight":true})
 			else:
-				var sill := 0.9 if storey == 0 else 3.4+(storey-1)*2.95
+				var sill := 0.9+base if storey == 0 else 3.4+(storey-1)*2.95
 				put("window",Vector3(spot.x,sill,spot.y),Vector3(1.15,1.6,0.3),yaw,{"panes_x":2,"panes_y":3})
+
+
+## Ground-floor doors and windows behind the Exchange Terrace and the loading dock open at deck
+## height, not below the deck.
+func _deck_height(spot: Vector2) -> float:
+	if spot.x > -2.0 and spot.x < 14.0 and spot.y > 22.0 and spot.y < 27.0:
+		return 1.4
+	if spot.x > 44.0 and spot.x < 52.5 and spot.y > 32.0 and spot.y < 35.5:
+		return 1.2
+	return 0.0
 
 
 ## What the ground is made of: sett roadway everywhere carts go (the base floor), flagstone squares
@@ -843,3 +856,124 @@ func _street_props() -> void:
 	put("crate_stack",Vector3(22.2,-5,31.6),Vector3(2.2,2.2,1.1),0)
 	put("crate",Vector3(21.2,-5,22),Vector3(1.2,1.2,1.2),15)
 	layer("Ground plan")
+
+
+## Lamp fixtures wherever reachable floor sat in shade with no lamp in reach (each placed on the
+## nearest wall, or hung from the ceiling indoors), and everyday clutter against walls along the
+## routes, clear of doors, stairs, bombsites, spawns and timing chokepoints.
+func _lamps_and_props() -> void:
+	layer("Lamps")
+	for entry: Array in [
+		["lamp_hanging", Vector3(-42.00, -1.50, -20.50), 0.0],
+		["lamp_hanging", Vector3(-42.00, -1.50, -6.50), 0.0],
+		["lamp_wall", Vector3(-45.45, -1.94, -0.50), 90.0],
+		["lamp_wall", Vector3(-42.75, 0.37, 5.50), 90.0],
+		["lamp_hanging", Vector3(-38.00, 6.25, 9.50), 0.0],
+		["lamp_hanging", Vector3(-36.00, -1.50, -18.50), 0.0],
+		["lamp_hanging", Vector3(-34.00, -1.50, -8.50), 0.0],
+		["lamp_hanging", Vector3(-34.00, -1.50, -2.50), 0.0],
+		["lamp_hanging", Vector3(-36.00, -1.50, 5.50), 0.0],
+		["lamp_hanging", Vector3(-18.00, -1.50, -10.50), 0.0],
+		["lamp_hanging", Vector3(-18.00, -1.50, -2.50), 0.0],
+		["lamp_wall", Vector3(-18.00, 2.10, 11.64), 0.0],
+		["lamp_hanging", Vector3(-16.00, -1.50, -20.50), 0.0],
+		["lamp_hanging", Vector3(-12.00, -1.50, 7.50), 0.0],
+		["lamp_hanging", Vector3(-8.00, -1.50, -20.50), 0.0],
+		["lamp_hanging", Vector3(-8.00, -1.50, -12.50), 0.0],
+		["lamp_hanging", Vector3(4.00, -1.50, -8.50), 0.0],
+		["lamp_hanging", Vector3(4.00, -1.50, -2.50), 0.0],
+		["lamp_hanging", Vector3(4.00, -1.50, 11.50), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.50, 5.50), 0.0],
+		["lamp_hanging", Vector3(8.00, -1.50, 15.50), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.50, -24.50), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.50, -10.50), 0.0],
+		["lamp_hanging", Vector3(16.00, -1.50, 9.50), 0.0],
+		["lamp_hanging", Vector3(16.00, -1.50, -8.50), 0.0],
+		["lamp_hanging", Vector3(18.00, -1.50, 17.50), 0.0],
+		["lamp_hanging", Vector3(18.00, -1.50, -24.50), 0.0],
+		["lamp_hanging", Vector3(22.00, -1.50, 1.50), 0.0],
+		["lamp_hanging", Vector3(24.00, -1.50, -16.50), 0.0],
+		["lamp_hanging", Vector3(24.00, -1.50, 9.50), 0.0],
+		["lamp_hanging", Vector3(24.00, -1.50, 27.50), 0.0],
+		["lamp_hanging", Vector3(28.00, -1.50, -24.50), 0.0],
+		["lamp_hanging", Vector3(26.00, -1.50, 31.50), 0.0],
+		["lamp_hanging", Vector3(28.00, -1.50, -0.50), 0.0],
+		["lamp_hanging", Vector3(30.00, -1.50, -18.50), 0.0],
+		["lamp_hanging", Vector3(32.00, -1.50, 7.50), 0.0],
+		["lamp_hanging", Vector3(34.00, -1.50, 13.50), 0.0],
+		["lamp_hanging", Vector3(36.00, -1.50, 31.50), 0.0],
+		["lamp_hanging", Vector3(36.00, -1.50, -0.50), 0.0],
+		["lamp_hanging", Vector3(36.00, -1.50, 23.50), 0.0],
+		# Shaded lanes and yards (open to the sky, but in shadow with no lamp in reach).
+		["lamp_wall", Vector3(-38.79, 2.10, -24.75), 0.0],
+		["lamp_wall", Vector3(-42.95, 2.10, 10.17), 90.0],
+		["lamp_wall", Vector3(-34.82, 2.15, -12.74), 0.0],
+		["lamp_wall", Vector3(-32.01, 2.10, -32.11), -3.0],
+		["lamp_wall", Vector3(-24.67, 2.10, -18.49), 88.0],
+		["lamp_wall", Vector3(-23.42, 2.10, -2.09), -40.0],
+		["lamp_wall", Vector3(-18.45, 2.10, -31.29), -3.0],
+		["lamp_wall", Vector3(-18.14, 2.10, 5.53), -73.0],
+		["lamp_wall", Vector3(-12.01, 2.10, -19.55), -1.0],
+		["lamp_wall", Vector3(-7.22, 2.10, -32.10), 3.0],
+		["lamp_wall", Vector3(-6.00, 2.10, -9.24), 0.0],
+		["lamp_wall", Vector3(1.98, 2.10, -18.65), -5.0],
+		["lamp_wall", Vector3(6.01, 2.10, -32.79), 3.0],
+		["lamp_wall", Vector3(7.12, 2.10, 5.50), -90.0],
+		["lamp_wall", Vector3(11.97, 2.10, -8.67), -7.0],
+		["lamp_wall", Vector3(16.01, 2.10, -33.31), 3.0],
+		["lamp_wall", Vector3(20.68, 2.10, 3.50), -91.0],
+		["lamp_wall", Vector3(18.13, 2.10, -18.50), -90.0],
+		["lamp_wall", Vector3(22.00, 2.10, -7.88), -1.0],
+		["lamp_wall", Vector3(31.33, 2.10, 11.20), 0.0],
+		["lamp_wall", Vector3(25.05, 2.10, 31.50), -90.0],
+		["lamp_wall", Vector3(28.00, 2.10, -33.32), 1.0],
+		["lamp_wall", Vector3(29.96, 2.10, -16.89), -9.0],
+		["lamp_wall", Vector3(31.01, 2.10, -0.50), -90.0],
+		["lamp_wall", Vector3(34.00, 2.10, 19.48), 0.0],
+		["lamp_wall", Vector3(34.01, 2.10, 34.24), 178.0],
+		["lamp_wall", Vector3(38.00, 2.10, -33.48), 1.0],
+		["lamp_wall", Vector3(46.02, 2.10, -15.70), 4.0],
+		["lamp_wall", Vector3(50.00, 2.10, 18.32), 180.0],
+		["lamp_wall", Vector3(51.09, 2.10, -22.51), -92.0],
+		["lamp_wall", Vector3(50.08, 2.24, -1.52), -86.0],
+		["lamp_wall", Vector3(50.76, 2.10, 7.52), -86.0],
+		["lamp_wall", Vector3(52.42, 2.10, 29.52), -86.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+	layer("Street life")
+	for entry: Array in [
+		["park_bench", Vector3(10.41, 0.00, 22.13), 180.0],
+		["sack_pile", Vector3(-22.00, -5.00, 8.09), 180.0],
+		["coopered_barrel", Vector3(-14.22, -5.00, 9.50), 90.0],
+		["notice_board", Vector3(-20.00, 0.00, 20.55), 179.0],
+		["coopered_barrel", Vector3(-26.82, 0.00, 11.15), 0.0],
+		["market_shelf", Vector3(-6.00, -5.00, -22.38), 0.0],
+		["coopered_barrel", Vector3(4.00, -5.00, 8.77), 0.0],
+		["park_bench", Vector3(20.01, 0.00, -33.07), 1.0],
+		["coopered_barrel", Vector3(22.23, -5.00, -0.50), -90.0],
+		["coopered_barrel", Vector3(-18.00, -5.00, -22.23), 0.0],
+		["crate_long", Vector3(-27.86, -5.00, 3.21), -90.0],
+		["market_shelf", Vector3(-15.62, -5.00, -6.50), -90.0],
+		["planter", Vector3(4.20, 0.00, 3.37), 120.0],
+		["sack_pile", Vector3(0.00, -5.00, -2.91), 180.0],
+		["coopered_barrel", Vector3(-10.22, -5.00, -12.50), 90.0],
+		["planter", Vector3(50.50, 0.00, 5.53), -86.0],
+		["sack_pile", Vector3(-15.38, 0.00, -31.32), 3.0],
+		["notice_board", Vector3(38.00, 0.00, -33.60), 1.0],
+		["sack_pile", Vector3(20.00, -5.00, 19.05), 180.0],
+		["sack_pile", Vector3(-22.00, -5.00, -10.09), 0.0],
+		["park_bench", Vector3(-46.57, 0.00, -8.52), 94.0],
+		["planter", Vector3(-38.00, 0.01, -24.64), 0.0],
+		["market_shelf", Vector3(-6.00, -5.00, 13.38), 180.0],
+		["coopered_barrel", Vector3(-24.00, -5.00, -2.77), 180.0],
+		["sack_pile", Vector3(-36.31, -5.00, -16.50), -90.0],
+		["planter", Vector3(-46.89, 0.00, -18.51), 91.0],
+		["coopered_barrel", Vector3(22.23, 0.00, 29.49), 91.0],
+		["park_bench", Vector3(48.01, 0.00, -33.52), 1.0],
+		["market_shelf", Vector3(-32.00, -5.00, -10.38), 0.0],
+		["sack_pile", Vector3(1.59, 0.00, 21.89), 180.0],
+		["sack_pile", Vector3(23.91, -5.00, 7.50), 90.0],
+		["coopered_barrel", Vector3(-13.42, 0.00, 25.43), 97.0],
+		["coopered_barrel", Vector3(6.00, -5.00, -10.23), 0.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))

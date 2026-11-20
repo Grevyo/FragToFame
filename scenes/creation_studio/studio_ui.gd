@@ -878,6 +878,11 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 	_layer_field(doc, str(piece.get("layer", MapDocument.DEFAULT_LAYER)))
 
 	var props: Dictionary = piece.get("props", {})
+	if PieceCatalog.is_fixture(type):
+		var defaults := PieceCatalog.fixture_light(type)
+		_number_prop("Brightness", "energy", float(props.get("energy", defaults["energy"])), 0.0, 16.0, 0.1)
+		_number_prop("Light range (m)", "range", float(props.get("range", defaults["range"])), 1.0, 60.0, 0.5)
+		_text_prop("Light colour (hex)", "color", str(props.get("color", defaults["color"])))
 	match type:
 		"bombsite":
 			_option_prop("Site", "site", SITES, str(props.get("site", "A")))

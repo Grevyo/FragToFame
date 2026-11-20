@@ -637,6 +637,13 @@ Switchyard and Kestrel Keep (official maps):
       walk the map for props that block a doorway or snag movement; play A in the Harbour Office
       yard (attack from North Lane, the Stair Head and the Harbour Gate, defend from the Dispatch
       Yard) and judge whether the defenders' 6.5 s lead at A is too generous.
+- [ ] All maps (lamps and street life): walk each map and judge whether any spot still looks too
+      dark, whether lit lanterns in daylight look right, and whether any new prop blocks a
+      doorway, snags movement or gives a cheap angle. On Cluts, check the Exchange Terrace and
+      loading-dock doors open at deck height and that no yard wall still carries a door.
+- [ ] **Creation Studio**: place each lamp fixture (Wall lantern, Street lamp, Hanging lamp, Caged
+      bulkhead lamp, Brazier) and change its brightness, range and colour; place the new props
+      (pallet, sacks, planter, park bench, notice board, bollard, washing line).
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

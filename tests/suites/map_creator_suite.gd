@@ -16,6 +16,7 @@ func run() -> void:
 	_wipe(TEST_DIR)
 	_test_format()
 	_test_catalogue()
+	_test_lamp_fixtures_and_props()
 	_test_detailed_materials()
 	_test_building_dressing()
 	_test_snapping()
@@ -151,6 +152,46 @@ func _test_format() -> void:
 	var reloaded := storage.load_map(saved.map_id)
 	check(reloaded != null and reloaded.content_version == 2 and reloaded.content_hash == reloaded.content_fingerprint(),
 		"the content version and hash are stored in the file")
+
+
+func _test_lamp_fixtures_and_props() -> void:
+	section("Lamp fixtures and street props")
+	var fixtures: Array[String] = ["lamp_wall", "lamp_post", "lamp_hanging", "lamp_bulkhead", "brazier"]
+	var listed := PieceCatalog.palette_types_in_group("Lights")
+	check(fixtures.all(func(type: String) -> bool: return listed.has(type) and PieceCatalog.is_fixture(type)),
+		"the Lights palette offers wall lanterns, street lamps, hanging lamps, bulkheads and braziers")
+	var props_listed := PieceCatalog.palette_types_in_group("Props")
+	check(["pallet", "sack_pile", "planter", "park_bench", "notice_board", "bollard", "washing_line"].all(
+		func(type: String) -> bool: return props_listed.has(type)), "the Props palette offers the new street props")
+	check(not PieceCatalog.is_fixture("light_lamp") and not PieceCatalog.is_fixture("crate"),
+		"bare lights and ordinary props are not fixtures")
+	var defaults := MapDocument.default_props("lamp_wall")
+	check(defaults.has("energy") and defaults.has("range") and defaults.has("color"), "a placed fixture starts with its light settings")
+	var lantern := MapBuilder.build_piece(_piece("lamp_wall", Vector3(2, 1, 3), Vector3.ZERO, 90.0, {"energy": 3.0, "range": 12.0}),
+		MapBuilder.Mode.RUNTIME)
+	var light := lantern.get_node_or_null("Light") as OmniLight3D
+	var size := PieceCatalog.default_size("lamp_wall")
+	check(light != null and is_equal_approx(light.light_energy, 3.0) and is_equal_approx(light.omni_range, 12.0)
+		and light.position.is_equal_approx(PieceCatalog.fixture_light_position("lamp_wall", size)),
+		"a wall lantern carries its own light at the lantern, with the brightness and range set in the inspector")
+	check(light != null and light.position.y > 0.0 and light.position.y < size.y and absf(light.position.z) < size.z * 0.5,
+		"the lantern's light sits inside the piece")
+	var glowing := false
+	for mesh_node: Node in lantern.find_children("*", "MeshInstance3D", true, false):
+		var material := (mesh_node as MeshInstance3D).material_override as StandardMaterial3D
+		glowing = glowing or (material != null and material.emission_enabled)
+	check(glowing and lantern.find_children("*", "CollisionShape3D", true, false).size() > 0,
+		"the lantern glass glows and the fixture is solid")
+	lantern.free()
+	var preview := MapBuilder.build_preview([_piece("lamp_post", Vector3.ZERO)])
+	check(preview.find_children("*", "Light3D", true, false).is_empty(), "placement previews carry no light")
+	preview.free()
+	var line := PieceShapes.parts("washing_line", Vector3(5, 3, 0.2), {})
+	var lowest := INF
+	for part: Dictionary in line:
+		if str(part["mat"]) != "wood_dark":
+			lowest = minf(lowest, (part["pos"] as Vector3).y - (part["size"] as Vector3).y * 0.5)
+	check(lowest >= 2.0 - 0.001, "washing hangs at or above 2 m so players walk under it")
 
 
 func _test_catalogue() -> void:

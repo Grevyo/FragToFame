@@ -55,7 +55,7 @@ func _official_id() -> String:
 
 ## Revision 3: the expanded, angled rework with the tunnel network.
 func _revision() -> int:
-	return 3
+	return 4
 
 
 func _build() -> void:
@@ -78,6 +78,7 @@ func _build() -> void:
 	_coal_works()
 	_culvert()
 	_north_stair()
+	_lamps_and_props()
 	_gameplay()
 	_callouts()
 	_tactical()
@@ -524,3 +525,133 @@ func _check(analysis: MapAnalysis) -> bool:
 		printerr("A site or one of the routes is wrong.")
 		return false
 	return analysis.issues.is_empty()
+
+
+## Lamp fixtures wherever reachable floor sat in shade with no lamp in reach (each placed on the
+## nearest wall, or hung from the ceiling indoors), and everyday clutter against walls along the
+## routes, clear of doors, stairs, bombsites, spawns and timing chokepoints.
+func _lamps_and_props() -> void:
+	layer("Lamps")
+	for entry: Array in [
+		["lamp_bulkhead", Vector3(-56.71, 2.50, -37.14), 74.0],
+		["lamp_bulkhead", Vector3(-56.06, 2.50, -6.00), 93.0],
+		["lamp_bulkhead", Vector3(-51.08, 2.50, -4.57), 13.0],
+		["lamp_hanging", Vector3(-48.00, -1.90, 6.00), 0.0],
+		["lamp_hanging", Vector3(-48.00, -1.90, 14.00), 0.0],
+		["lamp_hanging", Vector3(-48.00, -1.90, 22.00), 0.0],
+		["lamp_hanging", Vector3(-38.00, -1.90, 6.00), 0.0],
+		["lamp_hanging", Vector3(-36.00, -1.90, 16.00), 0.0],
+		["lamp_bulkhead", Vector3(-30.38, -5.50, 10.00), -90.0],
+		["lamp_hanging", Vector3(-32.00, -1.90, 6.00), 0.0],
+		["lamp_hanging", Vector3(-22.00, 6.10, -58.00), 0.0],
+		["lamp_hanging", Vector3(-18.00, -1.90, 14.00), 0.0],
+		["lamp_hanging", Vector3(-10.00, 3.80, -4.00), 0.0],
+		["lamp_hanging", Vector3(-12.00, 3.80, 10.00), 0.0],
+		["lamp_hanging", Vector3(-10.00, -1.90, 8.00), 0.0],
+		["lamp_hanging", Vector3(-8.00, -1.90, 24.00), 0.0],
+		["lamp_hanging", Vector3(-8.00, -1.90, -6.00), 0.0],
+		["lamp_hanging", Vector3(-8.00, -1.90, -2.00), 0.0],
+		["lamp_hanging", Vector3(-6.00, 8.10, 4.00), 0.0],
+		["lamp_hanging", Vector3(-4.00, -1.90, -10.00), 0.0],
+		["lamp_hanging", Vector3(-6.00, 3.80, -8.00), 0.0],
+		["lamp_hanging", Vector3(-6.00, 8.10, -4.00), 0.0],
+		["lamp_hanging", Vector3(-4.00, 3.80, 10.00), 0.0],
+		["lamp_hanging", Vector3(-4.00, -1.90, 10.00), 0.0],
+		["lamp_hanging", Vector3(-2.00, -1.90, 28.00), 0.0],
+		["lamp_hanging", Vector3(2.00, 8.10, 8.00), 0.0],
+		["lamp_hanging", Vector3(0.00, -1.90, -4.00), 0.0],
+		["lamp_bulkhead", Vector3(-2.92, -3.90, 34.00), 90.0],
+		["lamp_hanging", Vector3(4.00, -5.02, -12.00), 0.0],
+		["lamp_hanging", Vector3(4.00, 3.80, -8.00), 0.0],
+		["lamp_hanging", Vector3(4.00, 8.10, 2.00), 0.0],
+		["lamp_hanging", Vector3(4.00, -1.90, 2.00), 0.0],
+		["lamp_hanging", Vector3(8.00, 8.10, 8.00), 0.0],
+		["lamp_hanging", Vector3(8.00, -1.90, -16.00), 0.0],
+		["lamp_hanging", Vector3(10.00, 3.80, -6.00), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.90, 16.00), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.90, 22.00), 0.0],
+		["lamp_hanging", Vector3(12.00, -1.90, -10.00), 0.0],
+		["lamp_hanging", Vector3(10.00, -1.90, 0.00), 0.0],
+		["lamp_hanging", Vector3(12.00, 3.80, 8.00), 0.0],
+		["lamp_hanging", Vector3(14.00, 3.80, -6.00), 0.0],
+		["lamp_hanging", Vector3(14.00, -1.90, 12.00), 0.0],
+		["lamp_hanging", Vector3(20.00, -1.90, -2.00), 0.0],
+		["lamp_bulkhead", Vector3(28.47, 2.50, -12.62), 60.0],
+		# Shaded lanes and yards (open to the sky, but in shadow with no lamp in reach).
+		["lamp_bulkhead", Vector3(-57.98, 2.50, 10.34), 74.0],
+		["lamp_bulkhead", Vector3(-59.62, 2.50, 28.00), 90.0],
+		["lamp_bulkhead", Vector3(-52.33, 2.50, 44.00), -166.0],
+		["lamp_bulkhead", Vector3(-57.71, 2.50, 65.55), 104.0],
+		["lamp_bulkhead", Vector3(-52.01, 2.50, -30.60), -174.0],
+		["lamp_bulkhead", Vector3(-53.90, 2.50, 80.80), 104.0],
+		["lamp_bulkhead", Vector3(-50.26, 2.50, 53.99), 99.0],
+		["lamp_bulkhead", Vector3(-41.98, 2.50, -42.78), 11.0],
+		["lamp_bulkhead", Vector3(-46.87, 2.50, 90.88), 127.0],
+		["lamp_bulkhead", Vector3(-39.33, 2.50, -7.18), 13.0],
+		["lamp_bulkhead", Vector3(-31.58, 2.50, -45.81), 23.0],
+		["lamp_bulkhead", Vector3(-34.41, 2.50, -25.00), 117.0],
+		["lamp_bulkhead", Vector3(-29.28, 2.50, 64.91), 20.0],
+		["lamp_bulkhead", Vector3(-25.42, 2.50, 31.98), 101.0],
+		["lamp_bulkhead", Vector3(-25.92, 2.50, 56.01), 83.0],
+		["lamp_bulkhead", Vector3(-21.97, 2.50, -49.93), 23.0],
+		["lamp_bulkhead", Vector3(-24.17, 2.50, 42.01), 83.0],
+		["lamp_bulkhead", Vector3(-14.00, 2.50, -61.62), 0.0],
+		["lamp_bulkhead", Vector3(-14.02, 2.50, 66.86), -11.0],
+		["lamp_bulkhead", Vector3(-4.00, 2.50, -61.62), 0.0],
+		["lamp_bulkhead", Vector3(8.00, 2.50, -61.62), 0.0],
+		["lamp_bulkhead", Vector3(10.06, 2.50, 14.48), 45.0],
+		["lamp_bulkhead", Vector3(10.01, 2.50, 68.00), 5.0],
+		["lamp_bulkhead", Vector3(18.01, 2.50, 67.24), 5.0],
+		["lamp_bulkhead", Vector3(18.50, 2.50, 26.55), 18.0],
+		["lamp_bulkhead", Vector3(19.23, 2.50, -60.96), -27.0],
+		["lamp_bulkhead", Vector3(16.30, 2.50, -6.38), -180.0],
+		["lamp_bulkhead", Vector3(29.25, 2.50, 66.98), -22.0],
+		["lamp_bulkhead", Vector3(36.02, 2.50, -16.48), 8.0],
+		["lamp_bulkhead", Vector3(37.03, 2.50, 67.99), 91.0],
+		["lamp_bulkhead", Vector3(36.22, 2.50, 31.99), 91.0],
+		["lamp_bulkhead", Vector3(36.49, 2.50, 43.99), 91.0],
+		["lamp_bulkhead", Vector3(36.76, 2.50, 55.99), 91.0],
+		["lamp_bulkhead", Vector3(45.99, 2.50, -40.92), -5.0],
+		["lamp_bulkhead", Vector3(50.02, 2.50, -18.48), 8.0],
+		["lamp_bulkhead", Vector3(53.99, 2.50, -40.25), -5.0],
+		["lamp_bulkhead", Vector3(61.22, 2.50, 4.65), -74.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+	layer("Street life")
+	for entry: Array in [
+		["braced_crate", Vector3(34.19, 0.00, 69.56), -22.0],
+		["barrel_cluster", Vector3(41.94, 0.00, -40.58), -5.0],
+		["sack_pile", Vector3(58.83, 0.00, 62.30), -117.0],
+		["braced_crate", Vector3(20.07, -8.00, 6.00), -90.0],
+		["notice_board", Vector3(-16.02, 0.00, 66.53), -11.0],
+		["crate_long", Vector3(-8.10, 0.00, 68.47), -11.0],
+		["braced_crate", Vector3(22.29, 0.00, -58.81), -27.0],
+		["barrel_cluster", Vector3(51.95, 0.00, 79.88), -99.0],
+		["sack_pile", Vector3(-17.81, 0.00, 39.21), 18.0],
+		["braced_crate", Vector3(-56.95, 0.00, -32.04), 93.0],
+		["notice_board", Vector3(14.01, 0.00, 67.67), 5.0],
+		["crate_long", Vector3(49.81, 0.00, 93.91), -99.0],
+		["braced_crate", Vector3(-42.59, 0.00, 17.24), -68.0],
+		["barrel_cluster", Vector3(-50.25, 0.00, 49.88), 99.0],
+		["sack_pile", Vector3(28.08, 0.00, 23.92), -122.0],
+		["braced_crate", Vector3(-20.15, 0.00, -16.07), -14.0],
+		["notice_board", Vector3(-50.31, 0.00, -4.69), 13.0],
+		["crate_long", Vector3(-41.90, 0.00, -42.31), 11.0],
+		["braced_crate", Vector3(-26.83, 0.00, 23.39), 164.0],
+		["barrel_cluster", Vector3(37.78, 0.00, -16.04), 8.0],
+		["braced_crate", Vector3(-35.66, -8.00, 16.34), -135.0],
+		["barrel_cluster", Vector3(-21.76, -8.00, 11.76), 135.0],
+		["sack_pile", Vector3(38.03, -8.00, -10.01), 25.0],
+		["braced_crate", Vector3(8.14, 5.00, 8.00), 90.0],
+		["braced_crate", Vector3(-41.94, 0.00, 10.26), -153.0],
+		["barrel_cluster", Vector3(-36.00, 0.00, 68.08), 20.0],
+		["sack_pile", Vector3(25.60, 0.00, -10.26), -120.0],
+		["sack_pile", Vector3(-31.64, -8.00, 5.64), -45.0],
+		["notice_board", Vector3(36.72, 0.00, 52.00), 91.0],
+		["crate_long", Vector3(30.32, 0.00, -44.23), -39.0],
+		["braced_crate", Vector3(-25.85, 0.00, -47.66), 23.0],
+		["barrel_cluster", Vector3(48.11, 0.00, -17.52), 8.0],
+		["sack_pile", Vector3(-29.92, 0.00, -20.42), 166.0],
+		["braced_crate", Vector3(-55.56, 0.00, 71.92), 104.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))

@@ -237,6 +237,12 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   checker. `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
   empty settings leave the scene defaults. `MapLighting.apply_atmosphere` sets the shared look
   (sky, shadows, SSAO, SDFGI, haze, glow, tonemap) in both, so the editor shows what the game draws. `light_lamp` and `light_spot` pieces emit in both.
+  **Lamp fixtures** (`lamp_wall`, `lamp_post`, `lamp_hanging`, `lamp_bulkhead`, `brazier`) are
+  ordinary `compound` pieces whose catalogue entry also has `light` (default energy, range,
+  colour) and `light_at` (light position as a fraction of the piece size). `MapBuilder` adds one
+  shadowless `OmniLight3D` there, so the fixture's own glass never darkens it. Placement previews
+  carry meshes only, never lights. Fixture props are gameplay content (they are solid); bare
+  lights stay cosmetic. Palette entries with `emission` (lamp glass, embers) glow on their own.
 - **Editing.** Every edit is a list of piece before/after states recorded as one undo step:
   group move/rotate/duplicate/delete, paste, prefab placement, grouping, material and layer
   changes. Lighting, layers and prefabs are document state recorded the same way. Gizmo and

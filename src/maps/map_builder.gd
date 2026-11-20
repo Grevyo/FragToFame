@@ -55,6 +55,8 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 			var parts := PieceShapes.parts(type, size, props)
 			for i: int in parts.size():
 				_add_part(holder, parts[i], surface, "Part%d" % i, relief)
+			if PieceCatalog.is_fixture(type):
+				holder.add_child(_fixture_light(type, size, props))
 		"surface":
 			var mesh: ArrayMesh
 			match type:
@@ -338,6 +340,18 @@ static func _light(type: String, props: Dictionary, mode: Mode) -> Node3D:
 		bulb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(bulb)
 	return root
+
+
+## The light inside a lamp fixture. It casts no shadow, so the fixture's own glass never darkens it.
+static func _fixture_light(type: String, size: Vector3, props: Dictionary) -> OmniLight3D:
+	var defaults := PieceCatalog.fixture_light(type)
+	var omni := OmniLight3D.new()
+	omni.name = "Light"
+	omni.position = PieceCatalog.fixture_light_position(type, size)
+	omni.omni_range = clampf(float(props.get("range", defaults.get("range", 8.0))), 1.0, 60.0)
+	omni.light_energy = clampf(float(props.get("energy", defaults.get("energy", 1.5))), 0.0, 16.0)
+	omni.light_color = Color.from_string(str(props.get("color", defaults.get("color", "ffffff"))), Color.WHITE)
+	return omni
 
 
 static func _zone(piece: Dictionary, size: Vector3, mode: Mode) -> Node3D:

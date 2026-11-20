@@ -624,6 +624,17 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 11): a harbour chronometer
+exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
+quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
+the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
+plate works 5 m below, reached by the West Shaft stair and Cable Passage, the Dispatch ramp, the
+defenders' North Stair and the Pump Stair from the east lane. Revision 11 added the Yard Door and
+Pump Stair (third ways into A and B) without changing the traced layout: defenders reach A in
+8.6 s and B in 7.7 s; attackers reach their first A entrance in 11.9 s and first B entrance in
+13.4 s; rotating takes 7.6 s. Its pieces: iron paling fence, freight gate, louvred shutter,
+lettered enamel sign, transit telescope, time ball and a covered stair prefab.
+
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
 - round towers;
@@ -767,3 +778,4 @@ Planned scope:
 | 2026-11-17 | M14: season endings with records, prize pools, reputation rewards and honours. Human spending: coach, PR agent, bootcamp; amateur wins pay. Save schema v10. |
 | 2026-11-15 | Shared movement: measured `PlayerMovement` model used by the player and every bot, with weapon mobility. Godot 4.7.2 validation passed 864 checks. Manual feel test remains open. |
 | 2026-11-20 | Owner added a Manager Career mode (M20) alongside the Player Career: the human runs an organisation in the same world. Planned before M15 so co-op covers both. |
+| 2026-11-20 | Cluts revision 11 (owner: develop it, keep the layout): the Yard Door gives A a third entrance from the Ramp Yard, and the Pump Stair gives B a third from the east lane. Defenders' site times are now 0.9 s apart instead of the 1.5 s limit. |

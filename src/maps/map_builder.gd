@@ -39,6 +39,16 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 		"block":
 			holder = Node3D.new()
 			_add_part(holder, {"shape": "box", "size": size, "pos": Vector3(0, size.y / 2.0, 0), "rot": Vector3.ZERO, "mat": ""}, surface, "Body")
+			if type == "enamel_sign":
+				var lettering := Label3D.new()
+				lettering.text = str(props.get("text", "Sign"))
+				lettering.font_size = 64
+				lettering.outline_size = 0
+				var bounds := ThemeDB.fallback_font.get_multiline_string_size(lettering.text, HORIZONTAL_ALIGNMENT_CENTER, -1, 64)
+				lettering.pixel_size = minf(size.x * 0.9 / maxf(bounds.x, 1), size.y * 0.78 / maxf(bounds.y, 1))
+				lettering.position = Vector3(0, size.y * 0.5, size.z * 0.5 + 0.005)
+				lettering.double_sided = false
+				holder.add_child(lettering)
 		"compound":
 			holder = Node3D.new()
 			var parts := PieceShapes.parts(type, size, props)

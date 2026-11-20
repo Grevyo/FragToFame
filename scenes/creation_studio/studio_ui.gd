@@ -885,6 +885,13 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 			_number_prop("Order (1 = first)", "order", float(props.get("order", 1)), 1.0, 32.0, 1.0)
 		"course_finish":
 			_number_prop("Par time (s)", "par", float(props.get("par", 30.0)), 5.0, 600.0, 1.0)
+		"quay_fence":
+			_number_prop("Paling spacing (m)", "spacing", float(props.get("spacing",0.36)), 0.18, 0.55, 0.01)
+		"shutter_panel":
+			_number_prop("Slat count", "slats", float(props.get("slats", 8)), 2, 20, 1)
+			_number_prop("Slat tilt (degrees)", "tilt", float(props.get("tilt", 25)), 0, 70, 1)
+		"enamel_sign":
+			_text_prop("Lettering", "text", str(props.get("text", "Sign")))
 		"callout":
 			_text_prop("Area name", "name", str(props.get("name", "")))
 			_option_prop("Timing role", "role", MapTactical.AREA_ROLES, str(props.get("role", "")))

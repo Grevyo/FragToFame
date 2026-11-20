@@ -15,6 +15,7 @@ static func stock() -> Array[Dictionary]:
 			_p("doorway", Vector3(0, 0, 0), Vector3(3, 3, 0.4)),
 			_p("wall_adobe", Vector3(3.5, 0, 0), Vector3(4, 3, 0.4)),
 		]},
+		{"id": "stock_stair_house", "name": "Covered stair entrance (6 m opening)", "pieces": stair_house()},
 		{"id": "stock_stair_run", "name": "Stair run with landing", "pieces": [
 			_p("stairs_stone", Vector3(0, 0, 2), Vector3(3, 1.5, 4)),
 			_p("platform", Vector3(0, 0, -1.5), Vector3(3, 1.5, 3)),
@@ -30,6 +31,21 @@ static func stock() -> Array[Dictionary]:
 			_p("barrel", Vector3(4.2, 0, 0.3), Vector3(0.7, 1.0, 0.7)),
 		]},
 	]
+
+
+## Open-bottom entrance shell. Centre it over a shaft with its landing at +Z.
+static func stair_house() -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = [
+		_p("wall", Vector3(-3.3,0,0.3), Vector3(0.6,3.9,12.2)),
+		_p("wall", Vector3(3.3,0,0.3), Vector3(0.6,3.9,12.2)),
+		_p("roof", Vector3(0,3.9,-0.1), Vector3(7.8,0.35,14.2)),
+		_p("wall", Vector3(0,2.7,6.225), Vector3(6,1.2,0.35)),
+		_p("wall", Vector3(0,2.75,-5.625), Vector3(6,1.15,0.35)),
+	]
+	var finishes := ["mud_brick","mud_brick","slate","wood_dark","limewash"]
+	for i in pieces.size():
+		pieces[i]["material"] = finishes[i]
+	return pieces
 
 
 ## Stock prefabs followed by the prefabs saved in [param doc].

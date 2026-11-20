@@ -69,6 +69,19 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 			return _stone_bench(size)
 		"market_shelf":
 			return _market_shelf(size)
+		"quay_fence":
+			return _paling_fence(size, props)
+		"freight_gate":
+			return _freight_gate(size)
+		"shutter_panel":
+			return _shutter_panel(size, props)
+		"signal_ball":
+			var body := _turned_body(size, [Vector2(0.43,0.12), Vector2(0.47,0.62), Vector2(0.55,0.94),
+				Vector2(0.62,1), Vector2(0.69,0.94), Vector2(0.77,0.62), Vector2(0.81,0.12)])
+			body.append(_cyl(minf(size.x,size.z)*0.11, size.y, Vector3.UP * size.y * 0.5, "metal_dark"))
+			return body
+		"transit_scope":
+			return _transit_scope(size)
 		"stone_trough":
 			return _stone_trough(size)
 		"sandbag_wall":
@@ -84,6 +97,51 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 		"vehicle_cart":
 			return _cart(size)
 	return [_box(size, Vector3(0, size.y / 2.0, 0))]
+
+
+static func _paling_fence(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var spacing := clampf(float(props.get("spacing", 0.36)), 0.18, 0.55)
+	var bars := clampi(ceili(size.x / spacing), 2, 256)
+	var pitch := size.x / bars
+	var parts: Array[Dictionary] = []
+	for i in bars:
+		var width := minf(pitch * 0.32, 0.10 if i % 8 == 0 else 0.055)
+		var height := size.y * (1.0 if i % 8 == 0 else 0.95)
+		parts.append(_box(Vector3(width,height,size.z*0.6),Vector3((i+0.5)*pitch-size.x/2,height/2,-size.z*0.2)))
+	for fraction: float in [0.24,0.76]:
+		parts.append(_box(Vector3(size.x,minf(size.y*0.08,0.11),size.z*0.4),
+			Vector3(0,size.y*fraction,size.z*0.3)))
+	return parts
+
+
+static func _freight_gate(size: Vector3) -> Array[Dictionary]:
+	var post := minf(size.x * 0.09,0.28)
+	var leaf := (size.x-2*post)*0.5
+	var parts: Array[Dictionary] = []
+	for side: int in [-1,1]:
+		parts.append(_box(Vector3(post,size.y,size.z),Vector3(side*(size.x-post)/2,size.y/2,0),"granite_blocks"))
+		parts.append(_box(Vector3(leaf*0.995,size.y*0.93,size.z*0.5),
+			Vector3(side*leaf/2,size.y*0.465,0)))
+		for band: float in [0.18,0.78]:
+			parts.append(_box(Vector3(leaf*0.94,size.y*0.045,size.z*0.16),
+				Vector3(side*leaf/2,size.y*band,size.z*0.33),"metal_dark"))
+	return parts
+
+
+static func _shutter_panel(size: Vector3, props: Dictionary) -> Array[Dictionary]:
+	var count := clampi(int(props.get("slats", 8)), 2, 20)
+	var pitch := size.y / count
+	var tilt := clampf(float(props.get("tilt", 25)), 0, 70)
+	var depth := size.z * 0.3
+	var blade := minf(pitch * 0.85, (size.z - depth) / maxf(sin(deg_to_rad(tilt)), 0.01))
+	var parts: Array[Dictionary] = []
+	var rail := minf(size.x * 0.1, 0.12)
+	for side: int in [-1, 1]:
+		parts.append(_box(Vector3(rail,size.y,size.z),Vector3(side*(size.x-rail)*0.5,size.y*0.5,0),"metal_dark"))
+	for i in count:
+		parts.append(_box(Vector3(size.x - 2 * rail, blade, depth),
+			Vector3(0, pitch * (i + 0.5), 0), "", Vector3(tilt, 0, 0)))
+	return parts
 
 
 static func _box(size: Vector3, pos: Vector3, mat: String = "", rot: Vector3 = Vector3.ZERO) -> Dictionary:
@@ -519,3 +577,22 @@ static func _tree(size: Vector3) -> Array[Dictionary]:
 		layer["top_radius_scale"] = 0.45
 		list.append(layer)
 	return list
+
+
+## Meridian telescope on twin masonry piers. Fit the tilted barrel within the piece bounds.
+static func _transit_scope(size: Vector3) -> Array[Dictionary]:
+	var diameter := minf(size.x * 0.29, minf(size.y, size.z) * 0.24)
+	var rise := size.y * 0.47
+	var run := size.z - diameter
+	var axis := Vector3(0, rise, -run).normalized()
+	var rotation := Vector3(-rad_to_deg(atan2(run, rise)), 0, 0)
+	var length := Vector2(rise, run).length()
+	var pivot := Vector3.UP * size.y * 0.59
+	var parts: Array[Dictionary] = [_cyl(diameter, length, pivot, "", rotation),
+		_cyl(diameter * 0.53, size.x, pivot, "metal_dark", Vector3(0,0,90))]
+	for side: int in [-1, 1]:
+		parts.append(_box(Vector3(size.x * 0.18, pivot.y, size.z * 0.28),
+			Vector3(side * size.x * 0.37, pivot.y / 2, 0), "limestone"))
+	for fraction: float in [-0.4, 0.15, 0.46]:
+		parts.append(_cyl(diameter * 1.18, length * 0.07, pivot + axis * length * fraction, "metal_dark", rotation))
+	return parts

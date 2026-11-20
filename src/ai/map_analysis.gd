@@ -31,6 +31,7 @@ var issues: Array[Dictionary] = []
 ## Route timings: {"label", "group", "length_min", "length_max", "seconds", "seconds_rifle"}
 ## (lengths in metres over the shortest path; -1 when there is no route).
 var timings: Array[Dictionary] = []
+var _site_setup_lines: Array[String] = []
 var bake_msec: int = 0
 
 var _map: RID
@@ -128,6 +129,7 @@ func timing_text() -> String:
 		return "No route timings: place spawns, bombsites and callout areas with a timing role."
 	var lines: Array[String] = ["Route timings (shortest path; G17 %.2f m/s, AK-47 %.2f m/s)" % [
 		MapSnapping.RUN_SPEED, MapSnapping.RUN_SPEED * MapSnapping.RIFLE_MOBILITY]]
+	lines.append_array(_site_setup_lines)
 	var group := ""
 	for entry: Dictionary in timings:
 		if entry["group"] != group:
@@ -531,9 +533,11 @@ func _measure_routes() -> void:
 			if entrances.has(role):
 				entrances[role].append([label, point])
 	var sites: Dictionary[String, Variant] = {}
+	var elevations: Dictionary[String, float] = {}
 	for site: Dictionary in document.pieces_of_type("bombsite"):
 		var letter := str(site.get("props", {}).get("site", "?"))
 		sites[letter] = _zone_nav_point(site)
+		elevations[letter] = (site["position"] as Vector3).y
 		targets.append(["Site %s" % letter, sites[letter]])
 	for team: String in ["attack", "defence"]:
 		var spawns := _spawns(team)
@@ -545,6 +549,24 @@ func _measure_routes() -> void:
 			for spawn: Vector3 in spawns:
 				lengths.append(path_length(spawn, target[1] as Vector3) if target[1] != null else -1.0)
 			_add_timing(group, str(target[0]), lengths)
+	_site_setup_lines.clear()
+	for role: String in entrances:
+		var letter := role.right(1).to_upper()
+		var defender := timing("Site %s" % letter, "Defenders from spawn")
+		if defender.is_empty() or float(defender["seconds"]) < 0:
+			continue
+		var earliest := INF
+		var door := ""
+		for entrance: Array in entrances[role]:
+			var attacker := timing(str(entrance[0]), "Attackers from spawn")
+			var arrival := float(attacker.get("seconds", -1))
+			if arrival >= 0 and arrival < earliest:
+				earliest = arrival
+				door = str(entrance[0])
+		if not door.is_empty():
+			var lead := earliest - float(defender["seconds"])
+			_site_setup_lines.append("Site %s (elevation %+.1f m): fastest defender arrives %.1f s %s first attacker at %s (G17)." % [
+				letter, elevations[letter], absf(lead), "before" if lead >= 0 else "after", door])
 	var letters := sites.keys()
 	letters.sort()
 	for i: int in letters.size():

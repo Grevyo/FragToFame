@@ -606,6 +606,10 @@ Switchyard and Kestrel Keep (official maps):
 - [ ] Kestrel Keep: run the West Gate road, the Breach, the Undercroft tunnel and the Orchard
       Walk. Walk under both raised portcullises. Climb to the Gatehouse gallery and the
       Tiltyard rampart and judge their sightlines over the market and site A.
+- [ ] Cluts: enter the Dispatch Yard (A) by the Hoist Gate, Dispatch Bend and the Yard Door
+      (along the Ramp Yard beside the Dispatch ramp). Reach the Darkroom (B) by the West Shaft
+      stair and Cable Passage, the Dispatch ramp, the North Stair and the Pump Stair in the east
+      lane. Check the lettered signs read correctly and judge the defenders' 7.7 s to B.
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

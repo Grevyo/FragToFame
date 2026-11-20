@@ -7,7 +7,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 15
+	return 16
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -134,7 +134,7 @@ func _build() -> void:
 	_yard_wall([Vector2(137,235),Vector2(170,248),Vector2(200,273),Vector2(221,307),Vector2(227,327),Vector2(226,355)],4.0,"brick")
 	_yard_wall([Vector2(200,359),Vector2(256,359),Vector2(276,381)],3.6,"brick")
 	_yard_wall([Vector2(224,407),Vector2(242,426)],3.6,"brick")
-	_yard_wall([Vector2(628,523),Vector2(629,460),Vector2(600,463),Vector2(572,456),Vector2(546,436),Vector2(539,415),Vector2(644,415),Vector2(645,438),Vector2(642,448)],3.8,"brick",{0:[[0.6,2.9]]},[1,8])
+	_dispatch_yard()
 	_receiving_house()
 	_tide_well()
 	_raised_ground()
@@ -151,11 +151,12 @@ func _build() -> void:
 	put("buy_zone",Vector3(-36,0,16),Vector3(13,3,7),0,{"team":"attack"})
 	spawns("defence",Vector3(42,0,-24),180,Vector3(9,3,6))
 	for site: String in ["A","B"]:
-		var at := Vector3(45,0,30) if site == "A" else Vector3(31,-5,15)
+		var at := Vector3(46,0,26) if site == "A" else Vector3(31,-5,15)
 		put("bombsite",at,Vector3(9,3,8),0,{"site":site})
 		for dx: int in [-2,2]:
 			anchor(site + str(dx),"plant",at+Vector3(dx,0,1))
-			hint("ai_hold",at+Vector3(dx,0,-2),180,site)
+			# A is held facing the lane mouth and the yard door to the west.
+			hint("ai_hold",at+Vector3(dx,0,-2) if site == "B" else at+Vector3(2,0,dx),180 if site == "B" else 90,site)
 	for pt: Vector3 in [Vector3(-32,0,16),Vector3(37,0,-24),Vector3(13,-5,9)]:
 		anchor("Collect " + str(pt.x),"default",pt)
 		anchor("Throw " + str(pt.x),"utility",pt+Vector3(1,0,0))
@@ -165,19 +166,20 @@ func _build() -> void:
 	area("Reading Room",-6,5,-2,9)
 	area("Public Counter",-18,-12,12,18)
 	area("Lens Elbow",-32,-26,-17,-11)
-	area("Dispatch Yard",40,50,26,34)
-	area("Hoist Gate",43,49,18,23,"entrance_a")
-	area("Dispatch Bend",39,42,25,30,"entrance_a")
+	area("Dispatch Yard",42,51,20.5,32)
+	area("Hoist Gate",43.6,48.4,17.4,20.4,"entrance_a")
+	area("Lane Mouth",40,42,19.4,24.2,"entrance_a")
 	area("West Shaft",-43,-37,-6,-3,"",-5)
 	area("Negative Store",-18,-6,-23,-18,"",-5)
 	area("Darkroom",27,35,11,19,"",-5)
 	area("Darkroom Door",24,29,9,13,"entrance_b",-5)
 	area("Drying Passage",26,31,18,21,"entrance_b",-5)
-	area("Dispatch",25,38,21,25)
+	area("Dispatch Lane",26.8,39.6,19.4,24.2)
+	area("Goods Ramp",26,39,25,31,"",-2.5)
 	area("North Stair",29,34,-24,-19,"",-5)
 	area("East Approach",38,45,1,7)
-	area("Ramp Yard",22,37.4,31.2,34)
-	area("Yard Door",37.6,41.4,31,33.4,"entrance_a")
+	area("Ramp Yard",22,39.6,31.8,34)
+	area("Yard Door",40,42,31.8,34,"entrance_a")
 
 
 # Each boundary follows the floor outline. The deep building faces extend outwards
@@ -667,8 +669,8 @@ func _ground() -> void:
 	_mounds(Vector3(44,0,-2.2),Vector3(10.5,0.8,7.0),3.2,21)
 	_mounds(Vector3(41.4,0,9.2),Vector3(5.6,0.5,5.0),2.4,22,true)
 	# Ramp Yard: a narrow dirt strip along the south wall.
-	_overlay([Vector2(22,31.2),Vector2(37.4,31.2),Vector2(37.4,34),Vector2(22,34)],"dirt")
-	_mounds(Vector3(29.5,0,32.6),Vector3(13.0,0.25,2.6),2.0,31)
+	_overlay([Vector2(22,31.6),Vector2(39.9,31.6),Vector2(39.9,34.3),Vector2(22,34.3)],"dirt")
+	_mounds(Vector3(30.5,0,33.0),Vector3(15.0,0.3,2.5),2.0,31)
 	layer("Ground plan")
 
 
@@ -683,3 +685,67 @@ func _overlay(outline: Array, material: String) -> void:
 func _mounds(at: Vector3, size: Vector3, feature: float, variation: int, oval: bool = false) -> void:
 	put("ground_mounds",Vector3(at.x,OVERLAY_TOP,at.z),size,0,
 		{"feature":feature,"seed":variation,"edge":minf(1.2,minf(size.x,size.z)*0.3),"oval":oval},"dirt")
+
+
+## The Dispatch end, rebuilt as one working yard (revision 16). The goods ramp down to the plate
+## works is roofed over by a brick ramp house entered from the street, so the yard is no longer a
+## pit ringed by walls. A straight lane runs along the house's north side and the Ramp Yard along
+## its south; both open into the Dispatch Yard, where site A stands in the open between the Hoist
+## Gate, the dispatch office and the loading dock.
+func _dispatch_yard() -> void:
+	layer("Dispatch yard")
+	# North side of the lane: the wall the GOODS IN gate is set in, with the Hoist Gate through to
+	# the weighbridge yard.
+	_yard_wall([_sketch(26.5,18.9),_sketch(43.2,18.9)],3.8,"brick")
+	_yard_wall([_sketch(48.8,18.9),_sketch(52.3,18.9)],3.8,"brick")
+	put("wall_pier",Vector3(43.2,0,18.9),Vector3(1.1,4.6,1.1),0,{},"granite_blocks")
+	put("wall_pier",Vector3(48.8,0,18.9),Vector3(1.1,4.6,1.1),0,{},"granite_blocks")
+	wall_line(Vector2(43.75,18.9),Vector2(48.25,18.9),0.7,3.9,"weathered_wood",[],"wall",0.4)
+	_sign("HOIST GATE",Vector3(46,3.6,19.12),3.2,0.42)
+	_ramp_house()
+	# Dispatch office in the yard's north-east corner.
+	mass("building",48.9,51.7,19.25,22.6,3.4,"limewash")
+	mass("roof",48.6,52.0,19.0,22.9,0.26,"slate",3.4)
+	put("door",Vector3(48.75,0,21.6),Vector3(1.1,2.4,0.3),270,{"panels":2,"fanlight":false})
+	put("window",Vector3(50.3,1.0,22.75),Vector3(1.4,1.3,0.3),0,{"panes_x":2,"panes_y":2})
+	_sign("DISPATCH OFFICE",Vector3(50.3,2.75,22.78),2.6,0.38)
+	lamp(Vector3(47.6,3.0,22.2),1.6,9)
+	# Goods waiting to go out: cover on site without closing the yard.
+	put("vehicle_cart",Vector3(43.6,0,24.4),Vector3.ZERO,-12)
+	put("braced_crate",Vector3(48.6,0,27.6),Vector3(1.8,1.2,1.3),8)
+	put("crate_stack",Vector3(50.6,0,26.4),Vector3(2.2,2.2,1.1),90)
+	put("barrel_cluster",Vector3(41.3,0,29.6),Vector3(1.5,1.0,1.2))
+	layer("Ground plan")
+
+
+## Brick shed roofed over the goods ramp (the shaft 26–39 x 25–31). Its whole west end is the
+## doorway at the ramp head; upper windows look out over the lane, the Ramp Yard and the yard.
+func _ramp_house() -> void:
+	var corners := [Vector2(25.3,24.675),Vector2(39.675,24.675),Vector2(39.675,31.325),Vector2(25.3,31.325)]
+	_joined_walls(corners,false,6.0,0,"mud_brick",0.65,{})
+	_joined_walls(corners,false,0.5,0,"granite_blocks",0.73,{})
+	_joined_walls(corners,false,0.26,3.8,"limestone",0.8,{})
+	# The doorway spans the ramp: a lintel wall above 3.8 m.
+	wall_line(Vector2(25.625,24.35),Vector2(25.625,31.65),2.2,3.8,"mud_brick",[],"wall",0.65)
+	mass("wall",25.15,25.35,24.35,31.65,0.3,"limestone",3.5)
+	prism([Vector2(25.0,24.05),Vector2(40.0,24.05),Vector2(40.0,31.95),Vector2(25.0,31.95)],6.0,0.3,"weathered_wood")
+	_gable(Vector2(25.0,28.0),Vector2(40.0,28.0),7.9,6.28,2.4,"slate")
+	_chimney(Vector2(36.5,26.4),7.4,1.4,"mud_brick")
+	for x: float in [29.0,33.0,37.0]:
+		put("window",Vector3(x,4.2,24.2),Vector3(1.2,1.5,0.3),180,{"panes_x":2,"panes_y":3})
+		put("window",Vector3(x,4.2,31.8),Vector3(1.2,1.5,0.3),0,{"panes_x":2,"panes_y":3})
+	for z: float in [26.2,29.8]:
+		put("window",Vector3(40.15,4.2,z),Vector3(1.2,1.5,0.3),90,{"panes_x":2,"panes_y":3})
+	_sign("GOODS RAMP   /   PLATE WORKS",Vector3(25.22,4.55,28),5.6,0.5,270)
+	_sign("DISPATCH",Vector3(40.08,2.7,28),3.0,0.5,90)
+	put("awning",Vector3(40.0,0,28),Vector3(4.5,2.7,1.6),90)
+	# Wall lamps down the ramp, alternating sides.
+	for i in 3:
+		var x: float = [28.5,33.0,37.5][i]
+		lamp(Vector3(x,3.4-0.25*(x-26.0),25.25 if i%2 == 0 else 30.75),1.6,9)
+
+
+## Sketch coordinates (the owner's plan) for a world point, so world-placed walls can reuse the
+## traced-wall helpers.
+func _sketch(x: float, z: float) -> Vector2:
+	return Vector2(x/0.14+350.0,z/0.14+280.0)

@@ -629,6 +629,9 @@ Switchyard and Kestrel Keep (official maps):
 - [ ] **Creation Studio**: place Uneven ground (mounds) on a floor and change its height,
       distance between mounds, flat border, seed and oval option; try the five new ground
       textures; change Distance haze in the map's lighting.
+- [ ] Cluts (revision 16): walk the Dispatch Lane, the Ramp Yard and the Goods Ramp house down to
+      B; play A in its new place in the middle of the Dispatch Yard (attack through the Lane
+      Mouth and Yard Door, defend from the Hoist Gate) and judge whether it is fair.
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

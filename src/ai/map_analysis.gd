@@ -422,7 +422,7 @@ func _inside_solid_piece(point: Vector3) -> bool:
 	for piece: Dictionary in document.pieces:
 		var type := str(piece["type"])
 		var kind := PieceCatalog.kind(type)
-		if kind not in ["block", "ramp", "stairs", "compound"] or not MapDocument.piece_contains(piece, probe):
+		if kind not in ["block", "ramp", "stairs", "compound", "surface"] or not MapDocument.piece_contains(piece, probe):
 			continue
 		var local := MapDocument.piece_transform(piece).affine_inverse() * probe
 		var size: Vector3 = piece["size"]
@@ -437,7 +437,29 @@ func _inside_solid_piece(point: Vector3) -> bool:
 				for part: Dictionary in PieceShapes.parts(type, size, piece["props"]):
 					if _part_contains(part, local):
 						return true
+			"surface":
+				if type == "mesh_brush" and _inside_brush(size, piece["props"], local):
+					return true
 	return false
+
+
+## True when [param point] (brush-local) is enclosed by the brush: a ray from it crosses the
+## brush's faces an odd number of times. Open brushes (a single sheet) rarely enclose anything.
+static func _inside_brush(size: Vector3, props: Dictionary, point: Vector3) -> bool:
+	var points := BrushGeometry.local_points(size, props)
+	var faces: Variant = props.get("faces")
+	if points.is_empty() or not faces is Array:
+		return false
+	# Slightly off vertical so the ray never runs exactly along a shared edge.
+	var direction := Vector3(0.0123, 1.0, 0.0071).normalized()
+	var crossings := 0
+	for i: int in range(0, (faces as Array).size() - 2, 3):
+		var a := points[int(faces[i])]
+		var b := points[int(faces[i + 1])]
+		var c := points[int(faces[i + 2])]
+		if Geometry3D.ray_intersects_triangle(point, direction, a, b, c) != null:
+			crossings += 1
+	return crossings % 2 == 1
 
 
 static func _part_contains(part: Dictionary, point: Vector3) -> bool:

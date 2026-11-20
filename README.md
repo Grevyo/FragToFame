@@ -596,11 +596,13 @@ Kilnmarket (official map):
 Switchyard and Kestrel Keep (official maps):
 
 - [ ] **FPS Sandbox → map select** lists Kilnmarket, Switchyard and Kestrel Keep.
-- [ ] Switchyard: from the Freight Yard, take the Loading Gate into the Machine Hall (A) and
-      look up at the Control Deck through the atrium. Go down each way to the Turbine Vault (B):
-      the Freight Ramp, the West Stairwell in the hall, the defenders' North Stair, the East
-      Culvert, and drop the Coal Chute and the Vent. Climb the vault gantry. Judge whether 8 m
-      of depth feels right and whether the deck perch over A is too strong.
+- [ ] Switchyard: enter the Machine Hall (A) by the Loading Gate, the Breach, the Coal Door,
+      the Pump Door and the North Door; climb to the Control Deck by the inside stair, the West
+      Stair, the Deck Ramp and the angled Service Stair. Reach the Turbine Vault (B) by each
+      door: the Freight Ramp to the Junction (Main and East Doors), the Coal Stair and the Coal
+      Chute to the Coal Tunnel (West Door), the Cable Gallery loop, the East Culvert, the North
+      Stair, the West Stairwell and the Vent drop. Climb the vault gantry. Judge the map's size
+      and whether the attackers' 11 s to the first doors feels right.
 - [ ] Kestrel Keep: run the West Gate road, the Breach, the Undercroft tunnel and the Orchard
       Walk. Walk under both raised portcullises. Climb to the Gatehouse gallery and the
       Tiltyard rampart and judge their sightlines over the market and site A.

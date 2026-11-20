@@ -282,7 +282,12 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Authoring sessions.** `tools/map_author_base.gd` holds the shared steps for official map
   scripts (`tools/author_*.gd`): open the studio, place and edit pieces, validate, save, then
   publish. `slab_with_holes` lays a floor as several slabs around rectangular openings (shafts,
-  ramps and drops between levels); `_revision()` sets the revision a republished map ships as.
+  ramps and drops between levels) and `floor_shape` does the same for any outline with the Draw
+  Surface tool; `wall_line`/`walls_around` place angled walls with gaps, and `prism` draws an
+  upright brush of any footprint. `_revision()` sets the revision a republished map ships as.
+- **Sealed pockets.** The face-based bake leaves navmesh inside closed solids. The island check
+  skips points inside blocks, wedges, compound parts and closed brushes (an upward ray crossing
+  the brush's faces an odd number of times).
   `tools/capture_map.gd` saves screenshots of any map (it needs a window).
 - **Official maps.** `OfficialMaps` lists files in `res://data/maps/official` (Kilnmarket,
   Switchyard, Kestrel Keep). They load through

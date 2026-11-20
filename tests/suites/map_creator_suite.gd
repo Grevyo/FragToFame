@@ -673,6 +673,25 @@ func _test_analysis() -> void:
 		and str(steep[0]["text"]).contains("lengthen it to"),
 		"a stair steeper than the bots can follow is reported with the length it needs (%s)" % str(steep))
 
+	# A closed six-sided brush standing on the floor: the bake leaves a pocket inside it.
+	var brushed := _arena("Brush building")
+	var ring: Array = []
+	var faces: Array = []
+	for level: float in [0.0, 4.0]:
+		for i: int in 6:
+			var angle := TAU * float(i) / 6.0
+			ring.append([10.0 + 3.5 * cos(angle), level, 8.0 + 3.5 * sin(angle)])
+	for index: int in [0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5]:
+		faces.append(index + 6)
+	for i: int in 6:
+		faces.append_array([i, (i + 1) % 6, (i + 1) % 6 + 6, i, (i + 1) % 6 + 6, i + 6])
+	brushed.add_piece(BrushGeometry.piece(ring, faces, true))
+	var enclosed := MapAnalysis.analyse(brushed, host)
+	check(not enclosed.has_issue("island"),
+		"a pocket sealed inside a closed brush is not reported as unreachable floor (%s)" % str(enclosed.issues))
+	check(MapAnalysis._inside_brush(Vector3(4, 4, 4), {"vertices": [[0, 0, 0], [1, 0, 0], [0, 0, 1]], "faces": [0, 1, 2]},
+		Vector3(0.5, 1, 0.5)) == false, "an open brush sheet encloses nothing")
+
 	var off := _arena("Off mesh")
 	off.add_piece(_piece("spawn_attack", Vector3(40, 0, 0)))
 	check(MapAnalysis.analyse(off, host).has_issue("spawn_off_navmesh"), "a spawn off the walkable ground is reported")

@@ -596,19 +596,23 @@ Gaps against building a full competitive map:
       them added the pieces the editor could not make and a slope warning (below).
 - [ ] Remaining official maps (2–4 more).
 
-**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 2): a rail
-switching station built over a turbine vault. Most of the play is on the surface; site B is
-8 m underground. Site A is the Machine Hall, entered by the Loading Gate, Coal Door or Pump Door
-and overlooked by the Control Deck on its roof (5 m, open atrium over the site, reached by a
-stair tower, the West Stair, the deck ramp and the Service Stair). Site B is the Turbine Vault
-(floor at -8 m, 7 m tall, with a gantry 4 m up along its east wall). Six ways down: the Freight
-Ramp in the middle of the yard (attackers' short route), the West Stairwell inside the hall
-(A to B), the defenders' North Stair from the Receiving Yard, the East Culvert ramp from the
-Tank Yard, and two drops for people only: the Coal Chute from the Coal Cut and the Vent beside
-site A. The surface slab is cut with holes (`slab_with_holes` in `tools/map_author_base.gd`) so
-the shafts are open to the sky. Timings: defenders reach A in 6.4 s and B in 6.5 s; attackers'
-first A entrance is 8.9 s (Loading Gate) and first B entrance 8.7 s (Ramp Tunnel), the long
-Culvert 13.2 s. Rotation A to B is 6.6 s by the stairwell.
+**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 3): a rail
+switching station over a turbine works, about 120 × 160 m inside an irregular fifteen-sided
+perimeter. Most of the play is on the surface; site B is 8 m underground. Site A is the Machine
+Hall, a seven-sided shed with five ways in (Loading Gate, the Breach in its angled south-west
+corner, Coal Door, Pump Door, North Door), overlooked by the Control Deck on its roof (5 m, open
+atrium over the site; reached by an inside stair, the West Stair, the Deck Ramp and an angled
+Service Stair). Site B is the Turbine Vault, a seven-sided hall 30 × 32 m and 7 m tall with a
+gantry 4 m up along its north wall and six doors: Main and East Doors from the Junction (under
+the Freight Yard, reached by the Freight Ramp), West Door from the Coal Tunnel (Coal Stair in
+the Coal Lane, or the Coal Chute drop into the Chute Room), Culvert Door at the end of the bent
+East Culvert (ramp in the Tank Yard), North Door from the defenders' North Stair, and the West
+Stairwell from inside the hall. The angled Cable Gallery joins the Junction to the Coal Tunnel,
+so the underground has its own loop; the Vent is a drop from beside site A into site B.
+Buildings, tunnels and floors are drawn with the editor's angled walls, Draw Surface polygons
+and brushes, so little of the map is square. Timings: defenders reach A in 8.8 s and B in
+8.6 s; attackers' first A entrance is 11.5 s (Loading Gate) and first B entrance 11.2 s (Main
+Door); the long Culvert flank is 15.6 s. Rotation A to B is 7.5 s.
 
 **Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`): a granite fortress
 above a village. Site A is the Tiltyard, reached by the West Gate road (long, 14.0 s), the Breach
@@ -723,6 +727,7 @@ Planned scope:
 | 2026-11-17 | Development option (owner request): Simulate match on Home and the Calendar resolves your pending match like a world series, for quick day testing. Debug builds only; may become a feature later. Simulated results count for ELO and reputation (owner). |
 | 2026-11-19 | M16: two more official maps, Switchyard (stacked sites) and Kestrel Keep (stone fortress). Eleven new catalogue pieces, six materials and a steep-slope warning. |
 | 2026-11-19 | Switchyard rework (owner request): play centres on the surface, site B moves 8 m underground to the Turbine Vault, reached by two ramps, two stairs, a coal chute and a vent. Published as revision 2. |
+| 2026-11-20 | Switchyard expanded (owner request): bigger and far less square, an irregular perimeter, a seven-sided hall and vault, angled tunnels, the Junction and Cable Gallery underground loop, six doors into B and five into A. Published as revision 3. The analyser no longer reports navmesh pockets sealed inside closed brushes as unreachable floor. |
 | 2026-11-18 | No fixed rates: amateur results now move reputation by surprise, margin and rating, and confidence and opinions by the size of the evidence. |
 | 2026-11-18 | No fixed rates, continued: the PR agent, scouting reports and the world's monthly confidence follow evidence (maps played, form, visibility, the gap between reputation and level). |
 | 2026-11-18 | No fixed rates in training: evidence, confidence, scrim relationships and the bootcamp's outcome all follow how the sessions went and who the people are. |

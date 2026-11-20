@@ -157,6 +157,127 @@ func slab_with_holes(type: String, x1: float, x2: float, z1: float, z2: float, h
 			mass(type, start, xs[xs.size() - 1], zs[j], zs[j + 1], height, material, base)
 
 
+## Draw Surface tool: a solid floor whose top follows [param outline] (Vector2 x/z corners) at
+## [param top], [param thickness] deep; then the material is set in the inspector.
+func surface(outline: Array, top: float, thickness: float, material: String = "") -> String:
+	var points := PackedVector3Array()
+	for corner: Vector2 in outline:
+		points.append(Vector3(corner.x, top, corner.y))
+	var id: String = studio.call("draw_surface", points, thickness)
+	if id.is_empty():
+		printerr("Draw Surface refused outline ", outline)
+		return id
+	if not material.is_empty():
+		var piece := controller.document.get_piece(id)
+		piece["material"] = material
+		controller.update_piece(piece, "Edit properties")
+	return id
+
+
+## A floor of any outline with rectangular [param holes] ([x1, x2, z1, z2]) left open. Like
+## [method slab_with_holes] it cuts the area into bands at the holes' edges; each solid run of
+## a band is clipped to the outline and drawn with the Draw Surface tool.
+func floor_shape(outline: Array, top: float, thickness: float, material: String, holes: Array = []) -> void:
+	var shape := PackedVector2Array(outline)
+	var bounds := Rect2(shape[0], Vector2.ZERO)
+	for corner: Vector2 in shape:
+		bounds = bounds.expand(corner)
+	var xs: Array[float] = [bounds.position.x, bounds.end.x]
+	var zs: Array[float] = [bounds.position.y, bounds.end.y]
+	for hole: Array in holes:
+		xs.append_array([float(hole[0]), float(hole[1])])
+		zs.append_array([float(hole[2]), float(hole[3])])
+	xs.sort()
+	zs.sort()
+	for j: int in zs.size() - 1:
+		if zs[j + 1] - zs[j] < 0.01:
+			continue
+		var runs: Array[Vector2] = []
+		var start := xs[0]
+		var in_run := false
+		for i: int in xs.size() - 1:
+			if xs[i + 1] - xs[i] < 0.01:
+				continue
+			var centre := Vector2((xs[i] + xs[i + 1]) / 2.0, (zs[j] + zs[j + 1]) / 2.0)
+			var open := false
+			for hole: Array in holes:
+				open = open or (centre.x > float(hole[0]) and centre.x < float(hole[1])
+					and centre.y > float(hole[2]) and centre.y < float(hole[3]))
+			if not open and not in_run:
+				start = xs[i]
+				in_run = true
+			elif open and in_run:
+				runs.append(Vector2(start, xs[i]))
+				in_run = false
+		if in_run:
+			runs.append(Vector2(start, xs[xs.size() - 1]))
+		for run: Vector2 in runs:
+			var band := PackedVector2Array([Vector2(run.x, zs[j]), Vector2(run.y, zs[j]),
+				Vector2(run.y, zs[j + 1]), Vector2(run.x, zs[j + 1])])
+			for piece: PackedVector2Array in Geometry2D.intersect_polygons(band, shape):
+				if absf(_area(piece)) > 0.05:
+					surface(Array(piece), top, thickness, material)
+
+
+## Brush tool: an upright block whose footprint is [param outline] (Vector2 x/z corners).
+func prism(outline: Array, base: float, height: float, material: String = "") -> void:
+	var shape := PackedVector2Array(outline)
+	var count := shape.size()
+	var vertices: Array = []
+	for level: float in [base, base + height]:
+		for corner: Vector2 in shape:
+			vertices.append([corner.x, level, corner.y])
+	var faces: Array = []
+	for index: int in Geometry2D.triangulate_polygon(shape):
+		faces.append(index + count)
+	for i: int in count:
+		var next := (i + 1) % count
+		faces.append_array([i, next, next + count, i, next + count, i + count])
+	var rows: Array = [{"vertices": vertices, "faces": faces, "two_sided": true, "material": material}]
+	if (studio.call("draw_brushes", rows) as Array).is_empty():
+		printerr("Brush refused outline ", outline)
+
+
+## A straight wall from [param a] to [param b] (x/z), placed and turned in the inspector, with
+## [param gaps] ([from, to] metres from [param a]) left open. Ends at corners overlap by half the
+## thickness so joined walls close.
+func wall_line(a: Vector2, b: Vector2, height: float, base: float, material: String, gaps: Array = [],
+		type: String = "wall", thickness: float = 0.6) -> void:
+	var length := a.distance_to(b)
+	var along := (b - a) / length
+	var yaw := rad_to_deg(atan2(-along.y, along.x))
+	var cuts: Array[float] = [0.0]
+	for gap: Array in gaps:
+		cuts.append_array([float(gap[0]), float(gap[1])])
+	cuts.append(length)
+	for i: int in range(0, cuts.size(), 2):
+		var from := cuts[i] - (thickness / 2.0 if i == 0 else 0.0)
+		var to := cuts[i + 1] + (thickness / 2.0 if i + 1 == cuts.size() - 1 else 0.0)
+		if to - from < 0.05:
+			continue
+		var centre := a + along * (from + to) / 2.0
+		put(type, Vector3(centre.x, base, centre.y), Vector3(to - from, height, thickness), yaw, {}, material)
+
+
+## Walls round a closed [param outline]; [param gaps] maps an edge index (edge i runs from corner
+## i to corner i + 1) to its gaps, and [param skip] lists edges left without a wall.
+func walls_around(outline: Array, height: float, base: float, material: String, gaps: Dictionary = {},
+		skip: Array = [], type: String = "wall", thickness: float = 0.6) -> void:
+	for i: int in outline.size():
+		if i in skip:
+			continue
+		wall_line(outline[i], outline[(i + 1) % outline.size()], height, base, material,
+			gaps.get(i, []), type, thickness)
+
+
+static func _area(shape: PackedVector2Array) -> float:
+	var total := 0.0
+	for i: int in shape.size():
+		var next := shape[(i + 1) % shape.size()]
+		total += shape[i].x * next.y - next.x * shape[i].y
+	return total / 2.0
+
+
 func area(area_name: String, x1: float, x2: float, z1: float, z2: float, role: String = "", base: float = 0.0) -> String:
 	return put("callout", Vector3((x1 + x2) / 2.0, base, (z1 + z2) / 2.0), Vector3(x2 - x1, 3.0, z2 - z1), 0.0,
 		{"name": area_name, "role": role})

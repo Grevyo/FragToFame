@@ -7,7 +7,7 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 17
+	return 18
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -144,6 +144,7 @@ func _build() -> void:
 	_harbour_basin()
 	_skyline()
 	_fixtures()
+	_street_props()
 	_set_relief()
 	layer("Match layout")
 	# Start at the quay end of the line so a teammate collecting a dropped
@@ -151,26 +152,31 @@ func _build() -> void:
 	for x: int in [-40,-38,-36,-34,-32]:
 		put("spawn_attack",Vector3(x,0,16))
 	put("buy_zone",Vector3(-36,0,16),Vector3(13,3,7),0,{"team":"attack"})
-	spawns("defence",Vector3(42,0,-24),180,Vector3(9,3,6))
+	# Defenders muster in the Dispatch Yard, about as far from the Harbour Office (A) as from the
+	# Darkroom (B) below the Goods Ramp.
+	spawns("defence",Vector3(45.5,0,25.5),0,Vector3(9,3,6))
 	for site: String in ["A","B"]:
-		var at := Vector3(46,0,26) if site == "A" else Vector3(31,-5,15)
+		var at := Vector3(43,0,-25) if site == "A" else Vector3(31,-5,15)
 		put("bombsite",at,Vector3(9,3,8),0,{"site":site})
 		for dx: int in [-2,2]:
 			anchor(site + str(dx),"plant",at+Vector3(dx,0,1))
-			# A is held facing the lane mouth and the yard door to the west.
+			# A is held facing the north lane and the stair head to the west.
 			hint("ai_hold",at+Vector3(dx,0,-2) if site == "B" else at+Vector3(2,0,dx),180 if site == "B" else 90,site)
-	for pt: Vector3 in [Vector3(-32,0,16),Vector3(37,0,-24),Vector3(13,-5,9)]:
+	for pt: Vector3 in [Vector3(-32,0,16),Vector3(41,0,28.5),Vector3(13,-5,9)]:
 		anchor("Collect " + str(pt.x),"default",pt)
 		anchor("Throw " + str(pt.x),"utility",pt+Vector3(1,0,0))
 	area("Ticket Quay",-43,-30,12,19)
-	area("Harbour Office",35,50,-32,-19)
+	area("Harbour Office",37,50,-30.5,-19)
+	area("North Lane",30,35,-32.5,-27.4,"entrance_a")
+	area("Stair Head",31.5,35.5,-23,-18,"entrance_a")
+	area("Harbour Gate",37.5,50.5,-17.5,-15,"entrance_a")
 	area("Meridian Corridor",-7,5,-17,-11,"mid")
 	area("Reading Room",-6,5,-2,9)
 	area("Public Counter",-18,-12,12,18)
 	area("Lens Elbow",-32,-26,-17,-11)
 	area("Dispatch Yard",42,51,20.5,32)
-	area("Hoist Gate",43.6,48.4,17.4,20.4,"entrance_a")
-	area("Lane Mouth",40,42,19.4,24.2,"entrance_a")
+	area("Hoist Gate",43.6,48.4,17.4,20.4)
+	area("Lane Mouth",40,42,19.4,24.2)
 	area("West Shaft",-43,-37,-6,-3,"",-5)
 	area("Negative Store",-18,-6,-23,-18,"",-5)
 	area("Darkroom",27,35,11,19,"",-5)
@@ -181,7 +187,7 @@ func _build() -> void:
 	area("North Stair",29,34,-24,-19,"",-5)
 	area("East Approach",38,45,1,7)
 	area("Ramp Yard",22,39.6,31.8,34)
-	area("Yard Door",40,42,31.8,34,"entrance_a")
+	area("Yard Door",40,42,31.8,34)
 
 
 # Each boundary follows the floor outline. The deep building faces extend outwards
@@ -651,19 +657,48 @@ func _building_front(a: Vector2, b: Vector2, outside: Vector2, height: float) ->
 ## low mounds. Each finish is its own part of the floor, level with the road.
 func _ground_regions() -> Array:
 	return [
-		# Reading Room square and the pavement in front of the south exchange row.
+		# Reading Room square and the pavement in front of the south exchange row (laid stone keeps
+		# its straight edges).
 		[[Vector2(-9,-4.5),Vector2(7,-4.5),Vector2(7,10.3),Vector2(-9,10.3)],"flagstones"],
 		[[Vector2(-17,20.3),Vector2(20,20.3),Vector2(20,22.4),Vector2(-17,22.4)],"flagstones"],
-		# Gravel service lanes behind the north buildings.
-		[[Vector2(-34,-32),Vector2(-9,-32),Vector2(-9,-26),Vector2(-34,-27.5)],"gravel"],
-		[[Vector2(15,-32.5),Vector2(35,-32.5),Vector2(35,-27.4),Vector2(15,-27.4)],"gravel"],
-		# Tide Office yard: dirt all round the well.
-		[[Vector2(-47,-25),Vector2(-34,-25),Vector2(-34,-11),Vector2(-47,-11)],"dirt"],
-		# Weighbridge yard: churned dirt where carts turn.
-		[[Vector2(37.5,-7),Vector2(50.5,-7),Vector2(50.5,17.2),Vector2(37.5,17.2)],"dirt"],
-		# Ramp Yard: a narrow dirt strip along the south wall.
-		[[Vector2(22,31.6),Vector2(39.9,31.6),Vector2(39.9,34.3),Vector2(22,34.3)],"dirt"],
+		# Gravel spread along the two service lanes behind the north buildings.
+		[_blob(Vector2(-21.5,-29.5),Vector2(13.5,3.6),1),"gravel"],
+		[_blob(Vector2(23,-30),Vector2(8.5,3.0),2),"gravel"],
+		# Dirt yards: the Tide Office yard, the Weighbridge yard and the Ramp Yard.
+		[_blob(Vector2(-40.5,-18),Vector2(6.6,7.4),3),"dirt"],
+		[_blob(Vector2(44,4),Vector2(7.2,11.5),4),"dirt"],
+		[_blob(Vector2(31,33),Vector2(9.8,2.1),5),"dirt"],
+		# Worn ground wherever feet and carts cut corners.
+		[_blob(Vector2(-22,-4),Vector2(4.8,3.8),6),"dirt"],
+		[_blob(Vector2(-13,5),Vector2(3.6,3.2),7),"dirt"],
+		[_blob(Vector2(14,4),Vector2(4.6,4.0),8),"dirt"],
+		[_blob(Vector2(26,1),Vector2(3.0,5.0),9),"dirt"],
+		[_blob(Vector2(10,-20),Vector2(4.4,2.6),10),"dirt"],
+		[_blob(Vector2(-38,-7.5),Vector2(3.6,2.6),11),"dirt"],
+		[_blob(Vector2(-14,16),Vector2(3.6,2.6),12),"dirt"],
+		[_blob(Vector2(7,15.5),Vector2(5.2,2.6),13),"dirt"],
+		[_blob(Vector2(47,-29),Vector2(3.4,2.6),14),"dirt"],
+		[_blob(Vector2(28,13.5),Vector2(5.0,3.0),15),"dirt"],
+		[_blob(Vector2(-29,-13),Vector2(3.2,2.8),16),"dirt"],
+		[_blob(Vector2(-38,15.5),Vector2(4.5,2.4),17),"dirt"],
 	]
+
+
+## An irregular patch outline: an ellipse of [param radii] whose edge wanders in and out (about
+## a fifth of its radius) so no patch reads as a drawn shape. The same [param variation] always
+## gives the same outline.
+func _blob(centre: Vector2, radii: Vector2, variation: int) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(["cluts_ground", variation])
+	var phase_a := rng.randf_range(0.0, TAU)
+	var phase_b := rng.randf_range(0.0, TAU)
+	var outline: Array = []
+	var count := 18
+	for i in count:
+		var angle := TAU*i/count
+		var wander := 1.0 + 0.12*sin(angle*3.0+phase_a) + 0.07*sin(angle*5.0+phase_b) + rng.randf_range(-0.05,0.05)
+		outline.append(centre+Vector2(cos(angle)*radii.x,sin(angle)*radii.y)*wander)
+	return outline
 
 
 ## Mounds in the dirt yards, clear of benches, the well kerb and the weighbridge. Their edges sink
@@ -708,8 +743,8 @@ func _dispatch_yard() -> void:
 	put("window",Vector3(50.3,1.0,22.75),Vector3(1.4,1.3,0.3),0,{"panes_x":2,"panes_y":2})
 	_sign("DISPATCH OFFICE",Vector3(50.3,2.75,22.78),2.6,0.38)
 	lamp(Vector3(47.6,3.0,22.2),1.6,9)
-	# Goods waiting to go out: cover on site without closing the yard.
-	put("vehicle_cart",Vector3(43.6,0,24.4),Vector3.ZERO,-12)
+	# Goods waiting to go out, kept clear of the defenders' muster line.
+	put("vehicle_cart",Vector3(43.5,0,29.9),Vector3.ZERO,-12)
 	put("braced_crate",Vector3(48.6,0,27.6),Vector3(1.8,1.2,1.3),8)
 	put("crate_stack",Vector3(50.6,0,26.4),Vector3(2.2,2.2,1.1),90)
 	put("barrel_cluster",Vector3(41.3,0,29.6),Vector3(1.5,1.0,1.2))
@@ -747,3 +782,64 @@ func _ramp_house() -> void:
 ## traced-wall helpers.
 func _sketch(x: float, z: float) -> Vector2:
 	return Vector2(x/0.14+350.0,z/0.14+280.0)
+
+
+## Everyday clutter that makes the exchange a working place: goods waiting by walls, carts, stalls,
+## benches and trees. Everything stands against a wall or in a corner, leaving every lane at least
+## 2.5 m clear.
+func _street_props() -> void:
+	layer("Street props")
+	# Ticket Quay: luggage and freight against the quay buildings.
+	put("barrel_cluster",Vector3(-44.4,0,19.3),Vector3(1.5,1.0,1.2),8)
+	put("crate_stack",Vector3(-29.4,0,19.4),Vector3(2.2,2.2,1.0),0)
+	put("coopered_barrel",Vector3(-31.2,0,19.6),Vector3(0.7,1.0,0.7))
+	# South hall: a stall by the Public Counter and benches along the reading-court wall.
+	put("market_stall",Vector3(-17.5,0,19.7),Vector3(3,2.6,1.4),180)
+	put("pottery_jar",Vector3(-15.4,0,19.9),Vector3(0.6,0.9,0.6))
+	put("stone_bench",Vector3(-2.5,0,11.5),Vector3(3,0.6,0.7),0,{},"limestone")
+	put("stone_bench",Vector3(3.5,0,11.4),Vector3(3,0.6,0.7),0,{},"limestone")
+	put("crate_long",Vector3(12.5,0,19.7),Vector3(2.4,1.0,1.0),0)
+	# Reading Room square and the courtyards either side: trees and seats.
+	put("tree",Vector3(-13,0,1.5),Vector3(4,6.5,4))
+	put("tree",Vector3(14.5,0,3.5),Vector3(4,7,4))
+	put("stone_bench",Vector3(-8.2,0,-1.5),Vector3(0.7,0.6,3),0,{},"limestone")
+	put("stone_bench",Vector3(-8.2,0,7.0),Vector3(0.7,0.6,3),0,{},"limestone")
+	put("barrel_cluster",Vector3(19.6,0,-1.8),Vector3(1.5,1.0,1.2),0)
+	# Meridian side: deliveries against the long walls.
+	put("barrel_cluster",Vector3(5,0,-23.3),Vector3(1.5,1.0,1.2),0)
+	put("braced_crate",Vector3(10.5,0,-22.9),Vector3(1.8,1.2,1.2),4)
+	put("crate_long",Vector3(14,0,-11.1),Vector3(2.4,1.0,1.0),0)
+	put("crate_stack",Vector3(-27.2,0,-16.4),Vector3(2.2,2.2,1.0),90)
+	# North service lanes: a parked cart and stacked stock.
+	put("vehicle_cart",Vector3(-20,0,-30.6),Vector3.ZERO,90)
+	put("barrel_cluster",Vector3(-12,0,-31.3),Vector3(1.5,1.0,1.1),0)
+	put("crate",Vector3(-31.5,0,-31.2),Vector3(1.2,1.2,1.2),12)
+	put("crate_stack",Vector3(18.5,0,-31.5),Vector3(2.2,2.2,1.0),0)
+	put("barrel_cluster",Vector3(27,0,-31.6),Vector3(1.5,1.0,1.0),0)
+	# Harbour Office (site A): the office itself on the north wall, and cover in the yard.
+	mass("building",39.5,46.5,-33.6,-31.1,3.6,"limewash")
+	mass("roof",39.2,46.8,-33.6,-30.8,0.26,"slate",3.6)
+	put("door",Vector3(41.5,0,-30.95),Vector3(1.1,2.4,0.3),0,{"panels":2,"fanlight":true})
+	put("window",Vector3(44.3,1.0,-30.95),Vector3(1.6,1.3,0.3),0,{"panes_x":3,"panes_y":2})
+	_sign("HARBOUR OFFICE",Vector3(43,3.0,-30.9),4.2,0.45)
+	lamp(Vector3(45.7,3.0,-30.4),1.6,9)
+	put("braced_crate",Vector3(40,0,-27.2),Vector3(2.0,1.4,1.4),10)
+	put("crate_stack",Vector3(46.8,0,-22.2),Vector3(2.2,2.2,1.1),90)
+	put("vehicle_cart",Vector3(48.4,0,-28.4),Vector3.ZERO,70)
+	put("barrel_cluster",Vector3(38,0,-20.4),Vector3(1.5,1.0,1.2),0)
+	put("stone_trough",Vector3(43.5,0,-23.6),Vector3(2.4,0.8,0.9),0,{},"granite_blocks")
+	# East corridor and weighbridge yard.
+	put("barrel_cluster",Vector3(50,0,-11.5),Vector3(1.4,1.0,1.4),0)
+	put("crate",Vector3(49.8,0,-8.2),Vector3(1.2,1.2,1.2),20)
+	# Plaza over the plate works and the Dispatch Lane.
+	put("crate_stack",Vector3(23,0,11.6),Vector3(2.2,2.2,1.1),0)
+	put("barrel_cluster",Vector3(36.4,0,17.5),Vector3(1.4,1.0,1.2),0)
+	put("barrel_cluster",Vector3(31,0,19.9),Vector3(1.5,1.0,0.9),0)
+	# Tide Office yard and Lens Delivery.
+	put("stone_trough",Vector3(-46,0,-13.5),Vector3(0.9,0.8,2.4),0,{},"granite_blocks")
+	put("pottery_jar",Vector3(-35,0,-24.3),Vector3(0.6,0.9,0.6))
+	put("pottery_jar",Vector3(-34.9,0,-23.4),Vector3(0.5,0.75,0.5))
+	# Lower plate works: stock in the dispatch hall under the yard.
+	put("crate_stack",Vector3(22.2,-5,31.6),Vector3(2.2,2.2,1.1),0)
+	put("crate",Vector3(21.2,-5,22),Vector3(1.2,1.2,1.2),15)
+	layer("Ground plan")

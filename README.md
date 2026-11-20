@@ -633,6 +633,10 @@ Switchyard and Kestrel Keep (official maps):
 - [ ] Cluts (revision 16): walk the Dispatch Lane, the Ramp Yard and the Goods Ramp house down to
       B; play A in its new place in the middle of the Dispatch Yard (attack through the Lane
       Mouth and Yard Door, defend from the Hoist Gate) and judge whether it is fair.
+- [ ] Cluts (revision 18): check the dirt and gravel patches have no straight or square edges;
+      walk the map for props that block a doorway or snag movement; play A in the Harbour Office
+      yard (attack from North Lane, the Stair Head and the Harbour Gate, defend from the Dispatch
+      Yard) and judge whether the defenders' 6.5 s lead at A is too generous.
 - [ ] Practice matches on both maps: bots reach both sites, plant, hold and retake.
 - [ ] **Creation Studio**: place each new piece from the palette (battlement wall, round tower,
       gate with portcullis, railing, catwalk, pipe run, storage tank, shipping container, tree,

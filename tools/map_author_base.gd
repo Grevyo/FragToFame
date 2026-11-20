@@ -191,11 +191,6 @@ func floor_shape(outline: Array, top: float, thickness: float, material: String,
 	for hole: Array in holes:
 		xs.append_array([float(hole[0]), float(hole[1])])
 		zs.append_array([float(hole[2]), float(hole[3])])
-	# Band edges at each region's top and bottom, so no band piece ever encloses a whole region
-	# (cutting one out would leave a piece with a hole, which a drawn surface cannot be).
-	for region: Array in regions:
-		for corner: Vector2 in region[0]:
-			zs.append(corner.y)
 	xs.sort()
 	zs.sort()
 	for j: int in zs.size() - 1:
@@ -228,7 +223,8 @@ func floor_shape(outline: Array, top: float, thickness: float, material: String,
 
 
 ## Draws one band piece of a floor: the parts inside each region in that region's material, the
-## rest in [param material].
+## rest in [param material]. Regions are applied in order, so an earlier region wins where two
+## overlap.
 func _floor_piece(piece: PackedVector2Array, top: float, thickness: float, material: String, regions: Array) -> void:
 	var rest: Array[PackedVector2Array] = [piece]
 	for region: Array in regions:
@@ -236,17 +232,91 @@ func _floor_piece(piece: PackedVector2Array, top: float, thickness: float, mater
 		var remaining: Array[PackedVector2Array] = []
 		for part: PackedVector2Array in rest:
 			for inside: PackedVector2Array in Geometry2D.intersect_polygons(part, cutter):
-				if absf(_area(inside)) > 0.05:
-					surface(Array(inside), top, thickness, str(region[1]))
-			for outside: PackedVector2Array in Geometry2D.clip_polygons(part, cutter):
-				if Geometry2D.is_polygon_clockwise(outside):
-					printerr("Floor region would leave a hole in a band piece: ", region[0])
-				else:
-					remaining.append(outside)
+				_floor_surface(inside, top, thickness, str(region[1]))
+			remaining.append_array(_cut(part, cutter))
 		rest = remaining
 	for part: PackedVector2Array in rest:
-		if absf(_area(part)) > 0.05:
-			surface(Array(part), top, thickness, material)
+		_floor_surface(part, top, thickness, material)
+
+
+## [param part] minus [param cutter] as simple polygons. Where the cutter would leave a hole (it
+## sits wholly inside the part), the part is first split in two through the cutter.
+func _cut(part: PackedVector2Array, cutter: PackedVector2Array) -> Array[PackedVector2Array]:
+	var pieces := Geometry2D.clip_polygons(part, cutter)
+	var result: Array[PackedVector2Array] = []
+	if not pieces.any(func(p: PackedVector2Array) -> bool: return Geometry2D.is_polygon_clockwise(p)):
+		result.assign(pieces)
+		return result
+	var middle := 0.0
+	for corner: Vector2 in cutter:
+		middle += corner.x / cutter.size()
+	for half: PackedVector2Array in _halves(part, middle):
+		result.append_array(_cut(half, cutter))
+	return result
+
+
+## [param polygon] without corners closer than 2 cm to the previous one or lying on a straight
+## run (clipping leaves both).
+static func _clean(polygon: PackedVector2Array) -> PackedVector2Array:
+	var kept := PackedVector2Array()
+	for corner: Vector2 in polygon:
+		if kept.is_empty() or kept[-1].distance_to(corner) > 0.02:
+			kept.append(corner)
+	if kept.size() > 1 and kept[0].distance_to(kept[-1]) <= 0.02:
+		kept.remove_at(kept.size() - 1)
+	var result := PackedVector2Array()
+	for i: int in kept.size():
+		var before := kept[posmod(i - 1, kept.size())]
+		var after := kept[(i + 1) % kept.size()]
+		if absf((kept[i] - before).cross(after - kept[i])) > 0.0004:
+			result.append(kept[i])
+	return result
+
+
+## [param polygon] cut by the vertical line x = [param at].
+func _halves(polygon: PackedVector2Array, at: float) -> Array[PackedVector2Array]:
+	var low := INF
+	var high := -INF
+	for corner: Vector2 in polygon:
+		low = minf(low, corner.y)
+		high = maxf(high, corner.y)
+	var left := PackedVector2Array([Vector2(-1e4, low - 1), Vector2(at, low - 1), Vector2(at, high + 1), Vector2(-1e4, high + 1)])
+	var right := PackedVector2Array([Vector2(at, low - 1), Vector2(1e4, low - 1), Vector2(1e4, high + 1), Vector2(at, high + 1)])
+	var result: Array[PackedVector2Array] = []
+	result.append_array(Geometry2D.intersect_polygons(polygon, left))
+	result.append_array(Geometry2D.intersect_polygons(polygon, right))
+	return result
+
+
+## One floor surface; outlines over the Draw Surface point limit are halved until they fit.
+func _floor_surface(polygon: PackedVector2Array, top: float, thickness: float, material: String) -> void:
+	if absf(_area(polygon)) <= 0.05:
+		return
+	polygon = _clean(polygon)
+	if polygon.size() < 3:
+		return
+	if polygon.size() <= PolygonSurface.MAX_POINTS:
+		var corners := PackedVector3Array()
+		for corner: Vector2 in polygon:
+			corners.append(Vector3(corner.x, top, corner.y))
+		if not PolygonSurface.piece(corners, thickness).is_empty():
+			surface(Array(polygon), top, thickness, material)
+			return
+		# Clipping can leave outlines that touch themselves; convex parts always draw.
+		var parts := Geometry2D.decompose_polygon_in_convex(polygon)
+		if parts.size() > 1 or (parts.size() == 1 and parts[0].size() != polygon.size()):
+			for part: PackedVector2Array in parts:
+				_floor_surface(part, top, thickness, material)
+			return
+		surface(Array(polygon), top, thickness, material)
+		return
+	var low := INF
+	var high := -INF
+	for corner: Vector2 in polygon:
+		low = minf(low, corner.x)
+		high = maxf(high, corner.x)
+	for half: PackedVector2Array in _halves(polygon, (low + high) / 2.0):
+		_floor_surface(half, top, thickness, material)
 
 
 ## Brush tool: an upright block whose footprint is [param outline] (Vector2 x/z corners).

@@ -624,7 +624,7 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 17): a harbour chronometer
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 18): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -691,6 +691,18 @@ the floor itself. Revision 15 had laid the flagstones, gravel and dirt as 5 cm s
 floor, so their raised edges showed. Now the author script cuts each region out of the sett floor
 and draws it level with the road (Draw Surface pieces, as a mapper would in the Creation Studio),
 and the mounds rise straight out of the dirt.
+Revision 18 (owner: more dirt but no square patches, props throughout, the ground-floor site in
+the Harbour Office) draws every dirt and gravel region as an irregular rounded patch instead of a
+rectangle and adds a dozen worn dirt patches where people walk (lane mouths, the courtyard tree,
+benches, yard gates). Every street and yard now has props: crates, barrels, carts, benches, a
+market stall, trees, troughs and jars. Site A moves to the **Harbour Office** yard in the
+north-east (the old defender spawn), with a small limewashed Harbour Office, a braced crate, a
+crate stack, a cart, barrels and a trough for cover; it is entered from North Lane, the Stair Head
+and the Harbour Gate. Defenders now spawn in the Dispatch Yard. Defenders reach A in 8.4 s and B in
+7.5 s; the first attackers reach North Lane 6.5 s after defenders reach A and the Drying Passage
+6.2 s after defenders reach B; rotating takes 8.5 s. The author script's floor cutting also became
+robust to awkward shapes (it cleans near-duplicate points, splits shapes with holes and falls back
+to convex pieces when Draw Surface would refuse an outline).
 
 **What the editor could not make, now added** (all in the palette, with matching collision):
 - battlement walls (crenellated, adjustable merlon height);
@@ -842,3 +854,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 15 (owner request): sett roads, flagstone squares, gravel lanes and dirt yards with mounds. Editor: five ground textures, the Uneven ground (mounds) piece, Distance haze. Game and editor: shared atmosphere with sky, soft shadows, SDFGI, haze and tonemapping. |
 | 2026-11-20 | Cluts revision 16 (owner request): the Dispatch area rebuilt as one yard with a roofed Goods Ramp house over the B ramp, and site A moved from the loading-dock corner to the middle of the Dispatch Yard. |
 | 2026-11-20 | Cluts revision 17 (owner report): ground finishes are cut into the floor, level with the road, instead of 5 cm slabs on top of it. |
+| 2026-11-20 | Cluts revision 18 (owner request): irregular dirt and gravel patches instead of rectangles, more worn dirt, props throughout the map, site A moved to the Harbour Office yard and defenders to the Dispatch Yard. |

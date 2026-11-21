@@ -18,6 +18,13 @@ const KNIFE_HOLD_ROTATION := Vector3(8, 12, -10)
 ## Where a pistol sits from the viewmodel's rest (m): further out and nearer the middle than a
 ## long gun, so both first-person hands reach it in a two-handed grip and look their real size.
 const PISTOL_HOLD := Vector3(-0.08, 0.0, -0.06)
+## How far (degrees: x pitch, y yaw, z roll) the hands turn with an inspected item before it turns
+## on in the fingers, roughly how far a wrist bends and a forearm twists: a knife spun round keeps
+## turning while the hand turns this far and back (see [method _hand_angle]).
+const HAND_TURN_LIMIT := Vector3(50.0, 50.0, 90.0)
+## How far (m) the hand follows an item while it is in the air (an entry's "toss" span): the
+## knife flies on, the hand flicks up only this far.
+const HAND_FOLLOW: float = 0.06
 
 var weapons: WeaponController
 var viewmodel: Node3D
@@ -26,6 +33,10 @@ var impact_count: int = 0
 var weapon_visual: WeaponVisual = null
 
 var _gun_root: Node3D
+## Where the hands hold the item: a stand-in for it in a root that follows the inspection more
+## gently than the item itself (see [method _apply_inspect_pose]); the arms hold this.
+var _hand_root: Node3D
+var _hand_item: Node3D
 var _muzzle: Node3D
 var _flash_light: OmniLight3D
 var _flash_mesh: MeshInstance3D
@@ -99,6 +110,9 @@ func _process(delta: float) -> void:
 			_end_inspect()
 		else:
 			_apply_inspect_pose(1.0 - _inspect_left / _inspect_seconds)
+	var item: Node3D = weapon_visual if weapon_visual != null else utility_model
+	if item != null and _hand_item != null:
+		_hand_item.transform = item.transform
 	if _flash_left > 0.0:
 		_flash_left -= delta
 		var on := _flash_left > 0.0
@@ -125,11 +139,33 @@ func is_inspecting() -> bool:
 
 ## Inspection pose at [param progress] 0..1 from the item's [InspectLibrary] choreography. The
 ## pose moves the item's own root, turning it about the choreography's pivot.
+##
+## The hands follow a gentler version ([member _hand_root]): the firing hand stays on the item's
+## grip wherever it goes, but each turn is wrapped and folded back past [constant HAND_TURN_LIMIT],
+## so a spin or flip carries on in the fingers while a held pose is followed exactly. During the
+## entry's "toss" span the hand follows the item only [constant HAND_FOLLOW] far. An entry with
+## "grip_pivot" turns about the firing grip; one with "support" false lets the support hand go.
 func _apply_inspect_pose(progress: float) -> void:
 	var pose := InspectLibrary.sample(_inspect_id, progress)
-	var turn := Basis.from_euler((pose["rot"] as Vector3) * (PI / 180.0))
+	var entry := InspectLibrary.for_item(_inspect_id)
+	var rot := pose["rot"] as Vector3
+	var pos := pose["pos"] as Vector3
 	var pivot := _item_point(pose["pivot"] as Vector3)
-	_gun_root.transform = Transform3D(turn, pivot - turn * pivot + (pose["pos"] as Vector3))
+	if bool(entry.get("grip_pivot", false)) and weapon_visual != null:
+		pivot = _grip_point()
+	var turn := Basis.from_euler(rot * (PI / 180.0))
+	_gun_root.transform = Transform3D(turn, pivot - turn * pivot + pos)
+	var hand_rot := Vector3(_hand_angle(rot.x, HAND_TURN_LIMIT.x), _hand_angle(rot.y, HAND_TURN_LIMIT.y),
+		_hand_angle(rot.z, HAND_TURN_LIMIT.z))
+	var hand_turn := Basis.from_euler(hand_rot * (PI / 180.0))
+	var grip := _grip_point()
+	var follow := _gun_root.transform * grip - grip
+	var toss: Vector2 = entry.get("toss", Vector2(2.0, 2.0))
+	var airborne := smoothstep(toss.x, toss.x + 0.05, progress) * (1.0 - smoothstep(toss.y - 0.05, toss.y, progress))
+	follow = follow.limit_length(lerpf(follow.length(), HAND_FOLLOW, airborne))
+	_hand_root.transform = Transform3D(hand_turn, grip + follow - hand_turn * grip)
+	if arms != null:
+		arms.support_released = not bool(entry.get("support", true))
 	var parts: Dictionary = pose["parts"]
 	if weapon_visual != null:
 		for part: StringName in parts:
@@ -138,11 +174,31 @@ func _apply_inspect_pose(progress: float) -> void:
 
 func _end_inspect() -> void:
 	_inspect_left = 0.0
+	if arms != null:
+		arms.support_released = false
 	if _gun_root != null:
 		_gun_root.transform = Transform3D.IDENTITY
+		_hand_root.transform = Transform3D.IDENTITY
 	if weapon_visual != null:
 		for part: StringName in weapon_visual.part_names():
 			weapon_visual.set_part_angle(part, 0.0)
+
+
+## Where the firing hand holds the item in hand (viewmodel space, the item at rest).
+func _grip_point() -> Vector3:
+	if weapon_visual != null:
+		return weapon_visual.transform * WeaponModels.hand_points(weapon_visual.weapon_id, weapon_visual.size)[&"Right"]
+	return utility_model.position if utility_model != null else Vector3.ZERO
+
+
+## How far the hands turn (degrees) when an inspected item has turned [param degrees] about one
+## axis: whole turns count as none, up to [param limit] the hand turns with the item, and past it
+## the hand turns back to rest at a half turn (the item turning on in the fingers).
+static func _hand_angle(degrees: float, limit: float) -> float:
+	var angle := wrapf(degrees, -180.0, 180.0)
+	if absf(angle) <= limit:
+		return angle
+	return signf(angle) * limit * (180.0 - absf(angle)) / (180.0 - limit)
 
 
 ## A point given as a share of the item's size in its own space (see [InspectLibrary]), placed
@@ -203,8 +259,15 @@ func _build_gun() -> void:
 	if _gun_root != null:
 		viewmodel.remove_child(_gun_root)
 		_gun_root.queue_free()
+		viewmodel.remove_child(_hand_root)
+		_hand_root.queue_free()
 	_gun_root = Node3D.new()
 	viewmodel.add_child(_gun_root)
+	_hand_root = Node3D.new()
+	_hand_root.name = "HandHold"
+	viewmodel.add_child(_hand_root)
+	_hand_item = Node3D.new()
+	_hand_root.add_child(_hand_item)
 	weapon_visual = null
 	utility_model = null
 	_muzzle = null
@@ -252,10 +315,13 @@ func _build_gun() -> void:
 func _hold_in_arms() -> void:
 	if arms == null:
 		return
+	var item: Node3D = weapon_visual if weapon_visual != null else utility_model
+	if item != null:
+		_hand_item.transform = item.transform
 	if weapon_visual != null:
-		arms.hold(weapon_visual, weapon_visual.weapon_id, weapon_visual.size)
+		arms.hold(_hand_item, weapon_visual.weapon_id, weapon_visual.size)
 	elif utility_model != null:
-		arms.hold(utility_model, &"", Vector3.ZERO)
+		arms.hold(_hand_item, &"", Vector3.ZERO)
 	else:
 		arms.hold(null, &"", Vector3.ZERO)
 

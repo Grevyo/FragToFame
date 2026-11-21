@@ -409,8 +409,11 @@ reported per slot. The same route data can be consumed by future M7 play executi
   eased pose keys (offset, rotation, optional pivot as a share of the item's size, e.g. a knife's
   finger ring, and optional angles for moving parts). `WeaponEffects` plays it on the item's own
   root, so recoil, draw and swing poses on the viewmodel are untouched. Entries are keyed by the
-  model in hand (each grenade, each knife look). Items without an entry use the default
-  left-then-right turn.
+  model in hand (each grenade, each knife look). Guns without an entry use the rifle default
+  (rolled and turned to each side about the firing grip, both hands on) or the pistol default
+  (the support hand lets go, the pistol turned over in the firing hand). Optional entry fields
+  say how the hands take part: `grip_pivot` (turn about the firing grip), `support` (false lets
+  the support hand go) and `toss` (the span when the item is in the air).
 - **Not yet:** bots buying and throwing utility (Milestone 7), sounds (no audio assets),
   networked utility.
 
@@ -1040,9 +1043,15 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   their newest preset) on a rig carried by the camera. The head, neck and legs are collapsed to
   nothing, and shadows are off. `WeaponEffects` hands it whatever the viewmodel shows, and the
   same reach pulls the hands onto it every frame. Inspections, knife swings, throws, reloads and
-  draws all move the hands with the item. A grenade tossed during an inspection is not chased:
-  the hand stays where it holds it at rest. Without a look there are no arms, only the floating
-  viewmodel as before.
+  draws all move the hands with the item. During an inspection the hands hold a stand-in
+  (`WeaponEffects._hand_root`) that follows the item more gently:
+  - The firing hand stays on the item's grip.
+  - Each turn is wrapped and folded back past a wrist's range (pitch and yaw 50 degrees, forearm
+    roll 90), so a held pose is followed exactly while a spin or flip turns on in the fingers.
+  - During a `toss` span the hand follows only 6 cm, so a tossed knife or frag flies on and is
+    caught.
+
+  Without a look there are no arms, only the floating viewmodel as before.
 - **Team uniforms.** `MatchSetup` v3 carries `home_colour` / `away_colour`; v2 setups still load
   and use the runtime's colours. `CareerKits` (career layer) fills them from each organisation's
   `colour`. Neutral grey is used for amateur mixes. A clashing away kit changes to a contrasting

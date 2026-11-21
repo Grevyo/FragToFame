@@ -15,20 +15,43 @@ extends RefCounted
 ## own length and a pitch about its own side-to-side axis before the yaw turns it.
 ##
 ## Entries are keyed by the model in hand: utility by its item ID, knives by their knife look
-## (WeaponModels.KNIVES), so every knife has its own. Others use [constant DEFAULT] (show the left
-## side, then the right).
+## (WeaponModels.KNIVES), so every knife has its own. Guns use [constant DEFAULT] (rifles) or
+## [constant PISTOL] (show the left side, then the right).
+##
+## Optional entry fields shape how the player's hands take part: "grip_pivot" true turns the
+## item about the firing hand's grip (a wrist turn), "support" false lets the support hand go for
+## the inspection, and "toss" (Vector2 start, end share) is when the item is in the air, out of
+## the hand.
 
 const DEFAULT_SECONDS: float = 3.2
 
+## Rifles: lifted, then rolled and turned to show each side, both hands staying on.
 const DEFAULT: Dictionary = {
 	"seconds": DEFAULT_SECONDS,
+	"grip_pivot": true,
 	"keys": [
 		{"t": 0.0},
-		{"t": 0.15, "pos": Vector3(-0.15, 0.07, -0.12), "rot": Vector3(8, 0, 0)},
-		{"t": 0.35, "pos": Vector3(-0.15, 0.07, -0.12), "rot": Vector3(8, -75, 12)},
-		{"t": 0.5, "pos": Vector3(-0.15, 0.07, -0.12), "rot": Vector3(8, 0, 0)},
-		{"t": 0.7, "pos": Vector3(-0.15, 0.07, -0.12), "rot": Vector3(8, 75, -12)},
-		{"t": 0.85, "pos": Vector3(-0.15, 0.07, -0.12), "rot": Vector3(8, 0, 0)},
+		{"t": 0.15, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
+		{"t": 0.35, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, -28, -55)},
+		{"t": 0.5, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
+		{"t": 0.7, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 22, 50)},
+		{"t": 0.85, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
+		{"t": 1.0},
+	],
+}
+
+## Pistols: the support hand lets go and the firing hand turns the pistol over to show each side.
+const PISTOL: Dictionary = {
+	"seconds": 2.8,
+	"grip_pivot": true,
+	"support": false,
+	"keys": [
+		{"t": 0.0},
+		{"t": 0.15, "pos": Vector3(-0.06, 0.06, -0.02), "rot": Vector3(10, 0, 0)},
+		{"t": 0.35, "pos": Vector3(-0.06, 0.06, -0.02), "rot": Vector3(10, -35, -75)},
+		{"t": 0.5, "pos": Vector3(-0.06, 0.06, -0.02), "rot": Vector3(10, 0, 0)},
+		{"t": 0.7, "pos": Vector3(-0.06, 0.06, -0.02), "rot": Vector3(10, 30, 70)},
+		{"t": 0.85, "pos": Vector3(-0.06, 0.06, -0.02), "rot": Vector3(10, 0, 0)},
 		{"t": 1.0},
 	],
 }
@@ -37,6 +60,7 @@ const INSPECTS: Dictionary[StringName, Dictionary] = {
 	# Frag: tossed up, a full flip, caught, then rolled between the fingers.
 	EquipmentCatalog.FRAG: {
 		"seconds": 2.8,
+		"toss": Vector2(0.13, 0.46),
 		"keys": [
 			{"t": 0.0},
 			{"t": 0.12, "pos": Vector3(-0.08, 0.02, -0.08), "rot": Vector3(-10, 0, 0)},
@@ -143,6 +167,7 @@ const INSPECTS: Dictionary[StringName, Dictionary] = {
 	# Nomad: tossed up end over end and caught, then a look along the side.
 	&"knf_nomad": {
 		"seconds": 2.8,
+		"toss": Vector2(0.13, 0.55),
 		"keys": [
 			{"t": 0.0},
 			{"t": 0.12, "pos": Vector3(-0.05, -0.01, -0.05), "rot": Vector3(-15, 0, 0)},
@@ -184,7 +209,10 @@ static func has_inspect(id: StringName) -> bool:
 
 
 static func for_item(id: StringName) -> Dictionary:
-	return INSPECTS.get(id, DEFAULT)
+	if INSPECTS.has(id):
+		return INSPECTS[id]
+	var grips: Dictionary = WeaponModels.GRIPS.get(id, {})
+	return PISTOL if grips.has("right") and not grips.has("left") else DEFAULT
 
 
 static func seconds(id: StringName) -> float:

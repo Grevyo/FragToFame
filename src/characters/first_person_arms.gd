@@ -18,15 +18,20 @@ const HEAD_FROM_EYE := Vector3(0.0, -0.1, 0.04)
 const LONG_GUN_TWIST: float = 1.0
 ## Where the elbows point (camera space; x toward that arm's side).
 const ELBOW_HINT := Vector3(0.7, -1.0, 0.2)
-## A grenade further than this (m) from where it rests in the hand has been tossed (an inspection
-## throws the frag up): the hand stays where it holds it at rest instead of chasing it.
-const TOSSED: float = 0.08
+## Where a released support hand goes (camera space): down and out of view.
+const SUPPORT_REST := Vector3(-0.22, -0.55, -0.05)
+## How fast (per second) the support hand lets go and takes hold again.
+const SUPPORT_SPEED: float = 5.0
 
 var rig: CharacterRig
 ## The item in the hands (a [WeaponVisual] or a utility model) and the model it shows.
 var held: Node3D = null
 var held_model: StringName = &""
 var held_size: Vector3 = Vector3.ZERO
+## True while the support hand lets go of the held item (a pistol inspection).
+var support_released: bool = false
+## 0..1: how far the support hand has let go.
+var _release: float = 0.0
 
 
 func _init() -> void:
@@ -59,6 +64,10 @@ func hold(item: Node3D, model_id: StringName, size: Vector3) -> void:
 	visible = item != null and rig.skeleton != null
 
 
+func _process(delta: float) -> void:
+	_release = move_toward(_release, 1.0 if support_released else 0.0, delta * SUPPORT_SPEED)
+
+
 func _prepare() -> void:
 	if rig.skeleton == null or rig.retargeter == null:
 		return
@@ -78,20 +87,19 @@ func _reach_for_held() -> void:
 	retargeter.hand_frames.clear()
 	if held == null or not is_instance_valid(held) or not held.is_visible_in_tree():
 		return
+	# The viewmodel hands over where the hand holds the item; an item tossed during an inspection
+	# flies on without it (WeaponEffects' hand stand-in).
 	var at := held.global_transform
-	var parent := held.get_parent() as Node3D
-	if held_model.is_empty() and parent != null and parent.get_parent() is Node3D:
-		# Utility items sit in a root the viewmodel moves; at rest that root has no offset.
-		var at_rest := (parent.get_parent() as Node3D).global_transform * held.transform
-		if at.origin.distance_to(at_rest.origin) > TOSSED:
-			at = at_rest
 	var points := WeaponModels.hand_points(held_model, held_size)
 	var frames := WeaponModels.hand_frames(held_model)
 	var facing := global_transform.basis.orthonormalized()
 	var long_gun := held_size.z > CharacterAvatar.LONG_GUN and not WeaponModels.is_knife(held_model)
 	retargeter.upper_twist = LONG_GUN_TWIST if long_gun else 0.0
+	var released := smoothstep(0.0, 1.0, _release)
 	for side: StringName in points:
 		retargeter.reach[side] = at * points[side]
+		if side == &"Left" and released > 0.0:
+			retargeter.reach[side] = retargeter.reach[side].lerp(global_transform * SUPPORT_REST, released)
 		if frames.has(side):
 			retargeter.hand_frames[side] = at.basis.orthonormalized() * frames[side]
 		retargeter.finger_curl[side] = CharacterAvatar.GRIP_CURL if side == &"Right" else CharacterAvatar.SUPPORT_CURL

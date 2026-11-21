@@ -270,6 +270,12 @@ func _test_inspects() -> void:
 	var spin := InspectLibrary.sample(&"knf_karambit", 0.55)
 	check(absf((spin["rot"] as Vector3).x) >= 700.0 and (spin["pivot"] as Vector3).z > 0.4, "the karambit spins twice about its ring")
 	check((InspectLibrary.sample(&"knf_combat", 0.5)["parts"] as Dictionary).is_empty(), "one-piece knives move no parts")
+	check(InspectLibrary.for_item(&"wpn_g17") == InspectLibrary.PISTOL and not bool(InspectLibrary.PISTOL.get("support", true))
+		and InspectLibrary.for_item(&"wpn_ak47") == InspectLibrary.DEFAULT and bool(InspectLibrary.DEFAULT.get("grip_pivot", false)),
+		"pistols let the support hand go for their inspection; rifles turn about the firing hand with both hands on")
+	check(is_equal_approx(WeaponEffects._hand_angle(-80.0, 90.0), -80.0) and is_zero_approx(WeaponEffects._hand_angle(720.0, 50.0))
+		and absf(WeaponEffects._hand_angle(170.0, 50.0)) < 10.0,
+		"the hand turns with a held pose but not through a spin (the item turns on in the fingers)")
 
 
 func _test_first_person() -> void:
@@ -304,6 +310,49 @@ func _test_first_person() -> void:
 	await wait_frames(2)
 	check(not effects.is_inspecting() and absf(view.part_angle(&"handle_a")) < 0.5 and absf(view.part_angle(&"handle_b")) < 0.5,
 		"after the inspection the knife is open in the hand again")
+	profile.set_knife(&"knf_karambit")
+	effects.refresh_cosmetics()
+	await wait_frames(1)
+	view = effects.weapon_visual
+	var hand := effects.get("_hand_item") as Node3D
+	var grip := WeaponModels.hand_points(view.weapon_id, view.size)[&"Right"]
+	effects.inspect()
+	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_karambit") * (1.0 - 0.4))
+	await wait_frames(1)
+	var turned := rad_to_deg(hand.global_basis.get_rotation_quaternion().angle_to(view.global_basis.get_rotation_quaternion()))
+	check((hand.global_transform * grip).distance_to(view.global_transform * grip) < 0.005 and turned > 60.0,
+		"mid-spin the hand stays on the karambit's grip while the knife turns on in the fingers (%.0f degrees apart)" % turned)
+	effects.set("_inspect_left", 0.0001)
+	await wait_frames(2)
+	profile.set_knife(&"knf_nomad")
+	effects.refresh_cosmetics()
+	await wait_frames(1)
+	view = effects.weapon_visual
+	hand = effects.get("_hand_item") as Node3D
+	grip = WeaponModels.hand_points(view.weapon_id, view.size)[&"Right"]
+	var rest_grip := effects.viewmodel.global_transform * (view.transform * grip)
+	effects.inspect()
+	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_nomad") * (1.0 - 0.35))
+	await wait_frames(1)
+	check((view.global_transform * grip).distance_to(rest_grip) > 0.15
+		and (hand.global_transform * grip).distance_to(effects.viewmodel.global_transform * (view.transform * grip)) < WeaponEffects.HAND_FOLLOW + 0.01,
+		"a tossed knife flies up out of the hand; the hand only flicks after it")
+	effects.set("_inspect_left", 0.0001)
+	await wait_frames(2)
+	profile.set_knife(&"knf_butterfly")
+	effects.refresh_cosmetics()
+	await wait_frames(1)
+	player.weapons.select_slot(2)
+	await wait_frames(1)
+	player.weapons.draw_remaining = 0.0
+	effects.inspect()
+	effects.set("_inspect_left", 1.0)
+	await wait_frames(1)
+	var released := effects.arms.support_released
+	effects.set("_inspect_left", 0.0001)
+	await wait_frames(2)
+	check(WeaponModels.GRIPS.has(player.weapons.current().definition.id) and released and not effects.arms.support_released,
+		"a pistol inspection lets the support hand go, and it takes hold again after")
 	player.weapons.select_slot(1)
 	await wait_frames(1)
 	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == player.weapons.current().definition.id,

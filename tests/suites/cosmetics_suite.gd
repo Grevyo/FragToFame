@@ -431,7 +431,7 @@ func _test_first_person() -> void:
 	effects.set("_inspect_left", InspectLibrary.DEFAULT_SECONDS * 0.3)
 	await wait_frames(2)
 	var item_root := effects.get("_gun_root") as Node3D
-	check(absf(item_root.rotation_degrees.y) > 20.0, "inspection turns the weapon to show its side")
+	check(rad_to_deg(item_root.basis.get_rotation_quaternion().get_angle()) > 20.0, "inspection turns the weapon to show its side")
 	var press := InputEventKey.new()
 	press.physical_keycode = KEY_F
 	press.pressed = true

@@ -11,6 +11,16 @@ extends SkeletonModifier3D
 ## Bones the source lacks follow their parent at rest (e.g. toes, extra leaf bones).
 ## A bone hung off a different parent than the profile expects (the modular rig's feet, children
 ## of Root for its IK) is placed where its profile parent carries it, so it follows the leg.
+##
+## Layers laid over the copied pose, in order:
+## 1. Upper body ([member upper_source]): the spine, head, arms and fingers copy a second animation
+##    rig (e.g. one playing the gun-holding clip) relative to the hips, so the weapon stays raised
+##    whatever the legs play.
+## 2. Crouch ([member crouch_drop]).
+## 3. Reach ([member reach]): each hand is pulled to a point by a two-bone solve of its arm, the
+##    elbow bending toward a hint. [member before_reach] runs first, so the owner can place what the
+##    hands hold from the posed body ([method posed_position]).
+## 4. Collapsed bones ([member collapsed]) shrink to nothing (first-person arms hide head and legs).
 
 ## The skeleton the AnimationPlayer drives.
 var source: Skeleton3D = null
@@ -18,6 +28,27 @@ var source: Skeleton3D = null
 ## The animation set has no crouch clips, so the crouch is laid over whatever plays: thighs swing
 ## forward, shins back and the upper body leans, keeping the feet where the clip puts them.
 var crouch_drop: float = 0.0
+## Upper-body layer: a second copy of the animation rig, or null for none (see the class notes).
+var upper_source: Skeleton3D = null
+## Turns the shoulders about the spine (radians, positive = right shoulder back), spread over the
+## spine bones; the neck turns back so the head still looks ahead. A rifle's support hand needs it
+## to reach the handguard.
+var upper_twist: float = 0.0
+## Points in world space for the hands to reach: &"Left" / &"Right" -> position. A hand with a
+## frame in [member hand_frames] puts the middle of its closed grip there (measured from this
+## rig's own hand, so big and small hands both close around it); otherwise the wrist goes there.
+var reach: Dictionary[StringName, Vector3] = {}
+## World-space direction each reaching elbow bends toward: &"Left" / &"Right" -> direction.
+var elbow_hints: Dictionary[StringName, Vector3] = {}
+## How each reaching hand is turned (world space): basis x = from the wrist toward the knuckles,
+## basis y = out of the palm. A reaching hand with no frame keeps its turn relative to the forearm.
+var hand_frames: Dictionary[StringName, Basis] = {}
+## How far each reaching hand's fingers close around what it holds (0 open … 1 a fist).
+var finger_curl: Dictionary[StringName, float] = {}
+## Called with no arguments once the pose is built, before the hands reach.
+var before_reach: Callable = Callable()
+## Bones shrunk to nothing every frame (with everything hung from them).
+var collapsed: Array[StringName] = []
 
 ## Largest share of the leg length the hips may drop.
 const MAX_CROUCH_SHARE: float = 0.7
@@ -44,6 +75,32 @@ var _thighs: PackedInt32Array = PackedInt32Array()
 var _shins: PackedInt32Array = PackedInt32Array()
 var _leaning: Dictionary[int, bool] = {}
 var _leg_length: float = 0.0
+## Target bones the upper-body layer poses.
+var _upper: Dictionary[int, bool] = {}
+## Share of [member upper_twist] each twisted bone carries (spine bones part, above them all of it,
+## the neck and head none).
+var _twist_share: Dictionary[int, float] = {}
+## Per side: the hand's own frame in hand-bone space, from its rest finger positions
+## (Basis x = wrist to knuckles, y = out of the palm), or absent when the hand has no fingers.
+var _hand_rest_frame: Dictionary[StringName, Basis] = {}
+## Per side: the middle of the closed grip in hand-bone space (part way to the knuckles, out
+## toward the palm by a share of the hand's length).
+var _grip_point: Dictionary[StringName, Vector3] = {}
+## Per side: finger bones, each finger's chain base first.
+var _finger_chains: Dictionary[StringName, Array] = {}
+
+## A finger's knuckle is its first joint at least this share of the way out to its last joint.
+const KNUCKLE_SHARE: float = 0.35
+## Where a closed hand's grip sits: this share of the way from the wrist to the knuckles, and out
+## from the bones toward the palm by this share of that length.
+const GRIP_ALONG: float = 0.75
+const GRIP_OUT: float = 0.35
+## Closing angles (radians at full curl) for the three joints of a finger, base first.
+const CURL_ANGLES: Array[float] = [1.25, 1.4, 0.9]
+const FINGERS: Array[String] = ["Index", "Middle", "Ring", "Little"]
+const JOINTS: Array[String] = ["Proximal", "Intermediate", "Distal"]
+## The last pose built, in this skeleton's model space (for [method posed_position]).
+var _posed: PackedVector3Array = PackedVector3Array()
 
 
 ## Prepares the mapping between [param source_skeleton] and this modifier's skeleton. Both must be
@@ -91,6 +148,8 @@ func bind(source_skeleton: Skeleton3D) -> bool:
 		var target_height := (target.global_transform * target.get_bone_global_rest(_hips_target).origin).y - target.global_position.y
 		_hips_scale = target_height / source_height if absf(source_height) > 0.001 else 1.0
 	_find_crouch_bones(target)
+	_find_upper_bones(target)
+	_find_hands(target)
 	if matched == 0:
 		return false
 	_bound_to = target
@@ -119,6 +178,14 @@ func _process_modification() -> void:
 	var lean_turn := Quaternion(Vector3.RIGHT, swing * CROUCH_LEAN)
 	if swing > 0.0:
 		hips_position.y -= crouch_amount_metres()
+	# World up in model space: turning about it by a negative angle takes the right shoulder back
+	# whichever way the body faces.
+	var twist_axis := (target.global_transform.basis.orthonormalized().inverse() * Vector3.UP).normalized()
+	var layered := upper_source != null and is_instance_valid(upper_source) and upper_source.is_inside_tree() \
+		and _hips_target >= 0 and _hips_source >= 0
+	var upper_hips := Quaternion.IDENTITY
+	if layered:
+		upper_hips = (to_target * upper_source.get_bone_global_pose(_hips_source).basis.get_rotation_quaternion() * _after[_hips_target]).inverse()
 	for bone: int in _order:
 		var parent := target.get_bone_parent(bone)
 		var parent_global: Quaternion = globals[parent] if parent >= 0 else Quaternion.IDENTITY
@@ -127,7 +194,13 @@ func _process_modification() -> void:
 		var from := _source_of[bone]
 		var global: Quaternion
 		if from >= 0:
-			global = to_target * source.get_bone_global_pose(from).basis.get_rotation_quaternion() * _after[bone]
+			if layered and _upper.has(bone):
+				global = globals[_hips_target] * upper_hips \
+					* to_target * upper_source.get_bone_global_pose(from).basis.get_rotation_quaternion() * _after[bone]
+			else:
+				global = to_target * source.get_bone_global_pose(from).basis.get_rotation_quaternion() * _after[bone]
+			if upper_twist != 0.0 and _twist_share.has(bone):
+				global = Quaternion(twist_axis, -upper_twist * _twist_share[bone]) * global
 			if swing > 0.0:
 				if _thighs.has(bone):
 					global = thigh_turn * global
@@ -151,6 +224,196 @@ func _process_modification() -> void:
 			continue
 		target.set_bone_pose_position(bone, parent_global.inverse() * (wanted_position - parent_position))
 		positions[bone] = wanted_position
+	_posed = positions
+	if before_reach.is_valid():
+		before_reach.call()
+	var to_model := target.global_transform.affine_inverse()
+	var to_model_turn := target.global_transform.basis.orthonormalized().inverse()
+	for side: StringName in reach:
+		var hint: Vector3 = elbow_hints.get(side, Vector3.DOWN)
+		var goal := to_model * reach[side]
+		if hand_frames.has(side) and _hand_rest_frame.has(side):
+			var wanted := (to_model_turn * hand_frames[side]).orthonormalized()
+			var hand_turn := Basis(_frame(wanted)) * Basis(_frame(_hand_rest_frame[side])).inverse()
+			goal -= hand_turn * _grip_point[side]
+		_reach_with(target, side, goal, to_model.basis * hint, globals, positions)
+	for bone_name: StringName in collapsed:
+		var bone := target.find_bone(bone_name)
+		if bone >= 0:
+			target.set_bone_pose_scale(bone, Vector3.ONE * 0.001)
+
+
+## Where a hand's grip is in world space (the point [member reach] aims; the wrist for a hand
+## without fingers). Reads the final pose, so call it from [signal Skeleton3D.skeleton_updated].
+func grip_position(side: StringName) -> Vector3:
+	var target := get_skeleton()
+	var hand := target.find_bone(String(side) + "Hand") if target != null else -1
+	if hand < 0:
+		return Vector3.ZERO
+	var pose := target.get_bone_global_pose(hand)
+	var local: Vector3 = _grip_point.get(side, Vector3.ZERO) if hand_frames.has(side) else Vector3.ZERO
+	return target.global_transform * (pose * local)
+
+
+## Where a bone is in world space in the pose being built (call from [member before_reach], before
+## any reach). The skeleton's origin when the bone is missing.
+func posed_position(bone_name: StringName) -> Vector3:
+	var target := get_skeleton()
+	var bone := target.find_bone(bone_name) if target != null else -1
+	if bone < 0 or bone >= _posed.size():
+		return target.global_position if target != null else Vector3.ZERO
+	return target.global_transform * _posed[bone]
+
+
+## Two-bone solve: turns the upper and lower arm of [param side] so its hand bone lands on
+## [param goal] (model space), the elbow bending toward [param hint]. Out-of-reach goals are
+## reached for as far as the arm goes. The hand keeps its turn relative to the forearm.
+func _reach_with(target: Skeleton3D, side: StringName, goal: Vector3, hint: Vector3,
+		globals: Array[Quaternion], positions: PackedVector3Array) -> void:
+	var upper := target.find_bone(String(side) + "UpperArm")
+	var lower := target.find_bone(String(side) + "LowerArm")
+	var hand := target.find_bone(String(side) + "Hand")
+	if upper < 0 or lower < 0 or hand < 0 or target.get_bone_parent(lower) != upper or target.get_bone_parent(hand) != lower:
+		return
+	var shoulder := positions[upper]
+	var elbow := positions[lower]
+	var wrist := positions[hand]
+	var a := shoulder.distance_to(elbow)
+	var b := elbow.distance_to(wrist)
+	var to_goal := goal - shoulder
+	if a < 0.0001 or b < 0.0001 or to_goal.length() < 0.0001:
+		return
+	var direction := to_goal.normalized()
+	var d := clampf(to_goal.length(), absf(a - b) + 0.0001, a + b - 0.0001)
+	var bend := hint - direction * hint.dot(direction)
+	if bend.length() < 0.0001:
+		bend = (elbow - shoulder) - direction * (elbow - shoulder).dot(direction)
+	bend = bend.normalized()
+	var cos_a := clampf((a * a + d * d - b * b) / (2.0 * a * d), -1.0, 1.0)
+	var new_elbow := shoulder + direction * (a * cos_a) + bend * (a * sqrt(1.0 - cos_a * cos_a))
+	var new_wrist := shoulder + direction * d
+	var turn_upper := Quaternion((elbow - shoulder).normalized(), (new_elbow - shoulder).normalized())
+	var moved_wrist := new_elbow + turn_upper * (wrist - elbow)
+	var turn_lower := Quaternion((moved_wrist - new_elbow).normalized(), (new_wrist - new_elbow).normalized())
+	var upper_global := (turn_upper * globals[upper]).normalized()
+	var lower_global := (turn_lower * turn_upper * globals[lower]).normalized()
+	var parent := target.get_bone_parent(upper)
+	var parent_global: Quaternion = globals[parent] if parent >= 0 else Quaternion.IDENTITY
+	target.set_bone_pose_rotation(upper, (parent_global.inverse() * upper_global).normalized())
+	target.set_bone_pose_rotation(lower, (upper_global.inverse() * lower_global).normalized())
+	globals[upper] = upper_global
+	globals[lower] = lower_global
+	globals[hand] = (turn_lower * turn_upper * globals[hand]).normalized()
+	positions[lower] = new_elbow
+	positions[hand] = new_wrist
+	if hand_frames.has(side) and _hand_rest_frame.has(side):
+		var wanted := (target.global_transform.basis.orthonormalized().inverse() * hand_frames[side]).orthonormalized()
+		var hand_global := (Basis(_frame(wanted)) * Basis(_frame(_hand_rest_frame[side])).inverse()).get_rotation_quaternion()
+		target.set_bone_pose_rotation(hand, (lower_global.inverse() * hand_global).normalized())
+		globals[hand] = hand_global
+		_curl(target, side, hand_global, wanted, clampf(finger_curl.get(side, 0.0), 0.0, 1.0))
+
+
+## Closes a hand's fingers by [param amount] about the knuckle line ([param frame]: x wrist to
+## knuckles, y out of the palm, model space), from their straight rest.
+func _curl(target: Skeleton3D, side: StringName, hand_global: Quaternion, frame: Basis, amount: float) -> void:
+	var axis := frame.x.cross(frame.y).normalized()
+	for chain: Variant in _finger_chains.get(side, []):
+		var parent_global := hand_global
+		var joint := 0
+		for bone: int in chain as PackedInt32Array:
+			var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
+			var angle: float = CURL_ANGLES[mini(joint, CURL_ANGLES.size() - 1)] * amount
+			var local := (Quaternion(parent_global.inverse() * axis, angle) * rest).normalized()
+			target.set_bone_pose_rotation(bone, local)
+			parent_global = parent_global * local
+			joint += 1
+
+
+## An orthonormal basis from a frame's x (forward) and y (palm), keeping x exact.
+static func _frame(frame: Basis) -> Basis:
+	var forward := frame.x.normalized()
+	var palm := (frame.y - forward * frame.y.dot(forward)).normalized()
+	return Basis(forward, palm, forward.cross(palm))
+
+
+## Each hand's rest frame, grip point and finger chains, from where its knuckles are at rest.
+##
+## Rigs disagree on where a finger starts: on most the Proximal bone sits at the knuckle, but the
+## modular rig starts every finger's Proximal bone at one point beside the wrist (a palm bone) and
+## its knuckles are a joint further out. So a finger's knuckle is its first joint at least
+## [constant KNUCKLE_SHARE] of the way out to its last joint; the hand's direction, its sideways
+## line and the grip come from those knuckles, and only the joints from the knuckle out curl.
+func _find_hands(target: Skeleton3D) -> void:
+	_hand_rest_frame.clear()
+	_grip_point.clear()
+	_finger_chains.clear()
+	for side: String in ["Left", "Right"]:
+		var hand := target.find_bone(side + "Hand")
+		if hand < 0:
+			continue
+		var to_hand := target.get_bone_global_rest(hand).affine_inverse()
+		var knuckles: Dictionary[String, Vector3] = {}
+		var chains: Array[PackedInt32Array] = []
+		for finger: String in FINGERS:
+			var joints := PackedInt32Array()
+			for joint: String in JOINTS:
+				var bone := target.find_bone(side + finger + joint)
+				if bone >= 0:
+					joints.append(bone)
+			if joints.is_empty():
+				continue
+			var reach_out := (to_hand * target.get_bone_global_rest(joints[joints.size() - 1]).origin).length()
+			var chain := PackedInt32Array()
+			for bone: int in joints:
+				var at := to_hand * target.get_bone_global_rest(bone).origin
+				if chain.is_empty() and at.length() < reach_out * KNUCKLE_SHARE:
+					continue
+				if chain.is_empty():
+					knuckles[finger] = at
+				chain.append(bone)
+			if not chain.is_empty():
+				chains.append(chain)
+		_finger_chains[StringName(side)] = chains
+		if not knuckles.has("Index") or not knuckles.has("Little"):
+			continue
+		var middle: Vector3 = knuckles.get("Middle", (knuckles["Index"] + knuckles["Little"]) * 0.5)
+		var forward := middle.normalized()
+		var across: Vector3 = knuckles["Index"] - knuckles["Little"]
+		if across.length() < 0.0001 or forward.length() < 0.0001:
+			continue
+		# Handedness: with the index finger's knuckle ahead of the little finger's, the palm faces
+		# forward x across on a left hand and across x forward on a right hand.
+		var palm := (forward.cross(across) if side == "Left" else across.cross(forward)).normalized()
+		palm = (palm - forward * palm.dot(forward)).normalized()
+		_hand_rest_frame[StringName(side)] = Basis(forward, palm, forward.cross(palm))
+		_grip_point[StringName(side)] = middle * GRIP_ALONG + palm * middle.length() * GRIP_OUT
+
+
+## The bones the upper-body layer poses: the spine and everything above it.
+func _find_upper_bones(target: Skeleton3D) -> void:
+	_upper.clear()
+	var spine := target.find_bone(&"Spine")
+	if spine < 0:
+		return
+	for bone: int in target.get_bone_count():
+		if bone == spine or _is_ancestor(target, spine, bone):
+			_upper[bone] = true
+	_twist_share.clear()
+	var spine_chain: Array[int] = []
+	for bone_name: StringName in [&"Spine", &"Chest", &"UpperChest"]:
+		var bone := target.find_bone(bone_name)
+		if bone >= 0:
+			spine_chain.append(bone)
+	var neck := target.find_bone(&"Neck")
+	var head := target.find_bone(&"Head")
+	for bone: int in _upper:
+		if spine_chain.has(bone):
+			_twist_share[bone] = float(spine_chain.find(bone) + 1) / spine_chain.size()
+		elif bone == neck or bone == head or (neck >= 0 and _is_ancestor(target, neck, bone)) 				or (head >= 0 and _is_ancestor(target, head, bone)):
+			_twist_share[bone] = 0.0
+		else:
+			_twist_share[bone] = 1.0
 
 
 ## The hips' drop actually used (limited by the leg length).

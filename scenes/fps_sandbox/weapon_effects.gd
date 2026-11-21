@@ -1,7 +1,8 @@
 class_name WeaponEffects
 extends Node3D
-## Presentation only: first-person viewmodel, muzzle flash, tracers, bullet impact marks, knife
-## swings and grenade throws. Listens to a [WeaponController]; never affects where shots go or
+## Presentation only: first-person viewmodel (with the player's own character arms holding it,
+## see [FirstPersonArms]), muzzle flash, tracers, bullet impact marks, knife swings and grenade
+## throws. Listens to a [WeaponController]; never affects where shots go or
 ## what they hit.
 
 const MAX_IMPACTS: int = 80
@@ -14,6 +15,9 @@ const THROW_TIME: float = 0.3
 ## Where the knife's centre sits in the viewmodel and how it is turned (degrees).
 const KNIFE_HOLD := Vector3(-0.02, -0.03, 0.02)
 const KNIFE_HOLD_ROTATION := Vector3(8, 12, -10)
+## Where a pistol sits from the viewmodel's rest (m): further out and nearer the middle than a
+## long gun, so both first-person hands reach it in a two-handed grip and look their real size.
+const PISTOL_HOLD := Vector3(-0.08, 0.0, -0.06)
 
 var weapons: WeaponController
 var viewmodel: Node3D
@@ -39,6 +43,8 @@ var _swing_side: float = 1.0
 var _ready_pose: float = 0.0
 ## The utility model in hand (null for guns and the knife).
 var utility_model: Node3D = null
+## The player's own arms holding the viewmodel (hidden when the player has no character look).
+var arms: FirstPersonArms = null
 var _impacts: Array[Node3D] = []
 var _tracer_material := StandardMaterial3D.new()
 var _impact_material := StandardMaterial3D.new()
@@ -58,6 +64,9 @@ func bind(controller: WeaponController, camera: Camera3D) -> void:
 	viewmodel.name = "Viewmodel"
 	viewmodel.position = VIEWMODEL_REST
 	camera.add_child(viewmodel)
+	arms = FirstPersonArms.new()
+	camera.add_child(arms)
+	arms.apply(CharacterAvatar.player_look())
 	weapons.shot_fired.connect(_on_shot_fired)
 	weapons.weapon_switched.connect(func(_s: WeaponState) -> void: _build_gun())
 	weapons.melee_swung.connect(_on_melee_swung)
@@ -180,6 +189,9 @@ func _apply_swing_pose() -> void:
 ## Re-applies the saved Coat and Magnets to the weapon in hand (after a change in the Armoury),
 ## and swaps the knife model if another knife look was chosen.
 func refresh_cosmetics() -> void:
+	if arms != null:
+		arms.apply(CharacterAvatar.player_look())
+		_hold_in_arms()
 	var state := weapons.current() if weapons != null else null
 	if state != null and state.definition.is_melee() 			and (weapon_visual == null or weapon_visual.weapon_id != CosmeticProfile.current().model_for(state.definition.id)):
 		_build_gun()
@@ -196,6 +208,8 @@ func _build_gun() -> void:
 	weapon_visual = null
 	utility_model = null
 	_muzzle = null
+	if arms != null:
+		arms.hold(null, &"", Vector3.ZERO)
 	_flash_left = 0.0
 	_inspect_left = 0.0
 	if _swing_kind != &"throw":
@@ -209,6 +223,7 @@ func _build_gun() -> void:
 		utility_model.position = Vector3(-0.02, -0.05, -0.02)
 		utility_model.rotation_degrees = Vector3(-10, 25, -8)
 		_gun_root.add_child(utility_model)
+		_hold_in_arms()
 		return
 	var model_id := CosmeticProfile.current().model_for(id)
 	var visual := WeaponVisual.new()
@@ -218,17 +233,31 @@ func _build_gun() -> void:
 		return
 	weapon_visual = visual
 	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(model_id))
+	_hold_in_arms()
 	if state.definition.is_melee():
 		# A knife is held out in the fist, blade forward and tilted in toward the centre.
 		weapon_visual.rotation_degrees = KNIFE_HOLD_ROTATION
 		weapon_visual.position = KNIFE_HOLD + weapon_visual.basis * Vector3(0, 0, -weapon_visual.size.z * 0.25)
 		return
 	var length := weapon_visual.size.z
-	# Long guns sit with the butt just behind the view; pistols are held out in front.
-	var centre_z := 0.36 - length / 2.0 if length > 0.5 else 0.08 - length / 2.0
+	# Long guns sit with the butt just behind the view; pistols are held out at arm's length.
+	var long_gun := length > 0.5
+	var centre_z := 0.36 - length / 2.0 if long_gun else -length / 2.0
 	var view: Vector3 = WeaponModels.info(id).get("view_offset", Vector3.ZERO)
-	weapon_visual.position = Vector3(0, -weapon_visual.size.y * 0.22, centre_z) + view
+	weapon_visual.position = Vector3(0, -weapon_visual.size.y * 0.22, centre_z) + view + (Vector3.ZERO if long_gun else PISTOL_HOLD)
 	_add_muzzle(weapon_visual.position + Vector3(0, weapon_visual.size.y * 0.3, -length / 2.0 - 0.02))
+
+
+## Puts whatever the viewmodel shows into the first-person arms' hands.
+func _hold_in_arms() -> void:
+	if arms == null:
+		return
+	if weapon_visual != null:
+		arms.hold(weapon_visual, weapon_visual.weapon_id, weapon_visual.size)
+	elif utility_model != null:
+		arms.hold(utility_model, &"", Vector3.ZERO)
+	else:
+		arms.hold(null, &"", Vector3.ZERO)
 
 
 func _add_muzzle(at: Vector3) -> void:

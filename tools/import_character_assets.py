@@ -17,6 +17,9 @@ Writes, under assets/characters/ (runtime models, imported by Godot):
                                                  62-bone rig so parts can share one skeleton.
                                                  Parts identical to an earlier one are skipped.
   quaternius_modular_males/animations.glb        the pack's 24 animations on the rig, no meshes
+  quaternius_modular_males/hat_<name>.glb        hats split off the heads they were modelled on
+                                                 (by material: worker hard hat, farmer straw hat,
+                                                 king's crown), so any modular head can wear them
   quaternius_universal_base/<model>.glb          two base bodies and the hairstyles, eyebrows
                                                  and beard rigged to the head bone
   quaternius_universal_base/textures/*.png       one copy of each texture the models reference
@@ -58,6 +61,12 @@ MODULAR_OUTFITS = ['Adventurer', 'Beach', 'Casual_2', 'Casual_Hoodie', 'Farmer',
                    'Spacesuit', 'Suit', 'Swat', 'Worker']
 MODULAR_SKIP = {'Pistol', 'Sword'}  # the pack's prop weapons; F2F has its own weapons
 MODULAR_ANIMATION_SOURCE = 'Swat'
+# Hats modelled into a head, split off by material: outfit -> (output name, materials).
+MODULAR_HATS = {
+    'Worker': ('hat_hard_hat', {'Worker_Yellow'}),
+    'Farmer': ('hat_straw_hat', {'Beige', 'Red'}),
+    'King': ('hat_crown', {'Gold'}),
+}
 
 UNIVERSAL_ROOT = 'Universal Base Characters[Standard]/'
 UNIVERSAL_BODIES = 'Base Characters/Godot - UE/'
@@ -136,6 +145,10 @@ def _build_modular(archive, report):
                     continue
                 seen[digest] = out_name
                 _write_model(MODULAR_DIR, out_name, gltf.subset(others + [index]), report)
+                if part == 'head' and outfit in MODULAR_HATS:
+                    hat_name, materials = MODULAR_HATS[outfit]
+                    _write_model(MODULAR_DIR, hat_name + '.glb',
+                                 gltf.subset(others + [index], keep_materials=materials), report)
             if outfit == MODULAR_ANIMATION_SOURCE:
                 _write_model(MODULAR_DIR, 'animations.glb', gltf.subset(others, keep_animations=True), report)
 

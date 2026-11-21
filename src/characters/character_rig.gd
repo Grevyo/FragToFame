@@ -27,6 +27,10 @@ const LOOPING: Array[StringName] = [&"Idle", &"Idle_Gun", &"Idle_Gun_Pointing", 
 	&"Run", &"Run_Back", &"Run_Left", &"Run_Right", &"Run_Shoot", &"Walk"]
 const META_FACTORY_COLOUR: StringName = &"f2f_factory_colour"
 const META_FACTORY_TEXTURE: StringName = &"f2f_factory_texture"
+## Per mesh: surface -> the material it had before a hat hid its hair.
+const META_HIDDEN_HAIR: StringName = &"f2f_hidden_hair"
+
+static var _invisible: StandardMaterial3D = null
 
 var catalog: CharacterCatalog = CharacterCatalog.shared()
 ## The appearance on show (sanitised copy), or null before the first [method apply].
@@ -46,10 +50,18 @@ var _item_meshes: Dictionary[String, Array] = {}
 ## item ID -> the BoneAttachment3D carrying a head-fitted item.
 var _item_holders: Dictionary[String, Node3D] = {}
 var _animation: StringName = ANIM_IDLE
+## Upper-body layer: the clip laid over the upper body ("" = no layer).
+var _upper_clip: StringName = &""
+## One animation rig per upper-body clip, shared by every character: they all hold the same
+## looping pose, and instancing the animation library per character (on every weapon switch,
+## death and respawn) froze the game for a moment whenever a round started.
+static var _shared_upper: Dictionary[StringName, Node3D] = {}
 
 
 func _ready() -> void:
 	_bind()
+	if retargeter != null:
+		retargeter.upper_source = _upper_skeleton()
 
 
 ## Shows [param new_appearance] (sanitised first). Only items that changed are rebuilt; a new
@@ -79,7 +91,9 @@ func apply(new_appearance: CharacterAppearance) -> PackedStringArray:
 			_attach_item(item_id)
 	appearance = wanted
 	_show_base_parts()
+	_restore_hair()
 	_apply_colours()
+	_hide_hair()
 	rebuilt.emit(notes)
 	return notes
 
@@ -96,6 +110,43 @@ func play(clip: StringName, blend: float = 0.15, speed: float = 1.0) -> void:
 
 func current_clip() -> StringName:
 	return _animation
+
+
+## Lays [param clip] (looping) over the spine, head and arms whatever [method play] plays on the
+## legs, e.g. the gun-holding clip so a weapon stays raised while running. "" removes the layer.
+## The retargeter's upper-body layer (see [CharacterRetargeter]).
+func set_upper_clip(clip: StringName) -> void:
+	if clip == _upper_clip:
+		return
+	_upper_clip = clip
+	if retargeter != null:
+		retargeter.upper_source = _upper_skeleton()
+
+
+func upper_clip() -> StringName:
+	return _upper_clip
+
+
+## The shared skeleton playing [member _upper_clip] (null for none, or before the rig is in the
+## tree). It is created once per clip under the tree's root and lives for the whole game.
+func _upper_skeleton() -> Skeleton3D:
+	if _upper_clip.is_empty() or not is_inside_tree():
+		return null
+	var shared: Node3D = _shared_upper.get(_upper_clip, null)
+	if shared == null or not is_instance_valid(shared):
+		var scene := load(catalog.animation_library) as PackedScene
+		if scene == null:
+			return null
+		shared = scene.instantiate() as Node3D
+		shared.name = "SharedUpperPose_%s" % _upper_clip
+		shared.visible = false
+		get_tree().root.add_child.call_deferred(shared)
+		var player := shared.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if player != null and player.has_animation(_upper_clip):
+			player.get_animation(_upper_clip).loop_mode = Animation.LOOP_LINEAR
+			player.autoplay = _upper_clip
+		_shared_upper[_upper_clip] = shared
+	return _find_skeleton(shared)
 
 
 func clips() -> PackedStringArray:
@@ -218,6 +269,7 @@ func _ensure_source() -> void:
 func _bind() -> void:
 	if retargeter != null and _source_skeleton != null and is_inside_tree():
 		retargeter.bind(_source_skeleton)
+		retargeter.upper_source = _upper_skeleton()
 
 
 func _attach_item(item_id: String) -> void:
@@ -268,10 +320,34 @@ func _head_holder(item_id: String) -> Node3D:
 	var place := Transform3D(Basis.from_scale(scale), Vector3(to["center"]) + offset) * Transform3D(Basis.IDENTITY, -Vector3(from["center"]))
 	var holder := Node3D.new()
 	holder.name = "Fit"
-	holder.transform = skeleton.get_bone_global_rest(head).affine_inverse() * place
+	holder.transform = _head_bind() * place
 	attachment.add_child(holder)
 	_item_holders[item_id] = attachment
 	return holder
+
+
+## From this body's model space (where its meshes were modelled and its head box measured) into
+## the Head bone's space: the inverse bind matrix the body's own skin uses for Head. A rig's bone
+## rest can differ from the pose its meshes were bound in (the modular rig's does), so the rest
+## pose alone would leave head items floating and tilted.
+func _head_bind() -> Transform3D:
+	for mesh: MeshInstance3D in _base_meshes + _skinned_item_meshes():
+		var skin := mesh.skin
+		if skin == null:
+			continue
+		for bind: int in skin.get_bind_count():
+			if skin.get_bind_name(bind) == &"Head":
+				return skin.get_bind_pose(bind)
+	return skeleton.get_bone_global_rest(skeleton.find_bone(&"Head")).affine_inverse()
+
+
+func _skinned_item_meshes() -> Array[MeshInstance3D]:
+	var meshes: Array[MeshInstance3D] = []
+	for item_id: String in _item_meshes:
+		if not _item_holders.has(item_id):
+			for mesh: MeshInstance3D in _item_meshes[item_id]:
+				meshes.append(mesh)
+	return meshes
 
 
 ## Gives each surface its own copy of its material (imported meshes share theirs) and remembers
@@ -285,6 +361,54 @@ func _prepare_materials(mesh: MeshInstance3D) -> void:
 		copy.set_meta(META_FACTORY_COLOUR, original.albedo_color)
 		copy.set_meta(META_FACTORY_TEXTURE, original.albedo_texture)
 		mesh.set_surface_override_material(surface, copy)
+
+
+## Whether a worn item hides the hair (a hat modelled for a bald head, a hood).
+func hair_hidden() -> bool:
+	for item_id: String in appearance.items.values():
+		if bool(catalog.item(item_id).get("hides_hair", false)):
+			return true
+	return false
+
+
+## Hides the hair while a worn item asks for it: the item in the hair slot, and surfaces drawn
+## with the body's hair materials (the modular heads have their hair modelled in).
+func _hide_hair() -> void:
+	var hide := hair_hidden()
+	var hair_item := appearance.item_in("hair")
+	if not hair_item.is_empty():
+		for mesh: MeshInstance3D in item_meshes(hair_item):
+			mesh.visible = not hide
+	if not hide:
+		return
+	var hair_materials: Array = catalog.body(_body_id).get("hair_materials", [])
+	if hair_materials.is_empty():
+		return
+	if _invisible == null:
+		_invisible = StandardMaterial3D.new()
+		_invisible.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_invisible.albedo_color = Color(0, 0, 0, 0)
+		_invisible.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	for mesh: MeshInstance3D in _all_meshes():
+		var saved: Dictionary = mesh.get_meta(META_HIDDEN_HAIR, {})
+		for surface: int in mesh.get_surface_override_material_count():
+			var material := mesh.get_surface_override_material(surface)
+			if material != null and material != _invisible and hair_materials.has(material.resource_name):
+				saved[surface] = material
+				mesh.set_surface_override_material(surface, _invisible)
+		if not saved.is_empty():
+			mesh.set_meta(META_HIDDEN_HAIR, saved)
+
+
+## Puts back hair surfaces hidden by [method _hide_hair].
+func _restore_hair() -> void:
+	for mesh: MeshInstance3D in _all_meshes():
+		if not mesh.has_meta(META_HIDDEN_HAIR):
+			continue
+		var saved: Dictionary = mesh.get_meta(META_HIDDEN_HAIR)
+		for surface: Variant in saved:
+			mesh.set_surface_override_material(int(surface), saved[surface] as Material)
+		mesh.remove_meta(META_HIDDEN_HAIR)
 
 
 func _show_base_parts() -> void:

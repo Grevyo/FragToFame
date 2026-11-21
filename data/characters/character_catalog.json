@@ -178,7 +178,10 @@
 					0.302,
 					0.262
 				]
-			}
+			},
+			"hair_materials": [
+				"Hair"
+			]
 		},
 		{
 			"id": "body_qu_male",
@@ -1656,6 +1659,83 @@
 			}
 		},
 		{
+			"id": "chr_qm_hat_hard_hat",
+			"name": "Hard hat",
+			"pack": "quaternius_modular_males",
+			"slot": "headwear",
+			"model": "res://assets/characters/quaternius_modular_males/hat_hard_hat.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "worker_yellow",
+					"material": "Worker_Yellow",
+					"label": "Hat",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"note": "Split off the Worker head, where it was modelled.",
+			"hides_hair": true
+		},
+		{
+			"id": "chr_qm_hat_straw_hat",
+			"name": "Straw hat",
+			"pack": "quaternius_modular_males",
+			"slot": "headwear",
+			"model": "res://assets/characters/quaternius_modular_males/hat_straw_hat.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "beige",
+					"material": "Beige",
+					"label": "Straw"
+				},
+				{
+					"id": "red",
+					"material": "Red",
+					"label": "Band",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"note": "Split off the Farmer head, where it was modelled.",
+			"hides_hair": true
+		},
+		{
+			"id": "chr_qm_hat_crown",
+			"name": "Crown",
+			"pack": "quaternius_modular_males",
+			"slot": "headwear",
+			"model": "res://assets/characters/quaternius_modular_males/hat_crown.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "gold",
+					"material": "Gold",
+					"label": "Gold"
+				}
+			],
+			"unlock": {
+				"kind": "career",
+				"requirement": "win a competition",
+				"career": {
+					"stat": "titles",
+					"at_least": 1
+				}
+			},
+			"note": "Split off the King head, where it was modelled."
+		},
+		{
 			"id": "chr_qu_hair_buns",
 			"name": "Buns",
 			"pack": "quaternius_universal_base",
@@ -2061,7 +2141,7 @@
 		},
 		{
 			"id": "chr_ih_hat_010",
-			"name": "Hat 10",
+			"name": "Sun hat",
 			"pack": "ithappy_creative_characters",
 			"slot": "headwear",
 			"model": "res://assets/characters/ithappy_creative_characters/hat_010.glb",
@@ -2086,7 +2166,7 @@
 		},
 		{
 			"id": "chr_ih_hat_049",
-			"name": "Hat 49",
+			"name": "Bunny hood",
 			"pack": "ithappy_creative_characters",
 			"slot": "headwear",
 			"model": "res://assets/characters/ithappy_creative_characters/hat_049.glb",
@@ -2107,11 +2187,12 @@
 				"body_qm_modular_male": {},
 				"body_qu_male": {},
 				"body_qu_female": {}
-			}
+			},
+			"hides_hair": true
 		},
 		{
 			"id": "chr_ih_hat_057",
-			"name": "Hat 57",
+			"name": "Goggle helmet",
 			"pack": "ithappy_creative_characters",
 			"slot": "headwear",
 			"model": "res://assets/characters/ithappy_creative_characters/hat_057.glb",

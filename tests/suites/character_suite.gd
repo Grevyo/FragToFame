@@ -31,8 +31,8 @@ func run() -> void:
 	profile.path = TEST_DIR.path_join("cosmetics.json")
 	CosmeticProfile.use(profile)
 	CharacterPresets.directory = TEST_DIR.path_join("presets")
-	DevOptions.path = TEST_DIR.path_join("dev_options.json")
-	DevOptions.reload()
+	DevOptions.file_path = TEST_DIR.path_join("dev_options.json")
+	DevOptions.reread()
 	_test_catalog()
 	_test_availability()
 	_test_fit()
@@ -52,8 +52,8 @@ func run() -> void:
 	await _test_creator()
 	CosmeticProfile.use(real_profile)
 	CharacterPresets.directory = CharacterPresets.DEFAULT_DIR
-	DevOptions.path = DevOptions.DEFAULT_PATH
-	DevOptions.reload()
+	DevOptions.file_path = DevOptions.DEFAULT_PATH
+	DevOptions.reread()
 	_wipe(TEST_DIR)
 
 
@@ -81,7 +81,7 @@ func _test_catalog() -> void:
 	for slot_id: String in ["headwear", "facewear", "upper_body", "lower_body", "hands", "footwear", "accessory"]:
 		check(catalog.has_slot(slot_id), "slot %s exists" % slot_id)
 	check(catalog.body_ids().size() == 4, "4 base characters from 3 packs")
-	check(catalog.items.size() == 82, "82 items: only what is in the downloaded files")
+	check(catalog.items.size() == 85, "85 items: only what is in the downloaded files (%d)" % catalog.items.size())
 	var problems: Array[String] = []
 	for item_id: String in catalog.items:
 		var entry := catalog.item(item_id)
@@ -229,7 +229,7 @@ func _test_career_grants() -> void:
 			career_items.append(item_id)
 			if CharacterUnlocks.career_rule(catalog, item_id).is_empty():
 				check(false, "%s has a career rule" % item_id)
-	check(career_items.size() == 16, "four outfits (16 parts) are career rewards (%d)" % career_items.size())
+	check(career_items.size() == 17, "four outfits (16 parts) and the crown are career rewards (%d)" % career_items.size())
 	check(not CharacterUnlocks.is_unlocked(catalog, "chr_qm_swat_body", none, false), "the SWAT outfit is locked at the start")
 	check(CharacterUnlocks.lock_reason(catalog, "chr_qm_swat_body", none, false).contains("10 career matches"),
 		"and says what earns it")
@@ -338,9 +338,48 @@ func _test_every_item() -> void:
 					failures.append("%s on %s: no meshes" % [item_id, body_id])
 	await wait_frames(1)
 	check(tried >= 40, "%d item/body pairs built" % tried)
+	await _test_headwear(rig)
 	check(failures.is_empty(), "every installed item shows on every body it fits %s" % [failures])
 	rig.queue_free()
 	await wait_frames(1)
+
+
+## Modular Male's hats: three split off the pack's heads, three adapted from another pack.
+func _test_headwear(rig: CharacterRig) -> void:
+	var hats := catalog.items_for("headwear", QM)
+	check(hats.size() == 6, "Modular Male has six hats (%d)" % hats.size())
+	for item_id: String in ["chr_qm_hat_hard_hat", "chr_qm_hat_straw_hat", "chr_qm_hat_crown"]:
+		var look := CharacterWardrobe.default_appearance(catalog, QM)
+		CharacterWardrobe.equip(catalog, look, item_id)
+		rig.apply(look)
+		var meshes := rig.item_meshes(item_id)
+		check(not meshes.is_empty() and meshes[0].skin != null, "%s is split off its head and skinned to it" % item_id)
+	var look := CharacterWardrobe.default_appearance(catalog, QM)
+	CharacterWardrobe.equip(catalog, look, "chr_ih_hat_010")
+	rig.apply(look)
+	await wait_frames(2)
+	var head_bone := rig.skeleton.find_bone(&"Head")
+	var head := rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(head_bone).origin
+	var hat_meshes := rig.item_meshes("chr_ih_hat_010")
+	var hat := hat_meshes[0].global_transform * hat_meshes[0].get_aabb().get_center() if not hat_meshes.is_empty() else Vector3.ZERO
+	check(Vector2(hat.x - head.x, hat.z - head.z).length() < 0.12 and hat.y > head.y and hat.y - head.y < 0.4,
+		"an adapted hat sits on top of the head (%.2f m above it)" % (hat.y - head.y))
+	CharacterWardrobe.equip(catalog, look, "chr_qm_hat_hard_hat")
+	rig.apply(look)
+	check(rig.hair_hidden() and _visible_hair(rig) == 0, "a hat modelled for a bald head hides the hair under it")
+	CharacterWardrobe.equip(catalog, look, "chr_qm_hat_crown")
+	rig.apply(look)
+	check(not rig.hair_hidden() and _visible_hair(rig) > 0, "and the hair comes back with a hat that fits over it")
+
+
+static func _visible_hair(rig: CharacterRig) -> int:
+	var count := 0
+	for node: Node in rig.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		for surface: int in mesh.get_surface_override_material_count():
+			var material := mesh.get_surface_override_material(surface)
+			count += 1 if mesh.visible and material != null and material.resource_name == "Hair" else 0
+	return count
 
 
 func _test_crouch_and_weapon() -> void:
@@ -374,10 +413,74 @@ func _test_crouch_and_weapon() -> void:
 	check(forward.dot(-avatar.global_transform.basis.z) > 0.9, "pointing where the character faces")
 	check(CharacterAvatar.held_model(EquipmentCatalog.KNIFE) == WeaponModels.DEFAULT_KNIFE, "the knife shows the default knife look")
 	check(CharacterAvatar.held_model(&"wpn_utility_unknown").is_empty(), "items without a model leave the hands empty")
+	check(avatar.rig.upper_clip() == CharacterRig.ANIM_AIM, "a gun keeps the upper body in the gun-holding clip")
+	var misses: Dictionary[StringName, float] = {}
+	var measure_hands := func() -> void:
+		for side: StringName in avatar.rig.retargeter.reach:
+			misses[side] = avatar.rig.retargeter.grip_position(side).distance_to(avatar.rig.retargeter.reach[side])
+	avatar.rig.skeleton.skeleton_updated.connect(measure_hands)
+	await wait_frames(3)
+	check(misses.has(&"Right") and misses.has(&"Left") and misses[&"Right"] < 0.02 and misses[&"Left"] < 0.05,
+		"both hands are on the rifle's grips %s" % [misses])
+	avatar.set_weapon(&"wpn_desert_eagle")
+	await wait_frames(3)
+	check(misses[&"Right"] < 0.02 and misses[&"Left"] < 0.05, "and on a pistol, two-handed %s" % [misses])
+	avatar.rig.skeleton.skeleton_updated.disconnect(measure_hands)
+	var still := avatar.weapon_visual.global_transform.basis.z
+	avatar.rig.play(CharacterRig.ANIM_RUN)
+	await wait_frames(4)
+	check(avatar.rig.upper_clip() == CharacterRig.ANIM_AIM and avatar.weapon_visual.global_transform.basis.z.dot(still) > 0.98,
+		"running keeps the gun raised and pointed ahead")
+	avatar.set_weapon(WeaponModels.DEFAULT_KNIFE)
+	check(avatar.rig.upper_clip().is_empty(), "a knife lets the free arm move with the legs")
 	avatar.set_weapon(&"")
-	check(avatar.weapon_visual == null, "and a weapon can be put away")
+	check(avatar.weapon_visual == null and avatar.rig.upper_clip().is_empty(), "and a weapon can be put away")
 	check(CharacterAvatar.movement_clip(Vector3.ZERO, true)[0] == CharacterRig.ANIM_AIM, "armed and still: weapon raised")
 	avatar.queue_free()
+	await wait_frames(1)
+	for gun: StringName in WeaponModels.ids():
+		var points := WeaponModels.hand_points(gun, Vector3(0.05, 0.2, 0.8))
+		if not points.has(&"Right") or not points.has(&"Left") or WeaponModels.hand_frames(gun).size() != 2:
+			check(false, "%s has grips for both hands" % gun)
+	check(WeaponModels.hand_points(WeaponModels.DEFAULT_KNIFE, Vector3(0.01, 0.05, 0.3)).keys() == [&"Right"],
+		"every gun has grips for both hands; a knife is held in one")
+	await _test_first_person_arms()
+
+
+func _test_first_person_arms() -> void:
+	section("First-person arms")
+	var camera := Camera3D.new()
+	tree.root.add_child(camera)
+	var arms := FirstPersonArms.new()
+	camera.add_child(arms)
+	check(not arms.apply(null) and not arms.visible, "no look: no arms")
+	check(arms.apply(CharacterWardrobe.default_appearance(catalog, QM)), "the player's look gives arms")
+	var gun := WeaponVisual.new()
+	camera.add_child(gun)
+	gun.setup(&"wpn_ak47")
+	# Where the viewmodel holds a long gun (WeaponEffects): butt just behind the view.
+	gun.position = Vector3(0.17, -0.17 - gun.size.y * 0.22, -0.3 + 0.36 - gun.size.z / 2.0)
+	arms.hold(gun, gun.weapon_id, gun.size)
+	check(arms.visible, "shown while something is held")
+	var misses: Dictionary[StringName, float] = {}
+	var head_scale := [1.0]
+	var measure := func() -> void:
+		var skeleton := arms.rig.skeleton
+		for side: StringName in arms.rig.retargeter.reach:
+			misses[side] = arms.rig.retargeter.grip_position(side).distance_to(arms.rig.retargeter.reach[side])
+		head_scale[0] = skeleton.get_bone_global_pose(skeleton.find_bone(&"Head")).basis.get_scale().x
+	arms.rig.skeleton.skeleton_updated.connect(measure)
+	await wait_frames(3)
+	check(misses.get(&"Right", 1.0) < 0.02 and misses.get(&"Left", 1.0) < 0.05, "the hands hold the viewmodel %s" % [misses])
+	check(float(head_scale[0]) < 0.01, "the head is hidden from the eye")
+	gun.position += Vector3(-0.06, 0.04, -0.04)
+	gun.rotation_degrees = Vector3(8, -25, 10)
+	await wait_frames(3)
+	check(misses.get(&"Right", 1.0) < 0.03, "and follow it through an inspection %s" % [misses])
+	arms.rig.skeleton.skeleton_updated.disconnect(measure)
+	arms.hold(null, &"", Vector3.ZERO)
+	check(not arms.visible, "empty hands hide the arms")
+	camera.queue_free()
 	await wait_frames(1)
 
 
@@ -407,11 +510,15 @@ func _test_profile() -> void:
 
 func _test_dev_options() -> void:
 	section("Developer option")
-	check(not DevOptions.bot_character_models(), "bots keep the box bodies by default")
-	check(DevOptions.set_bot_character_models(true) == OK, "the option saves")
-	DevOptions.reload()
-	check(DevOptions.bot_character_models(), "and is read back")
-	DevOptions.set_bot_character_models(false)
+	check(DevOptions.bot_character_models(), "bots wear character models by default")
+	check(DevOptions.set_bot_character_models(false) == OK, "the option saves")
+	DevOptions.reread()
+	check(not DevOptions.bot_character_models(), "and is read back")
+	var old := FileAccess.open(DevOptions.file_path, FileAccess.WRITE)
+	old.store_string(JSON.stringify({"format": DevOptions.FORMAT, "format_version": 1, "bot_character_models": false}))
+	old.close()
+	DevOptions.reread()
+	check(DevOptions.bot_character_models(), "an old v1 \"off\" no longer keeps the box bodies")
 
 
 func _test_avatar_and_bots() -> void:
@@ -421,6 +528,7 @@ func _test_avatar_and_bots() -> void:
 	check(CharacterAvatar.movement_clip(Vector3(0, 0, -5))[0] == CharacterRig.ANIM_RUN, "fast forward: run")
 	check(CharacterAvatar.movement_clip(Vector3(0, 0, 5))[0] == CharacterRig.ANIM_RUN_BACK, "fast backward: run back")
 	check(CharacterAvatar.movement_clip(Vector3(-5, 0, 0))[0] == CharacterRig.ANIM_RUN_LEFT, "fast left: run left")
+	DevOptions.set_bot_character_models(false)
 	var plain := BotController.new()
 	plain.setup("chr_plain", "Plain", &"home", BotSkill.preset(&"normal"), Color("3c6a8a"))
 	tree.root.add_child(plain)
@@ -437,6 +545,25 @@ func _test_avatar_and_bots() -> void:
 		for child: Node in hitbox.get_children():
 			box_meshes += 1 if child is MeshInstance3D else 0
 	check(box_meshes == 0, "and no box body")
+	check(CharacterPresets.directory.begins_with(TEST_DIR) and DevOptions.file_path.begins_with(TEST_DIR),
+		"bot tests use the scratch folder, never the player's presets")
+	for entry: Dictionary in CharacterPresets.list():
+		if CharacterPresets.directory.begins_with(TEST_DIR):
+			CharacterPresets.delete(str(entry["id"]))
+	var saved := CharacterWardrobe.default_appearance(catalog, QU_FEMALE)
+	var saved_id := str(CharacterPresets.save("Bot test", saved)["id"])
+	var worn := CharacterAvatar.bot_look(hash("chr_any"), Color("3c6a8a"))
+	check(worn != null and worn.body == QU_FEMALE and worn.items == saved.items, "bots wear the player's saved presets")
+	var dressed := BotController.new()
+	dressed.setup("chr_dressed", "Dressed", &"home", BotSkill.preset(&"normal"), Color("3c6a8a"))
+	check(dressed.appearance != null and dressed.appearance.body == QU_FEMALE, "every bot set up picks from them")
+	dressed.free()
+	var own := CosmeticProfile.current().appearance.duplicate_appearance()
+	CosmeticProfile.current().set_appearance(null)
+	check(CharacterAvatar.player_look() != null and CharacterAvatar.player_look().body == QU_FEMALE,
+		"a player with no look of their own is seen in their newest preset")
+	CosmeticProfile.current().set_appearance(own)
+	CharacterPresets.delete(saved_id)
 	var again := BotController.new()
 	again.setup("chr_model", "Model", &"home", BotSkill.preset(&"normal"), Color("3c6a8a"))
 	check(again.appearance != null and again.appearance.equals(bot.appearance), "a bot's look is the same every time (seeded by its ID)")
@@ -449,7 +576,6 @@ func _test_avatar_and_bots() -> void:
 	bot.respawn_at(Vector3.ZERO, 0.0)
 	await wait_frames(2)
 	check(not bot.avatar.is_dead(), "and moves again after respawning")
-	DevOptions.set_bot_character_models(false)
 	bot.queue_free()
 	plain.queue_free()
 	await wait_frames(1)

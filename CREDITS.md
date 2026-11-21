@@ -58,7 +58,8 @@ and its spare parts are hidden. Models are turned and scaled to a common orienta
 
 CC0 needs no credit; Quaternius is credited anyway. Changes made: every pack is split into one
 model per item, textures are stored next to the models, bones are renamed to the humanoid
-profile at import, and two Universal texture names are corrected (`*_png.png`). The meshes,
+profile at import, the hats on three Ultimate Modular Males heads (worker, farmer, king) are
+split off by material into their own models, and two Universal texture names are corrected (`*_png.png`). The meshes,
 textures and animations are otherwise unchanged. Before a commercial release that includes the
 ithappy items, confirm the pack's licence covers shipping its models inside the game.
 

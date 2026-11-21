@@ -26,7 +26,8 @@ var team: StringName = &""
 var skill: BotSkill = BotSkill.new()
 var body_color: Color = Color("3c4a5c")
 ## When set before the bot enters the tree, it wears this character model instead of the box
-## body (developer preview: [method DevOptions.bot_character_models]). Hitboxes are unchanged.
+## body: a saved Character Creator preset, else a random look ([method CharacterAvatar.bot_look]),
+## unless [method DevOptions.bot_character_models] is switched off. Hitboxes are unchanged.
 var appearance: CharacterAppearance = null
 var avatar: CharacterAvatar = null
 ## Enemy (and other) combatants this bot may perceive; filtered by team.
@@ -74,7 +75,7 @@ func setup(id: String, name_text: String, team_key: StringName, bot_skill: BotSk
 	body_color = color
 	name = "Bot_%s" % id
 	if DevOptions.bot_character_models():
-		appearance = CharacterAvatar.random_look(hash(id), color)
+		appearance = CharacterAvatar.bot_look(hash(id), color)
 
 
 func _ready() -> void:

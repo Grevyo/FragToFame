@@ -943,14 +943,22 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   - 16 slots, from head and hair through headwear, face, clothing, hands and footwear to
     accessory.
   - 4 bodies, each with its slots, required slots, defaults, skin rules and head box.
-  - 82 items: slot, model, fitting bodies, colour channels (one per material, optional team
-    role), covered slots and unlock metadata.
+  - 85 items: slot, model, fitting bodies, colour channels (one per material, optional team
+    role), covered slots, unlock metadata and `hides_hair`.
 
   Items are skinned to their own pack's skeleton, so they fit only that pack's bodies (`fits`).
   A few head items are listed under `adapt`, where they are carried by the target's Head bone
-  and fitted from their own body's head box to the target's. Each was checked by eye; rejected
+  and fitted from their own body's head box to the target's. The fit starts from the Head
+  bone's bind pose in the body's own skin, not its rest pose: on the modular rig the two differ,
+  and using the rest pose left hats floating and tilted. Each was checked by eye; rejected
   pairs are simply not listed. A model missing from the build is "not installed" and its
   reason names the pack and licence.
+
+  Modular Male's hard hat, straw hat and crown were modelled into the worker, farmer and king
+  heads. The importer splits them off by material into their own headwear items, still skinned
+  to the modular skeleton. Hats modelled for a bald head carry `hides_hair`: while one is worn,
+  the rig swaps the surfaces named in the body's `hair_materials` (or the hair-slot item) for an
+  invisible material, and restores them when the hat comes off.
 - **Rules.** All of these are pure data:
   - `CharacterAppearance` (`f2f.character_appearance` v1): body, item per slot, colour per item
     channel, skin tone and texture.
@@ -974,10 +982,18 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   revives on respawn.
 - **Player and bots.** `CosmeticProfile` gains optional `appearance` and
   `owned_character_items` fields in `f2f.cosmetics` v1; older files load without them.
-  `DevOptions` (`user://profile/dev_options.json`, `f2f.dev_options` v1) has one switch,
-  *bots wear character models*, off by default. When it is on, `BotController` gets a random
-  look seeded by its player ID (a career player looks the same in every match) in its team
-  colours, and hides the box meshes. Hitboxes, collision, movement and aim are unchanged, and
+  `DevOptions` (`user://profile/dev_options.json`, `f2f.dev_options` v2) has one switch
+  (re-read with `DevOptions.reread()`; tests point `DevOptions.file_path` at a scratch file),
+  *bots wear character models*, on by default (v2: a v1 file's "off" is ignored, because the
+  models replaced the box bodies at the owner's request). Every bot is set up through
+  `BotController.setup`, which calls `CharacterAvatar.bot_look`:
+  - one of the player's saved Character Creator presets, chosen by the bot's player ID, so a
+    career player keeps the same look in every match
+  - a seeded random look when there are no presets
+
+  Team-colour channels are repainted in the team's colour; the preset's other colours stay. The
+  box meshes are hidden. A player with no look of their own is shown to others in their newest
+  preset (`CharacterAvatar.player_look`). Hitboxes, collision, movement and aim are unchanged, and
   models never affect gameplay.
 - **Crouching.** The clip set has no crouch, so `CharacterRetargeter.crouch_drop` lays one over
   any clip:
@@ -989,10 +1005,40 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   `CharacterAvatar` drives it from the combatant's crouch amount. A full crouch drops the hips
   0.46 m, which brings the head down onto the crouched head hitbox (1.8 m to 1.2 m tall).
 - **Held weapons.** `CharacterAvatar` holds the combatant's current weapon model (a
-  `WeaponVisual`, the default knife look for the knife, nothing for utility). The grip sits in
-  the right hand, pointed where the combatant aims. The hand is read on `skeleton_updated`,
-  because animation-modifier results are invisible to ordinary `_process` code. Armed and
-  standing still, the character plays the raised-weapon clip.
+  `WeaponVisual`, the default knife look for the knife, nothing for utility). The retargeter
+  lays three things over the clip:
+  - **Upper-body layer.** The gun-holding clip drives the spine, head and arms, relative to the
+    hips (`CharacterRig.set_upper_clip`), so a gun stays raised whatever the legs play. Every
+    character shares one animation rig per layer clip, created once under the tree's root;
+    instancing the library per character on every weapon switch, death and respawn froze the
+    game for most of a second when a round started. A knife has no layer; the free arm swings
+    with the legs.
+  - **Placement.** Inside the retargeter (`before_reach`), the weapon is placed from the posed
+    right shoulder and pointed along the aim: a long gun's butt in the shoulder, a pistol out in
+    front, a knife low in the fist. For long guns the shoulders turn (`upper_twist`, neck turned
+    back) so the support hand reaches the handguard.
+  - **Reach.** A two-bone solve brings each hand's grip, the middle of its closed fist, to its
+    grip point; the elbow bends toward a hint. The grip is measured from each rig's own hand
+    bones, so the Modular Male's oversized hands close around a grip as well as smaller ones do.
+    The hand is turned to a grip frame (wrist-to-knuckles and palm directions; handedness gives
+    each hand's palm side), and the fingers close from their rest by a curl amount.
+    Rigs disagree on where fingers start: the Modular Male's Proximal finger bones are palm bones
+    sitting together beside the wrist, so a finger's knuckle is taken as its first joint at least
+    35% of the way out to its tip, and only the joints from there outward curl.
+
+  Grips live in `WeaponModels`: grip points per gun, measured from side-on renders of the
+  models, with a two-handed pistol grip and a one-handed knife grip. In first person, pistols
+  sit further out and nearer the middle than long guns (`WeaponEffects.PISTOL_HOLD`), so both
+  hands reach a two-handed grip and look their real size. The weapon is shown on
+  `skeleton_updated`, because animation-modifier results are invisible to ordinary `_process`
+  code.
+- **First-person arms.** `FirstPersonArms` puts the player's own look (their profile look, else
+  their newest preset) on a rig carried by the camera. The head, neck and legs are collapsed to
+  nothing, and shadows are off. `WeaponEffects` hands it whatever the viewmodel shows, and the
+  same reach pulls the hands onto it every frame. Inspections, knife swings, throws, reloads and
+  draws all move the hands with the item. A grenade tossed during an inspection is not chased:
+  the hand stays where it holds it at rest. Without a look there are no arms, only the floating
+  viewmodel as before.
 - **Team uniforms.** `MatchSetup` v3 carries `home_colour` / `away_colour`; v2 setups still load
   and use the runtime's colours. `CareerKits` (career layer) fills them from each organisation's
   `colour`. Neutral grey is used for amateur mixes. A clashing away kit changes to a contrasting
@@ -1157,6 +1203,9 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | Team colours travel in `MatchSetup` v3, filled by the career from organisation colours | The FPS runtime still never reads the career database; uniforms follow the world's teams and a clash rule keeps sides readable |
 | 2026-11-21 | Match protocol v2 exchanges character looks once, reliably, via the host; receivers sanitise | Looks are small and rarely change, so they stay out of the 20 Hz snapshots; sanitising makes a remote look safe and wearable whatever packs the receiver has |
 | 2026-11-21 | Career unlock rules live in the character catalog and are granted from career progress into the player's profile, only from real saves | Items are earned by what the player did (no fixed timers); rules are data the owner can change; tests can never leak unlocks into a real profile |
+| 2026-11-21 | Character models replace bots' box bodies by default; bots wear the player's saved creator presets | The owner tested the models and wants them in play; presets let the owner author the cast in the shipped creator, and team channels keep the sides readable |
+| 2026-11-21 | Held weapons use an upper-body clip layer plus two-bone hand reach to per-gun grip points, in the retargeter; first-person arms reuse it on the viewmodel | The packs have no armed run clips; placing the gun from the shoulder and reaching the hands to measured grips fits every body and every gun, and one mechanism makes the first-person hands follow every inspection with no per-inspection animation |
+| 2026-11-21 | Hats built into modular heads are split off by material at import; hats over hair hide the hair surfaces instead of reshaping meshes | Gives real extra hats from the pack without inventing items; the pack's hats were modelled for bald heads, so hiding the hair is the only clean fit without editing meshes |
 | 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |
 

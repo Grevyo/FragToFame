@@ -162,7 +162,73 @@ const KNIVES: Array[StringName] = [&"knf_combat", &"knf_bayonet", &"knf_butterfl
 	&"knf_skeleton", &"knf_t_dagger"]
 const DEFAULT_KNIFE: StringName = &"knf_combat"
 
+## Where the hands hold each gun: the palm's contact point in weapon space (metres), measured from
+## side-on renders of the models. "right" is the firing grip; "left" the support hand on the
+## handguard (pistols: none, the support hand cups the firing hand, see [constant PISTOL_SUPPORT]).
+const GRIPS: Dictionary[StringName, Dictionary] = {
+	&"wpn_ak47": {"right": Vector3(0, -0.005, 0.18), "left": Vector3(0, 0.085, -0.11)},
+	&"wpn_m4a1": {"right": Vector3(0, -0.02, 0.143), "left": Vector3(0, 0.08, -0.12)},
+	&"wpn_desert_eagle": {"right": Vector3(0, -0.037, 0.081)},
+	&"wpn_g17": {"right": Vector3(0, -0.032, 0.06)},
+	&"wpn_m1911": {"right": Vector3(0, -0.023, 0.076)},
+	&"wpn_mk23": {"right": Vector3(0, -0.029, 0.178)},
+	&"wpn_l118a1": {"right": Vector3(0, -0.027, 0.337), "left": Vector3(0, 0.0, -0.08)},
+	&"wpn_m24": {"right": Vector3(0, -0.005, 0.30), "left": Vector3(0, 0.0, -0.05)},
+	&"wpn_sks": {"right": Vector3(0, -0.01, 0.258), "left": Vector3(0, 0.02, -0.094)},
+	&"wpn_m14_ebr": {"right": Vector3(0, -0.06, 0.276), "left": Vector3(0, 0.03, -0.15)},
+}
+## A knife's handle centre, as a share of its length from the centre toward the pommel.
+const KNIFE_GRIP_SHARE: float = 0.36
+## The support hand of a two-handed pistol grip, from the firing grip (weapon space, metres): it
+## wraps the firing hand from below and the left.
+const PISTOL_SUPPORT := Vector3(-0.03, -0.035, 0.01)
+
+## How the hands are turned on their grips, in weapon space: [wrist-to-knuckles direction, palm
+## direction]. Firing hand: palm against the grip's right side, knuckles forward and a little up.
+## Support hand on a handguard: palm up under it, fingers wrapping up its right side. Support hand
+## on a pistol: palm cupping the firing hand from the left.
+const RIGHT_GRIP_FRAME: Array[Vector3] = [Vector3(0, 0.3, -1), Vector3(-1, 0, 0)]
+const LEFT_HANDGUARD_FRAME: Array[Vector3] = [Vector3(0.7, -0.3, -1), Vector3(0.3, 1, 0)]
+const LEFT_PISTOL_FRAME: Array[Vector3] = [Vector3(0.2, -0.2, -1), Vector3(1, 0.3, 0)]
+
 static var _slot_cache: Dictionary = {}
+
+
+## Where each hand closes to hold [param model_id] (weapon space, metres; [param size] is the
+## model's size from [WeaponVisual]): &"Right" always for a modelled item, &"Left" for guns.
+## Knives and items without grip data are held in the right hand at the handle. The retargeter
+## fits each rig's own hand around these points ([member CharacterRetargeter.reach]).
+static func hand_points(model_id: StringName, size: Vector3) -> Dictionary[StringName, Vector3]:
+	var points: Dictionary[StringName, Vector3] = {}
+	var grips: Dictionary = GRIPS.get(model_id, {})
+	var right := Vector3(0, 0, size.z * KNIFE_GRIP_SHARE)
+	if grips.has("right"):
+		right = grips["right"] as Vector3
+	points[&"Right"] = right
+	if grips.has("left"):
+		points[&"Left"] = grips["left"] as Vector3
+	elif not grips.is_empty():
+		points[&"Left"] = right + PISTOL_SUPPORT
+	return points
+
+
+## How each hand in [method hand_points] is turned (weapon space): Basis x = wrist to knuckles,
+## y = out of the palm (see [member CharacterRetargeter.hand_frames]).
+static func hand_frames(model_id: StringName) -> Dictionary[StringName, Basis]:
+	var frames: Dictionary[StringName, Basis] = {}
+	frames[&"Right"] = _frame_basis(RIGHT_GRIP_FRAME)
+	var grips: Dictionary = GRIPS.get(model_id, {})
+	if grips.has("left"):
+		frames[&"Left"] = _frame_basis(LEFT_HANDGUARD_FRAME)
+	elif not grips.is_empty():
+		frames[&"Left"] = _frame_basis(LEFT_PISTOL_FRAME)
+	return frames
+
+
+static func _frame_basis(frame: Array[Vector3]) -> Basis:
+	var forward := frame[0].normalized()
+	var palm := (frame[1] - forward * frame[1].dot(forward)).normalized()
+	return Basis(forward, palm, forward.cross(palm))
 
 
 ## The modelled guns (knife looks are listed by [constant KNIVES]).

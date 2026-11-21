@@ -103,14 +103,22 @@ class Gltf:
 
     # --- subsetting ----------------------------------------------------------------------------
 
-    def subset(self, keep_nodes, keep_animations=False, external_images=None):
+    def subset(self, keep_nodes, keep_animations=False, external_images=None, keep_materials=None):
         """Returns a new Gltf holding only [keep_nodes] (indices) and what they use.
 
         external_images maps an image index to the file name it should reference instead of
         embedding its bytes (the caller writes that file once, next to the models).
+        keep_materials, when given, is a set of material names: mesh primitives drawn with any
+        other material are left out (e.g. a hat split off a head that was modelled with it).
         """
         external_images = external_images or {}
         src = self.doc
+
+        def kept_primitives(mesh):
+            if keep_materials is None:
+                return mesh['primitives']
+            return [p for p in mesh['primitives']
+                    if 'material' in p and src['materials'][p['material']].get('name') in keep_materials]
         keep = sorted(set(keep_nodes))
         node_map = {old: new for new, old in enumerate(keep)}
         out = {'asset': copy.deepcopy(src.get('asset', {'version': '2.0'}))}
@@ -130,7 +138,7 @@ class Gltf:
 
         material_map = {}
         for old_mesh in mesh_map:
-            for primitive in src['meshes'][old_mesh]['primitives']:
+            for primitive in kept_primitives(src['meshes'][old_mesh]):
                 if 'material' in primitive and primitive['material'] not in material_map:
                     material_map[primitive['material']] = len(material_map)
         texture_map = {}
@@ -173,6 +181,7 @@ class Gltf:
         meshes = [None] * len(mesh_map)
         for old, new in mesh_map.items():
             mesh = copy.deepcopy(src['meshes'][old])
+            mesh['primitives'] = copy.deepcopy(kept_primitives(src['meshes'][old]))
             for primitive in mesh['primitives']:
                 primitive['attributes'] = {k: writer.accessor(v) for k, v in primitive['attributes'].items()}
                 if 'indices' in primitive:

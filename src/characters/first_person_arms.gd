@@ -32,6 +32,9 @@ var held_size: Vector3 = Vector3.ZERO
 var support_released: bool = false
 ## 0..1: how far the support hand has let go.
 var _release: float = 0.0
+## The firing hand's fingers during an inspection: finger name -> share of the usual grip
+## (see [InspectLibrary]); fingers not named hold as usual.
+var finger_grip: Dictionary = {}
 
 
 func _init() -> void:
@@ -103,4 +106,10 @@ func _reach_for_held() -> void:
 		if frames.has(side):
 			retargeter.hand_frames[side] = at.basis.orthonormalized() * frames[side]
 		retargeter.finger_curl[side] = CharacterAvatar.GRIP_CURL if side == &"Right" else CharacterAvatar.SUPPORT_CURL
+		var single: Dictionary = {}
+		if side == &"Right":
+			for finger: Variant in finger_grip:
+				var usual := CharacterAvatar.GRIP_CURL * (CharacterRetargeter.THUMB_SHARE if str(finger) == "Thumb" else 1.0)
+				single[str(finger)] = usual * float(finger_grip[finger])
+		retargeter.finger_curls[side] = single
 		retargeter.elbow_hints[side] = facing * (ELBOW_HINT * Vector3(1.0 if side == &"Right" else -1.0, 1.0, 1.0))

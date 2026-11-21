@@ -410,8 +410,15 @@ reported per slot. The same route data can be consumed by future M7 play executi
   finger ring, and optional angles for moving parts). `WeaponEffects` plays it on the item's own
   root, so recoil, draw and swing poses on the viewmodel are untouched. Entries are keyed by the
   model in hand (each grenade, each knife look). Guns without an entry use the rifle default
-  (rolled and turned to each side about the firing grip, both hands on) or the pistol default
-  (the support hand lets go, the pistol turned over in the firing hand). Optional entry fields
+  (the barrel swung across the view to show the left side, then canted over to show the right,
+  turning about the firing grip with both hands on) or the pistol default (the support hand lets
+  go; the pistol shown side-on, then turned over in the firing hand). Keys may also move the
+  firing hand's fingers (`fingers`: each finger's share of its usual grip), so knife tricks open,
+  flick and clench the fingers and move the thumb out of the way or over the handle; the
+  retargeter curls single fingers by their own amount (`CharacterRetargeter.finger_curls`). The
+  thumb closes too: each thumb bone bends toward the palm's face and across toward the little
+  finger, so it wraps a grip by default (70% as far as the fingers) whatever way the rig built it.
+  The karambit spins about the middle of its ring, measured from its side render. Optional entry fields
   say how the hands take part: `grip_pivot` (turn about the firing grip), `support` (false lets
   the support hand go) and `toss` (the span when the item is in the air). A knife's turns are in
   its fist's own axes (forearm twist, wrist bend toward thumb or little finger, wrist bend up or
@@ -1039,7 +1046,8 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   The straight knives sit in a hammer grip, the handle slanting across the palm and the blade out
   by the thumb; the karambit has the index finger through its ring and the blade out below the
   little finger; the T-handle dagger is a push dagger, crossbar across the palm and blade out from
-  the knuckles. Knives are then placed from the fist (`WeaponModels.knife_in_fist`): first person
+  the knuckles. The hand closes a little toward the palm from each grip (`KNIFE_SEAT`), so the
+  handle sits in the fingers rather than on their tips. Knives are then placed from the fist (`WeaponModels.knife_in_fist`): first person
   and third person each set one fist pose and every knife sits in it its own way. The support hand's knuckles run along the barrel, so its fingers wrap
   the forend; on a pistol its palm presses the grip's left side and its fingers wrap the firing hand. No support grip is more than about
   29 cm in front of the firing grip (the AK's spacing), because an arm reaches no further in

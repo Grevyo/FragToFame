@@ -188,6 +188,8 @@ func _apply_inspect_pose(progress: float) -> void:
 		_hand_root.transform = Transform3D(hand_turn, grip + follow - hand_turn * grip)
 	if arms != null:
 		arms.support_released = not bool(entry.get("support", true))
+	if arms != null:
+		arms.finger_grip = pose["fingers"]
 	var parts: Dictionary = pose["parts"]
 	if weapon_visual != null:
 		for part: StringName in parts:
@@ -198,6 +200,7 @@ func _end_inspect() -> void:
 	_inspect_left = 0.0
 	if arms != null:
 		arms.support_released = false
+		arms.finger_grip = {}
 	if _gun_root != null:
 		_gun_root.transform = Transform3D.IDENTITY
 		_hand_root.transform = Transform3D.IDENTITY
@@ -305,7 +308,7 @@ func _build_gun() -> void:
 	if arms != null:
 		arms.hold(null, &"", Vector3.ZERO)
 	_flash_left = 0.0
-	_inspect_left = 0.0
+	_end_inspect()
 	if _swing_kind != &"throw":
 		_swing_left = 0.0
 	var state := weapons.current()

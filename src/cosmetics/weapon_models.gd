@@ -213,6 +213,10 @@ const KNIFE_GRIPS: Dictionary[StringName, Dictionary] = {
 }
 ## Wrist to knuckles in a hammer grip on a knife: toward the edge, slanted toward the blade.
 const HAMMER_KNUCKLES := Vector3(0, -0.82, -0.57)
+## Where the hand closes from a knife's grip, in the hand frame (x knuckles, y out of the palm,
+## z thumb): a little further toward the palm, so the handle sits in the fingers rather than on
+## their tips.
+const KNIFE_SEAT := Vector3(0, 0.016, 0)
 
 static var _slot_cache: Dictionary = {}
 
@@ -226,7 +230,8 @@ static func hand_points(model_id: StringName, size: Vector3) -> Dictionary[Strin
 	var grips: Dictionary = GRIPS.get(model_id, {})
 	var right := Vector3(0, 0, size.z * KNIFE_GRIP_SHARE)
 	if KNIFE_GRIPS.has(model_id):
-		right = KNIFE_GRIPS[model_id]["grip"] as Vector3
+		var hold := knife_hold(model_id)
+		right = hold.origin + hold.basis * KNIFE_SEAT
 	elif grips.has("right"):
 		right = grips["right"] as Vector3
 	points[&"Right"] = right

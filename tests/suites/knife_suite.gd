@@ -269,8 +269,23 @@ func _test_inspects() -> void:
 	check(is_equal_approx(float(closed.get(&"handle_a", 0.0)), 180.0) and is_equal_approx(float(closed.get(&"handle_b", 0.0)), -180.0),
 		"halfway through, the butterfly knife is closed")
 	var spin := InspectLibrary.sample(&"knf_karambit", 0.55)
-	check(absf((spin["rot"] as Vector3).y) >= 700.0 and (spin["pivot"] as Vector3).z > 0.4, "the karambit spins twice about its ring")
+	check(absf((spin["rot"] as Vector3).y) >= 700.0 and (spin["pivot"] as Vector3).is_equal_approx(Vector3(0, 0.152, 0.385)),
+		"the karambit spins twice about the middle of its ring")
 	check((InspectLibrary.sample(&"knf_combat", 0.5)["parts"] as Dictionary).is_empty(), "one-piece knives move no parts")
+	var fingers := InspectLibrary.sample(&"knf_karambit", 0.325)["fingers"] as Dictionary
+	check(float(fingers.get(&"Index", 0.0)) >= 1.0 and float(fingers.get(&"Little", 1.0)) < 0.2 and float(fingers.get(&"Middle", 1.0)) < 0.2
+		and float(fingers.get(&"Thumb", 1.0)) < 0.5,
+		"mid-spin the karambit's index finger stays hooked in the ring while the other fingers and the thumb open out of its way")
+	var caught := InspectLibrary.sample(&"knf_nomad", 0.35)["fingers"] as Dictionary
+	var at_rest := true
+	for value: Variant in (InspectLibrary.sample(&"knf_nomad", 0.0)["fingers"] as Dictionary).values():
+		at_rest = at_rest and is_equal_approx(float(value), 1.0)
+	check(float(caught.get(&"Index", 1.0)) < 0.2 and at_rest,
+		"the hand opens to catch the tossed nomad, and holds as usual at rest")
+	var left_side := InspectLibrary.sample(&"wpn_ak47", 0.35)["rot"] as Vector3
+	var pistol_side := InspectLibrary.sample(&"wpn_g17", 0.35)["rot"] as Vector3
+	check(left_side.y >= 50.0 and pistol_side.y >= 60.0 and absf((InspectLibrary.sample(&"wpn_g17", 0.7)["rot"] as Vector3).z) >= 90.0,
+		"gun inspections turn the barrel across the view to show the side, then turn the gun over to show the other")
 	check(InspectLibrary.for_item(&"wpn_g17") == InspectLibrary.PISTOL and not bool(InspectLibrary.PISTOL.get("support", true))
 		and InspectLibrary.for_item(&"wpn_ak47") == InspectLibrary.DEFAULT and bool(InspectLibrary.DEFAULT.get("grip_pivot", false)),
 		"pistols let the support hand go for their inspection; rifles turn about the firing hand with both hands on")
@@ -344,15 +359,28 @@ func _test_first_person() -> void:
 	await wait_frames(1)
 	view = effects.weapon_visual
 	var hand := effects.get("_hand_item") as Node3D
-	var ring := Vector3(0, 0, 0.42) * view.size
+	var ring := Vector3(0, 0.152, 0.385) * view.size
 	effects.inspect()
 	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_karambit") * (1.0 - 0.4))
 	await wait_frames(1)
 	var turned := rad_to_deg(hand.global_basis.get_rotation_quaternion().angle_to(view.global_basis.get_rotation_quaternion()))
+	var open_fingers := effects.arms.finger_grip.duplicate()
 	check((hand.global_transform * ring).distance_to(view.global_transform * ring) < 0.005 and turned > 60.0,
 		"mid-spin the karambit turns on round the finger in its ring (%.0f degrees from the hand)" % turned)
 	effects.set("_inspect_left", 0.0001)
 	await wait_frames(2)
+	check(float(open_fingers.get(&"Little", 1.0)) < 0.5 and effects.arms.finger_grip.is_empty()
+		and effects.arms.rig.retargeter.finger_curls.get(&"Right", {}).is_empty(),
+		"the inspection moves the hand's fingers, and they hold as usual again after")
+	effects.inspect()
+	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_karambit") * (1.0 - 0.4))
+	await wait_frames(1)
+	var mid_spin := not effects.arms.finger_grip.is_empty()
+	profile.set_knife(&"knf_nomad")
+	effects.refresh_cosmetics()
+	await wait_frames(1)
+	check(mid_spin and effects.arms.finger_grip.is_empty() and not effects.is_inspecting(),
+		"changing what is in hand mid-inspection lets the fingers hold as usual again")
 	profile.set_knife(&"knf_combat")
 	effects.refresh_cosmetics()
 	await wait_frames(1)

@@ -45,6 +45,10 @@ var elbow_hints: Dictionary[StringName, Vector3] = {}
 var hand_frames: Dictionary[StringName, Basis] = {}
 ## How far each reaching hand's fingers close around what it holds (0 open … 1 a fist).
 var finger_curl: Dictionary[StringName, float] = {}
+## Per side, single fingers closed by their own amount instead ("Index", "Middle", "Ring",
+## "Little", "Thumb" -> 0..1), e.g. a finger lifted off a knife while it spins. The thumb
+## otherwise closes [constant THUMB_SHARE] as far as the fingers.
+var finger_curls: Dictionary[StringName, Dictionary] = {}
 ## Called with no arguments once the pose is built, before the hands reach.
 var before_reach: Callable = Callable()
 ## Bones shrunk to nothing every frame (with everything hung from them).
@@ -88,6 +92,10 @@ var _hand_rest_frame: Dictionary[StringName, Basis] = {}
 var _grip_point: Dictionary[StringName, Vector3] = {}
 ## Per side: finger bones, each finger's chain base first.
 var _finger_chains: Dictionary[StringName, Array] = {}
+## Per side: the finger each chain in [member _finger_chains] belongs to.
+var _finger_names: Dictionary[StringName, PackedStringArray] = {}
+## Per side: the thumb's bones, base first.
+var _thumb_chains: Dictionary[StringName, PackedInt32Array] = {}
 
 ## A finger's knuckle is its first joint at least this share of the way out to its last joint.
 const KNUCKLE_SHARE: float = 0.35
@@ -98,6 +106,14 @@ const GRIP_OUT: float = 0.35
 ## Closing angles (radians at full curl) for the three joints of a finger, base first.
 const CURL_ANGLES: Array[float] = [1.25, 1.4, 0.9]
 const FINGERS: Array[String] = ["Index", "Middle", "Ring", "Little"]
+## The thumb's bones, base first, and how far (radians) each bends toward the palm when closed.
+const THUMB_JOINTS: Array[String] = ["Metacarpal", "Proximal", "Distal"]
+const THUMB_ANGLES: Array[float] = [1.1, 0.9, 0.8]
+## Which way each thumb bone bends: toward the palm's face by this much, the rest across toward
+## the little finger, so the base turns the thumb in front of the palm and the tip wraps over.
+const THUMB_TOWARD_PALM: Array[float] = [0.6, 0.0, 0.0]
+## How far the thumb closes, as a share of the fingers' curl, unless told otherwise.
+const THUMB_SHARE: float = 0.7
 const JOINTS: Array[String] = ["Proximal", "Intermediate", "Distal"]
 ## The last pose built, in this skeleton's model space (for [method posed_position]).
 var _posed: PackedVector3Array = PackedVector3Array()
@@ -311,23 +327,58 @@ func _reach_with(target: Skeleton3D, side: StringName, goal: Vector3, hint: Vect
 		var hand_global := (Basis(_frame(wanted)) * Basis(_frame(_hand_rest_frame[side])).inverse()).get_rotation_quaternion()
 		target.set_bone_pose_rotation(hand, (lower_global.inverse() * hand_global).normalized())
 		globals[hand] = hand_global
-		_curl(target, side, hand_global, wanted, clampf(finger_curl.get(side, 0.0), 0.0, 1.0))
+		_curl(target, side, hand_global, wanted, clampf(finger_curl.get(side, 0.0), 0.0, 1.0), finger_curls.get(side, {}))
 
 
 ## Closes a hand's fingers by [param amount] about the knuckle line ([param frame]: x wrist to
 ## knuckles, y out of the palm, model space), from their straight rest.
-func _curl(target: Skeleton3D, side: StringName, hand_global: Quaternion, frame: Basis, amount: float) -> void:
+func _curl(target: Skeleton3D, side: StringName, hand_global: Quaternion, frame: Basis, amount: float,
+		single: Dictionary) -> void:
 	var axis := frame.x.cross(frame.y).normalized()
-	for chain: Variant in _finger_chains.get(side, []):
+	var chains: Array = _finger_chains.get(side, [])
+	var names: PackedStringArray = _finger_names.get(side, PackedStringArray())
+	for index: int in chains.size():
+		var chain: PackedInt32Array = chains[index]
+		var finger_amount := amount
+		if index < names.size() and single.has(names[index]):
+			finger_amount = clampf(float(single[names[index]]), 0.0, 1.0)
 		var parent_global := hand_global
 		var joint := 0
-		for bone: int in chain as PackedInt32Array:
+		for bone: int in chain:
 			var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
-			var angle: float = CURL_ANGLES[mini(joint, CURL_ANGLES.size() - 1)] * amount
+			var angle: float = CURL_ANGLES[mini(joint, CURL_ANGLES.size() - 1)] * finger_amount
 			var local := (Quaternion(parent_global.inverse() * axis, angle) * rest).normalized()
 			target.set_bone_pose_rotation(bone, local)
 			parent_global = parent_global * local
 			joint += 1
+	var thumb_amount := clampf(float(single.get("Thumb", amount * THUMB_SHARE)), 0.0, 1.0)
+	var little_side := frame.z.normalized() * (-1.0 if side == &"Right" else 1.0)
+	_curl_thumb(target, side, hand_global, frame.y.normalized(), little_side, thumb_amount)
+
+
+## Bends a hand's thumb in by [param amount] (model space: [param palm] out of the palm,
+## [param little_side] toward the little finger): each bone turns its own length toward a mix of
+## the two (see [constant THUMB_TOWARD_PALM]), so the thumb folds over whatever the hand holds
+## whichever way the rig built it.
+func _curl_thumb(target: Skeleton3D, side: StringName, hand_global: Quaternion, palm: Vector3, little_side: Vector3,
+		amount: float) -> void:
+	var thumb: PackedInt32Array = _thumb_chains.get(side, PackedInt32Array())
+	var parent_global := hand_global
+	for joint: int in thumb.size():
+		var bone := thumb[joint]
+		var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
+		var along := target.get_bone_rest(thumb[joint + 1]).origin if joint + 1 < thumb.size() 			else rest.inverse() * target.get_bone_rest(bone).origin
+		var direction := (parent_global * rest) * along
+		var weight: float = THUMB_TOWARD_PALM[mini(joint, THUMB_TOWARD_PALM.size() - 1)]
+		var axis := direction.cross(palm * weight + little_side * (1.0 - weight * 0.5))
+		if axis.length() < 0.000001:
+			target.set_bone_pose_rotation(bone, rest)
+			parent_global = parent_global * rest
+			continue
+		var angle: float = THUMB_ANGLES[mini(joint, THUMB_ANGLES.size() - 1)] * amount
+		var local := (Quaternion(parent_global.inverse() * axis.normalized(), angle) * rest).normalized()
+		target.set_bone_pose_rotation(bone, local)
+		parent_global = parent_global * local
 
 
 ## An orthonormal basis from a frame's x (forward) and y (palm), keeping x exact.
@@ -348,6 +399,8 @@ func _find_hands(target: Skeleton3D) -> void:
 	_hand_rest_frame.clear()
 	_grip_point.clear()
 	_finger_chains.clear()
+	_finger_names.clear()
+	_thumb_chains.clear()
 	for side: String in ["Left", "Right"]:
 		var hand := target.find_bone(side + "Hand")
 		if hand < 0:
@@ -355,6 +408,7 @@ func _find_hands(target: Skeleton3D) -> void:
 		var to_hand := target.get_bone_global_rest(hand).affine_inverse()
 		var knuckles: Dictionary[String, Vector3] = {}
 		var chains: Array[PackedInt32Array] = []
+		var names := PackedStringArray()
 		for finger: String in FINGERS:
 			var joints := PackedInt32Array()
 			for joint: String in JOINTS:
@@ -374,7 +428,15 @@ func _find_hands(target: Skeleton3D) -> void:
 				chain.append(bone)
 			if not chain.is_empty():
 				chains.append(chain)
+				names.append(finger)
 		_finger_chains[StringName(side)] = chains
+		_finger_names[StringName(side)] = names
+		var thumb := PackedInt32Array()
+		for joint: String in THUMB_JOINTS:
+			var bone := target.find_bone(side + "Thumb" + joint)
+			if bone >= 0:
+				thumb.append(bone)
+		_thumb_chains[StringName(side)] = thumb
 		if not knuckles.has("Index") or not knuckles.has("Little"):
 			continue
 		var middle: Vector3 = knuckles.get("Middle", (knuckles["Index"] + knuckles["Little"]) * 0.5)

@@ -168,6 +168,8 @@ func _connect_ui() -> void:
 	ui.new_requested.connect(func() -> void: _guard_unsaved(_new_map))
 	ui.open_requested.connect(_open_dialog)
 	ui.save_requested.connect(save_map)
+	ui.save_as_requested.connect(_ask_save_as)
+	ui.save_as_chosen.connect(save_as)
 	ui.validate_requested.connect(_show_validation)
 	ui.playtest_requested.connect(func() -> void: playtest())
 	ui.tactics_requested.connect(open_tactic_editor)
@@ -303,6 +305,43 @@ func save_map() -> Error:
 	if not made_copy and doc.content_version != content_before:
 		_report_tactic_issues()
 	return err
+
+
+## Save As: saves the map, unsaved edits included, as a separate map with a new ID and
+## [param new_name] (blank keeps the name with " (copy)"). The file it was opened from stays as it
+## was last saved; the editor carries on with the new map.
+func save_as(new_name: String) -> Error:
+	var doc := controller.document
+	var before := {"map_id": doc.map_id, "name": doc.name, "revision": doc.revision,
+		"content_version": doc.content_version, "content_hash": doc.content_hash}
+	var chosen := new_name.strip_edges()
+	doc.map_id = Ids.generate("map")
+	doc.name = chosen if not chosen.is_empty() else "%s (copy)" % before["name"]
+	doc.revision = 0
+	doc.content_version = 0
+	doc.content_hash = ""
+	var err := storage.save(doc)
+	if err != OK:
+		doc.map_id = str(before["map_id"])
+		doc.name = str(before["name"])
+		doc.revision = int(before["revision"])
+		doc.content_version = int(before["content_version"])
+		doc.content_hash = str(before["content_hash"])
+		ui.show_message("Save As failed", "Could not save the copy (error %d)." % err)
+		return err
+	official_source = false
+	autosave.clear(str(before["map_id"]))
+	autosave.clear(doc.map_id)
+	current_path = storage.path_for(doc.map_id)
+	controller.mark_saved()
+	_autosaved_version = controller.version
+	flash("Saved a copy as \"%s\" to %s; \"%s\" is unchanged." % [doc.name, current_path, before["name"]])
+	_refresh_inspector()
+	return OK
+
+
+func _ask_save_as() -> void:
+	ui.show_save_as("%s (copy)" % controller.document.name)
 
 
 func load_map(path: String) -> bool:
@@ -1309,7 +1348,10 @@ func _handle_key(key: InputEventKey) -> bool:
 			KEY_Y:
 				controller.redo()
 			KEY_S:
-				save_map()
+				if key.shift_pressed:
+					_ask_save_as()
+				else:
+					save_map()
 			KEY_D:
 				duplicate_selection()
 			KEY_C:

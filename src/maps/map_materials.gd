@@ -54,6 +54,11 @@ const PALETTE: Dictionary[String, Dictionary] = {
 		"emission": Color("ff7a2a"), "emission_energy": 3.0},
 	"brass": {"label": "Hammered brass", "color": Color("a58348"), "pattern": "metal", "repeat": 0.8,
 		"roughness": 0.52, "metallic": 0.76},
+	"red_brick": {"label": "Red brick", "color": Color("8e4433"), "pattern": "brick", "repeat": 0.9},
+	"render": {"label": "Painted render", "color": Color("e3dfd4"), "pattern": "plaster", "repeat": 2.5},
+	"roof_tile": {"label": "Clay roof tiles", "color": Color("6b3a2c"), "pattern": "tile", "repeat": 0.5},
+	"tarmac": {"label": "Tarmac", "color": Color("45464a"), "pattern": "noise", "repeat": 0.6},
+	"hedge": {"label": "Privet hedge", "color": Color("3c5a2b"), "pattern": "noise", "repeat": 0.8},
 }
 
 static var _cache: Dictionary[String, StandardMaterial3D] = {}

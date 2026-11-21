@@ -662,7 +662,7 @@ Gaps against building a full competitive map:
 - [x] Second and third official maps: Switchyard (surface A, underground B) and Kestrel Keep (stone
       fortress), both original layouts (owner, 2026-11-18: continue the two drafts). Building
       them added the pieces the editor could not make and a slope warning (below).
-- [ ] Remaining official maps (2–4 more).
+- [ ] Remaining official maps (2–4 more). Barnwell (English estate, owner's drawing) added 2026-11-21.
 
 **Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 4): a rail
 switching station over a turbine works, about 120 × 160 m inside an irregular fifteen-sided
@@ -689,6 +689,30 @@ Orchard Walk and Lych Gate (13.9 s), the Undercroft tunnel (10.7 s) or the Baile
 Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks the market.
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
+
+**Barnwell** (`map_f2f_barnwell`, `tools/author_barnwell.gd`, revision 1): a 1950s English
+housing estate laid out from the owner's drawing over a real estate plan; the street names are
+made up and the houses generic (no real address or home is reproduced). Red-brick semis, some
+rendered upstairs, under hipped or gable roofs of tile or slate drawn as brushes, with chimneys and
+aerials, angled bay windows, porch canopies, drainpipes, wheelie bins, gravel drives, low brick
+front walls, panel fences, privet hedges, telegraph poles and wires, street lamps, street trees and
+parked cars. The barn behind the allotments and the well on the Green give it its name.
+Three lanes run north to south, the owner's black lines: the West Lane, Ashby Avenue in the middle
+(the main lane, broken up by parked cars, a van, a skip, a bus shelter and a round traffic island)
+and Fen Walk. Curves soften the grid: winding paths down the West Lane and Fen Walk and across the
+Green, rounded kerbs where the avenue meets the roads, round flower beds, rounded hedge ends and
+the chapel's apse. Defenders start on Larch Road to the north, attackers on Marsh Lane in the
+south-east. Site A is the Green in the east block, entered by the West Gate off the avenue
+(attackers 9.8 s) or the Fen Gap off Fen Walk (12.9 s). Site B is the Lock-ups, a garage court in
+the west block, entered by the Ginnel Mouth off the avenue (9.9 s), the Chapel Gate at the top of
+Chapel Path (11.7 s) or Church Walk from the West Lane through the churchyard (14.6 s, the long
+flank). Defenders reach A in 7.5 s and B in 7.8 s, 2.1–2.3 s ahead of the first attacker; mid is
+contested (7.9 s attackers, 8.8 s defenders). Rotating takes 9.8 s. Back gardens, allotments and
+the churchyard are out of play behind fences (blocks, so they are not islands). No kerbs:
+pavements sit 2 cm proud so bots can walk them. Doors and windows are set with their faces
+outward (the Window and Door pieces face local +Z). Five materials came with it: red brick,
+painted render, clay roof tiles, tarmac and privet hedge. Even simulated teams win 41% of rounds
+on attack (eight seeded matches), inside the 32–61% spread of the other maps.
 
 **Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
@@ -961,3 +985,5 @@ Planned scope:
 | 2026-11-21 | Character models in play (owner request): bots wear character models by default instead of box bodies, dressed in the player's saved Character Creator presets (random looks when none are saved), with team-colour channels in the team's colour. |
 | 2026-11-21 | Character models, part two (owner request): crouch poses, weapons held in the hand, team uniforms from career organisation colours, other players' looks over the network (match protocol v2) and career unlocks for four outfits. |
 | 2026-11-21 | Knife looks (owner request): seven knife models from a CC BY pack, chosen in the Armoury; a Coat kit and paint-zone masks per knife; a unique inspection per knife, with the butterfly knife's handles swinging on their pins. |
+| 2026-11-21 | Barnwell (owner request): an official map of a 1950s English housing estate from the owner's drawing, with three north–south lanes, curved paths and kerbs, a barn and a well (made-up street names, generic houses). Red brick, render, roof tile, tarmac and hedge materials. |
+| 2026-11-21 | Save As in the Creation Studio (owner request): saves the open map, unsaved edits included, as a separate map with a new ID and name (Ctrl+Shift+S), so a map can be branched without losing the original. |

@@ -234,6 +234,25 @@ func _test_studio_editing() -> void:
 	studio.set("storage", storage)
 	check(studio.call("save_map") == OK and not ctl.is_dirty(), "save from the studio clears the dirty flag")
 	var path: String = studio.get("current_path")
+	# Save As: an unsaved edit goes into a separate map; the original file stays as last saved.
+	var original_id := ctl.document.map_id
+	var original_name := ctl.document.name
+	var saved_position: Vector3 = ctl.document.get_piece(id)["position"]
+	ctl.move_piece(id, saved_position + Vector3(2, 0, 0))
+	check(studio.call("save_as", "Branch test") == OK and ctl.document.map_id != original_id
+		and ctl.document.name == "Branch test" and not ctl.is_dirty() and str(studio.get("current_path")) != path,
+		"Save As saves the map under a new ID and name and carries on with the copy")
+	var original := storage.load_path(path)
+	var branch := storage.load_path(str(studio.get("current_path")))
+	check(original != null and original.name == original_name and original.map_id == original_id
+		and original.get_piece(id)["position"] == saved_position,
+		"the map it came from keeps its name, ID and last saved content")
+	check(branch != null and branch.get_piece(id)["position"] == saved_position + Vector3(2, 0, 0)
+		and storage.list_maps().any(func(entry: Dictionary) -> bool: return entry["map_id"] == original_id)
+		and storage.list_maps().any(func(entry: Dictionary) -> bool: return entry["map_id"] == branch.map_id),
+		"the copy holds the unsaved edit and both maps are listed")
+	check(studio.call("save_as", "  ") == OK and ctl.document.name == "Branch test (copy)",
+		"a blank Save As name keeps the old name with (copy)")
 	studio.call("load_template", "sandbox_arena")
 	check(ctl.document.pieces.size() > 20, "opening a template replaces the document")
 	check(studio.call("load_map", path) and ctl.document.index_of(id) >= 0, "re-opening the saved file restores the edit")

@@ -7,6 +7,9 @@ extends Control
 signal new_requested
 signal open_requested
 signal save_requested
+signal save_as_requested
+## The name the player gave in the Save As dialog.
+signal save_as_chosen(map_name: String)
 signal validate_requested
 signal playtest_requested
 signal tactics_requested
@@ -57,6 +60,8 @@ var measure_tool_button: Button
 var open_panel: Control
 var message_dialog: AcceptDialog
 var confirm_dialog: ConfirmationDialog
+var save_as_dialog: ConfirmationDialog
+var save_as_name: LineEdit
 
 var _title_label: Label
 var _status_label: Label
@@ -161,6 +166,14 @@ func set_spawn_count(count: int) -> void:
 	for i: int in maxi(1, count):
 		spawn_option.add_item("Spawn %d" % (i + 1), i)
 	spawn_option.select(clampi(previous, 0, spawn_option.item_count - 1))
+
+
+## Opens the Save As dialog with [param suggested] as the new map's name, ready to type over.
+func show_save_as(suggested: String) -> void:
+	save_as_name.text = suggested
+	save_as_dialog.popup_centered(Vector2i(520, 0))
+	save_as_name.select_all()
+	save_as_name.grab_focus()
 
 
 func show_message(title: String, text: String) -> void:
@@ -328,6 +341,8 @@ func _build_top_bar() -> Control:
 	_toolbar_button(file, "New", new_requested.emit, "Start a new map (Ctrl+N)")
 	_toolbar_button(file, "Open", open_requested.emit, "Open a saved, official or recovered map (Ctrl+O)")
 	save_button = _toolbar_button(file, "Save", save_requested.emit, "Save to user://maps (Ctrl+S)")
+	_toolbar_button(file, "Save As", save_as_requested.emit,
+		"Save a separate copy under a new name; the map you opened stays as last saved (Ctrl+Shift+S)")
 	undo_button = _toolbar_button(file, "Undo", undo_requested.emit, "Undo (Ctrl+Z)")
 	redo_button = _toolbar_button(file, "Redo", redo_requested.emit, "Redo (Ctrl+Y / Ctrl+Shift+Z)")
 	_toolbar_button(flow, "Validate", validate_requested.emit, "Check structure, reachability and route timings")
@@ -461,7 +476,7 @@ func _build_tools_panel() -> Control:
 		"Ctrl+G  group · Ctrl+Shift+G ungroup",
 		"Ctrl+Z / Ctrl+Y  undo / redo",
 		"Tab  top view · M  measure",
-		"Ctrl+S  save · F5  playtest",
+		"Ctrl+S  save · Ctrl+Shift+S  save as · F5  playtest",
 		"Esc  select tool / deselect",
 	]
 	var help := UIFactory.button("?")
@@ -768,6 +783,20 @@ func _build_dialogs() -> void:
 		if _confirm_callback.is_valid():
 			_confirm_callback.call())
 	add_child(confirm_dialog)
+	save_as_dialog = ConfirmationDialog.new()
+	save_as_dialog.title = "Save As"
+	save_as_dialog.ok_button_text = "Save copy"
+	var save_as_box := UIFactory.vbox(6)
+	save_as_box.add_child(UIFactory.label(
+		"Saves this map as a separate map with its own name. The map you opened stays as it was last saved.",
+		&"MutedLabel", true))
+	save_as_name = LineEdit.new()
+	save_as_name.placeholder_text = "Map name"
+	save_as_box.add_child(save_as_name)
+	save_as_dialog.add_child(save_as_box)
+	save_as_dialog.register_text_enter(save_as_name)
+	save_as_dialog.confirmed.connect(func() -> void: save_as_chosen.emit(save_as_name.text))
+	add_child(save_as_dialog)
 
 
 # --- inspector forms ----------------------------------------------------------------------------

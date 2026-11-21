@@ -29,13 +29,17 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 18 | Steam integration, testing, release preparation | all | ⬜ |
 | 19 | Database and Competition Editor | 9, 13 | ⬜ |
 | 20 | Manager Career mode | 9, 13, 14 (live viewing: 7) | ⬜ |
+| 21 | Deep world match simulation | 9, 11, 13, 16 | 🔶 in progress |
 
-**Execution order (updated 2026-11-20):** 1 → 6 → 9 → 8 → **10 → 13 → 14 → 20 → 15 → 16 → 19 → 17 → 18**.
+**Execution order (updated 2026-11-21):** 1 → 6 → 9 → 8 → 10 → 13 → **21 → 7 → 14 (veto, formats) → 20 → 15 → 16 → 19 → 17 → 18**.
+Owner, 2026-11-21: every match played outside the player's own game must play out like a real
+one from each player's abilities (Football Manager style) before map veto and formats; then the
+bots learn to play as a team (M7) with pro-style executes, built as editable plays.
 M20 (Manager Career, owner 2026-11-20) comes before M15 so co-op is built for both career types.
 M19 comes before M17 because community databases are made with the editor.
-M7 is deferred while representative maps and gameplay-relevant player traits are developed.
-Those foundations give the team AI real layouts, roles and behaviours to work with when M7 is
-revisited. Milestone numbers stay stable for reference.
+M7 follows M21 and shares its map model and round plans. Its first test bed is the owner's
+local Dust II layout study (`user://maps/map_dev_dust2_2020`): local only, never committed, and
+no shipped content, test or play depends on it. Milestone numbers stay stable for reference.
 
 ---
 
@@ -248,6 +252,40 @@ Planned scope:
 - Intelligence scaling by team tier; difficulty never via impossible aim.
 - Tests: plan selection, role assignment, economy decisions, calls → bot goals, a scene match
   where an execute happens as a group.
+
+## Milestone 21 — Deep world match simulation 🔶
+
+**Goal:** every match nobody plays (the whole world's fixtures, and "simulate" for the player's
+own) plays out round by round like a real one, decided by each player's abilities, role, traits,
+form and the team's tactics, on a real map. Not flat bonuses: who does what, where, with what.
+
+Stages (each validated and committed on its own):
+
+- [ ] **A. Map model.** A simulation graph per official map, baked from its navmesh: areas
+      (callouts, bombsites, spawns), which areas connect and the travel time between them, each
+      site's entrances. Pure data in `data/maps/sim/` (`format_version`), read by the career
+      layer; `tools/bake_sim_maps.gd` rebuilds it. Every editor map can be baked the same way.
+- [ ] **B. Round plans and positions.** Defence setups (who holds which area, stacks, rotators)
+      and attack strategies (default, execute, split, rush, fake, lurk) chosen by the IGL from
+      economy, score, map, team style and what has worked; mid-round calls on information
+      (rotate, retake, save).
+- [ ] **C. Players in places.** Rounds advance in time steps; players move along the graph.
+      Fights happen where opponents meet: who sees whom first (positioning, crosshair placement,
+      game sense against the peeker's aggression), several exchanges with damage that carries
+      over, headshots from aim, weapon match-ups, crossfires and trades from teammates nearby.
+- [ ] **D. Individual economy and utility.** Each player's own money, weapon, armour and
+      grenades; drops; personal saves. Grenades thrown by players with their own utility skill:
+      flashes blind named players, smokes cover executes, fire delays pushes, frags damage.
+- [ ] **E. Same events as a played match.** The engine emits the FPS runtime's event stream and
+      `MatchStatistics` builds every line from it, so simulated and played statistics agree by
+      construction (headshots, utility, flash assists, entries, clutches, trades).
+- [ ] **F. People over a match.** Confidence that grows with good rounds, tilt, nerves in big
+      rounds, fatigue over a Bo3/Bo5, map familiarity for teams and map comfort for players,
+      all from traits and history.
+- [ ] **G. Match view.** A round-by-round timeline with each round's plan, kill feed (weapon,
+      headshot, utility), economy per player and the scoreboard, for any simulated match.
+- [ ] **H. Balance harness.** Thousands of headless matches checked against targets: side
+      balance, round and score distributions, rating spread, upset rate, stat ranges by role.
 
 ## Milestone 8 — Tactical Play Creator 🔶
 

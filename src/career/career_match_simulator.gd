@@ -86,6 +86,7 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 ## One map of a career fixture through the match engine (home side starts on attack).
 static func engine_map(repo: CareerRepository, setup: MatchSetup, dice: RandomNumberGenerator) -> Dictionary:
 	var engine := MatchEngine.new(dice, setup.max_rounds)
+	engine.sim_map = SimMap.for_map(setup.map_id)
 	var home := MatchEngine.SimTeam.new()
 	home.id = setup.home_team_id
 	home.name = setup.home_team_name

@@ -19,6 +19,10 @@ extends RefCounted
 ## numbers (flick and spray specialists duel better, clutch players rise in 1vX, players who feel
 ## the pressure fade in decisive rounds, hot heads tilt during losing streaks, calm players don't).
 ##
+## On a map with a baked [SimMap] ([member sim_map]), each team's leader ([RoundPlanner]) calls
+## every round's plan: the attack's strategy and target site, the defence's setup, each player's
+## job and place. Plans are logged with the round and the leaders learn from what worked.
+##
 ## Career attributes are used here only, on the career layer; they never reach the FPS runtime.
 
 const OVERTIME_ROUNDS: int = 3
@@ -118,12 +122,18 @@ class SimTeam extends RefCounted:
 
 var rng: RandomNumberGenerator
 var max_rounds: int = 8
-## Compact log of the map: per round {winner: 0/1, how: String, attackers: 0/1}.
+## The map's simulation graph (null: rounds are played without plans).
+var sim_map: SimMap = null
+## Compact log of the map: per round {winner: 0/1, how: String, attackers: 0/1}, plus
+## {site, plans: [team 0 plan, team 1 plan]} (see [method RoundPlan.to_dict]) on a [member sim_map].
 var rounds_log: Array[Dictionary] = []
 ## Short notable moments ("Vex wins a 1v3 clutch", "Rook aces the round").
 var highlights: PackedStringArray = []
 ## +1 when the next fight is an attacker trading a teammate, −1 for a defender, 0 otherwise.
 var _trading: int = 0
+var _planners: Array[RoundPlanner] = []
+var _plans: Array[RoundPlan] = []
+var _score: Array[int] = [0, 0]
 
 
 func _init(dice: RandomNumberGenerator, rounds_per_half: int = 8) -> void:
@@ -141,7 +151,16 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 		_prepare(team)
 	if home.players.is_empty() or away.players.is_empty():
 		return _forfeit(home, away)
+	_planners.clear()
+	if sim_map != null:
+		# The leaders get their own dice (from the match's, without drawing from it), so calling
+		# plans does not change how the fights fall.
+		for index: int in 2:
+			var dice := RandomNumberGenerator.new()
+			dice.seed = hash([rng.seed, rng.state, index])
+			_planners.append(RoundPlanner.new(sim_map, teams[index], dice))
 	var score: Array[int] = [0, 0]
+	_score = score
 	var round_number := 0
 	var attackers := 0
 	while not _decided(score):
@@ -218,6 +237,7 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 			player.contributed = false
 			player.traded = false
 			player.round_kills = 0
+	_plan_round(teams, attackers)
 	var defenders := 1 - attackers
 	var planted := false
 	var how := ""
@@ -420,7 +440,51 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 		var survivors := team.alive().size()
 		var kept := roundi(spent * 0.7 * survivors / maxf(team.players.size(), 1.0))
 		team.money = clampi(team.money - spent + kept + income, 0, MAX_MONEY)
-	rounds_log.append({"winner": winner, "how": how, "attackers": attackers})
+	var entry := {"winner": winner, "how": how, "attackers": attackers}
+	if not _plans.is_empty():
+		_learn(winner, attackers, entry)
+	rounds_log.append(entry)
+
+
+## Both leaders call the round: the attackers' strategy and site, the defenders' setup.
+func _plan_round(teams: Array[SimTeam], attackers: int) -> void:
+	_plans.clear()
+	if _planners.is_empty():
+		return
+	var plans: Array[RoundPlan] = [null, null]
+	for index: int in 2:
+		var other := teams[1 - index]
+		var situation := RoundPlanner.Situation.new()
+		situation.round_index = rounds_log.size()
+		situation.own_score = _score[index]
+		situation.their_score = _score[1 - index]
+		situation.to_win = winner_score(0, max_rounds)
+		situation.buy = teams[index].buy
+		# Leaders track the other team's money from the round results and kill feed.
+		situation.their_buy = &"eco" if other.money < FORCE_MONEY and not _is_pistol(rounds_log.size()) else other.buy
+		var players := teams[index].players
+		plans[index] = _planners[index].plan_attack(situation, players) if index == attackers 			else _planners[index].plan_defence(situation, players)
+	_plans = plans
+	# A default round is called on what the map control found.
+	var attack := _plans[attackers]
+	if attack.kind == RoundPlan.DEFAULT:
+		var spotted: Dictionary[String, int] = {}
+		for site: String in sim_map.sites():
+			spotted[site] = _plans[1 - attackers].players_at(sim_map, site)
+		attack.site = _planners[attackers].call_hit(attack, spotted)
+
+
+## Each leader learns from the round: where the attack went, how many defended each site.
+func _learn(winner: int, attackers: int, entry: Dictionary) -> void:
+	var attack := _plans[attackers]
+	var defence := _plans[1 - attackers]
+	var found: Dictionary[String, int] = {}
+	for site: String in sim_map.sites():
+		found[site] = defence.players_at(sim_map, site)
+	_planners[attackers].learn_attack(attack, winner == attackers, found, false)
+	_planners[1 - attackers].learn_defence(attack.site)
+	entry["site"] = attack.site
+	entry["plans"] = [_plans[0].to_dict(), _plans[1].to_dict()]
 
 
 func _buy(team: SimTeam, pistol: bool) -> void:

@@ -106,6 +106,7 @@ static func play_series(repo: CareerRepository, fixture: Dictionary, day: int, r
 		var map_id := CareerLeagueMatches.MAP_POOL[(map_number - 1) % CareerLeagueMatches.MAP_POOL.size()]
 		# The away side starts on attack on even maps.
 		var flipped := map_number % 2 == 0
+		engine.sim_map = SimMap.for_map(map_id)
 		var played := engine.play_map(away, home) if flipped else engine.play_map(home, away)
 		var map_score: Vector2i = played["score"]
 		if flipped:

@@ -416,6 +416,14 @@ reported per slot. The same route data can be consumed by future M7 play executi
 - `SimMap` (`src/career/sim`, pure) loads a graph and answers sites, spawns, neighbours,
   distances, walking seconds, routes, a site's cluster (areas on it) and its entrances. The match
   engine (stage B onward) plays on it. A test fails when a baked graph no longer matches its map.
+- `RoundPlanner` (`src/career/sim`, pure, one per team per map) is the in-game leader: it
+  weighs attack kinds (default, execute, split, rush, fake) and sites, and defence setups
+  (standard, stack, aggressive) from the players (leader's tactics, utility, coordination,
+  aggression, roles, traits), the buy, the score and its memory of the match (what won, where
+  they attacked, defenders found per site, rotations); a sharper leader picks the best option
+  more consistently. It gives each player a job and a place (`RoundPlan`) and makes the
+  mid-round calls: where a default hits, who rotates, retake or save. `MatchEngine` uses it
+  when it has a `sim_map` and logs both plans with each round.
 
 ### Competitive rules (Milestone 5)
 

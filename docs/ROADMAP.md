@@ -265,10 +265,11 @@ Stages (each validated and committed on its own):
       (callouts, bombsites, spawns), which areas connect and the travel time between them, each
       site's entrances. Pure data in `data/maps/sim/` (`format_version`), read by the career
       layer; `tools/bake_sim_maps.gd` rebuilds it. Every editor map can be baked the same way.
-- [ ] **B. Round plans and positions.** Defence setups (who holds which area, stacks, rotators)
+- [x] **B. Round plans and positions.** Defence setups (who holds which area, stacks, rotators)
       and attack strategies (default, execute, split, rush, fake, lurk) chosen by the IGL from
       economy, score, map, team style and what has worked; mid-round calls on information
-      (rotate, retake, save).
+      (rotate, retake, save). `RoundPlanner` + `RoundPlan`; lurking is a job inside the other
+      kinds. Plans are logged per round; fights still come from the duel chain until stage C.
 - [ ] **C. Players in places.** Rounds advance in time steps; players move along the graph.
       Fights happen where opponents meet: who sees whom first (positioning, crosshair placement,
       game sense against the peeker's aggression), several exchanges with damage that carries

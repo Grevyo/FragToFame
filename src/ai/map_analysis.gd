@@ -114,6 +114,13 @@ func path_length(from: Vector3, to: Vector3) -> float:
 	return NavigationBuilder.path_length(_map, a as Vector3, b as Vector3, POINT_TOLERANCE)
 
 
+## The shortest bot path between two points (empty when there is none).
+func path(from: Vector3, to: Vector3) -> PackedVector3Array:
+	if path_length(from, to) < 0.0:
+		return PackedVector3Array()
+	return NavigationServer3D.map_get_path(_map, nav_point(from) as Vector3, nav_point(to) as Vector3, true)
+
+
 ## A timing entry by label, optionally within one group ("Attackers from spawn",
 ## "Defenders from spawn", "Rotations", "Crossings"). {} when there is none.
 func timing(label: String, group: String = "") -> Dictionary:

@@ -261,7 +261,7 @@ form and the team's tactics, on a real map. Not flat bonuses: who does what, whe
 
 Stages (each validated and committed on its own):
 
-- [ ] **A. Map model.** A simulation graph per official map, baked from its navmesh: areas
+- [x] **A. Map model.** A simulation graph per official map, baked from its navmesh: areas
       (callouts, bombsites, spawns), which areas connect and the travel time between them, each
       site's entrances. Pure data in `data/maps/sim/` (`format_version`), read by the career
       layer; `tools/bake_sim_maps.gd` rebuilds it. Every editor map can be baked the same way.

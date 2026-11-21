@@ -31,6 +31,7 @@ func run() -> void:
 	_test_coats()
 	_test_profile()
 	_test_inspects()
+	_test_grips()
 	await _test_first_person()
 	await _test_armoury()
 	CosmeticProfile.use(real_profile)
@@ -268,7 +269,7 @@ func _test_inspects() -> void:
 	check(is_equal_approx(float(closed.get(&"handle_a", 0.0)), 180.0) and is_equal_approx(float(closed.get(&"handle_b", 0.0)), -180.0),
 		"halfway through, the butterfly knife is closed")
 	var spin := InspectLibrary.sample(&"knf_karambit", 0.55)
-	check(absf((spin["rot"] as Vector3).x) >= 700.0 and (spin["pivot"] as Vector3).z > 0.4, "the karambit spins twice about its ring")
+	check(absf((spin["rot"] as Vector3).y) >= 700.0 and (spin["pivot"] as Vector3).z > 0.4, "the karambit spins twice about its ring")
 	check((InspectLibrary.sample(&"knf_combat", 0.5)["parts"] as Dictionary).is_empty(), "one-piece knives move no parts")
 	check(InspectLibrary.for_item(&"wpn_g17") == InspectLibrary.PISTOL and not bool(InspectLibrary.PISTOL.get("support", true))
 		and InspectLibrary.for_item(&"wpn_ak47") == InspectLibrary.DEFAULT and bool(InspectLibrary.DEFAULT.get("grip_pivot", false)),
@@ -276,6 +277,34 @@ func _test_inspects() -> void:
 	check(is_equal_approx(WeaponEffects._hand_angle(-80.0, 90.0), -80.0) and is_zero_approx(WeaponEffects._hand_angle(720.0, 50.0))
 		and absf(WeaponEffects._hand_angle(170.0, 50.0)) < 10.0,
 		"the hand turns with a held pose but not through a spin (the item turns on in the fingers)")
+
+
+func _test_grips() -> void:
+	section("How each knife sits in the fist")
+	var visual := WeaponVisual.new()
+	var inside := true
+	var placed := true
+	var fist := Transform3D(WeaponModels.hand_basis(Vector3(-0.5, -0.2, -1), Vector3(-1, -0.4, 0.3)), Vector3(0.1, -0.2, -0.3))
+	for knife: StringName in WeaponModels.KNIVES:
+		visual.setup(knife)
+		var grip := WeaponModels.hand_points(knife, visual.size)[&"Right"]
+		inside = inside and WeaponModels.KNIFE_GRIPS.has(knife) and grip.z > 0.0 and grip.z < visual.size.z * 0.5 \
+			and absf(grip.y) < visual.size.y * 0.5 and WeaponModels.hand_frames(knife)[&"Right"].is_equal_approx(WeaponModels.knife_hold(knife).basis)
+		placed = placed and (WeaponModels.knife_in_fist(knife, fist) * WeaponModels.knife_hold(knife)).is_equal_approx(fist)
+	visual.free()
+	check(inside, "every knife is held at its own handle (behind the blade, within the model), the hand turned to match")
+	check(placed, "a knife placed in a fist puts its handle in the middle of that fist, turned with it")
+	var hammer := true
+	for knife: StringName in [&"knf_combat", &"knf_bayonet", &"knf_butterfly", &"knf_nomad", &"knf_skeleton"]:
+		var frame := WeaponModels.knife_hold(knife).basis
+		# z is the thumb's side of the fist: toward the blade; the knuckles across the handle, slanted.
+		hammer = hammer and frame.z.dot(Vector3.FORWARD) > 0.5 and absf(frame.x.dot(Vector3.FORWARD)) < 0.7
+	check(hammer, "straight knives sit in a hammer grip: the handle across the palm, the blade out by the thumb")
+	var karambit := WeaponModels.knife_hold(&"knf_karambit").basis
+	check(karambit.z.dot(Vector3.BACK) > 0.5, "the karambit's ring is at the index finger, its blade out below the little finger")
+	var dagger := WeaponModels.knife_hold(&"knf_t_dagger").basis
+	check(dagger.x.dot(Vector3.FORWARD) > 0.9 and absf(dagger.z.dot(Vector3.UP)) > 0.9,
+		"the T-handle dagger is a push dagger: crossbar across the palm, blade out from the knuckles")
 
 
 func _test_first_person() -> void:
@@ -315,13 +344,34 @@ func _test_first_person() -> void:
 	await wait_frames(1)
 	view = effects.weapon_visual
 	var hand := effects.get("_hand_item") as Node3D
-	var grip := WeaponModels.hand_points(view.weapon_id, view.size)[&"Right"]
+	var ring := Vector3(0, 0, 0.42) * view.size
 	effects.inspect()
 	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_karambit") * (1.0 - 0.4))
 	await wait_frames(1)
 	var turned := rad_to_deg(hand.global_basis.get_rotation_quaternion().angle_to(view.global_basis.get_rotation_quaternion()))
-	check((hand.global_transform * grip).distance_to(view.global_transform * grip) < 0.005 and turned > 60.0,
-		"mid-spin the hand stays on the karambit's grip while the knife turns on in the fingers (%.0f degrees apart)" % turned)
+	check((hand.global_transform * ring).distance_to(view.global_transform * ring) < 0.005 and turned > 60.0,
+		"mid-spin the karambit turns on round the finger in its ring (%.0f degrees from the hand)" % turned)
+	effects.set("_inspect_left", 0.0001)
+	await wait_frames(2)
+	profile.set_knife(&"knf_combat")
+	effects.refresh_cosmetics()
+	await wait_frames(1)
+	view = effects.weapon_visual
+	hand = effects.get("_hand_item") as Node3D
+	var grip := WeaponModels.hand_points(view.weapon_id, view.size)[&"Right"]
+	var axes := view.transform.basis * WeaponModels.knife_hold(view.weapon_id).basis
+	var wrist := view.transform * grip + axes * WeaponEffects.WRIST_FROM_FIST
+	effects.inspect()
+	var twist_at := 0.2
+	effects.set("_inspect_left", InspectLibrary.seconds(&"knf_combat") * (1.0 - twist_at))
+	await wait_frames(1)
+	var pose := InspectLibrary.sample(&"knf_combat", twist_at)
+	var hand_root := effects.get("_hand_root") as Node3D
+	var apart := rad_to_deg(hand.global_basis.get_rotation_quaternion().angle_to(view.global_basis.get_rotation_quaternion()))
+	var wrist_moved := (hand_root.transform * wrist).distance_to(wrist + (pose["pos"] as Vector3))
+	check(absf((pose["rot"] as Vector3).x) > 80.0 and apart < 1.0
+		and (hand.global_transform * grip).distance_to(view.global_transform * grip) < 0.001 and wrist_moved < 0.001,
+		"a knife inspection twists the forearm: the knife turns with the fist, the wrist stays where it is")
 	effects.set("_inspect_left", 0.0001)
 	await wait_frames(2)
 	profile.set_knife(&"knf_nomad")

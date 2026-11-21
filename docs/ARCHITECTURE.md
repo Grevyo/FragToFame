@@ -413,7 +413,9 @@ reported per slot. The same route data can be consumed by future M7 play executi
   (rolled and turned to each side about the firing grip, both hands on) or the pistol default
   (the support hand lets go, the pistol turned over in the firing hand). Optional entry fields
   say how the hands take part: `grip_pivot` (turn about the firing grip), `support` (false lets
-  the support hand go) and `toss` (the span when the item is in the air).
+  the support hand go) and `toss` (the span when the item is in the air). A knife's turns are in
+  its fist's own axes (forearm twist, wrist bend toward thumb or little finger, wrist bend up or
+  down), so the choreography says what the hand does rather than which way the screen turns.
 - **Not yet:** bots buying and throwing utility (Milestone 7), sounds (no audio assets),
   networked utility.
 
@@ -1018,7 +1020,8 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
     with the legs.
   - **Placement.** Inside the retargeter (`before_reach`), the weapon is placed from the posed
     right shoulder and pointed along the aim: a long gun's butt in the shoulder, a pistol out in
-    front, a knife low in the fist. For long guns the shoulders turn (`upper_twist`, neck turned
+    front, a knife low in the fist (the fist is placed and the knife fitted into it, see
+    below). For long guns the shoulders turn (`upper_twist`, neck turned
     back) so the support hand reaches the handguard.
   - **Reach.** A two-bone solve brings each hand's grip, the middle of its closed fist, to its
     grip point; the elbow bends toward a hint. The grip is measured from each rig's own hand
@@ -1031,7 +1034,13 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
 
   Grips live in `WeaponModels`: grip points per gun, measured from side-on renders of the
   models (the middle of the forend or grip at that point), with a two-handed pistol grip and a
-  one-handed knife grip. The support hand's knuckles run along the barrel, so its fingers wrap
+  one-handed knife grip. Each knife has its own grip (`WeaponModels.KNIFE_GRIPS`, measured from
+  side-on renders): where the middle of the fist sits on its handle and how the hand is turned.
+  The straight knives sit in a hammer grip, the handle slanting across the palm and the blade out
+  by the thumb; the karambit has the index finger through its ring and the blade out below the
+  little finger; the T-handle dagger is a push dagger, crossbar across the palm and blade out from
+  the knuckles. Knives are then placed from the fist (`WeaponModels.knife_in_fist`): first person
+  and third person each set one fist pose and every knife sits in it its own way. The support hand's knuckles run along the barrel, so its fingers wrap
   the forend; on a pistol its palm presses the grip's left side and its fingers wrap the firing hand. No support grip is more than about
   29 cm in front of the firing grip (the AK's spacing), because an arm reaches no further in
   first person; long rifles are held further back along the forend. In first person, pistols
@@ -1050,6 +1059,10 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
     roll 90), so a held pose is followed exactly while a spin or flip turns on in the fingers.
   - During a `toss` span the hand follows only 6 cm, so a tossed knife or frag flies on and is
     caught.
+  - A knife's hand turns about the wrist (a fixed offset from the middle of the fist), up to
+    90 degrees of forearm twist and 25 or 50 degrees of wrist bend; the fingers turn the knife the
+    rest of the way about the choreography's pivot (the karambit's ring, the bayonet's guard). So
+    the forearm stays put instead of swinging across the view.
 
   Without a look there are no arms, only the floating viewmodel as before.
 - **Team uniforms.** `MatchSetup` v3 carries `home_colour` / `away_colour`; v2 setups still load

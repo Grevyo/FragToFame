@@ -21,10 +21,14 @@ const WALK_SPEED: float = 3.4
 ## The run clips are authored for about this speed (m/s); playback is scaled to match.
 const RUN_CLIP_SPEED: float = 5.0
 ## Where a held item goes, from the right shoulder in the aim frame (x right, y up, -z forward):
-## a long gun's butt, a pistol's firing palm, a knife's palm.
+## a long gun's butt, a pistol's firing palm, the fist holding a knife.
 const LONG_GUN_BUTT := Vector3(-0.07, -0.05, -0.04)
 const PISTOL_PALM := Vector3(-0.15, -0.07, -0.42)
 const KNIFE_PALM := Vector3(0.03, -0.3, -0.32)
+## Which way the fist holding a knife turns (aim frame): knuckles forward and down, palm in, as a
+## knife carried low.
+const KNIFE_FIST_KNUCKLES := Vector3(-0.1, -0.5, -1)
+const KNIFE_FIST_PALM := Vector3(-1, 0, 0)
 ## Guns longer than this (m) are shouldered, the shoulders turned this far (radians) so the
 ## support hand reaches the handguard.
 const LONG_GUN: float = 0.5
@@ -226,8 +230,8 @@ static func upper_clip_for(model_id: StringName) -> StringName:
 static func hold_transform(model_id: StringName, size: Vector3, shoulder: Vector3, facing: Basis, pitch: float) -> Transform3D:
 	var aim := facing * Basis(Vector3.RIGHT, pitch)
 	if WeaponModels.is_knife(model_id):
-		var knife_palm := WeaponModels.hand_points(model_id, size)[&"Right"]
-		return Transform3D(aim, shoulder + aim * KNIFE_PALM - aim * knife_palm)
+		var fist := Transform3D(aim * WeaponModels.hand_basis(KNIFE_FIST_KNUCKLES, KNIFE_FIST_PALM), shoulder + aim * KNIFE_PALM)
+		return WeaponModels.knife_in_fist(model_id, fist)
 	if size.z > LONG_GUN:
 		return Transform3D(aim, shoulder + aim * LONG_GUN_BUTT - aim * Vector3(0, 0, size.z * 0.5))
 	var palm := WeaponModels.hand_points(model_id, size)[&"Right"]

@@ -177,7 +177,8 @@ const GRIPS: Dictionary[StringName, Dictionary] = {
 	&"wpn_sks": {"right": Vector3(0, -0.01, 0.258), "left": Vector3(-0.01, 0.035, -0.03)},
 	&"wpn_m14_ebr": {"right": Vector3(0, -0.06, 0.276), "left": Vector3(0, 0.03, -0.014)},
 }
-## A knife's handle centre, as a share of its length from the centre toward the pommel.
+## Where the firing hand closes on an item with no grip data, as a share of its length from the
+## centre toward the back.
 const KNIFE_GRIP_SHARE: float = 0.36
 ## The support hand of a two-handed pistol grip, from the firing grip (weapon space, metres): it
 ## wraps the firing hand from below and the left.
@@ -194,6 +195,25 @@ const RIGHT_GRIP_FRAME: Array[Vector3] = [Vector3(0, 0.3, -1), Vector3(-1, 0, 0)
 const LEFT_HANDGUARD_FRAME: Array[Vector3] = [Vector3(0.75, 0.6, -0.25), Vector3(-0.6, 0.75, 0)]
 const LEFT_PISTOL_FRAME: Array[Vector3] = [Vector3(0.2, -0.2, -1), Vector3(1, 0.3, 0)]
 
+## How the fist holds each knife (knife space: blade toward -Z, spine up): "grip" is the middle of
+## the closed fist (metres, measured from side-on renders of each model), "knuckles" and "palm"
+## turn the hand as in [constant RIGHT_GRIP_FRAME]. The straight knives sit in a hammer grip:
+## palm on the handle's right side, thumb toward the blade, the handle across the palm on the
+## slant from the heel of the hand to the first knuckle. The karambit has the index finger through
+## its ring and the blade curving out below the little finger. The T-handle dagger is a push
+## dagger: crossbar across the palm, blade out between the middle fingers.
+const KNIFE_GRIPS: Dictionary[StringName, Dictionary] = {
+	&"knf_combat": {"grip": Vector3(0, 0.003, 0.09), "knuckles": HAMMER_KNUCKLES, "palm": Vector3(-1, 0, 0)},
+	&"knf_bayonet": {"grip": Vector3(0, 0.005, 0.085), "knuckles": HAMMER_KNUCKLES, "palm": Vector3(-1, 0, 0)},
+	&"knf_butterfly": {"grip": Vector3(0, 0.009, 0.048), "knuckles": HAMMER_KNUCKLES, "palm": Vector3(-1, 0, 0)},
+	&"knf_karambit": {"grip": Vector3(0, 0.032, 0.042), "knuckles": Vector3(0, -1, -0.6), "palm": Vector3(1, 0, 0)},
+	&"knf_nomad": {"grip": Vector3(0, 0.005, 0.062), "knuckles": HAMMER_KNUCKLES, "palm": Vector3(-1, 0, 0)},
+	&"knf_skeleton": {"grip": Vector3(0, 0.0, 0.068), "knuckles": HAMMER_KNUCKLES, "palm": Vector3(-1, 0, 0)},
+	&"knf_t_dagger": {"grip": Vector3(0, 0.0, 0.062), "knuckles": Vector3(0, -0.35, -1), "palm": Vector3(-1, 0, 0)},
+}
+## Wrist to knuckles in a hammer grip on a knife: toward the edge, slanted toward the blade.
+const HAMMER_KNUCKLES := Vector3(0, -0.82, -0.57)
+
 static var _slot_cache: Dictionary = {}
 
 
@@ -205,7 +225,9 @@ static func hand_points(model_id: StringName, size: Vector3) -> Dictionary[Strin
 	var points: Dictionary[StringName, Vector3] = {}
 	var grips: Dictionary = GRIPS.get(model_id, {})
 	var right := Vector3(0, 0, size.z * KNIFE_GRIP_SHARE)
-	if grips.has("right"):
+	if KNIFE_GRIPS.has(model_id):
+		right = KNIFE_GRIPS[model_id]["grip"] as Vector3
+	elif grips.has("right"):
 		right = grips["right"] as Vector3
 	points[&"Right"] = right
 	if grips.has("left"):
@@ -221,6 +243,8 @@ static func hand_points(model_id: StringName, size: Vector3) -> Dictionary[Strin
 static func hand_frames(model_id: StringName) -> Dictionary[StringName, Basis]:
 	var frames: Dictionary[StringName, Basis] = {}
 	frames[&"Right"] = _frame_basis(RIGHT_GRIP_FRAME)
+	if KNIFE_GRIPS.has(model_id):
+		frames[&"Right"] = knife_hold(model_id).basis
 	var grips: Dictionary = GRIPS.get(model_id, {})
 	if grips.has("left"):
 		frames[&"Left"] = _frame_basis(LEFT_HANDGUARD_FRAME)
@@ -230,9 +254,30 @@ static func hand_frames(model_id: StringName) -> Dictionary[StringName, Basis]:
 
 
 static func _frame_basis(frame: Array[Vector3]) -> Basis:
-	var forward := frame[0].normalized()
-	var palm := (frame[1] - forward * frame[1].dot(forward)).normalized()
+	return hand_basis(frame[0], frame[1])
+
+
+## A hand frame (see [member CharacterRetargeter.hand_frames]) from the wrist-to-knuckles
+## direction and roughly where the palm faces.
+static func hand_basis(knuckles: Vector3, palm_direction: Vector3) -> Basis:
+	var forward := knuckles.normalized()
+	var palm := (palm_direction - forward * palm_direction.dot(forward)).normalized()
 	return Basis(forward, palm, forward.cross(palm))
+
+
+## The fist holding knife [param model_id], in knife space: origin at the middle of the closed
+## fist, basis the hand frame (see [constant KNIFE_GRIPS]). Identity for anything else.
+static func knife_hold(model_id: StringName) -> Transform3D:
+	if not KNIFE_GRIPS.has(model_id):
+		return Transform3D.IDENTITY
+	var grip: Dictionary = KNIFE_GRIPS[model_id]
+	return Transform3D(hand_basis(grip["knuckles"] as Vector3, grip["palm"] as Vector3), grip["grip"] as Vector3)
+
+
+## Where knife [param model_id] goes for a fist [param fist] (origin the middle of the fist, basis
+## the hand frame, in the parent's space): each knife sits in the fist its own way.
+static func knife_in_fist(model_id: StringName, fist: Transform3D) -> Transform3D:
+	return fist * knife_hold(model_id).affine_inverse()
 
 
 ## The modelled guns (knife looks are listed by [constant KNIVES]).

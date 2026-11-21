@@ -12,9 +12,11 @@ const VIEWMODEL_REST := Vector3(0.17, -0.17, -0.3)
 const SLASH_TIME: float = 0.3
 const STAB_TIME: float = 0.55
 const THROW_TIME: float = 0.3
-## Where the knife's centre sits in the viewmodel and how it is turned (degrees).
-const KNIFE_HOLD := Vector3(-0.02, -0.03, 0.02)
-const KNIFE_HOLD_ROTATION := Vector3(8, 12, -10)
+## The fist holding the knife in the viewmodel: where its middle sits, which way the knuckles
+## point and the palm faces. Each knife sits in it its own way ([constant WeaponModels.KNIFE_GRIPS]).
+const KNIFE_FIST := Vector3(-0.02, -0.04, -0.02)
+const KNIFE_FIST_KNUCKLES := Vector3(-0.55, -0.25, -1)
+const KNIFE_FIST_PALM := Vector3(-1, -0.4, 0.4)
 ## Where a pistol sits from the viewmodel's rest (m): further out and nearer the middle than a
 ## long gun, so both first-person hands reach it in a two-handed grip and look their real size.
 const PISTOL_HOLD := Vector3(-0.08, 0.0, -0.06)
@@ -22,6 +24,12 @@ const PISTOL_HOLD := Vector3(-0.08, 0.0, -0.06)
 ## on in the fingers, roughly how far a wrist bends and a forearm twists: a knife spun round keeps
 ## turning while the hand turns this far and back (see [method _hand_angle]).
 const HAND_TURN_LIMIT := Vector3(50.0, 50.0, 90.0)
+## The same for a knife, whose inspection turns in the fist's own axes (x the forearm's twist,
+## y the wrist bending toward the thumb or little finger, z the wrist bending up or down).
+const KNIFE_TURN_LIMIT := Vector3(90.0, 25.0, 50.0)
+## Where the wrist sits from the middle of the fist, in the fist's axes (see [method _turn_axes]):
+## behind the knuckles and toward the back of the hand. A knife inspection turns the hand about it.
+const WRIST_FROM_FIST := Vector3(-0.115, -0.055, 0.0)
 ## How far (m) the hand follows an item while it is in the air (an entry's "toss" span): the
 ## knife flies on, the hand flicks up only this far.
 const HAND_FOLLOW: float = 0.06
@@ -145,6 +153,10 @@ func is_inspecting() -> bool:
 ## so a spin or flip carries on in the fingers while a held pose is followed exactly. During the
 ## entry's "toss" span the hand follows the item only [constant HAND_FOLLOW] far. An entry with
 ## "grip_pivot" turns about the firing grip; one with "support" false lets the support hand go.
+##
+## A knife turns in the fist's own axes instead: the hand turns about the wrist as far as
+## [constant KNIFE_TURN_LIMIT] allows, and the fingers turn the knife the rest of the way about the
+## choreography's pivot (a karambit about its ring), so the forearm stays where it is.
 func _apply_inspect_pose(progress: float) -> void:
 	var pose := InspectLibrary.sample(_inspect_id, progress)
 	var entry := InspectLibrary.for_item(_inspect_id)
@@ -153,17 +165,27 @@ func _apply_inspect_pose(progress: float) -> void:
 	var pivot := _item_point(pose["pivot"] as Vector3)
 	if bool(entry.get("grip_pivot", false)) and weapon_visual != null:
 		pivot = _grip_point()
-	var turn := Basis.from_euler(rot * (PI / 180.0))
-	_gun_root.transform = Transform3D(turn, pivot - turn * pivot + pos)
-	var hand_rot := Vector3(_hand_angle(rot.x, HAND_TURN_LIMIT.x), _hand_angle(rot.y, HAND_TURN_LIMIT.y),
-		_hand_angle(rot.z, HAND_TURN_LIMIT.z))
-	var hand_turn := Basis.from_euler(hand_rot * (PI / 180.0))
-	var grip := _grip_point()
-	var follow := _gun_root.transform * grip - grip
 	var toss: Vector2 = entry.get("toss", Vector2(2.0, 2.0))
 	var airborne := smoothstep(toss.x, toss.x + 0.05, progress) * (1.0 - smoothstep(toss.y - 0.05, toss.y, progress))
-	follow = follow.limit_length(lerpf(follow.length(), HAND_FOLLOW, airborne))
-	_hand_root.transform = Transform3D(hand_turn, grip + follow - hand_turn * grip)
+	var axes := _turn_axes()
+	var knife := axes != Basis.IDENTITY
+	var limit := KNIFE_TURN_LIMIT if knife else HAND_TURN_LIMIT
+	var turn := axes * Basis.from_euler(rot * (PI / 180.0)) * axes.inverse()
+	var hand_rot := Vector3(_hand_angle(rot.x, limit.x), _hand_angle(rot.y, limit.y), _hand_angle(rot.z, limit.z))
+	var hand_turn := axes * Basis.from_euler(hand_rot * (PI / 180.0)) * axes.inverse()
+	var grip := _grip_point()
+	if knife:
+		var wrist := grip + axes * WRIST_FROM_FIST
+		var wrist_turn := Transform3D(hand_turn, wrist - hand_turn * wrist)
+		var fingers := hand_turn.inverse() * turn
+		_gun_root.transform = Transform3D(Basis.IDENTITY, pos) * wrist_turn * Transform3D(fingers, pivot - fingers * pivot)
+		var hand_pos := pos.limit_length(lerpf(pos.length(), HAND_FOLLOW, airborne))
+		_hand_root.transform = Transform3D(Basis.IDENTITY, hand_pos) * wrist_turn
+	else:
+		_gun_root.transform = Transform3D(turn, pivot - turn * pivot + pos)
+		var follow := _gun_root.transform * grip - grip
+		follow = follow.limit_length(lerpf(follow.length(), HAND_FOLLOW, airborne))
+		_hand_root.transform = Transform3D(hand_turn, grip + follow - hand_turn * grip)
 	if arms != null:
 		arms.support_released = not bool(entry.get("support", true))
 	var parts: Dictionary = pose["parts"]
@@ -182,6 +204,15 @@ func _end_inspect() -> void:
 	if weapon_visual != null:
 		for part: StringName in weapon_visual.part_names():
 			weapon_visual.set_part_angle(part, 0.0)
+
+
+## The axes an inspection turns the item about (viewmodel space): a knife's fist (x wrist to
+## knuckles, y out of the palm, z the thumb's side, see [method WeaponModels.knife_hold]), so a
+## knife turns the way a hand can turn it; the viewmodel's own axes for anything else.
+func _turn_axes() -> Basis:
+	if weapon_visual == null or not WeaponModels.KNIFE_GRIPS.has(weapon_visual.weapon_id):
+		return Basis.IDENTITY
+	return (weapon_visual.transform.basis * WeaponModels.knife_hold(weapon_visual.weapon_id).basis).orthonormalized()
 
 
 ## Where the firing hand holds the item in hand (viewmodel space, the item at rest).
@@ -298,9 +329,9 @@ func _build_gun() -> void:
 	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(model_id))
 	_hold_in_arms()
 	if state.definition.is_melee():
-		# A knife is held out in the fist, blade forward and tilted in toward the centre.
-		weapon_visual.rotation_degrees = KNIFE_HOLD_ROTATION
-		weapon_visual.position = KNIFE_HOLD + weapon_visual.basis * Vector3(0, 0, -weapon_visual.size.z * 0.25)
+		var fist := Transform3D(WeaponModels.hand_basis(KNIFE_FIST_KNUCKLES, KNIFE_FIST_PALM), KNIFE_FIST)
+		weapon_visual.transform = WeaponModels.knife_in_fist(model_id, fist)
+		_hold_in_arms()
 		return
 	var length := weapon_visual.size.z
 	# Long guns sit with the butt just behind the view; pistols are held out at arm's length.

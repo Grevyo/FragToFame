@@ -1027,7 +1027,11 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
     35% of the way out to its tip, and only the joints from there outward curl.
 
   Grips live in `WeaponModels`: grip points per gun, measured from side-on renders of the
-  models, with a two-handed pistol grip and a one-handed knife grip. In first person, pistols
+  models (the middle of the forend or grip at that point), with a two-handed pistol grip and a
+  one-handed knife grip. The support hand's knuckles run along the barrel, so its fingers wrap
+  the forend; on a pistol its palm presses the grip's left side and its fingers wrap the firing hand. No support grip is more than about
+  29 cm in front of the firing grip (the AK's spacing), because an arm reaches no further in
+  first person; long rifles are held further back along the forend. In first person, pistols
   sit further out and nearer the middle than long guns (`WeaponEffects.PISTOL_HOLD`), so both
   hands reach a two-handed grip and look their real size. The weapon is shown on
   `skeleton_updated`, because animation-modifier results are invisible to ordinary `_process`

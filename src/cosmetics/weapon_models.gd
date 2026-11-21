@@ -172,23 +172,26 @@ const GRIPS: Dictionary[StringName, Dictionary] = {
 	&"wpn_g17": {"right": Vector3(0, -0.032, 0.06)},
 	&"wpn_m1911": {"right": Vector3(0, -0.023, 0.076)},
 	&"wpn_mk23": {"right": Vector3(0, -0.029, 0.178)},
-	&"wpn_l118a1": {"right": Vector3(0, -0.027, 0.337), "left": Vector3(0, 0.0, -0.08)},
-	&"wpn_m24": {"right": Vector3(0, -0.005, 0.30), "left": Vector3(0, 0.0, -0.05)},
-	&"wpn_sks": {"right": Vector3(0, -0.01, 0.258), "left": Vector3(0, 0.02, -0.094)},
-	&"wpn_m14_ebr": {"right": Vector3(0, -0.06, 0.276), "left": Vector3(0, 0.03, -0.15)},
+	&"wpn_l118a1": {"right": Vector3(0, -0.027, 0.337), "left": Vector3(0, 0.01, 0.047)},
+	&"wpn_m24": {"right": Vector3(0, -0.005, 0.30), "left": Vector3(-0.012, 0.03, 0.01)},
+	&"wpn_sks": {"right": Vector3(0, -0.01, 0.258), "left": Vector3(-0.01, 0.035, -0.03)},
+	&"wpn_m14_ebr": {"right": Vector3(0, -0.06, 0.276), "left": Vector3(0, 0.03, -0.014)},
 }
 ## A knife's handle centre, as a share of its length from the centre toward the pommel.
 const KNIFE_GRIP_SHARE: float = 0.36
 ## The support hand of a two-handed pistol grip, from the firing grip (weapon space, metres): it
 ## wraps the firing hand from below and the left.
-const PISTOL_SUPPORT := Vector3(-0.03, -0.035, 0.01)
+const PISTOL_SUPPORT := Vector3(0.02, -0.03, -0.015)
+## How far a pistol's firing hand closes in from its grip point toward the support hand (weapon
+## space, metres), so the two hands meet around the grip.
+const PISTOL_FIRING_SHIFT := Vector3(-0.008, 0, 0)
 
 ## How the hands are turned on their grips, in weapon space: [wrist-to-knuckles direction, palm
 ## direction]. Firing hand: palm against the grip's right side, knuckles forward and a little up.
 ## Support hand on a handguard: palm up under it, fingers wrapping up its right side. Support hand
 ## on a pistol: palm cupping the firing hand from the left.
 const RIGHT_GRIP_FRAME: Array[Vector3] = [Vector3(0, 0.3, -1), Vector3(-1, 0, 0)]
-const LEFT_HANDGUARD_FRAME: Array[Vector3] = [Vector3(0.7, -0.3, -1), Vector3(0.3, 1, 0)]
+const LEFT_HANDGUARD_FRAME: Array[Vector3] = [Vector3(0.75, 0.6, -0.25), Vector3(-0.6, 0.75, 0)]
 const LEFT_PISTOL_FRAME: Array[Vector3] = [Vector3(0.2, -0.2, -1), Vector3(1, 0.3, 0)]
 
 static var _slot_cache: Dictionary = {}
@@ -209,6 +212,7 @@ static func hand_points(model_id: StringName, size: Vector3) -> Dictionary[Strin
 		points[&"Left"] = grips["left"] as Vector3
 	elif not grips.is_empty():
 		points[&"Left"] = right + PISTOL_SUPPORT
+		points[&"Right"] = right + PISTOL_FIRING_SHIFT
 	return points
 
 

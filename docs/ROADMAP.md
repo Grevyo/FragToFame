@@ -714,8 +714,8 @@ outward (the Window and Door pieces face local +Z). Five materials came with it:
 painted render, clay roof tiles, tarmac and privet hedge. Even simulated teams win 41% of rounds
 on attack (eight seeded matches), inside the 32–61% spread of the other maps.
 
-**Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 2): the seventh official map,
-a sun-baked desert old town built to the conventions of classic competitive defuse maps, with an
+**Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 3): the seventh official map,
+a desert old town at night built to the conventions of classic competitive defuse maps, with an
 original layout and names. The town is cut out of solid blocks: the session lists the streets and
 yards with their floor level, every other cell becomes a flat-roofed building whose height and
 finish (adobe, limewash, ochre plaster, limestone) step per 10 m tile, and every street-facing wall
@@ -734,7 +734,10 @@ Street, Top Mid up the Mid Steps behind the Mid Doors), so no line of sight runs
 spawns; attackers reach it in 6.1 s, defenders in 10.1 s. Rotating takes 13.3 s through the
 Garrison. Simulated teams win only 23–29% of rounds on attack over 24 seeded matches (the career
 simulator sees distances and floor areas, not height, and its spread across the official maps is
-25–68% on the same check: stage H).
+25–68% on the same check: stage H). Revision 3 (owner request) makes it a night map: a low, cold moon and a
+deep blue sky, with the town lit by its lamps: a lantern by every door and every 9 m along long
+walls, windows lit from inside, strings of bulbs zig-zagging over the streets and across both
+sites, braziers, street lamps in the yards, and lamps hung under every arch and covered passage.
 
 **Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
@@ -1011,3 +1014,4 @@ Planned scope:
 | 2026-11-21 | Save As in the Creation Studio (owner request): saves the open map, unsaved edits included, as a separate map with a new ID and name (Ctrl+Shift+S), so a map can be branched without losing the original. |
 | 2026-11-21 | Saffra (owner request): the seventh official map, a desert old town in the style of classic competitive defuse maps with an original layout: a long sniper lane and a balcony to A, a covered souk and a lantern-lit passage to B, mid doors, arches, covered passages, cornices, shuttered windows, beam ends and date palms. |
 | 2026-11-21 | Saffra revision 2 (owner feedback): the defenders' half is a 3 m plateau with stairs up from the low town, A on the plateau favours defenders and B in the low town favours attackers, and mid bends twice so no sightline runs from spawn to spawn. |
+| 2026-11-21 | Saffra revision 3 (owner request): a night map, lit by lanterns at every door and along the walls, lit windows, strings of bulbs over the streets and sites, braziers, street lamps and hanging lamps under the arches and covered passages. |

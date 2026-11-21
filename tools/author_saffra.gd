@@ -1,5 +1,5 @@
 extends "res://tools/map_author_base.gd"
-## Authoring session for the official map "Saffra": a sun-baked desert old town of adobe,
+## Authoring session for the official map "Saffra": a desert old town at night, of adobe,
 ## limewashed and ochre walls, built to the conventions of classic competitive defuse maps:
 ## three lanes, tight chokes with doors and arches, a long sightline to one site, stairs and
 ## high ground, a covered market, flat roofs with cornices and timber beam ends, and crate cover.
@@ -77,14 +77,15 @@ func _official_id() -> String:
 
 
 func _revision() -> int:
-	return 2
+	return 3
 
 
 func _build() -> void:
 	controller.set_metadata("Saffra", "F2F official",
-		"A sun-baked desert old town on two levels. A, Dyers' Court, up on the defenders' plateau: climb the long Spice Road to the Spice Arch, or the Balcony Steps off mid. B, Cistern Yard, down in the low town: through the covered Souk or Lantern Passage. Mid bends twice up to the Mid Doors and the Mid Steps.")
-	controller.set_lighting({"sun_yaw": 128.0, "sun_pitch": 52.0, "sun_energy": 1.35, "sun_color": "ffe6c0",
-		"ambient_color": "c4b296", "ambient_energy": 0.74, "haze": 0.22})
+		"A desert old town at night, lit by lanterns, braziers and strings of bulbs, on two levels. A, Dyers' Court, up on the defenders' plateau: climb the long Spice Road to the Spice Arch, or the Balcony Steps off mid. B, Cistern Yard, down in the low town: through the covered Souk or Lantern Passage. Mid bends twice up to the Mid Doors and the Mid Steps.")
+	# Night: a cold, low moon and a deep blue sky; the town is lit by its lamps.
+	controller.set_lighting({"sun_yaw": 128.0, "sun_pitch": 38.0, "sun_energy": 0.28, "sun_color": "9db4e6",
+		"ambient_color": "28324c", "ambient_energy": 0.42, "haze": 0.3})
 	_ground()
 	_buildings()
 	_facades()
@@ -354,7 +355,9 @@ func _wall_run(from: Vector2, along: Vector2, facing: Vector2, length: float, le
 	# Shuttered windows: one row, two on tall walls.
 	var spot := 2.0
 	while spot <= length - 1.5:
-		if posmod(pick + int(spot), 5) != 0:
+		if posmod(pick + int(spot), 4) == 1:
+			_lit_window(from, along, facing, spot, level + 2.9)
+		elif posmod(pick + int(spot), 5) != 0:
 			_fixture("window", from, along, facing, spot, level + 2.9, Vector3(1.1, 1.5, 0.3),
 				{"panes_x": 2, "panes_y": 2, "shutters": true}, "weathered_wood" if posmod(pick, 3) == 0 else "wood_dark")
 		if height - level >= 8.0 and posmod(pick + int(spot), 3) != 0:
@@ -364,9 +367,16 @@ func _wall_run(from: Vector2, along: Vector2, facing: Vector2, length: float, le
 	if door_at > 0.0:
 		_fixture("door", from, along, facing, door_at, level, Vector3(1.3, 2.5, 0.3),
 			{"panels": 2, "fanlight": false}, "cloth_blue" if posmod(pick, 4) == 1 else "wood_dark")
-		if _lanterns < 26 and posmod(pick, 3) == 1:
+		_lanterns += 1
+		_fixture("lamp_wall", from, along, facing, door_at + 1.1, level + 2.3, Vector3(0.36, 0.8, 0.5), {}, "metal_dark")
+	# A lantern every 9 m along long walls, between the doors.
+	var post := 4.5
+	while post <= length - 2.0:
+		if door_at < 0.0 or absf(post - door_at) > 3.0:
 			_lanterns += 1
-			_fixture("lamp_wall", from, along, facing, door_at + 1.1, level + 2.3, Vector3(0.36, 0.8, 0.5), {}, "metal_dark")
+			_fixture("lamp_wall", from, along, facing, post + 0.6, level + 2.6, Vector3(0.36, 0.8, 0.5),
+				{"energy": 1.3, "range": 7.5}, "metal_dark")
+		post += 9.0
 	# Timber beam ends under the roofline.
 	if posmod(pick, 3) == 0 and length >= 3.0:
 		var beam := 0.8
@@ -375,6 +385,16 @@ func _wall_run(from: Vector2, along: Vector2, facing: Vector2, length: float, le
 			put("block", Vector3(at.x, height - 1.15, at.y),
 				Vector3(0.18, 0.18, 0.6) if absf(facing.y) > 0.5 else Vector3(0.6, 0.18, 0.18), 0.0, {}, "wood_dark")
 			beam += 1.4
+
+
+## A window lit from inside: a glowing pane in a timber frame, shutters folded back.
+func _lit_window(from: Vector2, along: Vector2, facing: Vector2, t: float, y: float) -> void:
+	_strip(from, along, facing, t - 0.45, t + 0.45, y + 0.1, 1.25, 0.05, "lamp_glass")
+	_strip(from, along, facing, t - 0.55, t + 0.55, y, 0.1, 0.16, "limestone")
+	_strip(from, along, facing, t - 0.55, t + 0.55, y + 1.35, 0.12, 0.12, "wood_dark")
+	for side: float in [-1.0, 1.0]:
+		_strip(from, along, facing, t + side * 0.5 - 0.05, t + side * 0.5 + 0.05, y + 0.1, 1.25, 0.1, "wood_dark")
+		_strip(from, along, facing, t + side * 0.8 - 0.22, t + side * 0.8 + 0.22, y + 0.12, 1.2, 0.06, "weathered_wood")
 
 
 ## A thin band along a run, [param depth] proud of the wall.
@@ -518,7 +538,7 @@ func _souk() -> void:
 	put("crate", Vector3(-36.9, 0, -1.0), Vector3(1.2, 1.2, 1.2), 12.0, {}, "planks")
 	put("crate_long", Vector3(-31.0, 0, -4.5), Vector3(2.4, 1.0, 1.0), 90.0, {}, "planks")
 	for hang: float in [17.0, 23.0, 29.0, 35.0]:
-		put("lamp_hanging", Vector3(-34, 3.2, hang), Vector3(0.6, 0.9, 0.6), 0.0, {}, "brass")
+		put("lamp_hanging", Vector3(-34, 3.2, hang), Vector3(0.6, 0.9, 0.6), 0.0, {"energy": 1.1, "range": 7.0}, "brass")
 
 
 func _side_lanes() -> void:
@@ -555,10 +575,81 @@ func _spawn_yards() -> void:
 	palm(Vector3(-2.0, UP, -58.5))
 
 
+## A string of bulbs from [param a] to [param b], sagging [param sag] m in the middle, with a
+## soft light every 8 m or so.
+func bulbs(a: Vector3, b: Vector3, sag: float = 0.6) -> void:
+	var length := Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+	var count := maxi(2, int(length / 1.2))
+	for i: int in count + 1:
+		var t := float(i) / float(count)
+		var at := a.lerp(b, t) - Vector3(0, sag * 4.0 * t * (1.0 - t), 0)
+		put("block", at, Vector3(0.12, 0.14, 0.12), 0.0, {}, "lamp_glass")
+	var lights := maxi(1, int(round(length / 8.0)))
+	for k: int in lights:
+		var t := (float(k) + 0.5) / float(lights)
+		lamp(a.lerp(b, t) - Vector3(0, sag * 4.0 * t * (1.0 - t) + 0.3, 0), 0.9, 7.0, "ffcf8a")
+
+
+## Zig-zag strings of bulbs over a street from x1..x2 (or z1..z2 when [param along_z]).
+func zigzag(x1: float, x2: float, z1: float, z2: float, y: float, step: float, along_z: bool) -> void:
+	if along_z:
+		var z := z1
+		var west := true
+		while z + step <= z2 + 0.01:
+			var xa := x1 + 0.3 if west else x2 - 0.3
+			var xb := x2 - 0.3 if west else x1 + 0.3
+			bulbs(Vector3(xa, y, z), Vector3(xb, y, z + step), 0.45)
+			west = not west
+			z += step
+	else:
+		var x := x1
+		var north := true
+		while x + step <= x2 + 0.01:
+			var za := z1 + 0.3 if north else z2 - 0.3
+			var zb := z2 - 0.3 if north else z1 + 0.3
+			bulbs(Vector3(x, y, za), Vector3(x + step, y, zb), 0.45)
+			north = not north
+			x += step
+
+
 func _lights() -> void:
 	layer("Lights")
-	for at: Vector3 in [Vector3(-34, 3.4, 20), Vector3(-34, 3.4, 32), Vector3(-34, 3.0, 1)]:
-		lamp(at, 1.6, 9.0, "ffc98a")
+	# Strings of bulbs over the streets, yards and both sites.
+	zigzag(0, 8, -4, 16, 4.4, 5.0, true)                 # Caravan Street
+	zigzag(-10, -2, 24, 32, 4.4, 4.0, true)              # Lower Mid
+	zigzag(34, 42, -2, 6, 4.0, 4.0, true)                # Spice Road, either side of the passage
+	zigzag(34, 42, 10, 18, 4.4, 4.0, true)
+	zigzag(30, 38, 24, 32, 4.4, 4.0, true)               # Spice Doors
+	zigzag(10, 38, 38, 48, 4.8, 7.0, false)              # Camel Yard
+	zigzag(-18, 6, 38, 54, 5.0, 6.0, false)              # Caravanserai
+	zigzag(-38, -22, 38, 48, 4.8, 8.0, false)            # West Yard
+	zigzag(-30, -10, 26, 30, 4.2, 5.0, false)            # Potters Row
+	zigzag(10, 18, 12, 16, 3.6, 4.0, false)              # Dye Lane, either side of the passage
+	zigzag(22, 34, 12, 16, 4.2, 6.0, false)
+	zigzag(-16, 0, 2, 8, 4.2, 4.0, false)                # Lantern Row
+	zigzag(-14, 10, -60, -46, UP + 5.0, 6.0, false)      # Garrison
+	zigzag(-8, 0, -44, -22, UP + 3.8, 5.5, true)         # Top Mid
+	bulbs(Vector3(16.3, UP + 5.2, -39.7), Vector3(41.7, UP + 5.2, -14.3), 1.4)     # over Dyers' Court
+	bulbs(Vector3(16.3, UP + 5.2, -14.3), Vector3(41.7, UP + 5.2, -39.7), 1.4)
+	bulbs(Vector3(29.0, UP + 5.2, -39.7), Vector3(29.0, UP + 5.2, -14.3), 1.0)
+	bulbs(Vector3(-41.7, 5.0, -31.7), Vector3(-16.3, 5.0, -8.3), 1.4)             # over Cistern Yard
+	bulbs(Vector3(-41.7, 5.0, -8.3), Vector3(-16.3, 5.0, -31.7), 1.4)
+	# Braziers on the sites and in the yards, clear of the routes.
+	for fire: Vector3 in [Vector3(41.2, UP, -30.5), Vector3(41.0, UP, -39.0), Vector3(20.0, UP, -39.0),
+			Vector3(-41.2, 0, -12.0), Vector3(-16.8, 0, -26.5), Vector3(-41.0, 1.4, -24.8),
+			Vector3(-15.0, UP, -59.0), Vector3(11.0, UP, -47.0), Vector3(-19.0, 0, 53.0), Vector3(7.0, 0, 53.0),
+			Vector3(41.0, 0, 23.0), Vector3(-9.2, 0, 37.0)]:
+		put("brazier", fire, Vector3(0.8, 1.1, 0.8), 0.0, {}, "metal_dark")
+	# Street lamps in the open yards.
+	for post: Vector3 in [Vector3(-15.4, UP, -46.6), Vector3(11.4, UP, -59.4), Vector3(31.4, UP, -51.4),
+			Vector3(-29.4, UP, -53.4), Vector3(16.6, UP, -24.0), Vector3(-41.4, 0, -16.0),
+			Vector3(-19.4, 0, 38.6), Vector3(37.4, 0, 38.6), Vector3(-21.0, 0, 47.4), Vector3(-10.0, 0, 53.6)]:
+		put("lamp_post", post, Vector3(0.5, 3.8, 0.5), 0.0, {}, "metal_dark")
+	# Lamps hung under the arches and the covered passages.
+	for hang: Vector3 in [Vector3(38, UP + 4.2, -13.6), Vector3(-34, 4.2, -8.4), Vector3(26, UP + 4.4, -40.6),
+			Vector3(-26, 4.2, -35), Vector3(-6, 4.4, 33), Vector3(38, 3.2, 7.75), Vector3(20, 2.8, 14),
+			Vector3(-34, 3.6, 1.5), Vector3(-4, UP + 3.4, -32)]:
+		put("lamp_hanging", hang, Vector3(0.5, 0.8, 0.5), 0.0, {}, "brass")
 	lamp(Vector3(-17, 3.0, -3), 1.4, 8.0, "ffc98a")
 	lamp(Vector3(-8, 2.8, 5), 1.2, 7.0, "ffc98a")
 	lamp(Vector3(19, UP + 3.0, -6), 1.2, 8.0, "ffd9a0")

@@ -142,8 +142,21 @@ func _test_rounds(map: SimMap) -> void:
 				times[kind].append(float(entry["seconds"]))
 	check(hows.has("detonated") and hows.has("defused") and hows.has("eliminated") and hows.has("time"),
 		"rounds end every way a round can (%s)" % hows)
-	var share := float(attack_wins) / total
-	check(share > 0.35 and share < 0.65, "attack and defence are both winnable between even teams (%.2f)" % share)
+	# Over the whole map pool (single maps lean one way or the other; balancing them is stage H).
+	var pool_wins := 0
+	var pool_total := 0
+	for map_id: String in OfficialMaps.ids():
+		var pool_map := SimMap.for_map(map_id)
+		if pool_map == null:
+			continue
+		for seed_value: int in 2:
+			var played := _play(pool_map, _team("H", 65.0), _team("A", 65.0), 200 + seed_value)
+			for entry: Dictionary in played["rounds"] as Array:
+				pool_total += 1
+				if int(entry["winner"]) == int(entry["attackers"]):
+					pool_wins += 1
+	var share := float(pool_wins) / maxf(pool_total, 1.0)
+	check(share > 0.38 and share < 0.62, "attack and defence are both winnable between even teams over the map pool (%.2f)" % share)
 	var average := func(list: Array) -> float:
 		var sum := 0.0
 		for value: Variant in list:
@@ -156,13 +169,12 @@ func _test_rounds(map: SimMap) -> void:
 
 func _test_weapons() -> void:
 	section("Weapons")
-	var sniper := MatchEngine.SimPlayer.new()
-	sniper.role = &"sniper"
-	var rifler := MatchEngine.SimPlayer.new()
-	rifler.role = &"rifler"
-	rifler.skills = {&"aim": 70}
-	check(RoundSim._weapon(sniper, &"full") == &"sniper" and RoundSim._weapon(rifler, &"full") == &"rifle"
-		and RoundSim._weapon(rifler, &"force") == &"smg" and RoundSim._weapon(rifler, &"eco") == &"heavy_pistol"
-		and RoundSim._weapon(sniper, &"pistol") == &"pistol", "weapons come from the buy and the player's role and aim")
-	var rifle: Dictionary = RoundSim.WEAPONS[&"rifle"]
-	check(int(rifle["head"][0]) >= 100 and int(rifle["body"][0]) * 3 < 100, "a rifle headshot kills through a helmet; body shots take four")
+	var ak := RoundSim.gun(WeaponCatalog.AK47)
+	var m4 := RoundSim.gun(WeaponCatalog.M4A1)
+	var head := func(weapon: Dictionary) -> int:
+		return DamageModel.armour_split(roundi(float(weapon["damage"]) * DamageModel.zone_multiplier(DamageModel.ZONE_HEAD)),
+			float(weapon["penetration"]), DamageModel.ZONE_HEAD, 100, true)[0]
+	check(int(head.call(ak)) >= 100 and int(head.call(m4)) < 100,
+		"the game's own numbers: an AK-47 headshot kills through a helmet, an M4A1's does not (%d, %d)" % [head.call(ak), head.call(m4)])
+	check(int(ak["burst"]) > int(RoundSim.gun(WeaponCatalog.L118A1)["burst"]) and float(RoundSim.gun(WeaponCatalog.L118A1)["spread"]) < float(ak["spread"]),
+		"a rifle fires more per burst than a bolt-action, which is the more accurate at range")

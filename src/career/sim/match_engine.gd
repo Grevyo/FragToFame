@@ -86,6 +86,16 @@ class SimPlayer extends RefCounted:
 	var alive: bool = true
 	var contributed: bool = false
 	var traded: bool = false
+	# Own money and equipment ([SimEconomy]; maps played on a [SimMap] only).
+	var money: int = 0
+	var primary: StringName = &""
+	var secondary: StringName = WeaponCatalog.DEFAULT_SECONDARY
+	var armour: int = 0
+	var helmet: bool = false
+	var kit: bool = false
+	var grenades: Array[StringName] = []
+	## The weapon of each kill this round (for kill rewards).
+	var round_kill_weapons: Array[StringName] = []
 
 	func skill(key: StringName) -> float:
 		return float(skills.get(key, 50))
@@ -167,9 +177,14 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 	var attackers := 0
 	while not _decided(score):
 		if _half_starts(round_number):
+			var rules := SimEconomy.rules()
 			for team: SimTeam in teams:
 				team.money = START_MONEY if round_number < max_rounds * 2 else OVERTIME_MONEY
 				team.loss_streak = 0
+				if not _planners.is_empty():
+					team.money = rules.start_money if round_number < max_rounds * 2 else rules.overtime_start_money
+					for player: SimPlayer in team.players:
+						SimEconomy.start_half(player, team.money)
 			if round_number > 0:
 				attackers = 1 - attackers
 		var winner := _play_round(teams, attackers, _decisive(score))
@@ -231,14 +246,22 @@ func _prepare(team: SimTeam) -> void:
 
 func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 	var pistol := _is_pistol(rounds_log.size())
-	for team: SimTeam in teams:
-		_buy(team, pistol)
+	for index: int in 2:
+		var team := teams[index]
+		if _planners.is_empty():
+			_buy(team, pistol)
+		else:
+			# Every player buys their own kit on their leader's call.
+			var side := "attack" if index == attackers else "defence"
+			SimEconomy.buy(team, side, SimEconomy.call_buy(team, side, pistol, _average_money(teams[1 - index])))
+			team.money = roundi(_average_money(team))
 		team.execution = rng.randfn(0.0, ROUND_EXECUTION)
 		for player: SimPlayer in team.players:
 			player.alive = true
 			player.contributed = false
 			player.traded = false
 			player.round_kills = 0
+			player.round_kill_weapons.clear()
 	_plan_round(teams, attackers)
 	if not _plans.is_empty():
 		return _play_planned(teams, attackers, decisive)
@@ -433,6 +456,9 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 			highlights.append("%s wins a 1v%d clutch in round %d" % [hero.name, int(clutch["against"]), rounds_log.size() + 1])
 	for index: int in 2:
 		var team := teams[index]
+		if not _plans.is_empty():
+			_settle_players(team, index == winner, how, index == attackers, planted)
+			continue
 		var kills := 0
 		for player: SimPlayer in team.players:
 			kills += player.round_kills
@@ -462,6 +488,28 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 	if not _plans.is_empty():
 		_learn(winner, attackers, entry)
 	rounds_log.append(entry)
+
+
+## Each player's money after a planned round; the winners pick up rifles left on the floor.
+func _settle_players(team: SimTeam, won: bool, how: String, attacking: bool, planted: bool) -> void:
+	SimEconomy.settle(team, won, how, attacking, planted)
+	if won:
+		var dropped: Array[StringName] = []
+		dropped.assign(_outcome.get("dropped", []))
+		SimEconomy.pick_up(team, dropped)
+		team.loss_streak = 0
+		team.win_streak += 1
+	else:
+		team.loss_streak += 1
+		team.win_streak = 0
+	team.money = roundi(_average_money(team))
+
+
+func _average_money(team: SimTeam) -> float:
+	var total := 0.0
+	for player: SimPlayer in team.players:
+		total += player.money
+	return total / maxf(team.players.size(), 1.0)
 
 
 ## Both leaders call the round: the attackers' strategy and site, the defenders' setup.

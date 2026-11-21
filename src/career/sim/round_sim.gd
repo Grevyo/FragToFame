@@ -11,10 +11,17 @@ extends RefCounted
 ## - Contact: opponents in the same place meet; a player walking into a place someone is holding
 ##   peeks them. Who sees whom first comes from reaction, crosshair placement, positioning and game
 ##   sense against the peeker's movement and the peeker's advantage.
-## - Fights: bursts are exchanged with each player's weapon (from the team's buy and the player's
-##   role); every bullet hits on aim, spray control, distance and movement, and a hit is a headshot
-##   on aim and crosshair placement. Damage and armour carry over between fights. Teammates in the
-##   same place join in: crossfires, and kills on a player who just got a kill are trades.
+## - Fights: bursts are exchanged with each player's own weapon ([SimEconomy]; damage, fire rate,
+##   armour penetration, falloff and spread from [WeaponCatalog]); every bullet hits on aim, spray
+##   control, distance and movement, lands on a body zone (a headshot on aim and crosshair
+##   placement) and goes through [DamageModel]'s armour rules. Damage and armour carry over between
+##   fights. Teammates in the same place join in: crossfires, and kills on a fresh killer are trades.
+## - Utility: each player throws the grenades they bought, as well as their utility skill lets them.
+##   Attackers smoke off the defenders' way in and the site's other holds when they hit, and burn
+##   out a hold; whoever walks into a place with enemies in it flashes or frags it first; defenders
+##   burn and smoke the way in the attack is coming through. Flashes blind the named players they
+##   catch (turning away from it is game sense), smokes block sight between places and slow fights
+##   in them, fire burns whoever stands in it and holds up a push, frags damage everyone in reach.
 ## - The bomb: the carrier plants on the site when no defender is there; if they die, the nearest
 ##   attacker picks it up. A defender on the site alone defuses (faster with a kit).
 
@@ -30,15 +37,15 @@ const MAX_BURSTS: int = 3
 const REACTION_PER_POINT: float = 0.002
 ## A peeker moving into an angle sees a holder a little before the holder can react.
 const PEEKER_ADVANTAGE: float = 0.04
-## Weapons as the simulation sees them: damage per hit (against armour / without), bullets per
-## burst and the distance (m) up to which the weapon is accurate.
-const WEAPONS: Dictionary[StringName, Dictionary] = {
-	&"pistol": {"body": [18, 25], "head": [55, 95], "burst": 2, "range": 12.0},
-	&"heavy_pistol": {"body": [35, 45], "head": [105, 170], "burst": 1, "range": 20.0},
-	&"smg": {"body": [22, 29], "head": [70, 90], "burst": 4, "range": 14.0},
-	&"rifle": {"body": [27, 36], "head": [108, 143], "burst": 3, "range": 30.0},
-	&"sniper": {"body": [100, 115], "head": [300, 400], "burst": 1, "range": 60.0},
-}
+## Where a hit lands when it is not the head (the rest of the body, by how much of it shows).
+const BODY_ZONES: Array[Array] = [[DamageModel.ZONE_CHEST, 0.45], [DamageModel.ZONE_STOMACH, 0.25],
+	[DamageModel.ZONE_ARMS, 0.15], [DamageModel.ZONE_LEGS, 0.15]]
+## Seconds a smoke stays thick enough to block sight.
+const SMOKE_SECONDS: float = 17.5
+## A throw worse than this misses its spot (a smoke that blocks nothing, a flash that hits no one).
+const POOR_THROW: float = 0.25
+
+static var _guns: Dictionary[StringName, Dictionary] = {}
 
 
 ## A player during the round.
@@ -52,8 +59,17 @@ class Body extends RefCounted:
 	## Metres walked from [member place] towards the first place of [member path].
 	var progress: float = 0.0
 	var hp: int = 100
-	var armour: bool = false
-	var weapon: StringName = &"rifle"
+	var armour: int = 0
+	var helmet: bool = false
+	var kit: bool = false
+	var weapon: StringName = WeaponCatalog.DEFAULT_SECONDARY
+	var grenades: Array[StringName] = []
+	## Blind until this time into the round, by the thrower of the flash.
+	var blind_until: float = -INF
+	## Player id of who flashed them (an id, not the body: bodies must not hold each other).
+	var flashed_by: String = ""
+	## Reasons this player has already thrown for this round ("hit", "delay").
+	var threw: Dictionary[String, bool] = {}
 	var has_bomb: bool = false
 	## Left the fight (saving their weapon).
 	var hidden: bool = false
@@ -99,6 +115,13 @@ var _opening: bool = true
 var _by_id: Dictionary[String, Body] = {}
 ## Victim id -> killer id this round.
 var _killed_by: Dictionary[String, String] = {}
+## Place -> time its smoke clears.
+var smokes: Dictionary[String, float] = {}
+## Place -> {"until": time the fire burns out, "by": Body who threw it}.
+var fires: Dictionary[String, Dictionary] = {}
+## Place -> last time a flash or frag went into it.
+var _cleared: Dictionary[String, float] = {}
+var _defuser_kit: bool = false
 var _form_cache: Dictionary[String, float] = {}
 ## Per-map answers (kept on the map: they do not change between rounds).
 var _near_cache: Dictionary
@@ -134,16 +157,25 @@ func play() -> Dictionary:
 		for body: Body in bodies:
 			body.busy = false
 		_think()
+		_utility()
+		_burn()
 		_fight()
 		_bomb()
 		_move()
 		how = _ended()
 	var winner := attackers if how == "detonated" or (how == "eliminated" and _alive(1 - attackers).is_empty()) else 1 - attackers
 	var rotated := false
+	var dropped: Array[StringName] = []
 	for body: Body in bodies:
 		rotated = rotated or (body.team != attackers and body.rotated)
+		# Survivors keep what they carry; the dead leave their rifle on the floor.
+		if body.alive():
+			body.player.armour = body.armour
+			body.player.grenades = body.grenades.duplicate()
+		elif not body.player.primary.is_empty():
+			dropped.append(body.player.primary)
 	return {"winner": winner, "how": how, "planted": planted, "site": site, "clutch": clutch, "spotted": spotted.duplicate(),
-		"rotated": rotated, "retake": str(retake_called), "alive_at_plant": alive_at_plant, "seconds": time}
+		"rotated": rotated, "retake": str(retake_called), "alive_at_plant": alive_at_plant, "seconds": time, "dropped": dropped}
 
 
 # --- Setup -------------------------------------------------------------------------------------
@@ -161,8 +193,11 @@ func _place_players() -> void:
 			body.job = plan.jobs.get(player.id, &"")
 			var walk: Array = plan.routes.get(player.id, [])
 			body.path.assign(walk.slice(1))
-			body.weapon = _weapon(player, team.buy)
-			body.armour = team.buy == &"full" or team.buy == &"force"
+			body.weapon = player.primary if not player.primary.is_empty() else player.secondary
+			body.armour = player.armour
+			body.helmet = player.helmet
+			body.kit = player.kit
+			body.grenades = player.grenades.duplicate()
 			bodies.append(body)
 			_by_id[player.id] = body
 	# The bomb goes to a support or trade player, never the lurker or the entry.
@@ -178,16 +213,17 @@ func _carry_preference(body: Body) -> int:
 	return {RoundPlan.SUPPORT: 3, RoundPlan.TRADE: 2, RoundPlan.FAKER: 1}.get(body.job, 0)
 
 
-## A player's weapon this round: snipers take the rifle they paid for on a full buy.
-static func _weapon(player: MatchEngine.SimPlayer, buy: StringName) -> StringName:
-	match buy:
-		&"full":
-			return &"sniper" if player.role == &"sniper" else &"rifle"
-		&"force":
-			return &"smg" if player.role != &"entry" else &"rifle"
-		&"eco":
-			return &"heavy_pistol" if player.skill(&"aim") >= 65 else &"pistol"
-	return &"pistol"
+## A weapon as the simulation shoots it, from [WeaponCatalog]: damage, armour penetration,
+## falloff, standing and running spread, and the bullets one burst (about a third of a second) fires.
+static func gun(id: StringName) -> Dictionary:
+	if _guns.has(id):
+		return _guns[id]
+	var data: Dictionary = WeaponCatalog.DATA.get(id, WeaponCatalog.DATA[WeaponCatalog.DEFAULT_SECONDARY])
+	var made := {"damage": float(data["damage"]), "penetration": float(data["armour_penetration"]),
+		"falloff": float(data["falloff_per_10m"]), "spread": float(data["base_spread"]), "run_spread": float(data["run_spread"]),
+		"burst": clampi(roundi(float(data["rpm"]) / 220.0), 1, 3)}
+	_guns[id] = made
+	return made
 
 
 # --- Decisions ---------------------------------------------------------------------------------
@@ -246,7 +282,7 @@ func _think_defence() -> void:
 			for body: Body in alive:
 				furthest = maxf(furthest, map.distance(body.place, site))
 			retake_called = planners[defence].retake_or_save(alive.size(), _alive(attackers).size(),
-				BOMB_TIMER - (time - planted_at), furthest, teams[defence].buy == &"full", teams[defence].money)
+				BOMB_TIMER - (time - planted_at), furthest, alive.any(func(b: Body) -> bool: return b.kit), teams[defence].money)
 			for body: Body in alive:
 				if retake_called == &"retake":
 					# Retakers gather just outside the site before going in together.
@@ -267,6 +303,7 @@ func _think_defence() -> void:
 				for body: Body in alive:
 					_send(body, site)
 		return
+	_think_personal_save()
 	var seen := _attack_seen()
 	for body: Body in _alive(defence):
 		if body.rotated or body.moving():
@@ -275,6 +312,21 @@ func _think_defence() -> void:
 		if not destination.is_empty():
 			body.rotated = true
 			_send(body, destination)
+
+
+## A last defender facing three or more with a rifle worth keeping may hide and keep it: the
+## careful and less confident do; clutch players and the composed play it out.
+func _think_personal_save() -> void:
+	var defenders := _alive(1 - attackers)
+	if defenders.size() != 1 or defenders[0].hidden or defenders[0].player.primary.is_empty():
+		return
+	var last := defenders[0]
+	var against := _alive(attackers).filter(func(b: Body) -> bool: return not b.hidden).size()
+	var nerve := 1.5 + last.player.skill(&"composure") / 50.0 + last.player.trait_strength(&"tr_clutch_player") \
+		+ 0.5 * last.player.trait_strength(&"tr_risk_taker") - 0.5 * last.player.trait_strength(&"tr_cautious")
+	if against >= 3 and float(against) > nerve:
+		last.hidden = true
+		last.path.clear()
 
 
 ## Site -> attackers the defenders have seen or heard around it (fakers make extra noise once
@@ -376,7 +428,8 @@ func _contact(place: String) -> Array[Body]:
 		elif not body.path.is_empty() and body.path[0] == place and body.progress > 0.0 \
 				and map.distance(body.place, place) - body.progress <= 10.0:
 			peekers.append(body)
-		elif open.has(body.place) and body.team == attackers:
+		elif open.has(body.place) and body.team == attackers and not _smoked(body.place) and not _smoked(place):
+			# Across a site, unless a smoke stands between.
 			peekers.append(body)
 	var everyone := here + peekers
 	var best: Array[Body] = []
@@ -456,7 +509,7 @@ func _duel(attacker: Body, defender: Body, place: String) -> void:
 					killer = helper
 					break
 		if killer != null:
-			_kill(killer, target)
+			_kill(killer, target, killer.weapon)
 			break
 
 
@@ -483,10 +536,11 @@ func _ready_time(body: Body, other: Body, place: String) -> float:
 		value -= (p.skill(&"game_sense") - 50.0) * REACTION_PER_POINT * 0.5
 	else:
 		value -= PEEKER_ADVANTAGE + (p.skill(&"movement") - 50.0) * REACTION_PER_POINT * 0.75
-	# A coordinated execute's utility (flashes, smokes) slows the defenders on the site.
-	if body.team != attackers and hit_called and plans[attackers].kind in [RoundPlan.EXECUTE, RoundPlan.SPLIT] \
-			and map.site_cluster(site).has(place):
-		value += maxf(0.0, teams[attackers].utility - teams[body.team].utility * 0.5) * 0.002
+	# Blind players wait for their eyes; smoke hides the first sight of each other.
+	if body.blind_until > time:
+		value += minf(body.blind_until - time, 1.5)
+	if _smoked(place):
+		value += 0.25
 	# Someone who just saw a teammate die knows exactly where the killer is.
 	if other.last_kill_time >= time - MatchStatistics.TRADE_SECONDS:
 		value -= 0.05 + (teams[body.team].coordination - 50.0) * 0.001
@@ -495,38 +549,67 @@ func _ready_time(body: Body, other: Body, place: String) -> float:
 
 ## One burst from [param shooter] at [param target]; true when it kills.
 func _shoot(shooter: Body, target: Body, distance: float, opening_burst: bool) -> bool:
-	var gun: Dictionary = WEAPONS[shooter.weapon]
+	var weapon := gun(shooter.weapon)
 	var p := shooter.player
 	var form := _form(shooter)
 	var skill := (0.5 * p.skill(&"aim") + 0.3 * p.skill(&"spray_control") + 0.2 * p.skill(&"crosshair_placement") + form) / 100.0
 	var hit_chance := 0.22 + 0.5 * skill
-	var reach := float(gun["range"])
-	if distance > reach:
-		hit_chance *= reach / distance
+	# The weapon's own spread grows the miss with distance.
+	hit_chance *= clampf(1.0 - float(weapon["spread"]) * distance / 10.0, 0.25, 1.0)
 	if shooter.moving():
-		hit_chance *= 0.55 + p.skill(&"movement") / 250.0
+		hit_chance *= (0.8 + p.skill(&"movement") / 250.0) / (1.0 + float(weapon["run_spread"]) * 0.12)
 	if target.moving():
 		hit_chance *= 0.88
+	if shooter.blind_until > time:
+		hit_chance *= 0.15
+	if _smoked(shooter.place) or _smoked(target.place):
+		hit_chance *= 0.5
 	var head_chance := 0.06 + 0.2 * (0.5 * p.skill(&"aim") + 0.5 * p.skill(&"crosshair_placement") + form) / 100.0
-	var armoured := 0 if target.armour else 1
-	for bullet: int in int(gun["burst"]):
+	for bullet: int in int(weapon["burst"]):
 		p.counts["shots"] += 1
 		if rng.randf() >= clampf(hit_chance, 0.03, 0.92):
 			continue
 		p.counts["hits"] += 1
 		if opening_burst and bullet == 0:
 			p.counts["first_hits"] += 1
-		var head := rng.randf() < head_chance
-		var damage := int((gun["head"] if head else gun["body"])[armoured])
-		var dealt := mini(damage, target.hp)
-		target.hp -= dealt
-		p.counts["damage"] += dealt
-		target.damage_from[p.id] = int(target.damage_from.get(p.id, 0)) + dealt
-		if not target.alive():
-			if head:
+		var zone := DamageModel.ZONE_HEAD if rng.randf() < head_chance else _body_zone()
+		var amount := roundi(float(weapon["damage"]) * DamageModel.zone_multiplier(zone) * pow(float(weapon["falloff"]), distance / 10.0))
+		if _hurt(shooter, target, amount, float(weapon["penetration"]), zone, shooter.weapon):
+			if zone == DamageModel.ZONE_HEAD:
 				p.counts["headshot_kills"] += 1
 			return true
 	return false
+
+
+func _body_zone() -> StringName:
+	var roll := rng.randf()
+	for zone: Array in BODY_ZONES:
+		roll -= float(zone[1])
+		if roll <= 0.0:
+			return zone[0]
+	return DamageModel.ZONE_CHEST
+
+
+## Deals [param amount] to [param target] through their armour; true when it kills (the kill is
+## recorded with [param weapon] only for grenades: gunfire kills are recorded by the duel).
+func _hurt(attacker: Body, target: Body, amount: int, penetration: float, zone: StringName, weapon: StringName) -> bool:
+	if not target.alive():
+		return false
+	var split := DamageModel.armour_split(amount, penetration, zone, target.armour, target.helmet)
+	target.armour = maxi(target.armour - split[1], 0)
+	var dealt := mini(split[0], target.hp)
+	target.hp -= dealt
+	var p := attacker.player
+	if attacker.team != target.team:
+		p.counts["damage"] += dealt
+		target.damage_from[p.id] = int(target.damage_from.get(p.id, 0)) + dealt
+		if EquipmentCatalog.is_utility(weapon):
+			p.counts["utility_damage"] += dealt
+	if target.alive():
+		return false
+	if EquipmentCatalog.is_utility(weapon):
+		_kill(attacker, target, weapon)
+	return true
 
 
 ## How far apart the two are: across the place for those standing in it, or from the doorway.
@@ -545,10 +628,16 @@ func _form(body: Body) -> float:
 	return _form_cache[key]
 
 
-func _kill(killer: Body, victim: Body) -> void:
+func _kill(killer: Body, victim: Body, weapon: StringName) -> void:
 	var k := killer.player
 	var v := victim.player
 	v.alive = false
+	k.round_kill_weapons.append(weapon)
+	# A kill on someone a teammate blinded is that teammate's flash assist.
+	var flasher: Body = _by_id.get(victim.flashed_by, null)
+	if victim.blind_until > time and flasher != null and flasher != killer and flasher.team == killer.team:
+		flasher.player.counts["flash_assists"] += 1
+		flasher.player.contributed = true
 	v.counts["deaths"] += 1
 	k.counts["kills"] += 1
 	k.round_kills += 1
@@ -588,6 +677,212 @@ func _note_clutch() -> void:
 			player.counts["clutch_attempts"] += 1
 			clutch = {"player": player, "team": index, "against": other.size()}
 			return
+
+
+# --- Utility -----------------------------------------------------------------------------------
+
+## Grenades this step: the attack's smokes and fire as it hits, flashes and frags before walking
+## into enemies, the defence's fire and smoke on the way in the attack is using.
+func _utility() -> void:
+	if hit_called and not planted:
+		_hit_utility()
+	for body: Body in bodies:
+		if body.alive() and not body.hidden and body.moving() and body.blind_until <= time:
+			_clear_ahead(body)
+	if not planted:
+		_delay_utility()
+
+
+## As the attack goes in: smoke off the defenders' way in and the site's other holds, burn a hold.
+func _hit_utility() -> void:
+	var targets := _smoke_targets()
+	var smoke_index := 0
+	for body: Body in _alive(attackers):
+		if body.hidden or body.threw.has("hit") or body.job == RoundPlan.LURK:
+			continue
+		body.threw["hit"] = true
+		if body.grenades.has(EquipmentCatalog.SMOKE) and smoke_index < targets.size():
+			var quality := _throw(body, EquipmentCatalog.SMOKE)
+			if quality >= POOR_THROW:
+				smokes[targets[smoke_index]] = time + SMOKE_SECONDS
+			smoke_index += 1
+		if body.grenades.has(EquipmentCatalog.FIRE):
+			var hold := _held_place(site)
+			if not hold.is_empty():
+				var quality := _throw(body, EquipmentCatalog.FIRE)
+				if quality >= POOR_THROW:
+					fires[hold] = {"until": time + _fire_seconds(), "by": body}
+
+
+## Places a hit smokes, most useful first: the way defenders come from their spawn, then the
+## site's holds other than the main one.
+func _smoke_targets() -> Array[String]:
+	var list: Array[String] = []
+	var cluster := map.site_cluster(site)
+	var from_spawn := map.route(map.spawn("defence"), site)
+	for i: int in range(from_spawn.size() - 1, 0, -1):
+		if cluster.has(from_spawn[i]) and not cluster.has(from_spawn[i - 1]):
+			list.append(from_spawn[i - 1])
+			break
+	var holds := planners[attackers].holds(site)
+	for place: String in holds.slice(1):
+		list.append(place)
+	return list
+
+
+## A site place a defender is standing in ("" when none is seen).
+func _held_place(site_id: String) -> String:
+	var cluster := map.site_cluster(site_id)
+	for body: Body in _alive(1 - attackers):
+		if cluster.has(body.place) and not body.moving():
+			return body.place
+	return ""
+
+
+## Before walking into a place with enemies in sight, a flash (or a frag) goes in first, thrown by
+## the walker or a teammate beside them.
+func _clear_ahead(body: Body) -> void:
+	var ahead: String = body.path[0]
+	if time - float(_cleared.get(ahead, -INF)) < 4.0:
+		return
+	var enemies := _enemies_in(ahead, body.team)
+	if enemies.is_empty():
+		return
+	var thrower := _teammate_with(body, EquipmentCatalog.FLASH)
+	if thrower != null:
+		_cleared[ahead] = time
+		_flash(thrower, enemies)
+		return
+	thrower = _teammate_with(body, EquipmentCatalog.FRAG)
+	if thrower != null:
+		_cleared[ahead] = time
+		_frag(thrower, enemies)
+
+
+## Defenders on a site burn or smoke the way in attackers are gathering at, to hold the push up.
+func _delay_utility() -> void:
+	for body: Body in _alive(1 - attackers):
+		if body.hidden or body.moving() or body.threw.has("delay"):
+			continue
+		var near := _site_near(body.place)
+		if near.is_empty() or not map.site_cluster(near).has(body.place):
+			continue
+		for way: String in map.neighbours(body.place):
+			if map.site_cluster(near).has(way) or _enemies_in(way, body.team).size() < 2:
+				continue
+			for id: StringName in [EquipmentCatalog.FIRE, EquipmentCatalog.SMOKE]:
+				if not body.grenades.has(id):
+					continue
+				body.threw["delay"] = true
+				var quality := _throw(body, id)
+				if quality >= POOR_THROW:
+					if id == EquipmentCatalog.FIRE:
+						fires[way] = {"until": time + _fire_seconds(), "by": body}
+					else:
+						smokes[way] = time + SMOKE_SECONDS
+				return
+
+
+## Takes a grenade from [param body]'s pockets and returns how well it was thrown (0..1): their
+## utility skill (and being a utility expert), with the usual spread of a throw under pressure.
+func _throw(body: Body, id: StringName) -> float:
+	body.grenades.erase(id)
+	body.player.counts["utility_thrown"] += 1
+	var skill := body.player.skill(&"utility") / 100.0 + 0.08 * body.player.trait_strength(&"tr_utility_expert")
+	return clampf(rng.randfn(skill, 0.18), 0.0, 1.0)
+
+
+## A flash blinds each enemy caught by it for up to the flashbang's full blindness: less for a poor
+## throw, and less for those who turn away in time (game sense).
+func _flash(thrower: Body, enemies: Array[Body]) -> void:
+	var quality := _throw(thrower, EquipmentCatalog.FLASH)
+	if quality < POOR_THROW:
+		return
+	var flash := EquipmentCatalog.params(EquipmentCatalog.FLASH)
+	var full := float(flash.get("max_blind", 4.8))
+	var caught := 0
+	for enemy: Body in enemies:
+		var turned := clampf(enemy.player.skill(&"game_sense") / 200.0 + rng.randf() * 0.4, 0.0, 1.0 - float(flash.get("behind_share", 0.22)))
+		var seconds := full * quality * (1.0 - turned)
+		if seconds >= 0.8:
+			enemy.blind_until = maxf(enemy.blind_until, time + seconds)
+			enemy.flashed_by = thrower.player.id
+			caught += 1
+	thrower.player.counts["enemies_flashed"] += caught
+
+
+func _frag(thrower: Body, enemies: Array[Body]) -> void:
+	var quality := _throw(thrower, EquipmentCatalog.FRAG)
+	var frag := EquipmentCatalog.params(EquipmentCatalog.FRAG)
+	var reach := float(frag.get("radius", 7.5))
+	var penetration := float(EquipmentCatalog.DATA[EquipmentCatalog.FRAG].get("armour_penetration", 0.55))
+	for enemy: Body in enemies:
+		var distance := rng.randf_range(1.0, reach) * (1.0 - 0.6 * quality)
+		var amount := roundi(float(frag.get("damage", 98)) * maxf(0.0, 1.0 - distance / reach))
+		if amount > 0:
+			_hurt(thrower, enemy, amount, penetration, DamageModel.ZONE_CHEST, EquipmentCatalog.FRAG)
+
+
+## Fire burns whoever stands in it (they get out as fast as they can: about half a step in it).
+func _burn() -> void:
+	var fire := EquipmentCatalog.params(EquipmentCatalog.FIRE)
+	var dps := float(fire.get("dps", 38.0))
+	for place: String in fires.keys():
+		var burning: Dictionary = fires[place]
+		if float(burning["until"]) <= time:
+			fires.erase(place)
+			continue
+		var thrower: Body = burning["by"]
+		for body: Body in bodies:
+			if body.alive() and not body.hidden and body.place == place and body.team != thrower.team:
+				_hurt(thrower, body, roundi(dps * STEP * 0.5), 1.0, DamageModel.ZONE_LEGS, EquipmentCatalog.FIRE)
+				# A holder steps off the fire to another spot on the site.
+				if body.alive() and not body.moving() and body.team != attackers:
+					var near := _site_near(place)
+					if not near.is_empty():
+						for spot: String in planners[body.team].holds(near):
+							if spot != place:
+								body.path = _walk(place, spot)
+								body.progress = 0.0
+								break
+
+
+func _fire_seconds() -> float:
+	return float(EquipmentCatalog.params(EquipmentCatalog.FIRE).get("duration", 7.0))
+
+
+func _burning(place: String) -> bool:
+	return fires.has(place) and float(fires[place]["until"]) > time
+
+
+func _smoked(place: String) -> bool:
+	return float(smokes.get(place, -INF)) > time
+
+
+## Enemies of [param team] standing in [param place] or seen from it across a site.
+func _enemies_in(place: String, team: int) -> Array[Body]:
+	var open := _open_ground(place)
+	var list: Array[Body] = []
+	for other: Body in bodies:
+		if other.team != team and other.alive() and not other.hidden and (other.place == place or (open.has(other.place)
+				and not _smoked(other.place))):
+			list.append(other)
+	return list
+
+
+## [param body] or a teammate in the same place who still has [param id] (body first).
+func _teammate_with(body: Body, id: StringName) -> Body:
+	if body.grenades.has(id):
+		return body
+	for other: Body in bodies:
+		if other != body and other.team == body.team and other.alive() and not other.hidden and other.place == body.place \
+				and other.grenades.has(id) and other.blind_until <= time:
+			return other
+	return null
+
+
+func _defuse_needed() -> float:
+	return DEFUSE_KIT_TIME if _defuser_kit else DEFUSE_TIME
 
 
 # --- Bomb and movement --------------------------------------------------------------------------
@@ -631,7 +926,8 @@ func _bomb() -> void:
 			body.busy = true
 			body.path.clear()
 			defuse_progress += STEP
-			if defuse_progress >= (DEFUSE_KIT_TIME if teams[body.team].buy == &"full" else DEFUSE_TIME):
+			_defuser_kit = body.kit
+			if defuse_progress >= _defuse_needed():
 				body.player.counts["defuses"] += 1
 				body.player.contributed = true
 			return
@@ -641,6 +937,10 @@ func _bomb() -> void:
 func _move() -> void:
 	for body: Body in bodies:
 		if not body.alive() or body.busy or body.hidden or body.path.is_empty():
+			continue
+		# Nobody walks into fire unless the round will not wait: a rush, or a retake on the clock.
+		if _burning(body.path[0]) and not (body.team == attackers and plans[attackers].kind == RoundPlan.RUSH) \
+				and not (planted and body.team != attackers and retake_pushed):
 			continue
 		var speed := RoundPlanner.RUN_SPEED * (0.8 if plans[body.team].kind == RoundPlan.DEFAULT and not hit_called else 1.0)
 		var left := speed * STEP
@@ -661,7 +961,7 @@ func _move() -> void:
 func _ended() -> String:
 	var defence_left := _alive(1 - attackers)
 	if planted:
-		if defuse_progress >= (DEFUSE_KIT_TIME if teams[1 - attackers].buy == &"full" else DEFUSE_TIME):
+		if defuse_progress >= _defuse_needed() and defuse_progress > 0.0:
 			return "defused"
 		if time - planted_at >= BOMB_TIMER:
 			return "detonated"

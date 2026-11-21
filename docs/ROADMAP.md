@@ -276,9 +276,11 @@ Stages (each validated and committed on its own):
       over, headshots from aim, weapon match-ups, crossfires and trades from teammates nearby.
       `RoundSim`, 1 s steps; weapons from the team's buy and the player's role until stage D.
       Even teams: attack wins about half the rounds, headshots about half the kills.
-- [ ] **D. Individual economy and utility.** Each player's own money, weapon, armour and
+- [x] **D. Individual economy and utility.** Each player's own money, weapon, armour and
       grenades; drops; personal saves. Grenades thrown by players with their own utility skill:
       flashes blind named players, smokes cover executes, fire delays pushes, frags damage.
+      `SimEconomy` with the game's own prices, rewards, weapons and damage rules. Map balance
+      still varies a lot between maps (attack 32–61% on the official ones): stage H.
 - [ ] **E. Same events as a played match.** The engine emits the FPS runtime's event stream and
       `MatchStatistics` builds every line from it, so simulated and played statistics agree by
       construction (headshots, utility, flash assists, entries, clutches, trades).

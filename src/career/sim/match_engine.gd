@@ -134,6 +134,8 @@ var _trading: int = 0
 var _planners: Array[RoundPlanner] = []
 var _plans: Array[RoundPlan] = []
 var _score: Array[int] = [0, 0]
+## What the last planned round's [RoundSim] reported.
+var _outcome: Dictionary = {}
 
 
 func _init(dice: RandomNumberGenerator, rounds_per_half: int = 8) -> void:
@@ -238,6 +240,8 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 			player.traded = false
 			player.round_kills = 0
 	_plan_round(teams, attackers)
+	if not _plans.is_empty():
+		return _play_planned(teams, attackers, decisive)
 	var defenders := 1 - attackers
 	var planted := false
 	var how := ""
@@ -355,6 +359,14 @@ func _edge(teams: Array[SimTeam], attackers: int, a: SimPlayer, d: SimPlayer, at
 	return edge
 
 
+## Ability points a player gains or loses on top of their attributes right now: day form, the
+## team's map and round, momentum, clutch and pressure, tilt ([RoundSim] adds these to skills).
+func form_points(player: SimPlayer, team: SimTeam, own: int, other: int, decisive: bool) -> float:
+	var momentum := clampf(team.win_streak * MOMENTUM_STEP, 0.0, MOMENTUM_CAP)
+	return _duel_skill(player, team, own, other, decisive) - player.duel + team.map_form + team.execution + momentum \
+		+ team.form * 0.01
+
+
 func _duel_skill(player: SimPlayer, team: SimTeam, own: int, other: int, decisive: bool) -> float:
 	var value := player.duel + player.day_form
 	if own == 1 and other >= 1:
@@ -441,6 +453,12 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 		var kept := roundi(spent * 0.7 * survivors / maxf(team.players.size(), 1.0))
 		team.money = clampi(team.money - spent + kept + income, 0, MAX_MONEY)
 	var entry := {"winner": winner, "how": how, "attackers": attackers}
+	if not _outcome.is_empty() and not _plans.is_empty():
+		entry["seconds"] = _outcome["seconds"]
+		if bool(_outcome["planted"]):
+			var at_plant: Vector2i = _outcome["alive_at_plant"]
+			entry["at_plant"] = [at_plant.x, at_plant.y]
+			entry["retake"] = _outcome["retake"]
 	if not _plans.is_empty():
 		_learn(winner, attackers, entry)
 	rounds_log.append(entry)
@@ -465,23 +483,32 @@ func _plan_round(teams: Array[SimTeam], attackers: int) -> void:
 		var players := teams[index].players
 		plans[index] = _planners[index].plan_attack(situation, players) if index == attackers 			else _planners[index].plan_defence(situation, players)
 	_plans = plans
-	# A default round is called on what the map control found.
-	var attack := _plans[attackers]
-	if attack.kind == RoundPlan.DEFAULT:
-		var spotted: Dictionary[String, int] = {}
-		for site: String in sim_map.sites():
-			spotted[site] = _plans[1 - attackers].players_at(sim_map, site)
-		attack.site = _planners[attackers].call_hit(attack, spotted)
+
+
+## A round played out on the map ([RoundSim]): players move, meet and fight.
+func _play_planned(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
+	var sim := RoundSim.new(self, teams, attackers, _plans, _planners, decisive)
+	_outcome = sim.play()
+	var winner := int(_outcome["winner"])
+	_finish_round(teams, winner, attackers, bool(_outcome["planted"]), str(_outcome["how"]), _outcome["clutch"] as Dictionary)
+	for team: SimTeam in teams:
+		for player: SimPlayer in team.players:
+			if player.alive or player.contributed or player.traded:
+				player.counts["kast_rounds"] += 1
+			if player.round_kills == 5:
+				highlights.append("%s aces round %d" % [player.name, rounds_log.size()])
+	return winner
 
 
 ## Each leader learns from the round: where the attack went, how many defended each site.
 func _learn(winner: int, attackers: int, entry: Dictionary) -> void:
 	var attack := _plans[attackers]
-	var defence := _plans[1 - attackers]
+	attack.site = str(_outcome.get("site", attack.site))
+	# The attackers learn what they saw: defenders found per site, and whether they rotated.
 	var found: Dictionary[String, int] = {}
 	for site: String in sim_map.sites():
-		found[site] = defence.players_at(sim_map, site)
-	_planners[attackers].learn_attack(attack, winner == attackers, found, false)
+		found[site] = int((_outcome.get("spotted", {}) as Dictionary).get(site, 0))
+	_planners[attackers].learn_attack(attack, winner == attackers, found, bool(_outcome.get("rotated", false)))
 	_planners[1 - attackers].learn_defence(attack.site)
 	entry["site"] = attack.site
 	entry["plans"] = [_plans[0].to_dict(), _plans[1].to_dict()]

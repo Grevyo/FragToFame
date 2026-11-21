@@ -28,6 +28,14 @@ var links: Dictionary[String, Dictionary] = {}
 var distances: Dictionary[String, Dictionary] = {}
 ## Walked routes from each spawn and site: id -> {id: Array of place IDs in order}.
 var walked: Dictionary[String, Dictionary] = {}
+## Scratch answers other career code works out once per map (the graph never changes after
+## loading), keyed by that code.
+var memo: Dictionary = {}
+# Answers worked out once (the graph never changes after loading).
+var _clusters: Dictionary[String, Array] = {}
+var _entrances: Dictionary[String, Array] = {}
+var _routes: Dictionary[String, Array] = {}
+var _neighbours: Dictionary[String, Array] = {}
 
 
 ## The graph for [param map_id] (cached), or null when none has been baked.
@@ -108,8 +116,12 @@ func name_of(id: String) -> String:
 
 func neighbours(id: String) -> Array[String]:
 	var list: Array[String] = []
+	if _neighbours.has(id):
+		list.assign(_neighbours[id])
+		return list
 	list.assign((links.get(id, {}) as Dictionary).keys())
 	list.sort()
+	_neighbours[id] = list.duplicate()
 	return list
 
 
@@ -126,6 +138,10 @@ func seconds(a: String, b: String, speed: float) -> float:
 
 ## The places on a site and its surrounding areas (areas whose measuring point lies on the site).
 func site_cluster(site_id: String) -> Array[String]:
+	var cached: Array[String] = []
+	if _clusters.has(site_id):
+		cached.assign(_clusters[site_id])
+		return cached
 	var letter := str(nodes.get(site_id, {}).get("site", ""))
 	var cluster: Array[String] = [site_id]
 	var index := 0
@@ -134,12 +150,17 @@ func site_cluster(site_id: String) -> Array[String]:
 			if not cluster.has(next) and not letter.is_empty() and str(nodes[next].get("site", "")) == letter:
 				cluster.append(next)
 		index += 1
+	_clusters[site_id] = cluster.duplicate()
 	return cluster
 
 
 ## The places a site is entered from: neighbours of the site (and of the areas on it) that are
 ## not on the site themselves.
 func entrances(site_id: String) -> Array[String]:
+	var cached: Array[String] = []
+	if _entrances.has(site_id):
+		cached.assign(_entrances[site_id])
+		return cached
 	var cluster := site_cluster(site_id)
 	var list: Array[String] = []
 	for id: String in cluster:
@@ -147,6 +168,7 @@ func entrances(site_id: String) -> Array[String]:
 			if not cluster.has(next) and not list.has(next):
 				list.append(next)
 	list.sort()
+	_entrances[site_id] = list.duplicate()
 	return list
 
 
@@ -156,6 +178,11 @@ func entrances(site_id: String) -> Array[String]:
 func route(from: String, to: String) -> Array[String]:
 	if not nodes.has(from) or not nodes.has(to):
 		return []
+	var key := from + "|" + to
+	if _routes.has(key):
+		var known: Array[String] = []
+		known.assign(_routes[key])
+		return known
 	var baked := (walked.get(from, {}) as Dictionary).get(to, []) as Array
 	if not baked.is_empty():
 		var list: Array[String] = []
@@ -181,6 +208,7 @@ func route(from: String, to: String) -> Array[String]:
 	var path: Array[String] = [to]
 	while path[0] != from:
 		path.push_front(previous[path[0]])
+	_routes[key] = path.duplicate()
 	return path
 
 

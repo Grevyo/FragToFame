@@ -424,6 +424,15 @@ reported per slot. The same route data can be consumed by future M7 play executi
   more consistently. It gives each player a job and a place (`RoundPlan`) and makes the
   mid-round calls: where a default hits, who rotates, retake or save. `MatchEngine` uses it
   when it has a `sim_map` and logs both plans with each round.
+- `RoundSim` (`src/career/sim`, pure) plays a planned round in one-second steps: players walk
+  their routes, wait for the hit, rotate, retake or save; opponents in the same place, a player
+  walking into a held place, or players on two areas of one site meet and fight. Who fires first
+  comes from reaction, crosshair placement, positioning and game sense against the peeker's
+  movement and advantage; bursts hit on aim, spray control, distance and movement, headshots on
+  aim and crosshair placement; damage and armour carry over; teammates there add crossfire, and
+  kills on a fresh killer are trades. The bomb is carried, dropped, picked up, planted and defused.
+  Day form, momentum, tilt and clutch traits come from `MatchEngine.form_points`. Without a map
+  graph the engine keeps its older duel chain.
 
 ### Competitive rules (Milestone 5)
 

@@ -42,6 +42,10 @@ var _attacked_at: Dictionary[String, int] = {}
 var _defenders_at: Dictionary[String, Array] = {}
 ## Rounds we attacked and how often the opponents rotated before our hit landed.
 var _rotations_seen: Array[int] = [0, 0]
+# Map answers worked out once per map.
+var _approaches: Dictionary[String, Array] = {}
+var _holds: Dictionary[String, Array] = {}
+var _site_of_place: Dictionary[String, String] = {}
 
 
 func _init(sim_map: SimMap, own: MatchEngine.SimTeam, dice: RandomNumberGenerator) -> void:
@@ -243,6 +247,10 @@ func learn_defence(attacked_site: String) -> void:
 ## The places a site is approached from by the attackers: entrances the map marks as this site's
 ## (callout role "entrance_<letter>") plus the last place before the site on the attackers' walk.
 func approaches(site: String) -> Array[String]:
+	var cached: Array[String] = []
+	if _approaches.has(site):
+		cached.assign(_approaches[site])
+		return cached
 	var letter := str(map.nodes.get(site, {}).get("site", ""))
 	var list: Array[String] = []
 	for place: String in map.entrances(site):
@@ -257,14 +265,20 @@ func approaches(site: String) -> Array[String]:
 			break
 	list.sort_custom(func(a: String, b: String) -> bool:
 		return map.distance(map.spawn("attack"), a) < map.distance(map.spawn("attack"), b))
+	_approaches[site] = list.duplicate()
 	return list
 
 
 ## Where defenders hold a site: the site and the areas on it, biggest floor first.
 func holds(site: String) -> Array[String]:
-	var list := map.site_cluster(site)
+	var list: Array[String] = []
+	if _holds.has(site):
+		list.assign(_holds[site])
+		return list
+	list = map.site_cluster(site)
 	list.sort_custom(func(a: String, b: String) -> bool:
 		return float(map.nodes[a].get("floor", 0.0)) > float(map.nodes[b].get("floor", 0.0)))
+	_holds[site] = list.duplicate()
 	return list
 
 
@@ -467,10 +481,15 @@ func _other_site(site: String) -> String:
 
 ## The site a place belongs to ("" when it is between sites).
 func _site_of(place: String) -> String:
+	if _site_of_place.has(place):
+		return _site_of_place[place]
+	var found := ""
 	for site: String in map.sites():
 		if map.site_cluster(site).has(place) or (approaches(site).has(place) and RoundPlan._belongs_to(map, place, site)):
-			return site
-	return ""
+			found = site
+			break
+	_site_of_place[place] = found
+	return found
 
 
 # --- People ------------------------------------------------------------------------------------

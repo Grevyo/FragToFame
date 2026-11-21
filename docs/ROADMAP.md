@@ -270,10 +270,12 @@ Stages (each validated and committed on its own):
       economy, score, map, team style and what has worked; mid-round calls on information
       (rotate, retake, save). `RoundPlanner` + `RoundPlan`; lurking is a job inside the other
       kinds. Plans are logged per round; fights still come from the duel chain until stage C.
-- [ ] **C. Players in places.** Rounds advance in time steps; players move along the graph.
+- [x] **C. Players in places.** Rounds advance in time steps; players move along the graph.
       Fights happen where opponents meet: who sees whom first (positioning, crosshair placement,
       game sense against the peeker's aggression), several exchanges with damage that carries
       over, headshots from aim, weapon match-ups, crossfires and trades from teammates nearby.
+      `RoundSim`, 1 s steps; weapons from the team's buy and the player's role until stage D.
+      Even teams: attack wins about half the rounds, headshots about half the kills.
 - [ ] **D. Individual economy and utility.** Each player's own money, weapon, armour and
       grenades; drops; personal saves. Grenades thrown by players with their own utility skill:
       flashes blind named players, smokes cover executes, fire delays pushes, frags damage.

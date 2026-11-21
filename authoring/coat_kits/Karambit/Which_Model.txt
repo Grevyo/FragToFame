@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_karambit/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: ed951cf4a45187e652523780d2c918fdffe7c98ea699eea29ed70a17cd27ce25
+Texture size: 2048 x 2048

@@ -14,7 +14,12 @@ extends RefCounted
 ## "slots" are the five Magnet slots: side ("left" / "right"), "z" along the weapon (-0.5 muzzle
 ## … 0.5 butt, as a share of its length), "y" up the weapon (-0.5 … 0.5, share of its height)
 ## and "size" in metres. tools/build_magnet_slots.gd projects them onto the mesh and stores the
-## surface points in data/weapons/magnet_slots.json.
+## surface points in data/weapons/magnet_slots.json. Knives have no slots.
+##
+## Knife entries ("knife": true) are not weapons of their own: they are the looks a player can
+## pick for the one knife everyone carries. "name" is the knife's display name. "parts" names
+## nodes that move during an inspection (the butterfly knife's handles) and the axis each turns
+## about, in the model's own space; each such node sits on its pivot.
 
 const SLOT_COUNT: int = 5
 const ASSET_ROOT: String = "res://assets/weapons"
@@ -104,14 +109,75 @@ const DATA: Dictionary[StringName, Dictionary] = {
 		"credit": {"title": "M14 EBR", "author": "3dartist63 (https://sketchfab.com/3dartist63)", "license": "CC-BY-4.0",
 			"source": "https://sketchfab.com/3d-models/m14-ebr-4d3b43b49c69441881cc565fb341bcb1"},
 	},
+	# Knife models: looks for the one knife every player carries ([constant EquipmentCatalog.KNIFE]).
+	# Made by tools/import_knife_assets.py; the blade points along -X in the source, so all turn
+	# the same way. Knives take Coats but no Magnets ("slots" is empty).
+	&"knf_combat": {
+		"knife": true, "name": "Combat Knife", "rotation": Vector3(0, -90, 0), "length": 0.29, "kit": "Combat",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_grip", "03_guard_and_pommel"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_bayonet": {
+		"knife": true, "name": "Bayonet", "rotation": Vector3(0, -90, 0), "length": 0.31, "kit": "Bayonet",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_grip", "03_guard_and_pommel"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_butterfly": {
+		"knife": true, "name": "Butterfly Knife", "rotation": Vector3(0, -90, 0), "length": 0.23, "kit": "Butterfly",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_handles", "03_hardware"], "slots": [],
+		"parts": {"handle_a": Vector3(0, 0, 1), "handle_b": Vector3(0, 0, 1)},
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_karambit": {
+		"knife": true, "name": "Karambit", "rotation": Vector3(0, -90, 0), "length": 0.2, "kit": "Karambit",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_handle", "03_finger_ring"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_nomad": {
+		"knife": true, "name": "Nomad Knife", "rotation": Vector3(0, -90, 0), "length": 0.25, "kit": "Nomad",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_handle", "03_bolsters"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_skeleton": {
+		"knife": true, "name": "Skeleton Knife", "rotation": Vector3(0, -90, 0), "length": 0.24, "kit": "Skeleton",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_cord_wrap", "03_frame"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
+	&"knf_t_dagger": {
+		"knife": true, "name": "T-Handle Dagger", "rotation": Vector3(0, -90, 0), "length": 0.17, "kit": "T-Dagger",
+		"coat_size": Vector2i(2048, 2048), "zones": ["01_blade", "02_handle"], "slots": [],
+		"credit": {"title": "Low Poly Knife Collection", "author": "BUttERflY_Bee (https://sketchfab.com/BUttERflY_Bee)", "license": "CC-BY-4.0",
+			"source": "https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d"},
+	},
 }
+
+## The knife looks in the order the Armoury lists them, and the one a new player carries.
+const KNIVES: Array[StringName] = [&"knf_combat", &"knf_bayonet", &"knf_butterfly", &"knf_karambit", &"knf_nomad",
+	&"knf_skeleton", &"knf_t_dagger"]
+const DEFAULT_KNIFE: StringName = &"knf_combat"
 
 static var _slot_cache: Dictionary = {}
 
 
+## The modelled guns (knife looks are listed by [constant KNIVES]).
 static func ids() -> Array[StringName]:
 	var list: Array[StringName] = []
-	list.assign(DATA.keys())
+	for id: StringName in DATA:
+		if not is_knife(id):
+			list.append(id)
+	return list
+
+
+## Every model a player can customise: the guns, then the knife looks.
+static func all_ids() -> Array[StringName]:
+	var list := ids()
+	list.append_array(KNIVES)
 	return list
 
 
@@ -121,6 +187,29 @@ static func has_model(weapon_id: StringName) -> bool:
 
 static func info(weapon_id: StringName) -> Dictionary:
 	return DATA.get(weapon_id, {})
+
+
+## True for a knife look (see [constant KNIVES]).
+static func is_knife(model_id: StringName) -> bool:
+	return bool(info(model_id).get("knife", false))
+
+
+## The name players see: a knife's own name, or the weapon's.
+static func display_name(model_id: StringName) -> String:
+	if info(model_id).has("name"):
+		return str(info(model_id)["name"])
+	var definition := WeaponCatalog.get_definition(model_id) if WeaponCatalog.has(model_id) else null
+	return definition.display_name if definition != null else String(model_id)
+
+
+## True when the model takes Magnets (every gun; no knife).
+static func has_slots(model_id: StringName) -> bool:
+	return not (info(model_id).get("slots", []) as Array).is_empty()
+
+
+## Moving parts: node name -> the axis it turns about (empty for one-piece models).
+static func parts(model_id: StringName) -> Dictionary:
+	return info(model_id).get("parts", {})
 
 
 static func model_path(weapon_id: StringName) -> String:

@@ -1,7 +1,8 @@
 class_name CosmeticProfile
 extends RefCounted
 ## The player's weapon customisation: for each weapon, the equipped Coat ("" = factory finish)
-## and the Magnet in each of its five slots ("" = empty). Saved to user://profile/cosmetics.json
+## and the Magnet in each of its five slots ("" = empty), plus which knife look they carry
+## (WeaponModels.KNIVES; each knife look has its own Coat). Saved to user://profile/cosmetics.json
 ## and used by every mode (sandbox, practice and careers), so a look follows the player.
 ##
 ## The career database is not involved: cosmetics belong to the player, not to one career.
@@ -15,6 +16,8 @@ static var _current: CosmeticProfile = null
 var path: String = DEFAULT_PATH
 ## weapon_id -> {"coat": String, "magnets": Array of five Strings}
 var weapons: Dictionary[String, Dictionary] = {}
+## The knife look carried as [constant EquipmentCatalog.KNIFE] ("" = WeaponModels.DEFAULT_KNIFE).
+var knife: String = ""
 
 
 ## The profile in use (loaded from disk the first time it is asked for).
@@ -28,6 +31,24 @@ static func current() -> CosmeticProfile:
 ## Replaces the profile in use (tests point it at a scratch file).
 static func use(profile: CosmeticProfile) -> void:
 	_current = profile
+
+
+## The knife look the player carries.
+func equipped_knife() -> StringName:
+	return StringName(knife) if WeaponModels.is_knife(StringName(knife)) else WeaponModels.DEFAULT_KNIFE
+
+
+## Chooses the knife look to carry. Returns "" or why it was refused.
+func set_knife(model_id: StringName) -> String:
+	if not WeaponModels.is_knife(model_id):
+		return "That is not a knife."
+	knife = String(model_id)
+	return ""
+
+
+## The model shown for a carried weapon: the chosen knife look for the knife, else the weapon.
+func model_for(weapon_id: StringName) -> StringName:
+	return equipped_knife() if weapon_id == EquipmentCatalog.KNIFE else weapon_id
 
 
 ## A weapon's customisation; always complete, defaulting to factory finish and empty slots.
@@ -59,6 +80,8 @@ func set_coat(weapon_id: StringName, coat_id: String) -> String:
 func set_magnet(weapon_id: StringName, slot: int, magnet_id: String) -> String:
 	if not WeaponModels.has_model(weapon_id):
 		return "This weapon cannot be customised."
+	if not WeaponModels.has_slots(weapon_id):
+		return "Knives take no Magnets."
 	if slot < 0 or slot >= WeaponModels.SLOT_COUNT:
 		return "A weapon has five Magnet slots."
 	if not magnet_id.is_empty() and not MagnetCatalog.is_unlocked(magnet_id):
@@ -73,7 +96,7 @@ func to_dict() -> Dictionary:
 	var stored: Dictionary = {}
 	for weapon_id: String in weapons:
 		stored[weapon_id] = loadout(StringName(weapon_id))
-	return {"format": FORMAT, "format_version": FORMAT_VERSION, "weapons": stored}
+	return {"format": FORMAT, "format_version": FORMAT_VERSION, "weapons": stored, "knife": String(equipped_knife())}
 
 
 ## Saves the profile, keeping the previous file as ".bak". Returns OK or an error.
@@ -96,11 +119,12 @@ func save() -> Error:
 	return installed
 
 
-## Loads the profile. Entries that no longer make sense (unknown weapon, a Coat that is gone or
+## Loads the profile. Entries that no longer make sense (unknown weapon or knife, a Coat that is gone or
 ## fits another weapon, an unknown Magnet) fall back to factory finish / an empty slot, so a
 ## stale file can never break a weapon. Returns false when there is no usable file.
 func load_file() -> bool:
 	weapons.clear()
+	knife = ""
 	if not FileAccess.file_exists(path):
 		return false
 	var json := JSON.new()
@@ -109,6 +133,7 @@ func load_file() -> bool:
 	var data := json.data as Dictionary
 	if data.get("format") != FORMAT or int(data.get("format_version", 0)) != FORMAT_VERSION or not data.get("weapons") is Dictionary:
 		return false
+	set_knife(StringName(str(data.get("knife", ""))))
 	var stored := data["weapons"] as Dictionary
 	for key: Variant in stored:
 		var weapon_id := StringName(str(key))

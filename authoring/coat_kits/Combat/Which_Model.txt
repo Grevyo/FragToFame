@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_combat/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: bb55333b690eb9e2f7d6245b8414eb3de29d9c170cd19c85b6bdef567c2c14e4
+Texture size: 2048 x 2048

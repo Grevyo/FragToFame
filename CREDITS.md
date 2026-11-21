@@ -1,7 +1,7 @@
 # Credits and third-party assets
 
 Frag to Fame's code, maps, UI, Magnet artwork and balance data are original to the project.
-The weapon models below are third-party work used under their licences. Creative Commons
+The weapon and knife models below are third-party work used under their licences. Creative Commons
 Attribution (CC BY 4.0) allows commercial use provided the author is credited, which this file
 and the in-game credits (to be added before release) do.
 
@@ -19,6 +19,27 @@ and the in-game credits (to be added before release) do.
 | M14 EBR | M14 Ebr | 3dartist63 | CC BY 4.0 | https://sketchfab.com/3d-models/m14-ebr-4d3b43b49c69441881cc565fb341bcb1 |
 | AK-47 | (not recorded in the file) | unknown | **unknown** | — |
 | M4A1 | (not recorded in the file) | unknown | **unknown** | — |
+
+## Knife models
+
+All seven knife looks come from one pack: **Low Poly Knife Collection** by **BUttERflY_Bee**
+(https://sketchfab.com/BUttERflY_Bee), CC BY 4.0,
+https://sketchfab.com/3d-models/low-poly-knife-collection-000c0c7c9ee740a28469e3c393ae133d
+
+| Knife (in game) | Mesh in the pack |
+|---|---|
+| Combat Knife | Combat_knife |
+| Bayonet | Bayonet_knife |
+| Butterfly Knife | Butterfly_knife |
+| Karambit | Krambit_knife |
+| Nomad Knife | Nomad_knife |
+| Skeleton Knife | Skeleton_knife |
+| T-Handle Dagger | T-handle_dagger |
+
+Changes made: each knife is saved as its own model with its original textures; the butterfly
+knife's handles are separated into their own parts, placed on their pivot pins, so they can
+swing. Paint-zone masks and Coat kit guides were generated from the pack's UV layouts. The
+meshes and textures are otherwise unchanged.
 
 Licence text: https://creativecommons.org/licenses/by/4.0/
 

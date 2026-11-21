@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_butterfly/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: b9e3e7507849573c0db90eed6cbf3744324d560464079d2c255663854188b8c4
+Texture size: 2048 x 2048

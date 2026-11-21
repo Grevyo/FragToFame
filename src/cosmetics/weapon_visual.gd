@@ -25,6 +25,8 @@ var _model: Node3D
 var _factory: Array[Array] = []  # [mesh instance, surface index, factory material]
 var _decals: Array[Decal] = []
 var _markers: Node3D
+## Moving parts (see WeaponModels.parts): name -> [node, rest transform, axis].
+var _parts: Dictionary[StringName, Array] = {}
 
 ## weapon_id -> [pivot basis, pivot position, size]; working these out once keeps weapon
 ## switches cheap.
@@ -44,6 +46,7 @@ func setup(id: StringName) -> bool:
 	_markers = null
 	_factory.clear()
 	_decals.clear()
+	_parts.clear()
 	magnets.fill("")
 	coat_id = ""
 	size = Vector3.ZERO
@@ -63,6 +66,11 @@ func setup(id: StringName) -> bool:
 	_remove_extras(_model)
 	var info := WeaponModels.info(id)
 	_arrange_parts(info)
+	var axes := WeaponModels.parts(id)
+	for part_name: String in axes:
+		var part := _model.find_child(part_name, true, false) as Node3D
+		if part != null:
+			_parts[StringName(part_name)] = [part, part.transform, (axes[part_name] as Vector3).normalized()]
 	if not _fit_cache.has(id):
 		var euler: Vector3 = info["rotation"]
 		var turn := Basis.from_euler(Vector3(deg_to_rad(euler.x), deg_to_rad(euler.y), deg_to_rad(euler.z)))
@@ -89,6 +97,33 @@ func setup(id: StringName) -> bool:
 				_factory.append([instance, surface, factory])
 	_build_decals()
 	return true
+
+
+## Names of the model's moving parts (the butterfly knife's handles); empty for most models.
+func part_names() -> Array[StringName]:
+	var list: Array[StringName] = []
+	list.assign(_parts.keys())
+	return list
+
+
+## Turns a moving part [param degrees] from where the model rests, about its own pivot. Returns
+## false when the model has no such part. Presentation only (inspections).
+func set_part_angle(part_name: StringName, degrees: float) -> bool:
+	if not _parts.has(part_name):
+		return false
+	var entry := _parts[part_name]
+	var rest := entry[1] as Transform3D
+	(entry[0] as Node3D).transform = Transform3D(rest.basis * Basis(entry[2] as Vector3, deg_to_rad(degrees)), rest.origin)
+	return true
+
+
+## A moving part's current angle from rest, in degrees (0 for an unknown part).
+func part_angle(part_name: StringName) -> float:
+	if not _parts.has(part_name):
+		return 0.0
+	var entry := _parts[part_name]
+	var turned := ((entry[1] as Transform3D).basis.inverse() * (entry[0] as Node3D).transform.basis).get_rotation_quaternion()
+	return rad_to_deg(turned.get_angle()) * signf(turned.get_axis().dot(entry[2] as Vector3))
 
 
 ## True when the model has at least one painted (textured) material a Coat can replace.

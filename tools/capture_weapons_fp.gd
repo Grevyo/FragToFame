@@ -1,5 +1,5 @@
 extends SceneTree
-## Developer aid (needs a window): holds each modelled weapon in the FPS Sandbox with Magnets
+## Developer aid (needs a window): holds each modelled gun in the FPS Sandbox with Magnets
 ## in all five slots and saves a first-person picture and a mid-inspection picture to
 ## user://screens/weapons/. Nothing is saved to the player's profile.
 ##
@@ -39,10 +39,10 @@ func _run() -> void:
 		root.get_texture().get_image().save_png("user://screens/weapons/%s_fp.png" % weapon_id)
 		effects.inspect()
 		for part: Array in [[0.3, "a"], [0.7, "b"]]:
-			effects.set("_inspect_left", WeaponEffects.INSPECT_TIME * (1.0 - float(part[0])))
+			effects.set("_inspect_left", InspectLibrary.seconds(weapon_id) * (1.0 - float(part[0])))
 			for i: int in 4:
 				await process_frame
-			effects.set("_inspect_left", WeaponEffects.INSPECT_TIME * (1.0 - float(part[0])))
+			effects.set("_inspect_left", InspectLibrary.seconds(weapon_id) * (1.0 - float(part[0])))
 			await process_frame
 			root.get_texture().get_image().save_png("user://screens/weapons/%s_inspect_%s.png" % [weapon_id, part[1]])
 		effects.set("_inspect_left", 0.0)

@@ -1,7 +1,9 @@
 class_name Armoury
 extends Control
 ## Armoury: pick a weapon, inspect it, choose its Coat and put Magnets in its five slots, then
-## save. Edits are made on a draft and only reach the player's CosmeticProfile on Save.
+## save. Knife looks are listed after the guns: each takes a Coat (no Magnets), and one of them is
+## the knife the player carries. Edits are made on a draft and only reach the player's
+## CosmeticProfile on Save.
 ##
 ## Coats are listed from CoatLibrary. There are none shipped yet, so the list shows the factory
 ## finish and any Coat the player imported from a kit export.
@@ -20,6 +22,10 @@ var coat_list: ItemList
 var slot_buttons: Array[Button] = []
 var magnet_buttons: Dictionary[String, Button] = {}
 var remove_magnet_button: Button
+## "Carry this knife" (shown for knife looks only).
+var knife_button: Button
+## Everything about Magnet slots (hidden for knives, which take none).
+var magnet_section: VBoxContainer
 var confirm_dialog: ConfirmationDialog
 var import_dialog: FileDialog
 
@@ -42,9 +48,9 @@ func _ready() -> void:
 	draft = CosmeticProfile.new()
 	_load_draft()
 	_build()
-	for id: StringName in WeaponModels.ids():
+	for id: StringName in WeaponModels.all_ids():
 		_weapon_ids.append(id)
-		weapon_list.add_item(WeaponCatalog.get_definition(id).display_name)
+		weapon_list.add_item(_list_label(id))
 	select_weapon(_weapon_ids[0])
 	back_button.grab_focus.call_deferred()
 
@@ -52,12 +58,15 @@ func _ready() -> void:
 func _load_draft() -> void:
 	_saved = CosmeticProfile.current().to_dict()["weapons"]
 	draft.weapons.clear()
-	for id: StringName in WeaponModels.ids():
+	for id: StringName in WeaponModels.all_ids():
 		draft.weapons[String(id)] = CosmeticProfile.current().loadout(id)
+	draft.set_knife(CosmeticProfile.current().equipped_knife())
 
 
 func is_dirty() -> bool:
-	for id: StringName in WeaponModels.ids():
+	if draft.equipped_knife() != CosmeticProfile.current().equipped_knife():
+		return true
+	for id: StringName in WeaponModels.all_ids():
 		if draft.loadout(id) != CosmeticProfile.current().loadout(id):
 			return true
 	return false
@@ -70,18 +79,31 @@ func select_weapon(id: StringName) -> bool:
 	weapon_id = id
 	weapon_list.select(_weapon_ids.find(id))
 	visual.setup(id)
-	_camera.size = maxf(visual.size.z * 1.25, 0.34)
-	_title.text = WeaponCatalog.get_definition(id).display_name
+	_camera.size = maxf(visual.size.z * 1.25, 0.34 if WeaponModels.has_slots(id) else 0.2)
+	_title.text = WeaponModels.display_name(id)
+	magnet_section.visible = WeaponModels.has_slots(id)
+	knife_button.visible = WeaponModels.is_knife(id)
 	_refresh_coats()
+	if not WeaponModels.has_slots(id):
+		_yaw = PI / 2.0
+		_pitch = 0.1
 	select_slot(0)
 	return true
+
+
+## Makes the selected knife look the one the player carries. Returns "" or why it was refused.
+func equip_knife() -> String:
+	var problem := draft.set_knife(weapon_id)
+	_status.text = problem
+	_refresh()
+	return problem
 
 
 ## Chooses the Magnet slot to edit (0–4) and turns the weapon to show it.
 func select_slot(slot: int) -> void:
 	selected_slot = clampi(slot, 0, WeaponModels.SLOT_COUNT - 1)
 	var slots := WeaponModels.slots(weapon_id)
-	if selected_slot < slots.size():
+	if WeaponModels.has_slots(weapon_id) and selected_slot < slots.size():
 		_yaw = PI / 2.0 if (slots[selected_slot]["normal"] as Vector3).x < 0.0 else -PI / 2.0
 		_pitch = 0.1
 	_refresh()
@@ -120,8 +142,9 @@ func import_coat(png_path: String) -> String:
 ## Writes the draft to the player's profile. Returns OK or an error.
 func save() -> Error:
 	var profile := CosmeticProfile.current()
-	for id: StringName in WeaponModels.ids():
+	for id: StringName in WeaponModels.all_ids():
 		profile.weapons[String(id)] = draft.loadout(id)
+	profile.set_knife(draft.equipped_knife())
 	var err := profile.save()
 	_status.text = "Saved." if err == OK else "Could not save: %s" % error_string(err)
 	_refresh()
@@ -136,7 +159,12 @@ func revert() -> void:
 func _refresh() -> void:
 	var loadout := draft.loadout(weapon_id)
 	visual.apply_loadout(loadout)
-	visual.show_slot_markers(true, selected_slot)
+	visual.show_slot_markers(WeaponModels.has_slots(weapon_id), selected_slot)
+	for index: int in _weapon_ids.size():
+		weapon_list.set_item_text(index, _list_label(_weapon_ids[index]))
+	var carried := draft.equipped_knife() == weapon_id
+	knife_button.disabled = carried
+	knife_button.text = "Carried in matches" if carried else "Carry this knife"
 	var magnets: Array = loadout["magnets"]
 	var slots := WeaponModels.slots(weapon_id)
 	for slot: int in slot_buttons.size():
@@ -151,6 +179,13 @@ func _refresh() -> void:
 	save_button.text = "Save customisation" if is_dirty() else "Saved"
 
 
+## A list entry: the weapon's name, or "Knife · name" (with a mark on the knife carried).
+func _list_label(id: StringName) -> String:
+	if not WeaponModels.is_knife(id):
+		return WeaponModels.display_name(id)
+	return "Knife · %s%s" % [WeaponModels.display_name(id), "  ✓" if draft.equipped_knife() == id else ""]
+
+
 func _refresh_coats() -> void:
 	coat_list.clear()
 	_coat_ids = [""]
@@ -160,7 +195,7 @@ func _refresh_coats() -> void:
 		coat_list.add_item("%s  ·  %s%s" % [coat["name"], str(coat["rarity"]).capitalize(),
 			"  ·  custom" if coat["source"] == CoatLibrary.SOURCE_CUSTOM else ""])
 	var pixels := WeaponModels.coat_size(weapon_id)
-	_coat_note.text = ("No Coats for this weapon yet. " if _coat_ids.size() == 1 else "") \
+	_coat_note.text = ("No Coats for this %s yet. " % ("knife" if WeaponModels.is_knife(weapon_id) else "weapon") if _coat_ids.size() == 1 else "") \
 		+ "Coats are %d x %d PNGs made with the %s kit (%d paint zones)." % [pixels.x, pixels.y,
 			WeaponModels.info(weapon_id)["kit"], WeaponModels.zone_names(weapon_id).size()]
 
@@ -257,6 +292,10 @@ func _build() -> void:
 	var column := UIFactory.vbox(8)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(column)
+	knife_button = UIFactory.button("Carry this knife", &"AccentButton")
+	knife_button.tooltip_text = "Everyone carries one knife; this chooses which one you see"
+	knife_button.pressed.connect(func() -> void: equip_knife())
+	column.add_child(knife_button)
 	column.add_child(UIFactory.label("COAT", &"SectionLabel"))
 	coat_list = ItemList.new()
 	coat_list.custom_minimum_size.y = 110
@@ -267,8 +306,10 @@ func _build() -> void:
 	var import_button := UIFactory.button("Import a Coat PNG made with the kit…")
 	import_button.pressed.connect(func() -> void: import_dialog.popup_centered_ratio(0.6))
 	column.add_child(import_button)
-	column.add_child(HSeparator.new())
-	column.add_child(UIFactory.label("MAGNET SLOTS", &"SectionLabel"))
+	magnet_section = UIFactory.vbox(8)
+	column.add_child(magnet_section)
+	magnet_section.add_child(HSeparator.new())
+	magnet_section.add_child(UIFactory.label("MAGNET SLOTS", &"SectionLabel"))
 	var group := ButtonGroup.new()
 	for slot: int in WeaponModels.SLOT_COUNT:
 		var button := UIFactory.button("Slot %d" % (slot + 1), &"SidebarButton")
@@ -276,12 +317,12 @@ func _build() -> void:
 		button.button_group = group
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.pressed.connect(func() -> void: select_slot(slot))
-		column.add_child(button)
+		magnet_section.add_child(button)
 		slot_buttons.append(button)
 	remove_magnet_button = UIFactory.button("Remove Magnet from this slot")
 	remove_magnet_button.pressed.connect(clear_magnet)
-	column.add_child(remove_magnet_button)
-	column.add_child(UIFactory.label("MAGNETS (click to apply to the selected slot)", &"SectionLabel"))
+	magnet_section.add_child(remove_magnet_button)
+	magnet_section.add_child(UIFactory.label("MAGNETS (click to apply to the selected slot)", &"SectionLabel"))
 	var grid := GridContainer.new()
 	grid.columns = 5
 	for magnet_id: String in MagnetCatalog.ids():
@@ -293,7 +334,7 @@ func _build() -> void:
 		button.pressed.connect(func() -> void: set_magnet(magnet_id))
 		grid.add_child(button)
 		magnet_buttons[magnet_id] = button
-	column.add_child(grid)
+	magnet_section.add_child(grid)
 	middle.add_child(right)
 
 	confirm_dialog = ConfirmationDialog.new()

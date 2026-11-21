@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_bayonet/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: 5d6fc6b73dd1652cd1f701c6423cfbc4112a59c0c912683838cb6f4eaa632f25
+Texture size: 2048 x 2048

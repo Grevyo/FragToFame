@@ -11,6 +11,9 @@ const VIEWMODEL_REST := Vector3(0.17, -0.17, -0.3)
 const SLASH_TIME: float = 0.3
 const STAB_TIME: float = 0.55
 const THROW_TIME: float = 0.3
+## Where the knife's centre sits in the viewmodel and how it is turned (degrees).
+const KNIFE_HOLD := Vector3(-0.02, -0.03, 0.02)
+const KNIFE_HOLD_ROTATION := Vector3(8, 12, -10)
 
 var weapons: WeaponController
 var viewmodel: Node3D
@@ -101,7 +104,7 @@ func inspect() -> bool:
 	if (weapon_visual == null and utility_model == null) or state == null or state.is_reloading() \
 			or weapons.draw_remaining > 0.0 or weapons.is_throw_readied():
 		return false
-	_inspect_id = state.definition.id
+	_inspect_id = weapon_visual.weapon_id if weapon_visual != null else state.definition.id
 	_inspect_seconds = InspectLibrary.seconds(_inspect_id)
 	_inspect_left = _inspect_seconds
 	return true
@@ -116,24 +119,30 @@ func is_inspecting() -> bool:
 func _apply_inspect_pose(progress: float) -> void:
 	var pose := InspectLibrary.sample(_inspect_id, progress)
 	var turn := Basis.from_euler((pose["rot"] as Vector3) * (PI / 180.0))
-	var pivot := (pose["pivot"] as Vector3) * _item_size() + _item_centre()
+	var pivot := _item_point(pose["pivot"] as Vector3)
 	_gun_root.transform = Transform3D(turn, pivot - turn * pivot + (pose["pos"] as Vector3))
+	var parts: Dictionary = pose["parts"]
+	if weapon_visual != null:
+		for part: StringName in parts:
+			weapon_visual.set_part_angle(part, float(parts[part]))
 
 
 func _end_inspect() -> void:
 	_inspect_left = 0.0
 	if _gun_root != null:
 		_gun_root.transform = Transform3D.IDENTITY
-
-
-func _item_size() -> Vector3:
-	return weapon_visual.size if weapon_visual != null else Vector3(0.06, 0.12, 0.06)
-
-
-func _item_centre() -> Vector3:
 	if weapon_visual != null:
-		return weapon_visual.position
-	return utility_model.position + Vector3(0, 0.06, 0) if utility_model != null else Vector3.ZERO
+		for part: StringName in weapon_visual.part_names():
+			weapon_visual.set_part_angle(part, 0.0)
+
+
+## A point given as a share of the item's size in its own space (see [InspectLibrary]), placed
+## where the item is held.
+func _item_point(share: Vector3) -> Vector3:
+	if weapon_visual != null:
+		return weapon_visual.transform * (share * weapon_visual.size)
+	var centre := utility_model.position + Vector3(0, 0.06, 0) if utility_model != null else Vector3.ZERO
+	return centre + share * Vector3(0.06, 0.12, 0.06)
 
 
 func _on_melee_swung(heavy: bool) -> void:
@@ -168,9 +177,13 @@ func _apply_swing_pose() -> void:
 			viewmodel.rotation_degrees += Vector3(-50.0 * follow, 0, 0)
 
 
-## Re-applies the saved Coat and Magnets to the weapon in hand (after a change in the Armoury).
+## Re-applies the saved Coat and Magnets to the weapon in hand (after a change in the Armoury),
+## and swaps the knife model if another knife look was chosen.
 func refresh_cosmetics() -> void:
-	if weapon_visual != null:
+	var state := weapons.current() if weapons != null else null
+	if state != null and state.definition.is_melee() 			and (weapon_visual == null or weapon_visual.weapon_id != CosmeticProfile.current().model_for(state.definition.id)):
+		_build_gun()
+	elif weapon_visual != null:
 		weapon_visual.apply_loadout(CosmeticProfile.current().loadout(weapon_visual.weapon_id))
 
 
@@ -197,13 +210,19 @@ func _build_gun() -> void:
 		utility_model.rotation_degrees = Vector3(-10, 25, -8)
 		_gun_root.add_child(utility_model)
 		return
+	var model_id := CosmeticProfile.current().model_for(id)
 	var visual := WeaponVisual.new()
 	_gun_root.add_child(visual)
-	if not visual.setup(id):
+	if not visual.setup(model_id):
 		visual.queue_free()
 		return
 	weapon_visual = visual
-	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(id))
+	weapon_visual.apply_loadout(CosmeticProfile.current().loadout(model_id))
+	if state.definition.is_melee():
+		# A knife is held out in the fist, blade forward and tilted in toward the centre.
+		weapon_visual.rotation_degrees = KNIFE_HOLD_ROTATION
+		weapon_visual.position = KNIFE_HOLD + weapon_visual.basis * Vector3(0, 0, -weapon_visual.size.z * 0.25)
+		return
 	var length := weapon_visual.size.z
 	# Long guns sit with the butt just behind the view; pistols are held out in front.
 	var centre_z := 0.36 - length / 2.0 if length > 0.5 else 0.08 - length / 2.0

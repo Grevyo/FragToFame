@@ -312,8 +312,8 @@ func _test_armoury() -> void:
 	check(armoury != null and App.current_scene_id == App.SCENE_ARMOURY, "it opens the Armoury")
 	if armoury == null:
 		return
-	check(armoury.weapon_list.item_count == 10 and armoury.weapon_id == &"wpn_ak47" and armoury.visual.weapon_id == &"wpn_ak47",
-		"all ten weapons are listed and the first is shown for inspection")
+	check(armoury.weapon_list.item_count == 10 + WeaponModels.KNIVES.size() and armoury.weapon_id == &"wpn_ak47" and armoury.visual.weapon_id == &"wpn_ak47",
+		"all ten weapons and every knife look are listed, the first shown for inspection")
 	check(armoury.slot_buttons.size() == 5 and armoury.magnet_buttons.size() == 26, "it offers five Magnet slots and all 26 Magnets")
 	check(armoury.coat_list.item_count == 1 and armoury.coat_list.get_item_text(0) == "Factory finish",
 		"the Coat list shows only the factory finish: no fabricated Coats")

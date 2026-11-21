@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_t_dagger/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: 07b9c728d79b3dc7a7998c862c7ac2d0dc6d22eeb597ca32e6f4178183e72f62
+Texture size: 2048 x 2048

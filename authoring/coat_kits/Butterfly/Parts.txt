@@ -1,0 +1,5 @@
+Butterfly Coat kit | 2048 x 2048
+
+Zone 1: Blade | guide colour RGB (105, 201, 250) | 5.2% of the texture
+Zone 2: Handles | guide colour RGB (255, 155, 110) | 16.3% of the texture
+Zone 3: Hardware | guide colour RGB (125, 215, 169) | 10.0% of the texture

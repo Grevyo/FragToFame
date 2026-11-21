@@ -6,10 +6,17 @@ extends RefCounted
 ## A pose key is {"t": 0..1 share of the inspection, "pos": metres added to the viewmodel,
 ## "rot": degrees (x pitch, y yaw, z roll) added to it}. Keys may also turn the item about a
 ## point other than its centre: "pivot" is that point as a share of the item's size in weapon
-## space (z -0.5 = muzzle / blade tip … 0.5 = butt / pommel). Between keys poses ease in and out.
-## Every inspection starts and ends at rest (t 0 and t 1 have no offset).
+## space (z -0.5 = muzzle / blade tip … 0.5 = butt / pommel). Keys may also swing a model's moving
+## parts: "parts" maps a part name (WeaponModels.parts) to degrees from rest; a part a key does not
+## name is at rest there. Between keys poses ease in and out. Every inspection starts and ends at
+## rest (t 0 and t 1 have no offset; whole turns count as rest).
 ##
-## Weapons without an entry use [constant DEFAULT] (show the left side, then the right).
+## Euler angles apply roll first, then pitch, then yaw, so a roll ("rot" z) spins an item about its
+## own length and a pitch about its own side-to-side axis before the yaw turns it.
+##
+## Entries are keyed by the model in hand: utility by its item ID, knives by their knife look
+## (WeaponModels.KNIVES), so every knife has its own. Others use [constant DEFAULT] (show the left
+## side, then the right).
 
 const DEFAULT_SECONDS: float = 3.2
 
@@ -81,6 +88,94 @@ const INSPECTS: Dictionary[StringName, Dictionary] = {
 			{"t": 1.0},
 		],
 	},
+	# --- knives -------------------------------------------------------------------------------
+	# Combat knife: turned to show the face, rolled to the other face, raised to catch the light.
+	&"knf_combat": {
+		"seconds": 3.0,
+		"keys": [
+			{"t": 0.0},
+			{"t": 0.18, "pos": Vector3(-0.1, 0.07, -0.1), "rot": Vector3(15, -80, 10)},
+			{"t": 0.4, "pos": Vector3(-0.1, 0.07, -0.1), "rot": Vector3(15, -80, 190)},
+			{"t": 0.6, "pos": Vector3(-0.06, 0.1, -0.12), "rot": Vector3(40, -20, 190)},
+			{"t": 0.82, "pos": Vector3(-0.03, 0.03, -0.05), "rot": Vector3(0, 0, 360)},
+			{"t": 1.0, "rot": Vector3(0, 0, 360)},
+		],
+	},
+	# Bayonet: two flat helicopter spins about the guard, then a look down the side.
+	&"knf_bayonet": {
+		"seconds": 3.2,
+		"keys": [
+			{"t": 0.0, "pivot": Vector3(0, 0, 0.1)},
+			{"t": 0.12, "pos": Vector3(-0.06, 0.05, -0.08), "pivot": Vector3(0, 0, 0.1)},
+			{"t": 0.6, "pos": Vector3(-0.06, 0.05, -0.08), "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.1)},
+			{"t": 0.8, "pos": Vector3(-0.1, 0.07, -0.1), "rot": Vector3(10, 645, 15), "pivot": Vector3(0, 0, 0.1)},
+			{"t": 1.0, "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.1)},
+		],
+	},
+	# Butterfly knife: the handles swing round their pins to close it, then roll on round to open
+	# it again while the whole knife turns over in the hand.
+	&"knf_butterfly": {
+		"seconds": 3.6,
+		"keys": [
+			{"t": 0.0},
+			{"t": 0.12, "pos": Vector3(-0.05, 0.05, -0.06), "rot": Vector3(0, 0, -15)},
+			{"t": 0.28, "pos": Vector3(-0.05, 0.06, -0.06), "rot": Vector3(0, 0, -25), "parts": {&"handle_a": 180.0}},
+			{"t": 0.44, "pos": Vector3(-0.06, 0.06, -0.08), "rot": Vector3(-10, -35, 0),
+				"parts": {&"handle_a": 180.0, &"handle_b": -180.0}},
+			{"t": 0.6, "pos": Vector3(-0.05, 0.07, -0.07), "rot": Vector3(0, 0, 180),
+				"parts": {&"handle_a": 360.0, &"handle_b": -180.0}},
+			{"t": 0.78, "pos": Vector3(-0.05, 0.05, -0.06), "rot": Vector3(0, 0, 360),
+				"parts": {&"handle_a": 360.0, &"handle_b": -360.0}},
+			{"t": 1.0, "rot": Vector3(0, 0, 360), "parts": {&"handle_a": 360.0, &"handle_b": -360.0}},
+		],
+	},
+	# Karambit: spun twice round the finger through the ring, then held up side-on.
+	&"knf_karambit": {
+		"seconds": 3.0,
+		"keys": [
+			{"t": 0.0, "pivot": Vector3(0, 0, 0.42)},
+			{"t": 0.1, "pos": Vector3(-0.04, 0.03, -0.04), "pivot": Vector3(0, 0, 0.42)},
+			{"t": 0.55, "pos": Vector3(-0.04, 0.03, -0.04), "rot": Vector3(-720, 0, 0), "pivot": Vector3(0, 0, 0.42)},
+			{"t": 0.78, "pos": Vector3(-0.1, 0.07, -0.08), "rot": Vector3(-710, -70, 15), "pivot": Vector3(0, 0, 0.42)},
+			{"t": 1.0, "rot": Vector3(-720, 0, 0), "pivot": Vector3(0, 0, 0.42)},
+		],
+	},
+	# Nomad: tossed up end over end and caught, then a look along the side.
+	&"knf_nomad": {
+		"seconds": 2.8,
+		"keys": [
+			{"t": 0.0},
+			{"t": 0.12, "pos": Vector3(-0.05, -0.01, -0.05), "rot": Vector3(-15, 0, 0)},
+			{"t": 0.35, "pos": Vector3(-0.05, 0.28, -0.1), "rot": Vector3(180, 0, 0)},
+			{"t": 0.55, "pos": Vector3(-0.05, 0.02, -0.06), "rot": Vector3(360, 0, 0)},
+			{"t": 0.77, "pos": Vector3(-0.1, 0.06, -0.1), "rot": Vector3(370, -70, -15)},
+			{"t": 1.0, "rot": Vector3(360, 0, 0)},
+		],
+	},
+	# Skeleton knife: turned flat to face the player and spun like a wheel in the palm.
+	&"knf_skeleton": {
+		"seconds": 3.0,
+		"keys": [
+			{"t": 0.0},
+			{"t": 0.16, "pos": Vector3(-0.1, 0.08, -0.12), "rot": Vector3(0, -90, 0)},
+			{"t": 0.56, "pos": Vector3(-0.1, 0.08, -0.12), "rot": Vector3(-360, -90, 0)},
+			{"t": 0.76, "pos": Vector3(-0.06, 0.1, -0.12), "rot": Vector3(-330, -20, 0)},
+			{"t": 1.0, "rot": Vector3(-360, 0, 0)},
+		],
+	},
+	# T-handle dagger: drawn back, punched forward, then twisted to show both faces.
+	&"knf_t_dagger": {
+		"seconds": 2.6,
+		"keys": [
+			{"t": 0.0},
+			{"t": 0.14, "pos": Vector3(0, -0.01, 0.05), "rot": Vector3(-10, 0, 0)},
+			{"t": 0.28, "pos": Vector3(-0.02, 0, -0.12)},
+			{"t": 0.44, "pos": Vector3(-0.06, 0.05, -0.06)},
+			{"t": 0.68, "pos": Vector3(-0.07, 0.06, -0.08), "rot": Vector3(10, -30, -180)},
+			{"t": 0.86, "pos": Vector3(-0.03, 0.02, -0.04), "rot": Vector3(0, 0, -360)},
+			{"t": 1.0, "rot": Vector3(0, 0, -360)},
+		],
+	},
 }
 
 
@@ -97,7 +192,8 @@ static func seconds(id: StringName) -> float:
 
 
 ## The pose at [param progress] 0..1 of [param id]'s inspection:
-## {"pos": Vector3, "rot": Vector3 degrees, "pivot": Vector3 share of the item's size}.
+## {"pos": Vector3, "rot": Vector3 degrees, "pivot": Vector3 share of the item's size,
+## "parts": {part name: degrees}}.
 static func sample(id: StringName, progress: float) -> Dictionary:
 	var keys: Array = for_item(id)["keys"]
 	var t := clampf(progress, 0.0, 1.0)
@@ -115,4 +211,12 @@ static func sample(id: StringName, progress: float) -> Dictionary:
 		"pos": (before.get("pos", Vector3.ZERO) as Vector3).lerp(after.get("pos", Vector3.ZERO), blend),
 		"rot": (before.get("rot", Vector3.ZERO) as Vector3).lerp(after.get("rot", Vector3.ZERO), blend),
 		"pivot": (before.get("pivot", Vector3.ZERO) as Vector3).lerp(after.get("pivot", Vector3.ZERO), blend),
+		"parts": _blend_parts(before.get("parts", {}), after.get("parts", {}), blend),
 	}
+
+
+static func _blend_parts(before: Dictionary, after: Dictionary, blend: float) -> Dictionary[StringName, float]:
+	var result: Dictionary[StringName, float] = {}
+	for part: Variant in before.keys() + after.keys():
+		result[StringName(str(part))] = lerpf(float(before.get(part, 0.0)), float(after.get(part, 0.0)), blend)
+	return result

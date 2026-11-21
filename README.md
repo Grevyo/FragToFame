@@ -242,6 +242,19 @@ In the FPS Sandbox, press **B** to take utility (free there), then **4** to hold
 
 Bots carry the knife but do not buy or throw utility yet (team tactics, Milestone 7).
 
+### Manual test checklist (knife looks)
+
+- [ ] **Armoury**: the seven knives follow the guns as "Knife · ...", the carried one ticked.
+      Each shows without Magnet slots. **Carry this knife**, then **Save customisation**.
+- [ ] FPS Sandbox or a practice match, key **3**: the chosen knife is in your hand. Slash and stab.
+- [ ] **F** with each knife: the combat knife rolls face to face, the bayonet spins twice about
+      its guard, the butterfly knife folds its handles shut and flips them open, the karambit
+      spins round its ring, the nomad is tossed and caught, the skeleton knife wheels in the
+      palm, the T-handle dagger punches and twists.
+- [ ] Knife Coats: open `authoring/coat_kits/<Knife>/Start_Here.png`, paint on
+      `Coat_BaseColor.png` using a mask from `Masks/`, export 2048 x 2048, and import it in the
+      Armoury with that knife selected. It shows on the knife and only on that knife.
+
 ### Manual test checklist (Milestone 5 — competitive match rules)
 
 Start from **FPS Sandbox → Esc → Start practice match** (MR3, first to 4). Since Milestone 6 the

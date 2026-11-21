@@ -177,8 +177,13 @@ Completion criteria:
   - Bots carry the knife but do not buy or throw utility yet (team tactics, M7).
   - **Inspections** are data (`InspectLibrary`): each grenade has its own; guns keep the
     left-then-right turn.
+  - **Knife looks:** seven knife models (Combat, Bayonet, Butterfly, Karambit, Nomad, Skeleton,
+    T-Handle Dagger) to choose from in the Armoury, each with its own inspection (the butterfly
+    knife flips its handles) and a Coat kit with paint-zone masks. The look never changes how
+    the knife plays.
 - [ ] Manual practice-match walkthrough (README) by the project owner.
 - [ ] Manual utility and knife walkthrough (README).
+- [ ] Manual knife looks walkthrough (README).
 
 Out of scope (later): opponents that fight back (M6 AI), teammates, networked matches (rules run
 on the match host later), dropping/picking up weapons, spectating dead players, career fixtures
@@ -902,3 +907,4 @@ Planned scope:
 | 2026-11-20 | Cluts revision 18 (owner request): irregular dirt and gravel patches instead of rectangles, more worn dirt, props throughout the map, site A moved to the Harbour Office yard and defenders to the Dispatch Yard. |
 | 2026-11-20 | Lamps and street life on all four maps (owner request): lamp fixtures on every dark spot found by a lighting check, wall-side props along the routes, and on Cluts the doors that led nowhere removed or raised to deck height. Editor: five lamp fixtures and seven street props. |
 | 2026-11-20 | Utility and the knife (owner request): flashbang, smoke, frag and incendiary with deterministic throws, real effects for players and bots, buying, carry limits and utility statistics; a knife with slash, stab and backstabs. Knife models, Coat kits and inspects follow once the knife pack is in. |
+| 2026-11-21 | Knife looks (owner request): seven knife models from a CC BY pack, chosen in the Armoury; a Coat kit and paint-zone masks per knife; a unique inspection per knife, with the butterfly knife's handles swinging on their pins. |

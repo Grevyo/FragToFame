@@ -1,0 +1,5 @@
+This kit fits the game model:
+assets/weapons/knf_nomad/model.glb  (made by tools/import_knife_assets.py)
+
+SHA-256: 76df2c71cd49e08f4b3144675a306f812e5e2b224100333de0bf7cc489fc83b1
+Texture size: 2048 x 2048

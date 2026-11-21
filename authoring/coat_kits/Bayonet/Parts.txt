@@ -1,0 +1,5 @@
+Bayonet Coat kit | 2048 x 2048
+
+Zone 1: Blade | guide colour RGB (105, 201, 250) | 6.8% of the texture
+Zone 2: Grip | guide colour RGB (255, 155, 110) | 27.4% of the texture
+Zone 3: Guard and pommel | guide colour RGB (125, 215, 169) | 10.2% of the texture

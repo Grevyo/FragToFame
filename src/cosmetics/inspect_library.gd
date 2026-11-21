@@ -42,7 +42,7 @@ const DEFAULT: Dictionary = {
 		{"t": 0.15, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
 		{"t": 0.35, "pos": Vector3(-0.05, 0.06, 0.03), "rot": Vector3(5, 55, 10)},
 		{"t": 0.5, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
-		{"t": 0.7, "pos": Vector3(-0.04, 0.07, 0.01), "rot": Vector3(8, 50, -115)},
+		{"t": 0.7, "pos": Vector3(-0.04, 0.07, 0.01), "rot": Vector3(15, 40, -70)},
 		{"t": 0.85, "pos": Vector3(-0.05, 0.05, -0.04), "rot": Vector3(6, 0, 0)},
 		{"t": 1.0},
 	],
@@ -136,17 +136,16 @@ const INSPECTS: Dictionary[StringName, Dictionary] = {
 			{"t": 1.0},
 		],
 	},
-	# Bayonet: two flat helicopter spins about the guard, flicked round by the fingers, then a look
-	# down the side.
+	# Bayonet: twisted flat to face the player and spun like a wheel on the open palm.
 	&"knf_bayonet": {
-		"seconds": 3.2,
+		"seconds": 3.0,
 		"keys": [
-			{"t": 0.0, "pivot": Vector3(0, 0, 0.1)},
-			{"t": 0.12, "pos": Vector3(-0.024, 0.03, -0.04), "pivot": Vector3(0, 0, 0.1), "fingers": {"Index": 0.7, "Middle": 0.6, "Ring": 0.5, "Little": 0.4}},
-			{"t": 0.36, "pos": Vector3(-0.024, 0.03, -0.04), "rot": Vector3(0, 360, 0), "pivot": Vector3(0, 0, 0.1), "fingers": {"Index": 0.9, "Middle": 0.3, "Ring": 0.2, "Little": 0.2, "Thumb": 0.4}},
-			{"t": 0.6, "pos": Vector3(-0.024, 0.03, -0.04), "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.1), "fingers": {"Index": 0.5, "Middle": 0.8, "Ring": 0.4, "Little": 0.3}},
-			{"t": 0.8, "pos": Vector3(-0.03, 0.042, -0.05), "rot": Vector3(-80, 720, 10), "pivot": Vector3(0, 0, 0.1)},
-			{"t": 1.0, "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.1)},
+			{"t": 0.0},
+			{"t": 0.16, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 0, 0), "fingers": {"Index": 0.6, "Middle": 0.6, "Ring": 0.6, "Little": 0.6}},
+			{"t": 0.36, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 180, 0), "fingers": {"Index": 0.15, "Middle": 0.15, "Ring": 0.15, "Little": 0.15, "Thumb": 0.1}},
+			{"t": 0.56, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 360, 0), "fingers": {"Index": 0.3, "Middle": 0.3, "Ring": 0.3, "Little": 0.3, "Thumb": 0.3}},
+			{"t": 0.76, "pos": Vector3(-0.024, 0.048, -0.06), "rot": Vector3(30, 360, 20), "fingers": {"Index": 0.7}},
+			{"t": 1.0, "rot": Vector3(0, 360, 0)},
 		],
 	},
 	# Butterfly knife: the handles swing round their pins to close it, then roll on round to open
@@ -196,16 +195,17 @@ const INSPECTS: Dictionary[StringName, Dictionary] = {
 			{"t": 1.0, "rot": Vector3(0, 360, 0)},
 		],
 	},
-	# Skeleton knife: twisted flat to face the player and spun like a wheel on the open palm.
+	# Skeleton knife: two flat helicopter spins about its finger ring, flicked round by the
+	# fingers, then a look down the side.
 	&"knf_skeleton": {
-		"seconds": 3.0,
+		"seconds": 3.2,
 		"keys": [
-			{"t": 0.0},
-			{"t": 0.16, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 0, 0), "fingers": {"Index": 0.6, "Middle": 0.6, "Ring": 0.6, "Little": 0.6}},
-			{"t": 0.36, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 180, 0), "fingers": {"Index": 0.15, "Middle": 0.15, "Ring": 0.15, "Little": 0.15, "Thumb": 0.1}},
-			{"t": 0.56, "pos": Vector3(-0.03, 0.036, -0.05), "rot": Vector3(85, 360, 0), "fingers": {"Index": 0.3, "Middle": 0.3, "Ring": 0.3, "Little": 0.3, "Thumb": 0.3}},
-			{"t": 0.76, "pos": Vector3(-0.024, 0.048, -0.06), "rot": Vector3(30, 360, 20), "fingers": {"Index": 0.7}},
-			{"t": 1.0, "rot": Vector3(0, 360, 0)},
+			{"t": 0.0, "pivot": Vector3(0, 0, 0.054)},
+			{"t": 0.12, "pos": Vector3(-0.024, 0.03, -0.04), "pivot": Vector3(0, 0, 0.054), "fingers": {"Index": 0.7, "Middle": 0.6, "Ring": 0.5, "Little": 0.4}},
+			{"t": 0.36, "pos": Vector3(-0.024, 0.03, -0.04), "rot": Vector3(0, 360, 0), "pivot": Vector3(0, 0, 0.054), "fingers": {"Index": 0.9, "Middle": 0.3, "Ring": 0.2, "Little": 0.2, "Thumb": 0.4}},
+			{"t": 0.6, "pos": Vector3(-0.024, 0.03, -0.04), "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.054), "fingers": {"Index": 0.5, "Middle": 0.8, "Ring": 0.4, "Little": 0.3}},
+			{"t": 0.8, "pos": Vector3(-0.03, 0.042, -0.05), "rot": Vector3(-80, 720, 10), "pivot": Vector3(0, 0, 0.054)},
+			{"t": 1.0, "rot": Vector3(0, 720, 0), "pivot": Vector3(0, 0, 0.054)},
 		],
 	},
 	# T-handle dagger: drawn back, punched forward, then twisted to show both faces.

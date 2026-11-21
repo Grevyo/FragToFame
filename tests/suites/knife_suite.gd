@@ -424,6 +424,13 @@ func _test_first_person() -> void:
 	await wait_frames(1)
 	player.weapons.draw_remaining = 0.0
 	effects.inspect()
+	effects.set("_inspect_left", InspectLibrary.seconds(effects.weapon_visual.weapon_id) * (1.0 - 0.35))
+	await wait_frames(1)
+	var gun := effects.weapon_visual
+	var gun_hand := effects.get("_hand_item") as Node3D
+	var gun_apart := rad_to_deg(gun_hand.global_basis.get_rotation_quaternion().angle_to(gun.global_basis.get_rotation_quaternion()))
+	check(gun_apart < 0.5 and gun_hand.global_position.distance_to(gun.global_position) < 0.001,
+		"mid-inspection the hands turn exactly with the gun (%.1f degrees apart)" % gun_apart)
 	effects.set("_inspect_left", 1.0)
 	await wait_frames(1)
 	var released := effects.arms.support_released

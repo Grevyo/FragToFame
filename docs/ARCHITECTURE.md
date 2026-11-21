@@ -1063,7 +1063,9 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
   draws all move the hands with the item. During an inspection the hands hold a stand-in
   (`WeaponEffects._hand_root`) that follows the item more gently:
   - The firing hand stays on the item's grip.
-  - Each turn is wrapped and folded back past a wrist's range (pitch and yaw 50 degrees, forearm
+  - A gun (an entry with `grip_pivot`) is turned by the hands, never spun in the fingers, so the
+    hands turn exactly with it.
+  - Otherwise each turn is wrapped and folded back past a wrist's range (pitch and yaw 50 degrees, forearm
     roll 90), so a held pose is followed exactly while a spin or flip turns on in the fingers.
   - During a `toss` span the hand follows only 6 cm, so a tossed knife or frag flies on and is
     caught.

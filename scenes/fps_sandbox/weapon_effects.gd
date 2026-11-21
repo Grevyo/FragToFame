@@ -152,7 +152,8 @@ func is_inspecting() -> bool:
 ## grip wherever it goes, but each turn is wrapped and folded back past [constant HAND_TURN_LIMIT],
 ## so a spin or flip carries on in the fingers while a held pose is followed exactly. During the
 ## entry's "toss" span the hand follows the item only [constant HAND_FOLLOW] far. An entry with
-## "grip_pivot" turns about the firing grip; one with "support" false lets the support hand go.
+## "grip_pivot" (the guns) turns about the firing grip with the hands following it exactly; one
+## with "support" false lets the support hand go.
 ##
 ## A knife turns in the fist's own axes instead: the hand turns about the wrist as far as
 ## [constant KNIFE_TURN_LIMIT] allows, and the fingers turn the knife the rest of the way about the
@@ -173,6 +174,10 @@ func _apply_inspect_pose(progress: float) -> void:
 	var turn := axes * Basis.from_euler(rot * (PI / 180.0)) * axes.inverse()
 	var hand_rot := Vector3(_hand_angle(rot.x, limit.x), _hand_angle(rot.y, limit.y), _hand_angle(rot.z, limit.z))
 	var hand_turn := axes * Basis.from_euler(hand_rot * (PI / 180.0)) * axes.inverse()
+	if bool(entry.get("grip_pivot", false)):
+		# A gun is turned by the hand holding it, never spun in the fingers: the hands follow it
+		# exactly, so they never lag behind the gun.
+		hand_turn = turn
 	var grip := _grip_point()
 	if knife:
 		var wrist := grip + axes * WRIST_FROM_FIST

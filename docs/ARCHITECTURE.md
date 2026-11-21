@@ -311,7 +311,7 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   the brush's faces an odd number of times).
   `tools/capture_map.gd` saves screenshots of any map (it needs a window).
 - **Official maps.** `OfficialMaps` lists files in `res://data/maps/official` (Kilnmarket,
-  Switchyard, Cluts, Kestrel Keep, Barnwell). They load through
+  Switchyard, Cluts, Kestrel Keep, Barnwell, Saffra). They load through
   `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and
   tactics as shipped; saving creates the player's copy under a new ID. `App.map_by_id` resolves
   official maps, the dev arena and saved maps for practice and career fixtures.

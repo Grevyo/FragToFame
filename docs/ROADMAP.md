@@ -662,7 +662,7 @@ Gaps against building a full competitive map:
 - [x] Second and third official maps: Switchyard (surface A, underground B) and Kestrel Keep (stone
       fortress), both original layouts (owner, 2026-11-18: continue the two drafts). Building
       them added the pieces the editor could not make and a slope warning (below).
-- [ ] Remaining official maps (2–4 more). Barnwell (English estate, owner's drawing) added 2026-11-21.
+- [ ] Remaining official maps (2–4 more). Barnwell (English estate, owner's drawing) added 2026-11-21. Saffra (desert old town) added 2026-11-21, the seventh.
 
 **Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 4): a rail
 switching station over a turbine works, about 120 × 160 m inside an irregular fifteen-sided
@@ -713,6 +713,25 @@ pavements sit 2 cm proud so bots can walk them. Doors and windows are set with t
 outward (the Window and Door pieces face local +Z). Five materials came with it: red brick,
 painted render, clay roof tiles, tarmac and privet hedge. Even simulated teams win 41% of rounds
 on attack (eight seeded matches), inside the 32–61% spread of the other maps.
+
+**Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 1): the seventh and final
+official map for now, a sun-baked desert old town built to the conventions of classic competitive
+defuse maps, with an original layout and names. The town is cut out of solid blocks: the session
+lists the streets and yards, every other cell becomes a flat-roofed building whose height and
+finish (adobe, limewash, ochre plaster, limestone) step per 10 m tile, and every street-facing
+wall is dressed with a stone plinth, a cornice, shuttered windows (two rows on tall walls), doors,
+timber beam ends and lanterns. Arches, doorways and swung-open double doors make the chokes;
+covered passages bridge four lanes; date palms, awnings, carts, trucks, crate stacks, wells and
+dye vats fill the yards. Defenders start in the Garrison to the north, attackers in the
+Caravanserai to the south. A, Dyers' Court (east): the long Spice Road through the Spice Doors and
+a dogleg is the sniper lane to the Spice Arch (attackers 12.7 s); the short route climbs the
+Balcony Steps off mid onto the Balcony over the court and down its stair (10.1 s). B, Cistern Yard
+(west, with a raised terrace in its far corner): the covered Souk with its stalls ends at the Souk
+Arch (12.2 s); Lantern Row leaves mid for the Lantern Door (10.9 s). Mid is Caravan Street up to
+the Mid Doors (attackers 6.1 s, defenders 9.1 s). Defenders reach A in 6.1 s and B in 6.4 s, 4.0
+and 4.5 s ahead of the first attacker; Potters Row and Dye Lane let attackers swap lanes on their
+half, and defenders rotate through the Garrison in 13.4 s. Even simulated teams win 38% of rounds
+on attack (eight seeded matches), inside the spread of the other maps.
 
 **Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
@@ -987,3 +1006,4 @@ Planned scope:
 | 2026-11-21 | Knife looks (owner request): seven knife models from a CC BY pack, chosen in the Armoury; a Coat kit and paint-zone masks per knife; a unique inspection per knife, with the butterfly knife's handles swinging on their pins. |
 | 2026-11-21 | Barnwell (owner request): an official map of a 1950s English housing estate from the owner's drawing, with three north–south lanes, curved paths and kerbs, a barn and a well (made-up street names, generic houses). Red brick, render, roof tile, tarmac and hedge materials. |
 | 2026-11-21 | Save As in the Creation Studio (owner request): saves the open map, unsaved edits included, as a separate map with a new ID and name (Ctrl+Shift+S), so a map can be branched without losing the original. |
+| 2026-11-21 | Saffra (owner request): the seventh official map, a desert old town in the style of classic competitive defuse maps with an original layout: a long sniper lane and a balcony to A, a covered souk and a lantern-lit passage to B, mid doors, arches, covered passages, cornices, shuttered windows, beam ends and date palms. |

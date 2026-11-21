@@ -48,6 +48,20 @@ L118A1, Mk23, M24 and M14 EBR so each has one paintable texture ("Coat layout");
 material colours were baked into that texture. The Mk23's suppressor is moved onto the barrel
 and its spare parts are hidden. Models are turned and scaled to a common orientation at load.
 
+## Character models
+
+| Pack | Author | Licence | In the repository | Source |
+|---|---|---|---|---|
+| Ultimate Modular Males | Quaternius | CC0 1.0 | yes (`assets/characters/quaternius_modular_males`) | https://quaternius.com |
+| Universal Base Characters [Standard] | Quaternius | CC0 1.0 | yes (`assets/characters/quaternius_universal_base`) | https://quaternius.com |
+| Creative Characters FREE | ithappy | Royalty-free use; no redistribution grant | **no**: git-ignored, local imports only | https://www.cgtrader.com/free-3d-models/character/anatomy/creative-characters-free |
+
+CC0 needs no credit; Quaternius is credited anyway. Changes made: every pack is split into one
+model per item, textures are stored next to the models, bones are renamed to the humanoid
+profile at import, and two Universal texture names are corrected (`*_png.png`). The meshes,
+textures and animations are otherwise unchanged. Before a commercial release that includes the
+ithappy items, confirm the pack's licence covers shipping its models inside the game.
+
 ## Open items before a commercial release
 
 - **AK-47 and M4A1 models:** the files carry no author or licence information. Their origin

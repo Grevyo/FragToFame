@@ -6,6 +6,10 @@ extends RefCounted
 ## and used by every mode (sandbox, practice and careers), so a look follows the player.
 ##
 ## The career database is not involved: cosmetics belong to the player, not to one career.
+##
+## The player's character look ([CharacterAppearance], made in the Character Creator) and the
+## character items they own (for [CharacterUnlocks]) are kept here too, as optional fields
+## "appearance" and "owned_character_items": older files load with neither.
 
 const DEFAULT_PATH: String = "user://profile/cosmetics.json"
 const FORMAT: String = "f2f.cosmetics"
@@ -18,6 +22,11 @@ var path: String = DEFAULT_PATH
 var weapons: Dictionary[String, Dictionary] = {}
 ## The knife look carried as [constant EquipmentCatalog.KNIFE] ("" = WeaponModels.DEFAULT_KNIFE).
 var knife: String = ""
+## The player's character look ("" body = none chosen yet). Stored as given; sanitised by
+## [CharacterWardrobe] wherever it is shown.
+var appearance: CharacterAppearance = CharacterAppearance.new()
+## Character item IDs the player owns beyond the starter items (nothing grants any yet).
+var owned_character_items: Array[String] = []
 
 
 ## The profile in use (loaded from disk the first time it is asked for).
@@ -96,7 +105,17 @@ func to_dict() -> Dictionary:
 	var stored: Dictionary = {}
 	for weapon_id: String in weapons:
 		stored[weapon_id] = loadout(StringName(weapon_id))
-	return {"format": FORMAT, "format_version": FORMAT_VERSION, "weapons": stored, "knife": String(equipped_knife())}
+	var data := {"format": FORMAT, "format_version": FORMAT_VERSION, "weapons": stored, "knife": String(equipped_knife())}
+	if not appearance.body.is_empty():
+		data["appearance"] = appearance.to_dict()
+	if not owned_character_items.is_empty():
+		data["owned_character_items"] = owned_character_items.duplicate()
+	return data
+
+
+## Makes [param look] the player's character look (a copy is stored; save to keep it).
+func set_appearance(look: CharacterAppearance) -> void:
+	appearance = look.duplicate_appearance() if look != null else CharacterAppearance.new()
 
 
 ## Saves the profile, keeping the previous file as ".bak". Returns OK or an error.
@@ -125,6 +144,8 @@ func save() -> Error:
 func load_file() -> bool:
 	weapons.clear()
 	knife = ""
+	appearance = CharacterAppearance.new()
+	owned_character_items.clear()
 	if not FileAccess.file_exists(path):
 		return false
 	var json := JSON.new()
@@ -134,6 +155,11 @@ func load_file() -> bool:
 	if data.get("format") != FORMAT or int(data.get("format_version", 0)) != FORMAT_VERSION or not data.get("weapons") is Dictionary:
 		return false
 	set_knife(StringName(str(data.get("knife", ""))))
+	if data.get("appearance") is Dictionary:
+		appearance = CharacterAppearance.from_dict(data["appearance"] as Dictionary)
+	if data.get("owned_character_items") is Array:
+		for item_id: Variant in data["owned_character_items"]:
+			owned_character_items.append(str(item_id))
 	var stored := data["weapons"] as Dictionary
 	for key: Variant in stored:
 		var weapon_id := StringName(str(key))

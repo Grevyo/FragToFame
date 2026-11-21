@@ -25,6 +25,10 @@ var display_name: String = ""
 var team: StringName = &""
 var skill: BotSkill = BotSkill.new()
 var body_color: Color = Color("3c4a5c")
+## When set before the bot enters the tree, it wears this character model instead of the box
+## body (developer preview: [method DevOptions.bot_character_models]). Hitboxes are unchanged.
+var appearance: CharacterAppearance = null
+var avatar: CharacterAvatar = null
 ## Enemy (and other) combatants this bot may perceive; filtered by team.
 var enemies: Array[Health] = []
 var goal_position: Vector3 = Vector3.ZERO
@@ -69,6 +73,8 @@ func setup(id: String, name_text: String, team_key: StringName, bot_skill: BotSk
 	skill = bot_skill
 	body_color = color
 	name = "Bot_%s" % id
+	if DevOptions.bot_character_models():
+		appearance = CharacterAvatar.random_look(hash(id), color)
 
 
 func _ready() -> void:
@@ -104,12 +110,18 @@ func _ready() -> void:
 	add_child(weapons)
 	weapons.eye = head
 
-	hitboxes = HumanoidRig.build(self, health, true, Color("c9b48a"), body_color).hitboxes
+	var wears_character := appearance != null and not appearance.body.is_empty()
+	hitboxes = HumanoidRig.build(self, health, not wears_character, Color("c9b48a"), body_color).hitboxes
 	var own: Array[RID] = [get_rid()]
 	for hitbox: Hitbox in hitboxes:
 		own.append(hitbox.get_rid())
 	weapons.exclude = own
-	_add_visor()
+	if wears_character:
+		avatar = CharacterAvatar.new()
+		add_child(avatar)
+		avatar.apply(appearance)
+	else:
+		_add_visor()
 
 	agent = NavigationAgent3D.new()
 	agent.name = "Agent"
@@ -186,6 +198,8 @@ func respawn_at(feet_position: Vector3, yaw: float) -> void:
 	for hitbox: Hitbox in hitboxes:
 		hitbox.set_enabled(true)
 	health.revive()
+	if avatar != null:
+		avatar.revive()
 	weapons.refill_all()
 	weapons.trigger = false
 	target = null
@@ -453,4 +467,6 @@ func _on_died(info: DamageInfo) -> void:
 	collision_layer = 0
 	for hitbox: Hitbox in hitboxes:
 		hitbox.set_enabled(false)
+	if avatar != null:
+		avatar.die()
 	died.emit(info)

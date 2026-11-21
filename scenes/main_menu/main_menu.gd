@@ -6,6 +6,8 @@ var sandbox_button: Button
 var studio_button: Button
 var controls_button: Button
 var armoury_button: Button
+## Developer tools (marked as such): the Character Creator.
+var character_creator_button: Button
 var quit_button: Button
 
 
@@ -51,6 +53,9 @@ func _build() -> void:
 	studio_button = _menu_button(column, "Creation Studio", _on_studio_pressed)
 	armoury_button = _menu_button(column, "Armoury", func() -> void: App.go_to(App.SCENE_ARMOURY))
 	controls_button = _menu_button(column, "Controls", func() -> void: App.go_to(App.SCENE_CONTROLS))
+	character_creator_button = _menu_button(column, "Character Creator  ·  developer tool",
+		func() -> void: App.go_to(App.SCENE_CHARACTER_CREATOR))
+	character_creator_button.tooltip_text = "Developer preview of the character models (not used in matches yet)"
 	quit_button = _menu_button(column, "Quit", _on_quit_pressed)
 
 	var footer := UIFactory.label("v%s  ·  %s  ·  Pre-alpha development build" % [App.VERSION, App.MILESTONE], &"MutedLabel")

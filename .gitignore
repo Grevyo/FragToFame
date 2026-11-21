@@ -36,3 +36,8 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Character packs: the ithappy pack has no redistribution licence (built locally by
+# tools/import_character_assets.py), and authoring/characters/source holds the untouched downloads.
+assets/characters/ithappy_creative_characters/
+authoring/characters/source/

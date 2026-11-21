@@ -43,6 +43,7 @@ addons/godot-sqlite/  SQLite GDExtension (vendor; trimmed to Windows/Linux x86_6
 assets/        runtime weapon models, Coat zone masks, Magnet artwork (copied by tools/import_weapon_assets.py)
 authoring/     Coat kits and templates for artists (.gdignore; never in builds)
 src/cosmetics/ weapon models, Coats, Magnets and the player's customisation (presentation only)
+src/characters/ character catalog, appearances, presets, retargeted character rig (presentation only)
 src/core/      app-wide services (App autoload, input actions)
 src/ui/        theme + reusable UI helpers
 src/career/    career-world data & logic (no Node dependencies beyond RefCounted/Resource);

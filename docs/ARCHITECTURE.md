@@ -896,6 +896,86 @@ Terminology used everywhere, including the UI: a **Coat** is a weapon finish (ca
   looks on other players. The records already carry rarity and unlock fields, and
   `is_unlocked` is the single gate.
 
+### Character models and the Character Creator (2026-11-21)
+
+Character models are a developer preview: the Character Creator (main menu, marked as a
+developer tool) and, behind a developer option, bots in the FPS runtime. Matches otherwise keep
+the box bodies until the models have been tested in play. Code lives in `src/characters/`
+(presentation and plain data, no career or gameplay dependencies).
+
+- **Assets.** `tools/import_character_assets.py` reads the downloaded packs straight from their
+  zips. It copies the originals to `authoring/characters/source/` (`.gdignore`, git-ignored)
+  and splits each pack into one GLB per item with `tools/gltf_pack.py`. The script skips
+  duplicates by mesh digest, keeps textures as external PNGs and writes each model's `.import`
+  file. Output goes to `assets/characters/<pack>/` (lowercase, as the project uses snake_case):
+  - Quaternius *Ultimate Modular Males* (CC0): 11 outfits × head/body/legs/feet plus a
+    backpack, and `animations.glb` with the pack's 24 clips.
+  - Quaternius *Universal Base Characters* (CC0): 2 bodies, hair, beard and eyebrows.
+  - ithappy *Creative Characters FREE*: 30 items. It is royalty-free but grants no
+    redistribution, so it is git-ignored and exists only on machines that ran the importer.
+- **No shared skeleton.** The three packs use three different rigs:
+  - the modular rig: 62 bones, IK feet under the root
+  - Unreal-style: 65 bones, T-pose
+  - Mixamo-style: 44 bones, A-pose
+
+  Each pack has a `BoneMap` (`assets/characters/rigs/`) that renames its bones to
+  `SkeletonProfileHumanoid` names at import. Retargeting is done at runtime by
+  `CharacterRetargeter`, a `SkeletonModifier3D`, because `RetargetModifier3D` mangled the limbs
+  across these rest poses. It copies each bone's model-space rotation from the animation rig
+  with the two rest poses aligned along the bone. Bone directions come from the profile's
+  parent links, walking past bones a rig lacks. It scales hip motion by hip height and places
+  detached bones, such as the modular IK feet, from their profile parent. One clip set
+  therefore drives every body.
+- **Catalog.** `data/characters/character_catalog.json` (`f2f.character_catalog` v1) is the
+  source of truth, read by `CharacterCatalog`:
+  - Packs carry licence and redistribution flags.
+  - 16 slots, from head and hair through headwear, face, clothing, hands and footwear to
+    accessory.
+  - 4 bodies, each with its slots, required slots, defaults, skin rules and head box.
+  - 82 items: slot, model, fitting bodies, colour channels (one per material, optional team
+    role), covered slots and unlock metadata.
+
+  Items are skinned to their own pack's skeleton, so they fit only that pack's bodies (`fits`).
+  A few head items are listed under `adapt`, where they are carried by the target's Head bone
+  and fitted from their own body's head box to the target's. Each was checked by eye; rejected
+  pairs are simply not listed. A model missing from the build is "not installed" and its
+  reason names the pack and licence.
+- **Rules.** All of these are pure data:
+  - `CharacterAppearance` (`f2f.character_appearance` v1): body, item per slot, colour per item
+    channel, skin tone and texture.
+  - `CharacterWardrobe`: equip (covers both ways), unequip (required slots stay filled),
+    sanitise, randomise and team colours.
+  - `CharacterUnlocks`: starter, career, event and team kinds; developer mode shows everything.
+  - `CharacterPresets`: `user://characters/presets`, `f2f.character_preset` v1.
+
+  Every place that shows a look sanitises it first, so stale or foreign data never breaks a
+  scene.
+- **Rig.** `CharacterRig` builds a look:
+  - the body's skeleton and meshes
+  - each worn item's meshes, bound by named skins or held on the head
+  - per-surface material copies (flat colours replace the factory colour, textured materials
+    are multiplied)
+  - skin in replace or multiply mode
+  - the shared clips
+
+  Changing an item rebuilds only that item. `CharacterAvatar` wraps the rig for moving bodies:
+  it picks idle, walk or run (with direction) from local velocity, plays death on death and
+  revives on respawn.
+- **Player and bots.** `CosmeticProfile` gains optional `appearance` and
+  `owned_character_items` fields in `f2f.cosmetics` v1; older files load without them.
+  `DevOptions` (`user://profile/dev_options.json`, `f2f.dev_options` v1) has one switch,
+  *bots wear character models*, off by default. When it is on, `BotController` gets a seeded
+  random look in team colours and hides the box meshes. Hitboxes, collision, movement and aim
+  are unchanged, and models never affect gameplay.
+- **Not yet:**
+  - the player's own model seen by others
+  - crouch poses (the model stands while the hitboxes crouch)
+  - weapons held in the model's hands
+  - career unlock grants
+  - team uniforms from the career world
+
+  The data already carries team colour roles and unlock kinds for these.
+
 ### Input
 
 `InputActions.DEFINITIONS` lists every action with its label, Controls-screen group, context
@@ -1029,6 +1109,9 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-21 | Knife models are cosmetic looks of the one knife, stored in `WeaponModels` and chosen in `CosmeticProfile` | Every player's knife plays the same; the look reuses the gun customisation path (Coats, kits, Armoury, inspection) without new gameplay IDs |
 | 2026-11-21 | Knife Coat zones generated by a Python tool (numpy, Pillow) from the pack's geometry and metallic map | No Blender here; the rules are small, re-runnable and reviewed through the generated kit previews. Developer-only dependency, never shipped |
+| 2026-11-21 | Character packs retargeted at runtime by a custom `SkeletonModifier3D` onto humanoid-profile bone names; items stay on their own pack's skeleton | The packs share neither skeleton, rest pose nor proportions, and `RetargetModifier3D` mangled limbs across them. One clip set drives every body; clothing is never stretched onto a body it was not made for (only checked head items are adapted) |
+| 2026-11-21 | The ithappy character pack stays local (git-ignored); the catalog lists it as "not installed" when absent | Its licence allows use in a game but grants no redistribution of the source files; the Quaternius packs are CC0 and are committed |
+| 2026-11-21 | Character models are a developer preview (creator + optional bot models) before replacing any box body | The owner asked not to replace existing characters until the new models are tested in play |
 | 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |
 

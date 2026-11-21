@@ -33,7 +33,7 @@ func _test_app_autoload() -> void:
 	if app == null:
 		return
 	var paths: Dictionary = app.get("SCENE_PATHS")
-	check(paths.size() == 8, "App registers 8 top-level scenes")
+	check(paths.size() == 9, "App registers 9 top-level scenes")
 	for scene_id: StringName in paths:
 		check(ResourceLoader.exists(paths[scene_id] as String), "scene path exists for '%s'" % scene_id)
 	check(tree.root.theme != null, "root window theme is assigned")

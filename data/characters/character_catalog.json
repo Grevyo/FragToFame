@@ -1,0 +1,2430 @@
+{
+	"format": "f2f.character_catalog",
+	"format_version": 1,
+	"note": "Every body and item is a model from a downloaded pack (tools/import_character_assets.py). Numbered ithappy items are named after the pack files.",
+	"animation": {
+		"library": "res://assets/characters/quaternius_modular_males/animations.glb",
+		"rig": "rig_quaternius_modular"
+	},
+	"slots": [
+		{
+			"id": "head",
+			"label": "Head",
+			"note": "The whole head of a modular outfit: face, hair and any helmet"
+		},
+		{
+			"id": "hair",
+			"label": "Hairstyle"
+		},
+		{
+			"id": "headwear",
+			"label": "Headwear"
+		},
+		{
+			"id": "eyebrows",
+			"label": "Eyebrows"
+		},
+		{
+			"id": "face",
+			"label": "Face"
+		},
+		{
+			"id": "facial_hair",
+			"label": "Facial hair"
+		},
+		{
+			"id": "facewear",
+			"label": "Facewear"
+		},
+		{
+			"id": "face_extra",
+			"label": "Nose and mouth"
+		},
+		{
+			"id": "upper_body",
+			"label": "Upper body"
+		},
+		{
+			"id": "outerwear",
+			"label": "Outerwear"
+		},
+		{
+			"id": "costume",
+			"label": "Costume",
+			"note": "A full-body costume worn instead of some clothes"
+		},
+		{
+			"id": "hands",
+			"label": "Hands"
+		},
+		{
+			"id": "lower_body",
+			"label": "Lower body"
+		},
+		{
+			"id": "socks",
+			"label": "Socks"
+		},
+		{
+			"id": "footwear",
+			"label": "Footwear"
+		},
+		{
+			"id": "accessory",
+			"label": "Accessory"
+		}
+	],
+	"packs": [
+		{
+			"id": "quaternius_modular_males",
+			"name": "Ultimate Modular Males",
+			"author": "Quaternius",
+			"license": "CC0-1.0",
+			"redistributable": true,
+			"source": "https://quaternius.com",
+			"folder": "res://assets/characters/quaternius_modular_males"
+		},
+		{
+			"id": "quaternius_universal_base",
+			"name": "Universal Base Characters (Standard)",
+			"author": "Quaternius",
+			"license": "CC0-1.0",
+			"redistributable": true,
+			"source": "https://quaternius.com",
+			"folder": "res://assets/characters/quaternius_universal_base"
+		},
+		{
+			"id": "ithappy_creative_characters",
+			"name": "Creative Characters FREE",
+			"author": "ithappy",
+			"license": "Royalty-free, no redistribution",
+			"redistributable": false,
+			"source": "https://www.cgtrader.com/free-3d-models/character/anatomy/creative-characters-free",
+			"folder": "res://assets/characters/ithappy_creative_characters"
+		}
+	],
+	"rigs": [
+		{
+			"id": "rig_quaternius_modular",
+			"pack": "quaternius_modular_males",
+			"bone_map": "res://assets/characters/rigs/quaternius_modular.bone_map.tres",
+			"note": "62 bones, IK layout (feet under Root, legs under Body), T-pose binds"
+		},
+		{
+			"id": "rig_quaternius_universal",
+			"pack": "quaternius_universal_base",
+			"bone_map": "res://assets/characters/rigs/quaternius_universal.bone_map.tres",
+			"note": "65 bones, Unreal-style names, T-pose"
+		},
+		{
+			"id": "rig_ithappy_creative",
+			"pack": "ithappy_creative_characters",
+			"bone_map": "res://assets/characters/rigs/ithappy_creative.bone_map.tres",
+			"note": "44 bones, Mixamo-style names, A-pose, two bones per finger"
+		}
+	],
+	"bodies": [
+		{
+			"id": "body_qm_modular_male",
+			"name": "Modular Male",
+			"pack": "quaternius_modular_males",
+			"rig": "rig_quaternius_modular",
+			"body_type": "male",
+			"model": "",
+			"note": "Built entirely from outfit parts: head, top, legs and feet are all swappable.",
+			"slots": [
+				"head",
+				"headwear",
+				"upper_body",
+				"lower_body",
+				"footwear",
+				"accessory"
+			],
+			"required": [
+				"head",
+				"upper_body",
+				"lower_body",
+				"footwear"
+			],
+			"defaults": {
+				"head": "chr_qm_casual_hoodie_head",
+				"upper_body": "chr_qm_casual_hoodie_body",
+				"lower_body": "chr_qm_casual_hoodie_legs",
+				"footwear": "chr_qm_casual_hoodie_feet"
+			},
+			"skin": {
+				"mode": "replace",
+				"materials": [
+					"Skin",
+					"Skin_Darker"
+				],
+				"tones": [
+					"#d9a679",
+					"#c68d5f",
+					"#a8714a",
+					"#86563a",
+					"#5e3b28",
+					"#f1c9a5"
+				]
+			},
+			"head_box": {
+				"center": [
+					0.0,
+					1.715,
+					0.044
+				],
+				"size": [
+					0.227,
+					0.302,
+					0.262
+				]
+			}
+		},
+		{
+			"id": "body_qu_male",
+			"name": "Universal Male",
+			"pack": "quaternius_universal_base",
+			"rig": "rig_quaternius_universal",
+			"body_type": "male",
+			"model": "res://assets/characters/quaternius_universal_base/superhero_male_fullbody.glb",
+			"note": "A realistic base body. The Standard pack has hairstyles, eyebrows and a beard, but no clothing.",
+			"slots": [
+				"hair",
+				"headwear",
+				"eyebrows",
+				"facial_hair",
+				"facewear",
+				"face_extra",
+				"accessory"
+			],
+			"required": [],
+			"defaults": {
+				"hair": "chr_qu_hair_simpleparted"
+			},
+			"base_parts": {
+				"eyebrows": "Eyebrows"
+			},
+			"base_tints": {
+				"MI_Hair_1": "#4f3527",
+				"MI_Hair_2": "#4f3527"
+			},
+			"skin": {
+				"mode": "multiply",
+				"materials": [
+					"MI_Superhero_Male"
+				],
+				"tones": [
+					"#ffffff",
+					"#f2d6c4",
+					"#d9b39b",
+					"#b58a70",
+					"#8a6450",
+					"#64463a"
+				],
+				"textures": [
+					{
+						"id": "pack_default",
+						"label": "Pack default",
+						"texture": "res://assets/characters/quaternius_universal_base/textures/T_Superhero_Male_Dark.png"
+					},
+					{
+						"id": "lighter",
+						"label": "Lighter",
+						"texture": "res://assets/characters/quaternius_universal_base/textures/T_Superhero_Male_Ligh.png"
+					}
+				]
+			},
+			"head_box": {
+				"center": [
+					0.0,
+					1.695,
+					0.005
+				],
+				"size": [
+					0.181,
+					0.23,
+					0.221
+				]
+			}
+		},
+		{
+			"id": "body_qu_female",
+			"name": "Universal Female",
+			"pack": "quaternius_universal_base",
+			"rig": "rig_quaternius_universal",
+			"body_type": "female",
+			"model": "res://assets/characters/quaternius_universal_base/superhero_female_fullbody.glb",
+			"note": "A realistic base body. The Standard pack has hairstyles, eyebrows and a beard, but no clothing.",
+			"slots": [
+				"hair",
+				"headwear",
+				"eyebrows",
+				"facial_hair",
+				"facewear",
+				"face_extra",
+				"accessory"
+			],
+			"required": [],
+			"defaults": {
+				"hair": "chr_qu_hair_long"
+			},
+			"base_parts": {
+				"eyebrows": "Eyebrows"
+			},
+			"base_tints": {
+				"MI_Hair_1": "#4f3527",
+				"MI_Hair_2": "#4f3527"
+			},
+			"skin": {
+				"mode": "multiply",
+				"materials": [
+					"MI_Superhero_Female"
+				],
+				"tones": [
+					"#ffffff",
+					"#f2d6c4",
+					"#d9b39b",
+					"#b58a70",
+					"#8a6450",
+					"#64463a"
+				],
+				"textures": [
+					{
+						"id": "pack_default",
+						"label": "Pack default",
+						"texture": "res://assets/characters/quaternius_universal_base/textures/T_Superhero_Female_Dark_BaseColor.png"
+					},
+					{
+						"id": "lighter",
+						"label": "Lighter",
+						"texture": "res://assets/characters/quaternius_universal_base/textures/T_Superhero_Female_Light_BaseColor.png"
+					}
+				]
+			},
+			"head_box": {
+				"center": [
+					0.0,
+					1.649,
+					0.0
+				],
+				"size": [
+					0.178,
+					0.236,
+					0.225
+				]
+			}
+		},
+		{
+			"id": "body_ih_creative",
+			"name": "Creative Character",
+			"pack": "ithappy_creative_characters",
+			"rig": "rig_ithappy_creative",
+			"body_type": "stylised",
+			"model": "res://assets/characters/ithappy_creative_characters/body_010.glb",
+			"note": "A stylised body with the most clothing: hats, glasses, gloves, tops, trousers, shoes and costumes.",
+			"slots": [
+				"hair",
+				"headwear",
+				"face",
+				"facial_hair",
+				"facewear",
+				"face_extra",
+				"upper_body",
+				"outerwear",
+				"costume",
+				"hands",
+				"lower_body",
+				"socks",
+				"footwear",
+				"accessory"
+			],
+			"required": [
+				"face"
+			],
+			"defaults": {
+				"face": "chr_ih_male_emotion_usual_001",
+				"hair": "chr_ih_hairstyle_male_010",
+				"upper_body": "chr_ih_t_shirt_009",
+				"lower_body": "chr_ih_pants_010",
+				"footwear": "chr_ih_shoe_sneakers_009"
+			},
+			"skin": {
+				"mode": "multiply",
+				"materials": [
+					"Color"
+				],
+				"tones": [
+					"#ffffff",
+					"#f6dcc8",
+					"#dcb79c",
+					"#b98c6c",
+					"#8c6248",
+					"#5f4232"
+				]
+			},
+			"head_box": {
+				"center": [
+					0.0,
+					1.664,
+					0.014
+				],
+				"size": [
+					0.299,
+					0.33,
+					0.29
+				]
+			}
+		}
+	],
+	"items": [
+		{
+			"id": "chr_qm_adventurer_backpack",
+			"name": "Adventurer backpack",
+			"pack": "quaternius_modular_males",
+			"slot": "accessory",
+			"model": "res://assets/characters/quaternius_modular_males/adventurer_backpack.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "brown",
+					"material": "Brown",
+					"label": "Brown"
+				},
+				{
+					"id": "lightgreen",
+					"material": "LightGreen",
+					"label": "Light Green"
+				},
+				{
+					"id": "gold",
+					"material": "Gold",
+					"label": "Gold"
+				},
+				{
+					"id": "green",
+					"material": "Green",
+					"label": "Green"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_adventurer_body",
+			"name": "Adventurer top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/adventurer_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "green",
+					"material": "Green",
+					"label": "Green",
+					"team": "primary"
+				},
+				{
+					"id": "lightgreen",
+					"material": "LightGreen",
+					"label": "Light Green"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_adventurer_feet",
+			"name": "Adventurer feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/adventurer_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "grey",
+					"material": "Grey",
+					"label": "Grey"
+				},
+				{
+					"id": "black",
+					"material": "Black",
+					"label": "Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_adventurer_head",
+			"name": "Adventurer head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/adventurer_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "hair",
+					"material": "Hair",
+					"label": "Hair"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_adventurer_legs",
+			"name": "Adventurer legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/adventurer_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "brown",
+					"material": "Brown",
+					"label": "Brown",
+					"team": "secondary"
+				},
+				{
+					"id": "brown2",
+					"material": "Brown2",
+					"label": "Brown2"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_beach_body",
+			"name": "Beach top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/beach_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightbrown",
+					"material": "LightBrown",
+					"label": "Light Brown",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_beach_feet",
+			"name": "Beach feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/beach_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "red_dark",
+					"material": "Red_Dark",
+					"label": "Red Dark"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_beach_head",
+			"name": "Beach head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/beach_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "hair",
+					"material": "Hair",
+					"label": "Hair"
+				},
+				{
+					"id": "earrings",
+					"material": "Earrings",
+					"label": "Earrings"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_beach_legs",
+			"name": "Beach legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/beach_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "red_dark",
+					"material": "Red_Dark",
+					"label": "Red Dark",
+					"team": "secondary"
+				},
+				{
+					"id": "white",
+					"material": "White",
+					"label": "White"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_2_body",
+			"name": "Casual top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/casual_2_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightbrown",
+					"material": "LightBrown",
+					"label": "Light Brown",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_2_feet",
+			"name": "Casual feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/casual_2_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "red_dark",
+					"material": "Red_Dark",
+					"label": "Red Dark"
+				},
+				{
+					"id": "white",
+					"material": "White",
+					"label": "White"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_2_head",
+			"name": "Casual head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/casual_2_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "hair",
+					"material": "Hair",
+					"label": "Hair"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_2_legs",
+			"name": "Casual legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/casual_2_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightblue",
+					"material": "LightBlue",
+					"label": "Light Blue",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_hoodie_body",
+			"name": "Hoodie top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/casual_hoodie_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "purple",
+					"material": "Purple",
+					"label": "Purple",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_hoodie_feet",
+			"name": "Hoodie feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/casual_hoodie_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "purple",
+					"material": "Purple",
+					"label": "Purple"
+				},
+				{
+					"id": "white",
+					"material": "White",
+					"label": "White"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_hoodie_head",
+			"name": "Hoodie head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/casual_hoodie_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "hair",
+					"material": "Hair",
+					"label": "Hair"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_casual_hoodie_legs",
+			"name": "Hoodie legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/casual_hoodie_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightblue",
+					"material": "LightBlue",
+					"label": "Light Blue",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_farmer_body",
+			"name": "Farmer top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/farmer_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightblue",
+					"material": "LightBlue",
+					"label": "Light Blue",
+					"team": "primary"
+				},
+				{
+					"id": "brown",
+					"material": "Brown",
+					"label": "Brown"
+				},
+				{
+					"id": "beige",
+					"material": "Beige",
+					"label": "Beige"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_farmer_feet",
+			"name": "Farmer feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/farmer_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "brown",
+					"material": "Brown",
+					"label": "Brown"
+				},
+				{
+					"id": "brown2",
+					"material": "Brown2",
+					"label": "Brown2"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_farmer_head",
+			"name": "Farmer head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/farmer_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "beige",
+					"material": "Beige",
+					"label": "Beige"
+				},
+				{
+					"id": "red",
+					"material": "Red",
+					"label": "Red"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"covers": [
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_qm_farmer_legs",
+			"name": "Farmer legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/farmer_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightblue",
+					"material": "LightBlue",
+					"label": "Light Blue",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_king_body",
+			"name": "King top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/king_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "blue",
+					"material": "Blue",
+					"label": "Blue",
+					"team": "primary"
+				},
+				{
+					"id": "metal",
+					"material": "Metal",
+					"label": "Metal"
+				},
+				{
+					"id": "beige",
+					"material": "Beige",
+					"label": "Beige"
+				},
+				{
+					"id": "metal_dark",
+					"material": "Metal_Dark",
+					"label": "Metal Dark"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_king_feet",
+			"name": "King feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/king_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "metal",
+					"material": "Metal",
+					"label": "Metal"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_king_head",
+			"name": "King head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/king_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "hair_white",
+					"material": "Hair_White",
+					"label": "Hair"
+				},
+				{
+					"id": "gold",
+					"material": "Gold",
+					"label": "Gold"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"covers": [
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_qm_king_legs",
+			"name": "King legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/king_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "darkbrown",
+					"material": "DarkBrown",
+					"label": "Dark Brown",
+					"team": "secondary"
+				},
+				{
+					"id": "metal",
+					"material": "Metal",
+					"label": "Metal"
+				},
+				{
+					"id": "metal_dark",
+					"material": "Metal_Dark",
+					"label": "Metal Dark"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_punk_body",
+			"name": "Punk top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/punk_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "white",
+					"material": "White",
+					"label": "White",
+					"team": "primary"
+				},
+				{
+					"id": "black",
+					"material": "Black",
+					"label": "Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_punk_feet",
+			"name": "Punk feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/punk_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "black",
+					"material": "Black",
+					"label": "Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_punk_head",
+			"name": "Punk head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/punk_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "red_dark",
+					"material": "Red_Dark",
+					"label": "Red Dark"
+				},
+				{
+					"id": "red",
+					"material": "Red",
+					"label": "Red"
+				},
+				{
+					"id": "earrings",
+					"material": "Earrings",
+					"label": "Earrings"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_punk_legs",
+			"name": "Punk legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/punk_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "lightblue",
+					"material": "LightBlue",
+					"label": "Light Blue",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_spacesuit_body",
+			"name": "Spacesuit top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/spacesuit_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "scifi_light",
+					"material": "SciFi_Light",
+					"label": "Sci Fi Light",
+					"team": "primary"
+				},
+				{
+					"id": "scifi_light_accent",
+					"material": "SciFi_Light_Accent",
+					"label": "Sci Fi Light Accent"
+				},
+				{
+					"id": "scifi_main",
+					"material": "SciFi_Main",
+					"label": "Sci Fi Main"
+				},
+				{
+					"id": "scifi_maindark",
+					"material": "SciFi_MainDark",
+					"label": "Sci Fi Main Dark"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_spacesuit_feet",
+			"name": "Spacesuit feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/spacesuit_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "scifi_light_accent",
+					"material": "SciFi_Light_Accent",
+					"label": "Sci Fi Light Accent"
+				},
+				{
+					"id": "scifi_light",
+					"material": "SciFi_Light",
+					"label": "Sci Fi Light"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_spacesuit_head",
+			"name": "Spacesuit head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/spacesuit_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "scifi_light",
+					"material": "SciFi_Light",
+					"label": "Sci Fi Light"
+				},
+				{
+					"id": "scifi_light_accent",
+					"material": "SciFi_Light_Accent",
+					"label": "Sci Fi Light Accent"
+				},
+				{
+					"id": "grey",
+					"material": "Grey",
+					"label": "Grey"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"tags": [
+				"helmet"
+			],
+			"covers": [
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_qm_spacesuit_legs",
+			"name": "Spacesuit legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/spacesuit_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "scifi_main",
+					"material": "SciFi_Main",
+					"label": "Sci Fi Main",
+					"team": "secondary"
+				},
+				{
+					"id": "scifi_light",
+					"material": "SciFi_Light",
+					"label": "Sci Fi Light"
+				},
+				{
+					"id": "scifi_light_accent",
+					"material": "SciFi_Light_Accent",
+					"label": "Sci Fi Light Accent"
+				},
+				{
+					"id": "scifi_maindark",
+					"material": "SciFi_MainDark",
+					"label": "Sci Fi Main Dark"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_suit_body",
+			"name": "Suit top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/suit_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "tie",
+					"material": "Tie",
+					"label": "Tie",
+					"team": "primary"
+				},
+				{
+					"id": "suit",
+					"material": "Suit",
+					"label": "Suit"
+				},
+				{
+					"id": "white",
+					"material": "White",
+					"label": "White"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_suit_feet",
+			"name": "Suit feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/suit_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "black",
+					"material": "Black",
+					"label": "Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_suit_head",
+			"name": "Suit head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/suit_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "hair",
+					"material": "Hair",
+					"label": "Hair"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_suit_legs",
+			"name": "Suit legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/suit_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "suit",
+					"material": "Suit",
+					"label": "Suit",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_swat_body",
+			"name": "SWAT top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/swat_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "swat",
+					"material": "Swat",
+					"label": "Swat",
+					"team": "primary"
+				},
+				{
+					"id": "swat_black",
+					"material": "Swat_Black",
+					"label": "Swat Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_swat_feet",
+			"name": "SWAT feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/swat_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "swat_black",
+					"material": "Swat_Black",
+					"label": "Swat Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_swat_head",
+			"name": "SWAT head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/swat_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "swat_black",
+					"material": "Swat_Black",
+					"label": "Swat Black"
+				},
+				{
+					"id": "swat",
+					"material": "Swat",
+					"label": "Swat"
+				},
+				{
+					"id": "visor",
+					"material": "Visor",
+					"label": "Visor"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"tags": [
+				"helmet"
+			],
+			"covers": [
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_qm_swat_legs",
+			"name": "SWAT legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/swat_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "swat",
+					"material": "Swat",
+					"label": "Swat",
+					"team": "secondary"
+				},
+				{
+					"id": "swat_black",
+					"material": "Swat_Black",
+					"label": "Swat Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_worker_body",
+			"name": "Worker top",
+			"pack": "quaternius_modular_males",
+			"slot": "upper_body",
+			"model": "res://assets/characters/quaternius_modular_males/worker_body.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "worker_yellow",
+					"material": "Worker_Yellow",
+					"label": "Worker Yellow",
+					"team": "primary"
+				},
+				{
+					"id": "worker_vest",
+					"material": "Worker_Vest",
+					"label": "Worker Vest"
+				},
+				{
+					"id": "lightbrown",
+					"material": "LightBrown",
+					"label": "Light Brown"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_worker_feet",
+			"name": "Worker feet",
+			"pack": "quaternius_modular_males",
+			"slot": "footwear",
+			"model": "res://assets/characters/quaternius_modular_males/worker_feet.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "grey",
+					"material": "Grey",
+					"label": "Grey"
+				},
+				{
+					"id": "black",
+					"material": "Black",
+					"label": "Black"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qm_worker_head",
+			"name": "Worker head",
+			"pack": "quaternius_modular_males",
+			"slot": "head",
+			"model": "res://assets/characters/quaternius_modular_males/worker_head.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "eyebrows",
+					"material": "Eyebrows",
+					"label": "Eyebrows"
+				},
+				{
+					"id": "worker_yellow",
+					"material": "Worker_Yellow",
+					"label": "Worker Yellow"
+				},
+				{
+					"id": "moustache",
+					"material": "Moustache",
+					"label": "Moustache"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"covers": [
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_qm_worker_legs",
+			"name": "Worker legs",
+			"pack": "quaternius_modular_males",
+			"slot": "lower_body",
+			"model": "res://assets/characters/quaternius_modular_males/worker_legs.glb",
+			"fits": [
+				"body_qm_modular_male"
+			],
+			"colours": [
+				{
+					"id": "brown",
+					"material": "Brown",
+					"label": "Brown",
+					"team": "secondary"
+				},
+				{
+					"id": "brown2",
+					"material": "Brown2",
+					"label": "Brown2"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qu_hair_buns",
+			"name": "Buns",
+			"pack": "quaternius_universal_base",
+			"slot": "hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_buns.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_2",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qu_hair_buzzed",
+			"name": "Buzzed",
+			"pack": "quaternius_universal_base",
+			"slot": "hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_buzzed.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_1",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_ih_creative": {}
+			}
+		},
+		{
+			"id": "chr_qu_hair_buzzedfemale",
+			"name": "Buzzed, soft line",
+			"pack": "quaternius_universal_base",
+			"slot": "hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_buzzedfemale.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_1",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qu_hair_long",
+			"name": "Long",
+			"pack": "quaternius_universal_base",
+			"slot": "hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_long.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_2",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qu_hair_simpleparted",
+			"name": "Simple parted",
+			"pack": "quaternius_universal_base",
+			"slot": "hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_simpleparted.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_1",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_ih_creative": {}
+			}
+		},
+		{
+			"id": "chr_qu_hair_beard",
+			"name": "Beard",
+			"pack": "quaternius_universal_base",
+			"slot": "facial_hair",
+			"model": "res://assets/characters/quaternius_universal_base/hair_beard.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_1",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_ih_creative": {}
+			}
+		},
+		{
+			"id": "chr_qu_eyebrows_regular",
+			"name": "Regular eyebrows",
+			"pack": "quaternius_universal_base",
+			"slot": "eyebrows",
+			"model": "res://assets/characters/quaternius_universal_base/eyebrows_regular.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_1",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_qu_eyebrows_female",
+			"name": "Thin eyebrows",
+			"pack": "quaternius_universal_base",
+			"slot": "eyebrows",
+			"model": "res://assets/characters/quaternius_universal_base/eyebrows_female.glb",
+			"fits": [
+				"body_qu_male",
+				"body_qu_female"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "MI_Hair_2",
+					"label": "Colour",
+					"default": "#4f3527"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_clown_nose_001",
+			"name": "Clown nose",
+			"pack": "ithappy_creative_characters",
+			"slot": "face_extra",
+			"model": "res://assets/characters/ithappy_creative_characters/clown_nose_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_costume_10_001",
+			"name": "Costume 10",
+			"pack": "ithappy_creative_characters",
+			"slot": "costume",
+			"model": "res://assets/characters/ithappy_creative_characters/costume_10_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"covers": [
+				"upper_body",
+				"outerwear",
+				"lower_body",
+				"socks"
+			]
+		},
+		{
+			"id": "chr_ih_costume_6_001",
+			"name": "Costume 6",
+			"pack": "ithappy_creative_characters",
+			"slot": "costume",
+			"model": "res://assets/characters/ithappy_creative_characters/costume_6_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"covers": [
+				"upper_body",
+				"outerwear",
+				"hair",
+				"headwear"
+			]
+		},
+		{
+			"id": "chr_ih_glasses_004",
+			"name": "Glasses 4",
+			"pack": "ithappy_creative_characters",
+			"slot": "facewear",
+			"model": "res://assets/characters/ithappy_creative_characters/glasses_004.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_glasses_006",
+			"name": "Glasses 6",
+			"pack": "ithappy_creative_characters",
+			"slot": "facewear",
+			"model": "res://assets/characters/ithappy_creative_characters/glasses_006.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				},
+				{
+					"id": "glass",
+					"material": "Glass",
+					"label": "Glass"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_gloves_006",
+			"name": "Gloves 6",
+			"pack": "ithappy_creative_characters",
+			"slot": "hands",
+			"model": "res://assets/characters/ithappy_creative_characters/gloves_006.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_gloves_014",
+			"name": "Gloves 14",
+			"pack": "ithappy_creative_characters",
+			"slot": "hands",
+			"model": "res://assets/characters/ithappy_creative_characters/gloves_014.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_hairstyle_male_010",
+			"name": "Hairstyle 10",
+			"pack": "ithappy_creative_characters",
+			"slot": "hair",
+			"model": "res://assets/characters/ithappy_creative_characters/hairstyle_male_010.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_hairstyle_male_012",
+			"name": "Hairstyle 12",
+			"pack": "ithappy_creative_characters",
+			"slot": "hair",
+			"model": "res://assets/characters/ithappy_creative_characters/hairstyle_male_012.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_hat_010",
+			"name": "Hat 10",
+			"pack": "ithappy_creative_characters",
+			"slot": "headwear",
+			"model": "res://assets/characters/ithappy_creative_characters/hat_010.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qm_modular_male": {},
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_hat_049",
+			"name": "Hat 49",
+			"pack": "ithappy_creative_characters",
+			"slot": "headwear",
+			"model": "res://assets/characters/ithappy_creative_characters/hat_049.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qm_modular_male": {},
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_hat_057",
+			"name": "Hat 57",
+			"pack": "ithappy_creative_characters",
+			"slot": "headwear",
+			"model": "res://assets/characters/ithappy_creative_characters/hat_057.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				},
+				{
+					"id": "glass",
+					"material": "Glass",
+					"label": "Glass"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qm_modular_male": {}
+			}
+		},
+		{
+			"id": "chr_ih_headphones_002",
+			"name": "Headphones",
+			"pack": "ithappy_creative_characters",
+			"slot": "accessory",
+			"model": "res://assets/characters/ithappy_creative_characters/headphones_002.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qm_modular_male": {
+					"offset": [
+						0.0,
+						-0.01,
+						0.045
+					]
+				},
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_male_emotion_angry_003",
+			"name": "Angry face",
+			"pack": "ithappy_creative_characters",
+			"slot": "face",
+			"model": "res://assets/characters/ithappy_creative_characters/male_emotion_angry_003.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_male_emotion_happy_002",
+			"name": "Happy face",
+			"pack": "ithappy_creative_characters",
+			"slot": "face",
+			"model": "res://assets/characters/ithappy_creative_characters/male_emotion_happy_002.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_male_emotion_usual_001",
+			"name": "Calm face",
+			"pack": "ithappy_creative_characters",
+			"slot": "face",
+			"model": "res://assets/characters/ithappy_creative_characters/male_emotion_usual_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_moustache_001",
+			"name": "Moustache 1",
+			"pack": "ithappy_creative_characters",
+			"slot": "facial_hair",
+			"model": "res://assets/characters/ithappy_creative_characters/moustache_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_moustache_002",
+			"name": "Moustache 2",
+			"pack": "ithappy_creative_characters",
+			"slot": "facial_hair",
+			"model": "res://assets/characters/ithappy_creative_characters/moustache_002.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_outwear_029",
+			"name": "Outerwear 29",
+			"pack": "ithappy_creative_characters",
+			"slot": "outerwear",
+			"model": "res://assets/characters/ithappy_creative_characters/outwear_029.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_outwear_036",
+			"name": "Outerwear 36",
+			"pack": "ithappy_creative_characters",
+			"slot": "outerwear",
+			"model": "res://assets/characters/ithappy_creative_characters/outwear_036.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_pacifier_001",
+			"name": "Pacifier",
+			"pack": "ithappy_creative_characters",
+			"slot": "face_extra",
+			"model": "res://assets/characters/ithappy_creative_characters/pacifier_001.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			},
+			"adapt": {
+				"body_qu_male": {},
+				"body_qu_female": {}
+			}
+		},
+		{
+			"id": "chr_ih_pants_010",
+			"name": "Trousers 10",
+			"pack": "ithappy_creative_characters",
+			"slot": "lower_body",
+			"model": "res://assets/characters/ithappy_creative_characters/pants_010.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_pants_014",
+			"name": "Trousers 14",
+			"pack": "ithappy_creative_characters",
+			"slot": "lower_body",
+			"model": "res://assets/characters/ithappy_creative_characters/pants_014.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_shoe_slippers_002",
+			"name": "Slippers 2",
+			"pack": "ithappy_creative_characters",
+			"slot": "footwear",
+			"model": "res://assets/characters/ithappy_creative_characters/shoe_slippers_002.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_shoe_slippers_005",
+			"name": "Slippers 5",
+			"pack": "ithappy_creative_characters",
+			"slot": "footwear",
+			"model": "res://assets/characters/ithappy_creative_characters/shoe_slippers_005.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_shoe_sneakers_009",
+			"name": "Sneakers 9",
+			"pack": "ithappy_creative_characters",
+			"slot": "footwear",
+			"model": "res://assets/characters/ithappy_creative_characters/shoe_sneakers_009.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_shorts_003",
+			"name": "Shorts 3",
+			"pack": "ithappy_creative_characters",
+			"slot": "lower_body",
+			"model": "res://assets/characters/ithappy_creative_characters/shorts_003.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "secondary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_socks_008",
+			"name": "Socks 8",
+			"pack": "ithappy_creative_characters",
+			"slot": "socks",
+			"model": "res://assets/characters/ithappy_creative_characters/socks_008.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		},
+		{
+			"id": "chr_ih_t_shirt_009",
+			"name": "T-shirt 9",
+			"pack": "ithappy_creative_characters",
+			"slot": "upper_body",
+			"model": "res://assets/characters/ithappy_creative_characters/t_shirt_009.glb",
+			"fits": [
+				"body_ih_creative"
+			],
+			"colours": [
+				{
+					"id": "tint",
+					"material": "Color",
+					"label": "Colour",
+					"team": "primary"
+				}
+			],
+			"unlock": {
+				"kind": "starter"
+			}
+		}
+	]
+}

@@ -4,6 +4,8 @@ extends CanvasLayer
 ## context hints, buy menu and the match-end screen. Displays state; owns no rules.
 
 signal item_chosen(item_id: StringName)
+## A knife look picked in the FPS Sandbox shop's knife column (see [method show_knives]).
+signal knife_chosen(model_id: StringName)
 signal buy_menu_closed
 signal main_menu_requested
 signal play_again_requested
@@ -29,6 +31,8 @@ var _notice: Label
 var _buy_list: VBoxContainer
 var _buy_money: Label
 var _buy_message: Label
+## FPS Sandbox only: the knife column beside the shop (null in matches).
+var _knife_list: VBoxContainer
 var _end_title: Label
 var _end_detail: Label
 
@@ -125,6 +129,29 @@ func show_buy_menu(entries: Array[Dictionary], money: int, message: String = "")
 	_buy_money.text = "Free equipment" if practice_shop_only else "Money: $%d" % money
 	_buy_message.text = message
 	buy_panel.visible = true
+
+
+## FPS Sandbox only: fills the knife column, one button per knife look, the carried one marked.
+func show_knives(ids: Array[StringName], carried: StringName) -> void:
+	if _knife_list == null:
+		return
+	for child: Node in _knife_list.get_children():
+		_knife_list.remove_child(child)
+		child.queue_free()
+	for id: StringName in ids:
+		var button := UIFactory.button(WeaponModels.display_name(id) + ("  ✓" if id == carried else ""))
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.disabled = id == carried
+		button.pressed.connect(func() -> void: knife_chosen.emit(id))
+		_knife_list.add_child(button)
+
+
+func knife_buttons() -> Array[Button]:
+	var list: Array[Button] = []
+	if _knife_list != null:
+		for node: Node in _knife_list.get_children():
+			list.append(node as Button)
+	return list
 
 
 func hide_buy_menu() -> void:
@@ -256,12 +283,16 @@ func _build_center() -> void:
 func _build_buy_panel() -> void:
 	buy_panel = CenterContainer.new()
 	buy_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var row := UIFactory.hbox(12)
+	buy_panel.add_child(row)
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"OverlayPanel"
-	buy_panel.add_child(panel)
+	row.add_child(panel)
 	var column := UIFactory.vbox(10)
 	column.custom_minimum_size.x = 460
 	panel.add_child(column)
+	if practice_shop_only:
+		row.add_child(_build_knife_column())
 	column.add_child(UIFactory.label("BUY", &"HeaderLabel"))
 	_buy_money = UIFactory.label("", &"AccentLabel")
 	column.add_child(_buy_money)
@@ -274,6 +305,21 @@ func _build_buy_panel() -> void:
 	column.add_child(close)
 	buy_panel.visible = false
 	add_child(buy_panel)
+
+
+## FPS Sandbox: a column beside the shop for trying every knife look.
+func _build_knife_column() -> Control:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"OverlayPanel"
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var column := UIFactory.vbox(6)
+	column.custom_minimum_size.x = 220
+	panel.add_child(column)
+	column.add_child(UIFactory.label("KNIFE", &"HeaderLabel"))
+	column.add_child(UIFactory.label("Switch the knife you carry. Same as Carry this knife in the Armoury; it is saved.", &"MutedLabel", true))
+	_knife_list = UIFactory.vbox(6)
+	column.add_child(_knife_list)
+	return panel
 
 
 func _build_end_panel() -> void:

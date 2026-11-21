@@ -308,6 +308,23 @@ func _test_first_person() -> void:
 	await wait_frames(1)
 	check(effects.weapon_visual != null and effects.weapon_visual.weapon_id == player.weapons.current().definition.id,
 		"guns are unaffected by the knife choice")
+	var buy := InputEventAction.new()
+	buy.action = InputActions.BUY_MENU
+	buy.pressed = true
+	sandbox.call("_unhandled_input", buy)
+	var shop := sandbox.get("_sandbox_shop") as MatchHud
+	var buttons := shop.knife_buttons() if shop != null else []
+	check(shop != null and shop.is_buy_menu_open() and buttons.size() == WeaponModels.KNIVES.size()
+		and buttons[WeaponModels.KNIVES.find(&"knf_butterfly")].disabled, "the sandbox shop has a knife column, the carried knife marked")
+	if buttons.size() == WeaponModels.KNIVES.size():
+		buttons[WeaponModels.KNIVES.find(&"knf_nomad")].pressed.emit()
+		await wait_frames(2)
+		var saved := CosmeticProfile.new()
+		saved.path = profile.path
+		check(profile.equipped_knife() == &"knf_nomad" and saved.load_file() and saved.equipped_knife() == &"knf_nomad"
+			and player.weapons.current().definition.id == EquipmentCatalog.KNIFE and effects.weapon_visual.weapon_id == &"knf_nomad"
+			and shop.is_buy_menu_open() and shop.knife_buttons()[WeaponModels.KNIVES.find(&"knf_nomad")].disabled,
+			"picking a knife there saves it and puts it in hand, with the shop still open")
 	profile.set_knife(WeaponModels.DEFAULT_KNIFE)
 	sandbox.queue_free()
 	await wait_frames(2)

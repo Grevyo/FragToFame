@@ -253,6 +253,7 @@ func _show_sandbox_shop(message: String = "") -> void:
 		_sandbox_shop.practice_shop_only = true
 		_sandbox_shop.buy_menu_closed.connect(_close_sandbox_shop)
 		_sandbox_shop.item_chosen.connect(_take_sandbox_item)
+		_sandbox_shop.knife_chosen.connect(take_sandbox_knife)
 		add_child(_sandbox_shop)
 	var entries: Array[Dictionary] = []
 	for id: StringName in ShopCatalog.item_ids():
@@ -266,6 +267,20 @@ func _show_sandbox_shop(message: String = "") -> void:
 	player.weapons.trigger = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_sandbox_shop.show_buy_menu(entries, 0, message)
+	_sandbox_shop.show_knives(WeaponModels.KNIVES, CosmeticProfile.current().equipped_knife())
+
+
+## Sandbox shop knife column: carries another knife look (saved, as in the Armoury) and puts it
+## in hand so it can be tried straight away.
+func take_sandbox_knife(model_id: StringName) -> void:
+	var profile := CosmeticProfile.current()
+	if not profile.set_knife(model_id).is_empty():
+		return
+	var saved := profile.save()
+	player.weapons.select_slot(WeaponCatalog.get_definition(EquipmentCatalog.KNIFE).slot)
+	effects.refresh_cosmetics()
+	_show_sandbox_shop("Carrying the %s" % WeaponModels.display_name(model_id)
+		+ ("" if saved == OK else " (could not save: %s)" % error_string(saved)))
 
 
 func _take_sandbox_item(id: StringName) -> void:

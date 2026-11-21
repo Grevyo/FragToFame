@@ -180,7 +180,7 @@ Completion criteria:
   - **Knife looks:** seven knife models (Combat, Bayonet, Butterfly, Karambit, Nomad, Skeleton,
     T-Handle Dagger) to choose from in the Armoury, each with its own inspection (the butterfly
     knife flips its handles) and a Coat kit with paint-zone masks. The look never changes how
-    the knife plays.
+    the knife plays. The FPS Sandbox shop has a knife column for trying them.
 - [ ] Manual practice-match walkthrough (README) by the project owner.
 - [ ] Manual utility and knife walkthrough (README).
 - [ ] Manual knife looks walkthrough (README).

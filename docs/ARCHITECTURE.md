@@ -841,7 +841,8 @@ Terminology used everywhere, including the UI: a **Coat** is a weapon finish (ca
   files load with the default knife). `CosmeticProfile.model_for(weapon_id)` maps the carried
   knife to its look; the viewmodel, inspection and Armoury use the look's ID, so Coats, zone
   masks and inspections are per knife look. `WeaponModels.ids()` stays the ten guns;
-  `all_ids()` adds the knives (Armoury).
+  `all_ids()` adds the knives (Armoury). The FPS Sandbox shop (`MatchHud` with
+  `practice_shop_only`) adds a knife column that sets and saves the same choice.
 - **Moving parts.** A model entry may list `"parts"` (node name -> turn axis). Each part node
   sits on its pivot, and `WeaponVisual.set_part_angle` turns it from rest; inspections drive the
   butterfly knife's two handles this way.

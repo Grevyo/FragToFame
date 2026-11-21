@@ -247,6 +247,9 @@ Bots carry the knife but do not buy or throw utility yet (team tactics, Mileston
 - [ ] **Armoury**: the seven knives follow the guns as "Knife · ...", the carried one ticked.
       Each shows without Magnet slots. **Carry this knife**, then **Save customisation**.
 - [ ] FPS Sandbox or a practice match, key **3**: the chosen knife is in your hand. Slash and stab.
+- [ ] FPS Sandbox, **B**: the **Knife** column beside the shop lists all seven, the carried one
+      ticked. Pick one: it goes straight into your hand, the shop stays open, and the Armoury
+      shows it as carried.
 - [ ] **F** with each knife: the combat knife rolls face to face, the bayonet spins twice about
       its guard, the butterfly knife folds its handles shut and flips them open, the karambit
       spins round its ring, the nomad is tossed and caught, the skeleton knife wheels in the

@@ -1,8 +1,9 @@
 extends TestSuite
 ## Character models and the Developer Character Creator: the catalog of bodies and items from
 ## the downloaded packs, availability (the ithappy pack is local-only), what fits which body,
-## dressing rules, appearances, unlocks, presets, the animated rig (every item on every body it
-## fits), the player's stored look, the developer option, bots wearing models and the creator.
+## dressing rules, appearances, unlocks and career grants, presets, the animated rig (every item
+## on every body it fits), crouching, held weapons, the player's stored look, the developer option,
+## bots wearing models, team uniforms, other players' looks over the network and the creator.
 ##
 ## Works with or without the ithappy pack installed: checks that need it say so and are skipped.
 
@@ -12,6 +13,8 @@ const QM: String = "body_qm_modular_male"
 const QU_MALE: String = "body_qu_male"
 const QU_FEMALE: String = "body_qu_female"
 const IH: String = "body_ih_creative"
+## Test-only loopback port (246xx), distinct from the match session suite's.
+const MATCH_PORT: int = 24672
 
 var catalog: CharacterCatalog = CharacterCatalog.shared()
 
@@ -36,12 +39,16 @@ func run() -> void:
 	_test_wardrobe()
 	_test_appearance()
 	_test_unlocks()
+	_test_career_grants()
 	_test_presets()
 	await _test_rig()
 	await _test_every_item()
+	await _test_crouch_and_weapon()
 	_test_profile()
 	_test_dev_options()
 	await _test_avatar_and_bots()
+	_test_team_kits()
+	await _test_network_looks()
 	await _test_creator()
 	CosmeticProfile.use(real_profile)
 	CharacterPresets.directory = CharacterPresets.DEFAULT_DIR
@@ -213,6 +220,35 @@ func _test_unlocks() -> void:
 	check(CharacterUnlocks.is_unlocked(copy, item_id, none, true), "developer mode shows every item regardless of unlock")
 
 
+func _test_career_grants() -> void:
+	section("Career unlocks")
+	var none: Array[String] = []
+	var career_items: Array[String] = []
+	for item_id: String in catalog.items:
+		if CharacterUnlocks.kind_of(catalog, item_id) == CharacterUnlocks.KIND_CAREER:
+			career_items.append(item_id)
+			if CharacterUnlocks.career_rule(catalog, item_id).is_empty():
+				check(false, "%s has a career rule" % item_id)
+	check(career_items.size() == 16, "four outfits (16 parts) are career rewards (%d)" % career_items.size())
+	check(not CharacterUnlocks.is_unlocked(catalog, "chr_qm_swat_body", none, false), "the SWAT outfit is locked at the start")
+	check(CharacterUnlocks.lock_reason(catalog, "chr_qm_swat_body", none, false).contains("10 career matches"),
+		"and says what earns it")
+	check(CharacterUnlocks.earned_items(catalog, {}).is_empty(), "no progress earns nothing")
+	var progress := {CareerUnlockProgress.MATCHES: 12, CareerUnlockProgress.KILLS: 40, CareerUnlockProgress.CONTRACTS: 1,
+		CareerUnlockProgress.PODIUMS: 0, CareerUnlockProgress.TITLES: 0}
+	var owned: Array[String] = []
+	var granted := CharacterUnlocks.grant_earned(catalog, owned, progress)
+	check(granted.has("chr_qm_swat_head") and granted.has("chr_qm_suit_body") and not granted.has("chr_qm_spacesuit_body")
+		and not granted.has("chr_qm_king_head"), "12 matches and a contract earn the SWAT and suit outfits, not the others")
+	check(granted.size() == 8 and owned.size() == 8, "each part is granted once (%d)" % granted.size())
+	check(CharacterUnlocks.grant_earned(catalog, owned, progress).is_empty(), "nothing is granted twice")
+	check(CharacterUnlocks.is_unlocked(catalog, "chr_qm_swat_body", owned, false), "earned items can be worn")
+	var hub_script := load("res://scenes/career_hub/career_hub.gd") as GDScript
+	check(bool(hub_script.call("is_player_save", "user://careers/sav_x/career.db")), "careers in the save folder grant items")
+	check(not bool(hub_script.call("is_player_save", "user://tests/careers/sav_x/career.db")),
+		"test careers never grant items to the player's profile")
+
+
 func _test_presets() -> void:
 	section("Presets")
 	check(CharacterPresets.directory.begins_with(TEST_DIR), "tests write presets to a scratch folder")
@@ -307,6 +343,44 @@ func _test_every_item() -> void:
 	await wait_frames(1)
 
 
+func _test_crouch_and_weapon() -> void:
+	section("Crouching and held weapons")
+	var avatar := CharacterAvatar.new()
+	tree.root.add_child(avatar)
+	avatar.apply(CharacterWardrobe.default_appearance(catalog, QU_MALE))
+	var heights: Array[float] = []
+	var head := avatar.rig.skeleton.find_bone(&"Head")
+	var measure := func() -> void:
+		heights.append((avatar.rig.skeleton.global_transform * avatar.rig.skeleton.get_bone_global_pose(head).origin).y)
+	avatar.rig.skeleton.skeleton_updated.connect(measure)
+	await wait_frames(3)
+	var standing := heights[heights.size() - 1] if not heights.is_empty() else 0.0
+	avatar.crouch = 1.0
+	await wait_frames(3)
+	var crouched := heights[heights.size() - 1] if not heights.is_empty() else 0.0
+	avatar.rig.skeleton.skeleton_updated.disconnect(measure)
+	check(standing > 1.4, "standing head height %.2f m" % standing)
+	var hitbox_head := standing * CombatantMovementBody.CROUCH_HEIGHT / CombatantMovementBody.STAND_HEIGHT
+	check(absf(crouched - hitbox_head) < 0.1, "a full crouch brings the head onto the crouched head hitbox (%.2f m to %.2f m, hitbox %.2f m)"
+		% [standing, crouched, hitbox_head])
+	check(avatar.rig.retargeter.crouch_angle() > 0.3, "by bending the knees (%.2f rad)" % avatar.rig.retargeter.crouch_angle())
+	avatar.set_weapon(&"wpn_ak47")
+	await wait_frames(3)
+	check(avatar.weapon_visual != null and avatar.weapon_visual.weapon_id == &"wpn_ak47", "a weapon is held")
+	var hand_height := avatar.held_at.y - avatar.global_position.y
+	check(avatar.weapon_visual.global_position.distance_to(avatar.held_at) < avatar.weapon_visual.size.z * 0.5
+		and hand_height > 0.5 and hand_height < 1.6, "in the right hand (%.2f m up)" % hand_height)
+	var forward := -avatar.weapon_visual.global_transform.basis.z
+	check(forward.dot(-avatar.global_transform.basis.z) > 0.9, "pointing where the character faces")
+	check(CharacterAvatar.held_model(EquipmentCatalog.KNIFE) == WeaponModels.DEFAULT_KNIFE, "the knife shows the default knife look")
+	check(CharacterAvatar.held_model(&"wpn_utility_unknown").is_empty(), "items without a model leave the hands empty")
+	avatar.set_weapon(&"")
+	check(avatar.weapon_visual == null, "and a weapon can be put away")
+	check(CharacterAvatar.movement_clip(Vector3.ZERO, true)[0] == CharacterRig.ANIM_AIM, "armed and still: weapon raised")
+	avatar.queue_free()
+	await wait_frames(1)
+
+
 # --- profile, options, bots -------------------------------------------------------------------------
 
 func _test_profile() -> void:
@@ -367,6 +441,8 @@ func _test_avatar_and_bots() -> void:
 	again.setup("chr_model", "Model", &"home", BotSkill.preset(&"normal"), Color("3c6a8a"))
 	check(again.appearance != null and again.appearance.equals(bot.appearance), "a bot's look is the same every time (seeded by its ID)")
 	again.free()
+	check(bot.avatar.weapon_id == CharacterAvatar.held_model(bot.weapons.current().definition.id),
+		"the bot holds its current weapon")
 	bot.health.kill()
 	await wait_frames(2)
 	check(bot.avatar.is_dead() and bot.avatar.rig.current_clip() == CharacterRig.ANIM_DEATH, "a dying bot plays the death clip")
@@ -377,6 +453,97 @@ func _test_avatar_and_bots() -> void:
 	bot.queue_free()
 	plain.queue_free()
 	await wait_frames(1)
+
+
+func _test_team_kits() -> void:
+	section("Team uniforms")
+	var setup := MatchSetup.new()
+	check(setup.team_colour(0, Color.RED).is_equal_approx(Color.RED), "no team colour: the runtime's colour")
+	setup.home_colour = "#2255aa"
+	setup.away_colour = "#aa2222"
+	var data := setup.to_dict()
+	check(int(data["format_version"]) == 3 and str(data["home_colour"]) == "#2255aa", "match setups carry team colours (v3)")
+	var back := MatchSetup.from_dict(data)
+	check(back != null and back.team_colour(1, Color.WHITE).is_equal_approx(Color("aa2222")), "and they survive a round trip")
+	data["format_version"] = 2
+	data.erase("home_colour")
+	data.erase("away_colour")
+	var older := MatchSetup.from_dict(data)
+	check(older != null and older.home_colour.is_empty(), "a v2 setup still loads, with the runtime's colours")
+	check(CareerKits.away_kit("#2255aa", "#aa2222") == "#aa2222", "different kits are kept")
+	var change := CareerKits.away_kit("#2255aa", "#2a58a8")
+	check(not CareerKits.clashes(Color("2255aa"), Color(change)), "a clashing away kit changes to a contrasting one (%s)" % change)
+	var look := CharacterAvatar.random_look(hash("chr_kit"), Color("2255aa"))
+	var painted := false
+	for item_id: String in look.items.values():
+		var channel := catalog.team_channel(item_id, "primary")
+		painted = painted or (not channel.is_empty() and look.colour(item_id, channel).is_equal_approx(Color("2255aa")))
+	check(painted or look.body != QM, "a bot's uniform takes its team colour")
+
+
+func _test_network_looks() -> void:
+	section("Other players' looks over the network")
+	var host_root := Node3D.new()
+	host_root.name = "CharacterHostWorld"
+	var client_root := Node3D.new()
+	client_root.name = "CharacterClientWorld"
+	tree.root.add_child(host_root)
+	tree.root.add_child(client_root)
+	var host_session := MatchSession.new()
+	host_session.name = "MatchSession"
+	var client_session := MatchSession.new()
+	client_session.name = "MatchSession"
+	host_root.add_child(host_session)
+	client_root.add_child(client_session)
+	var host_body := Node3D.new()
+	host_root.add_child(host_body)
+	var client_body := Node3D.new()
+	client_root.add_child(client_body)
+	var client_head := Node3D.new()
+	client_head.name = "Head"
+	client_body.add_child(client_head)
+	var client_weapons := WeaponController.new()
+	client_weapons.name = "Weapons"
+	client_body.add_child(client_weapons)
+	var ak: Array[StringName] = [&"wpn_ak47"]
+	client_weapons.set_loadout(ak)
+	host_session.local_body = host_body
+	client_session.local_body = client_body
+	var host_look := CharacterWardrobe.default_appearance(catalog, QU_FEMALE)
+	var client_look := CharacterWardrobe.default_appearance(catalog, QM)
+	host_session.local_appearance = host_look.to_dict()
+	client_session.local_appearance = client_look.to_dict()
+	client_head.rotation.x = 0.3
+	check(host_session.host(MATCH_PORT, "127.0.0.1") == OK, "match host listens")
+	client_session.join("127.0.0.1", MATCH_PORT)
+	var shared := await wait_until(func() -> bool:
+		var id := client_session.local_peer_id()
+		var a := host_session.avatar_for(id)
+		var b := client_session.avatar_for(1)
+		return a != null and b != null and a.character != null and b.character != null, 6.0)
+	check(shared, "both players see the other as a character model")
+	var client_id := client_session.local_peer_id()
+	var on_host := host_session.avatar_for(client_id)
+	var on_client := client_session.avatar_for(1)
+	if shared:
+		check(on_host.character.rig.appearance.equals(client_look), "the host sees the client's own look")
+		check(on_client.character.rig.appearance.equals(host_look), "the client sees the host's own look")
+		check(not on_host.get_node("Body").visible, "the capsule is hidden behind a model")
+		var armed := await wait_until(func() -> bool: return on_host.character.weapon_id == &"wpn_ak47", 3.0)
+		check(armed, "the host sees the client's weapon in its hand")
+		check(is_equal_approx(on_host.character.aim_pitch, 0.3), "and where it aims")
+	on_host.apply_state(Vector3.ZERO, 0.0, 1.0, 0.0, &"")
+	check(on_host.character == null or is_equal_approx(on_host.character.crouch, 1.0), "a crouching player is shown crouching")
+	var junk := {"format": "f2f.character_appearance", "body": "body_nobody", "items": {"x": "y"}}
+	check(on_host.apply_appearance(junk), "a foreign look is sanitised to something wearable")
+	check(not on_host.apply_appearance({}), "no look: the capsule")
+	var huge := {"filler": "x".repeat(MatchSession.MAX_APPEARANCE_BYTES + 10)}
+	check(not host_session.call("_store_appearance", 99, huge), "oversized looks are refused")
+	client_session.leave("test over")
+	host_session.leave("test over")
+	host_root.queue_free()
+	client_root.queue_free()
+	await wait_frames(2)
 
 
 # --- creator -----------------------------------------------------------------------------------

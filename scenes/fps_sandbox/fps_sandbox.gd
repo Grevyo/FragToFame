@@ -40,6 +40,8 @@ func _ready() -> void:
 	hud.practice_match_requested.connect(_on_practice_match_requested)
 	hud.sandbox_weapons_chosen.connect(set_sandbox_weapons)
 	match_session.local_body = player
+	match_session.local_appearance = CosmeticProfile.current().appearance.to_dict() \
+		if not CosmeticProfile.current().appearance.body.is_empty() else {}
 	match_session.session_ended.connect(_on_session_ended)
 	effects.bind(player.weapons, player.camera)
 	player.weapons.shot_fired.connect(_on_shot_fired)

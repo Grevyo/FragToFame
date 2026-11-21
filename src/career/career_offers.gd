@@ -245,6 +245,7 @@ static func _trial_setup(repo: CareerRepository, player_id: String, found: Dicti
 	setup.home_lineup.append(repo.match_player(human.id, human.nickname, human.preferred_role, true))
 	setup.home_lineup.append_array(teammates)
 	setup.away_lineup.assign(opponent_lineup)
+	CareerKits.apply(repo, setup)
 	return setup
 
 

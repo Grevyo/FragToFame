@@ -938,7 +938,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "win a competition",
+				"career": {
+					"stat": "titles",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -958,7 +963,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "win a competition",
+				"career": {
+					"stat": "titles",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -983,7 +993,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "win a competition",
+				"career": {
+					"stat": "titles",
+					"at_least": 1
+				}
 			},
 			"covers": [
 				"headwear"
@@ -1017,7 +1032,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "win a competition",
+				"career": {
+					"stat": "titles",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -1155,7 +1175,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "get 100 kills in career matches",
+				"career": {
+					"stat": "kills",
+					"at_least": 100
+				}
 			}
 		},
 		{
@@ -1180,7 +1205,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "get 100 kills in career matches",
+				"career": {
+					"stat": "kills",
+					"at_least": 100
+				}
 			}
 		},
 		{
@@ -1210,7 +1240,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "get 100 kills in career matches",
+				"career": {
+					"stat": "kills",
+					"at_least": 100
+				}
 			},
 			"tags": [
 				"helmet"
@@ -1252,7 +1287,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "get 100 kills in career matches",
+				"career": {
+					"stat": "kills",
+					"at_least": 100
+				}
 			}
 		},
 		{
@@ -1283,7 +1323,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "sign your first contract with an organisation",
+				"career": {
+					"stat": "contracts",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -1303,7 +1348,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "sign your first contract with an organisation",
+				"career": {
+					"stat": "contracts",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -1328,7 +1378,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "sign your first contract with an organisation",
+				"career": {
+					"stat": "contracts",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -1349,7 +1404,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "sign your first contract with an organisation",
+				"career": {
+					"stat": "contracts",
+					"at_least": 1
+				}
 			}
 		},
 		{
@@ -1375,7 +1435,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "play 10 career matches",
+				"career": {
+					"stat": "matches",
+					"at_least": 10
+				}
 			}
 		},
 		{
@@ -1395,7 +1460,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "play 10 career matches",
+				"career": {
+					"stat": "matches",
+					"at_least": 10
+				}
 			}
 		},
 		{
@@ -1425,7 +1495,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "play 10 career matches",
+				"career": {
+					"stat": "matches",
+					"at_least": 10
+				}
 			},
 			"tags": [
 				"helmet"
@@ -1457,7 +1532,12 @@
 				}
 			],
 			"unlock": {
-				"kind": "starter"
+				"kind": "career",
+				"requirement": "play 10 career matches",
+				"career": {
+					"stat": "matches",
+					"at_least": 10
+				}
 			}
 		},
 		{

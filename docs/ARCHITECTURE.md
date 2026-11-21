@@ -133,7 +133,7 @@ Two networks that share nothing but the ENet library:
 | Purpose | Authoritative world data, results, calendar (later) | Real-time player state in one match |
 | Owner | Career host (`CareerSyncHost`, owns `CareerWorld`) | Match host — any participating player's PC (`MatchSession`) |
 | Transport | Raw `ENetMultiplayerPeer`, polled manually, no RPC | `SceneMultiplayer` on its **own scene-tree branch** (`SceneTree.set_multiplayer(api, path)`), RPCs |
-| Messages | Versioned dictionaries (`CareerProtocol`, `var_to_bytes`, never objects), all reliable | RPCs: unreliable-ordered state, reliable welcome |
+| Messages | Versioned dictionaries (`CareerProtocol`, `var_to_bytes`, never objects), all reliable | RPCs: unreliable-ordered state, reliable welcome and character looks |
 | Default port | 24560 | 24570 |
 | Lifetime | Autoload `CareerSync`, survives scene changes | Lives inside the FPS scene, ends with it |
 | Version check | `HELLO.v` vs host → `REJECT` | `_rpc_welcome(protocol)` → client leaves on mismatch |
@@ -152,6 +152,17 @@ Every accepted change bumps `revision`; clients never apply an older snapshot ov
 **Match authority (proof only).** Clients are authoritative for their own position; the host
 relays snapshots at 20 Hz (clients send at 30 Hz). Server-authoritative movement, hit registration
 and lag compensation are deliberately deferred to the FPS milestones.
+
+**Players' looks (match protocol v2).** A player's state is position, yaw, crouch, aim pitch and
+held weapon model. Each player's character look (`CharacterAppearance` from their cosmetic
+profile) is sent once, reliably:
+1. The client sends its look to the host after the welcome.
+2. The host keeps everyone's looks, including its own as peer 1, and sends the full set to every
+   player.
+
+`RemotePlayerAvatar` shows a `CharacterAvatar` for a wearable look and the capsule otherwise.
+Looks received are untrusted: anything over 8 KB is refused, and each look is sanitised against
+the receiver's catalog, so a look from a build with other packs still shows.
 
 **Not yet:** persistence of the career world, calendar advancement blocked on unresolved
 fixtures, the career host choosing a match host, spectating, NAT traversal / Steam networking.
@@ -964,17 +975,47 @@ the box bodies until the models have been tested in play. Code lives in `src/cha
 - **Player and bots.** `CosmeticProfile` gains optional `appearance` and
   `owned_character_items` fields in `f2f.cosmetics` v1; older files load without them.
   `DevOptions` (`user://profile/dev_options.json`, `f2f.dev_options` v1) has one switch,
-  *bots wear character models*, off by default. When it is on, `BotController` gets a seeded
-  random look in team colours and hides the box meshes. Hitboxes, collision, movement and aim
-  are unchanged, and models never affect gameplay.
-- **Not yet:**
-  - the player's own model seen by others
-  - crouch poses (the model stands while the hitboxes crouch)
-  - weapons held in the model's hands
-  - career unlock grants
-  - team uniforms from the career world
+  *bots wear character models*, off by default. When it is on, `BotController` gets a random
+  look seeded by its player ID (a career player looks the same in every match) in its team
+  colours, and hides the box meshes. Hitboxes, collision, movement and aim are unchanged, and
+  models never affect gameplay.
+- **Crouching.** The clip set has no crouch, so `CharacterRetargeter.crouch_drop` lays one over
+  any clip:
+  - the hips drop by the given amount
+  - thighs swing forward and shins back by the same angle, solved from leg length so the feet
+    stay where the clip puts them
+  - only the spine leans forward; arms and head keep the clip's directions, so the aim stays level
 
-  The data already carries team colour roles and unlock kinds for these.
+  `CharacterAvatar` drives it from the combatant's crouch amount. A full crouch drops the hips
+  0.46 m, which brings the head down onto the crouched head hitbox (1.8 m to 1.2 m tall).
+- **Held weapons.** `CharacterAvatar` holds the combatant's current weapon model (a
+  `WeaponVisual`, the default knife look for the knife, nothing for utility). The grip sits in
+  the right hand, pointed where the combatant aims. The hand is read on `skeleton_updated`,
+  because animation-modifier results are invisible to ordinary `_process` code. Armed and
+  standing still, the character plays the raised-weapon clip.
+- **Team uniforms.** `MatchSetup` v3 carries `home_colour` / `away_colour`; v2 setups still load
+  and use the runtime's colours. `CareerKits` (career layer) fills them from each organisation's
+  `colour`. Neutral grey is used for amateur mixes. A clashing away kit changes to a contrasting
+  colour. The FPS runtime dresses each team's bots in its colour: box bodies, or the
+  team-colour channels of character models.
+- **Other players.** See *Players' looks* under Networking: players in a networked match see
+  each other's own character looks, animated, crouching and armed.
+- **Career unlocks.** Four existing modular outfits are career rewards; their 16 parts carry
+  `unlock.career` rules (`{stat, at_least}`):
+  - suit: first contract
+  - SWAT: 10 career matches
+  - spacesuit: 100 career kills
+  - king: a title
+
+  `CareerUnlockProgress` (career layer, plain data) counts recorded matches, kills, contracts,
+  podiums and titles. `CharacterUnlocks.grant_earned` adds earned items to the player's owned
+  list. The career hub runs this on opening, after every match, and announces new items.
+  Grants come only from careers in the player's own save folder, never from test careers. Items
+  stay owned across careers, like the rest of the cosmetic profile. Bots and developer mode
+  ignore unlocks.
+- **Not yet:** event rewards and team-only items (the `event` and `team` kinds exist but
+  nothing grants them); networked team play, so remote players are not yet dressed in a team
+  colour; dedicated crouch-walk clips.
 
 ### Input
 
@@ -1112,6 +1153,10 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | Character packs retargeted at runtime by a custom `SkeletonModifier3D` onto humanoid-profile bone names; items stay on their own pack's skeleton | The packs share neither skeleton, rest pose nor proportions, and `RetargetModifier3D` mangled limbs across them. One clip set drives every body; clothing is never stretched onto a body it was not made for (only checked head items are adapted) |
 | 2026-11-21 | The ithappy character pack stays local (git-ignored); the catalog lists it as "not installed" when absent | Its licence allows use in a game but grants no redistribution of the source files; the Quaternius packs are CC0 and are committed |
 | 2026-11-21 | Character models are a developer preview (creator + optional bot models) before replacing any box body | The owner asked not to replace existing characters until the new models are tested in play |
+| 2026-11-21 | Crouch laid over any clip in the retargeter (two-angle leg solve, spine-only lean) | The packs have no crouch clips; solving from leg length keeps feet planted on every rig, and the crouched head lands on the crouched head hitbox so what players see is what they can hit |
+| 2026-11-21 | Team colours travel in `MatchSetup` v3, filled by the career from organisation colours | The FPS runtime still never reads the career database; uniforms follow the world's teams and a clash rule keeps sides readable |
+| 2026-11-21 | Match protocol v2 exchanges character looks once, reliably, via the host; receivers sanitise | Looks are small and rarely change, so they stay out of the 20 Hz snapshots; sanitising makes a remote look safe and wearable whatever packs the receiver has |
+| 2026-11-21 | Career unlock rules live in the character catalog and are granted from career progress into the player's profile, only from real saves | Items are earned by what the player did (no fixed timers); rules are data the owner can change; tests can never leak unlocks into a real profile |
 | 2026-11-16 | The ten modelled weapons replace the development roster | Sandbox, match shop and bots use the modelled roster; names of retired weapon IDs stay readable in career history |
 | 2026-11-15 | **Career database = SQLite from day one** (owner's decision; supersedes "defer SQLite") via `godot-sqlite` v4.9 (MIT, built for Godot 4.7.1, Windows supported) | The career world is a third of the game: thousands of players, years of history and match events need indexed queries, partial loading and crash-safe transactions. Building on JSON first would mean a rewrite. SQLite itself is public domain; both licences allow a closed commercial release (MIT notice to be shipped in credits). Access stays behind a typed repository so the add-on is isolated |
 

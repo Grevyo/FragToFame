@@ -20,6 +20,7 @@ const ANIM_RUN_BACK: StringName = &"Run_Back"
 const ANIM_RUN_LEFT: StringName = &"Run_Left"
 const ANIM_RUN_RIGHT: StringName = &"Run_Right"
 const ANIM_SHOOT: StringName = &"Gun_Shoot"
+const ANIM_AIM: StringName = &"Idle_Gun_Pointing"
 const ANIM_DEATH: StringName = &"Death"
 ## Clips that repeat; everything else plays once and holds its last frame.
 const LOOPING: Array[StringName] = [&"Idle", &"Idle_Gun", &"Idle_Gun_Pointing", &"Idle_Neutral", &"Idle_Sword",

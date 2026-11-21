@@ -14,6 +14,15 @@ extends SkeletonModifier3D
 
 ## The skeleton the AnimationPlayer drives.
 var source: Skeleton3D = null
+## How far the hips drop for a crouch, in metres of this skeleton's model space (0 = standing).
+## The animation set has no crouch clips, so the crouch is laid over whatever plays: thighs swing
+## forward, shins back and the upper body leans, keeping the feet where the clip puts them.
+var crouch_drop: float = 0.0
+
+## Largest share of the leg length the hips may drop.
+const MAX_CROUCH_SHARE: float = 0.7
+## Upper-body lean per radian of thigh swing.
+const CROUCH_LEAN: float = 0.55
 
 var _profile := SkeletonProfileHumanoid.new()
 ## Target bones in parent-first order.
@@ -30,6 +39,11 @@ var _bound_to: Skeleton3D = null
 var _anchor_of: Dictionary[int, int] = {}
 ## Detached target bone -> its rest position in its anchor's rest frame (rotation only).
 var _anchor_offset: Dictionary[int, Vector3] = {}
+## Crouch: thigh bones, shin bones, the spine bones that lean, and the leg length.
+var _thighs: PackedInt32Array = PackedInt32Array()
+var _shins: PackedInt32Array = PackedInt32Array()
+var _leaning: Dictionary[int, bool] = {}
+var _leg_length: float = 0.0
 
 
 ## Prepares the mapping between [param source_skeleton] and this modifier's skeleton. Both must be
@@ -76,6 +90,7 @@ func bind(source_skeleton: Skeleton3D) -> bool:
 		var source_height := (source.global_transform * source.get_bone_global_rest(_hips_source).origin).y - source.global_position.y
 		var target_height := (target.global_transform * target.get_bone_global_rest(_hips_target).origin).y - target.global_position.y
 		_hips_scale = target_height / source_height if absf(source_height) > 0.001 else 1.0
+	_find_crouch_bones(target)
 	if matched == 0:
 		return false
 	_bound_to = target
@@ -98,6 +113,12 @@ func _process_modification() -> void:
 	var positions: PackedVector3Array = PackedVector3Array()
 	positions.resize(count)
 	var hips_position := _hips_position(target)
+	var swing := crouch_angle()
+	var thigh_turn := Quaternion(Vector3.RIGHT, -swing)
+	var shin_turn := Quaternion(Vector3.RIGHT, swing)
+	var lean_turn := Quaternion(Vector3.RIGHT, swing * CROUCH_LEAN)
+	if swing > 0.0:
+		hips_position.y -= crouch_amount_metres()
 	for bone: int in _order:
 		var parent := target.get_bone_parent(bone)
 		var parent_global: Quaternion = globals[parent] if parent >= 0 else Quaternion.IDENTITY
@@ -107,6 +128,13 @@ func _process_modification() -> void:
 		var global: Quaternion
 		if from >= 0:
 			global = to_target * source.get_bone_global_pose(from).basis.get_rotation_quaternion() * _after[bone]
+			if swing > 0.0:
+				if _thighs.has(bone):
+					global = thigh_turn * global
+				elif _shins.has(bone):
+					global = shin_turn * global
+				elif _leaning.has(bone):
+					global = lean_turn * global
 			target.set_bone_pose_rotation(bone, (parent_global.inverse() * global).normalized())
 		else:
 			global = parent_global * rest.basis.get_rotation_quaternion()
@@ -123,6 +151,42 @@ func _process_modification() -> void:
 			continue
 		target.set_bone_pose_position(bone, parent_global.inverse() * (wanted_position - parent_position))
 		positions[bone] = wanted_position
+
+
+## The hips' drop actually used (limited by the leg length).
+func crouch_amount_metres() -> float:
+	return clampf(crouch_drop, 0.0, _leg_length * MAX_CROUCH_SHARE)
+
+
+## How far the thighs swing forward for the current [member crouch_drop] (radians): with thigh
+## and shin swung by the same angle the hips drop by leg length × (1 − cos angle) above the feet.
+func crouch_angle() -> float:
+	if _leg_length <= 0.0 or crouch_drop <= 0.0:
+		return 0.0
+	return acos(clampf(1.0 - crouch_amount_metres() / _leg_length, -1.0, 1.0))
+
+
+func _find_crouch_bones(target: Skeleton3D) -> void:
+	_thighs = PackedInt32Array()
+	_shins = PackedInt32Array()
+	_leaning.clear()
+	_leg_length = 0.0
+	for side: String in ["Left", "Right"]:
+		var thigh := target.find_bone(side + "UpperLeg")
+		var shin := target.find_bone(side + "LowerLeg")
+		var foot := target.find_bone(side + "Foot")
+		if thigh < 0 or shin < 0 or foot < 0:
+			continue
+		_thighs.append(thigh)
+		_shins.append(shin)
+		var length := target.get_bone_global_rest(thigh).origin.distance_to(target.get_bone_global_rest(shin).origin) 			+ target.get_bone_global_rest(shin).origin.distance_to(target.get_bone_global_rest(foot).origin)
+		_leg_length = length if _leg_length <= 0.0 else minf(_leg_length, length)
+	# Only the spine leans: arms, neck and head keep the clip's directions, so the aim and the
+	# gaze stay level while the torso bends forward.
+	for bone_name: StringName in [&"Spine", &"Chest", &"UpperChest"]:
+		var bone := target.find_bone(bone_name)
+		if bone >= 0:
+			_leaning[bone] = true
 
 
 ## Where the target's hips go: their rest position plus the source hips' movement, scaled by hip

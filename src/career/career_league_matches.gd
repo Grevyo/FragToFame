@@ -88,6 +88,7 @@ static func _schedule_map(repo: CareerRepository, human: CareerRecords.PlayerRec
 			setup.home_lineup.resize(CareerFixtures.TEAM_SIZE - 1)
 		setup.home_lineup.push_front(repo.match_player(human.id, human.nickname, human.preferred_role, true))
 	setup.away_lineup.assign(repo.lineup(opponent_id))
+	CareerKits.apply(repo, setup)
 	var fixture := CareerFixture.new()
 	fixture.player_id = human.id
 	fixture.scheduled_day = day

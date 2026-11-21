@@ -6,8 +6,9 @@ extends RefCounted
 ## to a versioned Dictionary so it can travel over the network or into a file.
 
 const FORMAT: String = "f2f.match_setup"
-## v2 adds team lineups.
-const FORMAT_VERSION: int = 2
+## v2 adds team lineups; v3 adds team colours (v2 still loads, with the runtime's colours).
+const FORMAT_VERSION: int = 3
+const OLDEST_VERSION: int = 2
 
 var fixture_id: String = ""
 var competition: String = ""
@@ -23,6 +24,10 @@ var map_id: String = ""
 ## simulated values and only ever drive bots; human entries carry none.
 var home_lineup: Array[Dictionary] = []
 var away_lineup: Array[Dictionary] = []
+## Team colours as "#rrggbb" ("" = the runtime's default for that side). Players' uniforms take
+## them (character models' team-colour channels); the career fills them from the organisations.
+var home_colour: String = ""
+var away_colour: String = ""
 
 
 ## Rounds needed to win in regulation.
@@ -42,17 +47,30 @@ static func from_fixture(fixture: Dictionary) -> MatchSetup:
 	setup.map_id = str(fixture.get("map_id", ""))
 	setup.home_lineup = _lineup_from(fixture.get("home_lineup", []))
 	setup.away_lineup = _lineup_from(fixture.get("away_lineup", []))
+	setup.home_colour = _colour_text(str(fixture.get("home_colour", "")))
+	setup.away_colour = _colour_text(str(fixture.get("away_colour", "")))
 	return setup
 
 
 static func from_dict(data: Dictionary) -> MatchSetup:
-	if data.get("format") != FORMAT or data.get("format_version") != FORMAT_VERSION:
+	var version := int(data.get("format_version", 0)) if data.get("format_version") is int or data.get("format_version") is float else 0
+	if data.get("format") != FORMAT or version < OLDEST_VERSION or version > FORMAT_VERSION:
 		return null
 	return from_fixture(data)
 
 
 func lineup(team_index: int) -> Array[Dictionary]:
 	return home_lineup if team_index == 0 else away_lineup
+
+
+## A team's colour, or [param fallback] when the setup does not give one.
+func team_colour(team_index: int, fallback: Color) -> Color:
+	var text := home_colour if team_index == 0 else away_colour
+	return Color.from_string(text, fallback) if not text.is_empty() else fallback
+
+
+static func _colour_text(text: String) -> String:
+	return "#" + Color.html(text).to_html(false) if not text.is_empty() and Color.html_is_valid(text) else ""
 
 
 static func _lineup_from(value: Variant) -> Array[Dictionary]:
@@ -78,4 +96,6 @@ func to_dict() -> Dictionary:
 		"map_id": map_id,
 		"home_lineup": home_lineup.duplicate(true),
 		"away_lineup": away_lineup.duplicate(true),
+		"home_colour": home_colour,
+		"away_colour": away_colour,
 	}

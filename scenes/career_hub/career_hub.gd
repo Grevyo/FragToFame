@@ -67,6 +67,38 @@ func _ready() -> void:
 	add_to_group(&"career_hub")
 	_build_layout()
 	show_page(DEFAULT_PAGE)
+	grant_character_unlocks()
+
+
+## Character items earned by what the human has done in this career, added to the player's
+## cosmetic profile when the hub opens (after every match). Returns the items newly granted.
+func grant_character_unlocks() -> Array[String]:
+	var granted: Array[String] = []
+	if App.career == null or App.career.repo == null or App.career.human_player_id.is_empty() 			or not is_player_save(App.career.repo.db.path):
+		return granted
+	var profile := CosmeticProfile.current()
+	var catalog := CharacterCatalog.shared()
+	granted = CharacterUnlocks.grant_earned(catalog, profile.owned_character_items,
+		CareerUnlockProgress.of(App.career.repo, App.career.human_player_id))
+	if granted.is_empty():
+		return granted
+	profile.save()
+	var names: PackedStringArray = []
+	for item_id: String in granted:
+		names.append(catalog.display_name(item_id))
+	var notice := AcceptDialog.new()
+	notice.title = "Character items unlocked"
+	notice.dialog_text = "Earned in your career, now in the Character Creator:
+" + ", ".join(names)
+	add_child(notice)
+	notice.popup_centered.call_deferred(Vector2i(460, 0))
+	return granted
+
+
+## Whether a career database is one of the player's own saves (user://careers). Careers made
+## elsewhere (tests, tools) never grant items to the player's profile.
+static func is_player_save(database_path: String) -> bool:
+	return not database_path.is_empty() and ProjectSettings.globalize_path(database_path).simplify_path() 		.begins_with(ProjectSettings.globalize_path(CareerSaves.ROOT).simplify_path() + "/")
 
 
 static func page_ids() -> Array[StringName]:

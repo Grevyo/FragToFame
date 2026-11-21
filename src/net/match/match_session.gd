@@ -9,6 +9,12 @@ extends Node3D
 ## Authority model for this proof: each client is authoritative for its own position and sends
 ## it to the host; the host rebroadcasts a snapshot of everyone. Server-authoritative movement,
 ## lag compensation and hit registration are later milestones.
+##
+## Each player's state is [position, yaw, crouch 0–1, aim pitch, held weapon model ID]. Each
+## player's character look ([CharacterAppearance] dictionary, from their cosmetic profile) is sent
+## once, reliably, to the host, which shares everyone's looks with everyone; others see the
+## player as that character model (or as the plain capsule when they have none). Looks received
+## are untrusted data: size-limited here and sanitised against the local catalog when shown.
 
 signal session_started(role: Role)
 signal session_ended(reason: String)
@@ -17,7 +23,10 @@ signal player_left(peer_id: int)
 
 enum Role { NONE, HOST, CLIENT }
 
-const PROTOCOL_VERSION: int = 1
+## v2: states carry crouch, aim pitch and held weapon; character looks are exchanged.
+const PROTOCOL_VERSION: int = 2
+## Largest character look accepted, as JSON text (a full look is about 1 KB).
+const MAX_APPEARANCE_BYTES: int = 8192
 const DEFAULT_PORT: int = 24570
 const MAX_PLAYERS: int = 10
 const SEND_RATE_HZ: float = 30.0
@@ -25,13 +34,17 @@ const SNAPSHOT_RATE_HZ: float = 20.0
 
 ## The local player's body whose transform is broadcast. Set by the owning scene.
 var local_body: Node3D
+## The local player's character look ([method CharacterAppearance.to_dict]; empty = none).
+var local_appearance: Dictionary = {}
 var role: Role = Role.NONE
 var match_id: String = ""
 
 var _multiplayer: SceneMultiplayer
 var _avatars: Dictionary[int, RemotePlayerAvatar] = {}
-## Host only: latest state per peer, [position, yaw].
+## Host only: latest state per peer, [position, yaw, crouch, pitch, weapon].
 var _states: Dictionary[int, Array] = {}
+## Character looks per peer (host: everyone's, including its own as peer 1).
+var _appearances: Dictionary[int, Dictionary] = {}
 var _welcomed: bool = false
 var _send_timer: float = 0.0
 
@@ -90,6 +103,7 @@ func host(port: int = DEFAULT_PORT, bind_address: String = "*") -> Error:
 	role = Role.HOST
 	match_id = Ids.generate("mch")
 	_welcomed = true
+	_store_appearance(1, local_appearance)
 	session_started.emit(role)
 	return OK
 
@@ -115,6 +129,7 @@ func leave(reason: String = "left") -> void:
 	for peer_id: int in _avatars.keys():
 		_remove_avatar(peer_id)
 	_states.clear()
+	_appearances.clear()
 	role = Role.NONE
 	match_id = ""
 	_welcomed = false
@@ -131,10 +146,44 @@ func _process(delta: float) -> void:
 	_send_timer = 0.0
 	if role == Role.HOST:
 		if local_body != null:
-			_states[1] = [local_body.global_position, local_body.global_rotation.y]
+			_states[1] = local_state()
 		_rpc_snapshot.rpc(_states)
 	elif local_body != null:
-		_rpc_client_state.rpc_id(1, local_body.global_position, local_body.global_rotation.y)
+		var state := local_state()
+		_rpc_client_state.rpc_id(1, state[0] as Vector3, float(state[1]), float(state[2]), float(state[3]), str(state[4]))
+
+
+## The local player's state as sent: [position, yaw, crouch, pitch, weapon model ID]. Crouch, aim
+## and weapon are read when the body has them (a [CombatantMovementBody] with Head and Weapons).
+func local_state() -> Array:
+	var crouch := 0.0
+	var pitch := 0.0
+	var weapon := ""
+	var mover := local_body as CombatantMovementBody
+	if mover != null:
+		crouch = mover.crouch_amount
+	var head := local_body.get_node_or_null(^"Head") as Node3D
+	if head != null:
+		pitch = head.rotation.x
+	var controller := local_body.get_node_or_null(^"Weapons") as WeaponController
+	if controller != null and controller.current() != null:
+		weapon = String(CosmeticProfile.current().model_for(controller.current().definition.id))
+	return [local_body.global_position, local_body.global_rotation.y, crouch, pitch, weapon]
+
+
+## The character look a peer sent (empty when none arrived).
+func appearance_of(peer_id: int) -> Dictionary:
+	return _appearances.get(peer_id, {})
+
+
+## Changes the local look mid-session (e.g. after the Character Creator) and shares it.
+func set_local_appearance(look: Dictionary) -> void:
+	local_appearance = look.duplicate(true)
+	if role == Role.HOST:
+		_store_appearance(1, local_appearance)
+		_rpc_appearances.rpc(_appearances)
+	elif is_connected_to_match():
+		_rpc_appearance.rpc_id(1, local_appearance)
 
 
 # --- connection events ---------------------------------------------------------------------------
@@ -144,6 +193,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		return
 	_rpc_welcome.rpc_id(peer_id, PROTOCOL_VERSION, match_id)
 	_ensure_avatar(peer_id)
+	_rpc_appearances.rpc_id(peer_id, _appearances)
 	player_joined.emit(peer_id)
 
 
@@ -151,6 +201,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if role != Role.HOST:
 		return
 	_states.erase(peer_id)
+	_appearances.erase(peer_id)
 	_remove_avatar(peer_id)
 	player_left.emit(peer_id)
 
@@ -176,17 +227,64 @@ func _rpc_welcome(host_protocol: int, host_match_id: String) -> void:
 		return
 	match_id = host_match_id
 	_welcomed = true
+	_rpc_appearance.rpc_id(1, local_appearance)
 	session_started.emit(role)
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _rpc_client_state(world_position: Vector3, yaw: float) -> void:
+func _rpc_client_state(world_position: Vector3, yaw: float, crouch: float, pitch: float, weapon: String) -> void:
 	if role != Role.HOST:
 		return
 	var sender := _multiplayer.get_remote_sender_id()
-	_states[sender] = [world_position, yaw]
-	var avatar := _ensure_avatar(sender)
-	avatar.apply_state(world_position, yaw)
+	var state: Array = [world_position, yaw, clampf(crouch, 0.0, 1.0), clampf(pitch, -PI / 2.0, PI / 2.0), weapon.left(64)]
+	_states[sender] = state
+	_apply_state(_ensure_avatar(sender), state)
+
+
+## A client's look, sent once after joining (and again if it changes).
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_appearance(look: Dictionary) -> void:
+	if role != Role.HOST:
+		return
+	var sender := _multiplayer.get_remote_sender_id()
+	if not _store_appearance(sender, look):
+		return
+	_ensure_avatar(sender).apply_appearance(_appearances.get(sender, {}))
+	_rpc_appearances.rpc(_appearances)
+
+
+## Everyone's looks, from the host.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_appearances(looks: Dictionary) -> void:
+	if role != Role.CLIENT:
+		return
+	var me := _multiplayer.get_unique_id()
+	for key: Variant in looks:
+		var peer_id := int(key)
+		if peer_id == me or not looks[key] is Dictionary:
+			continue
+		if _store_appearance(peer_id, looks[key] as Dictionary):
+			_ensure_avatar(peer_id).apply_appearance(_appearances.get(peer_id, {}))
+
+
+## Keeps a received look when it is small enough to be one. Returns whether it was kept.
+func _store_appearance(peer_id: int, look: Dictionary) -> bool:
+	if JSON.stringify(look).length() > MAX_APPEARANCE_BYTES:
+		return false
+	if look.is_empty():
+		_appearances.erase(peer_id)
+	else:
+		_appearances[peer_id] = look.duplicate(true)
+	return true
+
+
+static func _apply_state(avatar: RemotePlayerAvatar, state: Array) -> void:
+	if state.size() < 2:
+		return
+	avatar.apply_state(state[0] as Vector3, float(state[1]),
+		float(state[2]) if state.size() > 2 else 0.0,
+		float(state[3]) if state.size() > 3 else 0.0,
+		StringName(str(state[4])) if state.size() > 4 else &"")
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
@@ -201,7 +299,7 @@ func _rpc_snapshot(states: Dictionary) -> void:
 		var state: Array = states[key]
 		if state.size() < 2:
 			continue
-		_ensure_avatar(peer_id).apply_state(state[0] as Vector3, float(state[1]))
+		_apply_state(_ensure_avatar(peer_id), state)
 	for peer_id: int in _avatars.keys():
 		if not states.has(peer_id):
 			_remove_avatar(peer_id)
@@ -217,6 +315,8 @@ func _ensure_avatar(peer_id: int) -> RemotePlayerAvatar:
 	avatar.setup(peer_id)
 	add_child(avatar)
 	_avatars[peer_id] = avatar
+	if _appearances.has(peer_id):
+		avatar.apply_appearance(_appearances[peer_id])
 	if role == Role.CLIENT:
 		player_joined.emit(peer_id)
 	return avatar

@@ -73,7 +73,7 @@ func spawn_bots() -> void:
 			continue
 		var bot := BotController.new()
 		bot.setup(id, player_state.display_name, TEAM_KEYS[player_state.team], skills[id] if skills.has(id) else BotSkill.preset(skill_name),
-			TEAM_COLORS[player_state.team])
+			director.state.setup.team_colour(player_state.team, TEAM_COLORS[player_state.team]))
 		director.level.add_child(bot)
 		bot.health.died.connect(_on_bot_died.bind(bot))
 		bots[id] = bot

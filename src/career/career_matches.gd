@@ -31,6 +31,7 @@ static func practice_setup(repo: CareerRepository, human_id: String, opponent_or
 	setup.away_team_id = opponent.id
 	setup.away_team_name = opponent.name
 	setup.away_lineup = repo.lineup(opponent.id)
+	CareerKits.apply(repo, setup)
 	return setup
 
 

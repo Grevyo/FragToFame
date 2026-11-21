@@ -714,24 +714,27 @@ outward (the Window and Door pieces face local +Z). Five materials came with it:
 painted render, clay roof tiles, tarmac and privet hedge. Even simulated teams win 41% of rounds
 on attack (eight seeded matches), inside the 32–61% spread of the other maps.
 
-**Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 1): the seventh and final
-official map for now, a sun-baked desert old town built to the conventions of classic competitive
-defuse maps, with an original layout and names. The town is cut out of solid blocks: the session
-lists the streets and yards, every other cell becomes a flat-roofed building whose height and
-finish (adobe, limewash, ochre plaster, limestone) step per 10 m tile, and every street-facing
-wall is dressed with a stone plinth, a cornice, shuttered windows (two rows on tall walls), doors,
-timber beam ends and lanterns. Arches, doorways and swung-open double doors make the chokes;
+**Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 2): the seventh official map,
+a sun-baked desert old town built to the conventions of classic competitive defuse maps, with an
+original layout and names. The town is cut out of solid blocks: the session lists the streets and
+yards with their floor level, every other cell becomes a flat-roofed building whose height and
+finish (adobe, limewash, ochre plaster, limestone) step per 10 m tile, and every street-facing wall
+is dressed with a stone plinth, a cornice, shuttered windows (two rows on tall walls), doors,
+timber beam ends and lanterns. Arches, a doorway and swung-open double doors make the chokes;
 covered passages bridge four lanes; date palms, awnings, carts, trucks, crate stacks, wells and
-dye vats fill the yards. Defenders start in the Garrison to the north, attackers in the
-Caravanserai to the south. A, Dyers' Court (east): the long Spice Road through the Spice Doors and
-a dogleg is the sniper lane to the Spice Arch (attackers 12.7 s); the short route climbs the
-Balcony Steps off mid onto the Balcony over the court and down its stair (10.1 s). B, Cistern Yard
-(west, with a raised terrace in its far corner): the covered Souk with its stalls ends at the Souk
-Arch (12.2 s); Lantern Row leaves mid for the Lantern Door (10.9 s). Mid is Caravan Street up to
-the Mid Doors (attackers 6.1 s, defenders 9.1 s). Defenders reach A in 6.1 s and B in 6.4 s, 4.0
-and 4.5 s ahead of the first attacker; Potters Row and Dye Lane let attackers swap lanes on their
-half, and defenders rotate through the Garrison in 13.4 s. Even simulated teams win 38% of rounds
-on attack (eight seeded matches), inside the spread of the other maps.
+dye vats fill the yards. Revision 2 (owner feedback: too symmetrical, a mid sightline from spawn to
+spawn, all one level) puts the defenders' half on a plateau 3 m up and makes the sites differ.
+A, Dyers' Court (east), is on the plateau and favours defenders: they walk to it on the level
+(6.9 s) while attackers climb, by the long Spice Road through the Spice Doors, a dogleg and the
+Spice Steps to the Spice Arch (13.4 s, the sniper lane), or by the Balcony Steps off mid (9.8 s).
+B, Cistern Yard (west, with a raised terrace), is down in the low town and favours attackers: the
+covered Souk (10.6 s) and Lantern Passage (10.0 s) both reach it quickly, while defenders come down
+the Garrison Steps (7.7 s), only 2.4 s ahead. Mid is three offset lengths (Lower Mid, Caravan
+Street, Top Mid up the Mid Steps behind the Mid Doors), so no line of sight runs between the
+spawns; attackers reach it in 6.1 s, defenders in 10.1 s. Rotating takes 13.3 s through the
+Garrison. Simulated teams win only 23–29% of rounds on attack over 24 seeded matches (the career
+simulator sees distances and floor areas, not height, and its spread across the official maps is
+25–68% on the same check: stage H).
 
 **Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
@@ -1007,3 +1010,4 @@ Planned scope:
 | 2026-11-21 | Barnwell (owner request): an official map of a 1950s English housing estate from the owner's drawing, with three north–south lanes, curved paths and kerbs, a barn and a well (made-up street names, generic houses). Red brick, render, roof tile, tarmac and hedge materials. |
 | 2026-11-21 | Save As in the Creation Studio (owner request): saves the open map, unsaved edits included, as a separate map with a new ID and name (Ctrl+Shift+S), so a map can be branched without losing the original. |
 | 2026-11-21 | Saffra (owner request): the seventh official map, a desert old town in the style of classic competitive defuse maps with an original layout: a long sniper lane and a balcony to A, a covered souk and a lantern-lit passage to B, mid doors, arches, covered passages, cornices, shuttered windows, beam ends and date palms. |
+| 2026-11-21 | Saffra revision 2 (owner feedback): the defenders' half is a 3 m plateau with stairs up from the low town, A on the plateau favours defenders and B in the low town favours attackers, and mid bends twice so no sightline runs from spawn to spawn. |

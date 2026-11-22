@@ -116,11 +116,44 @@ func _test_lineups() -> void:
 		bot.weapons.give_utility(EquipmentCatalog.SMOKE)
 		var again := UtilityLineup.solve(space, EquipmentCatalog.SMOKE, bot.head.global_position, target, 2.5, bot.weapons.exclude)
 		var started_at := Time.get_ticks_msec()
+		bot.rng.seed = 3
 		bot.throw_utility(again)
-		await wait_until(func() -> bool: return not bot.is_throwing(), 6.0)
+		await wait_until(func() -> bool: return not bot.is_throwing(), 15.0)
 		times[String(preset)] = (Time.get_ticks_msec() - started_at) / 1000.0
 	check(times["easy"] > times["hard"] and times["hard"] >= BotSkill.preset(&"hard").lineup_time * 0.75,
 		"lining up takes time, longer for a low-skilled thrower (%.2f s against %.2f s)" % [times["easy"], times["hard"]])
+
+	section("Every throw is different")
+	var dice := RandomNumberGenerator.new()
+	dice.seed = 5
+	var normal := BotSkill.preset(&"normal")
+	var slow := 0
+	var snapped := 0
+	var snap_spread := 0.0
+	var steady_spread := 0.0
+	var steady := 0
+	var paced := 0.0
+	var hurried := 0.0
+	for i: int in 2000:
+		var timing := normal.throw_timing(dice)
+		paced += timing.x
+		hurried += normal.throw_timing(dice, 0.5).x
+		if timing.x >= normal.lineup_time + 0.5:
+			slow += 1
+		if timing.x <= 0.01:
+			snapped += 1
+			snap_spread += timing.y
+		elif timing.x >= normal.lineup_time:
+			steady += 1
+			steady_spread += timing.y
+	check(slow > 40 and snapped > 40, "some line-ups take half a second longer, some are snapped off (%d and %d of 2000)" % [slow, snapped])
+	check(snapped > 0 and steady > 0 and snap_spread / snapped > steady_spread / steady * 2.0,
+		"a snapped throw goes wider than a patient one (%.1f° against %.1f°)" % [snap_spread / maxf(snapped, 1), steady_spread / maxf(steady, 1)])
+	check(hurried < paced * 0.7, "a call to throw fast shortens line-ups")
+	var novice := BotSkill.from_abilities({"utility": 5, "composure": 30})
+	var specialist := BotSkill.from_abilities({"utility": 96, "composure": 90})
+	check(novice.lineup_time >= 5.0 and novice.lineup_time <= 10.0 and specialist.lineup_time < 0.7,
+		"a novice takes %.1f s to line up, a specialist %.1f s" % [novice.lineup_time, specialist.lineup_time])
 
 	section("Looking away from a teammate's flash")
 	var knowledge := TeamKnowledge.new()
@@ -136,9 +169,9 @@ func _test_lineups() -> void:
 	await despawn(sandbox)
 
 
-## A rifle round on an official map: the attacking bots gather, throw their utility and go in.
+## Rifle rounds on an official map, one attack style at a time: each plays out the way it says.
 func _test_official_execute() -> void:
-	section("A site take with utility")
+	section("Attack styles on an official map")
 	var app := tree.root.get_node("App")
 	var map_id := _official_with_graph()
 	var setup := MatchSetup.new()
@@ -153,7 +186,9 @@ func _test_official_execute() -> void:
 	rules.team_size = 5
 	rules.freeze_time = 0.5
 	rules.buy_time = 1.0
-	rules.round_time = 115.0
+	# A long round and a bomb nobody can plant: every style gets the same round to play out in.
+	rules.round_time = 900.0
+	rules.plant_time = 900.0
 	var map := OfficialMaps.load_map(map_id)
 	app.set("pending_match_setup", setup)
 	app.set("pending_match_rules", rules)
@@ -169,29 +204,73 @@ func _test_official_execute() -> void:
 		check(false, "bots mode creates a BotSquad")
 		await despawn(sandbox)
 		return
-	var player := sandbox.get_node("Player") as FirstPersonController
-	player.input_enabled = false
-	# Nobody sees anyone, so the take plays out; attackers carry a rifle round's utility.
-	var thrown: Array[StringName] = []
+	(sandbox.get_node("Player") as FirstPersonController).input_enabled = false
+	var attackers: Array[BotController] = []
 	for id: String in squad.bots:
-		var bot := squad.bots[id]
+		squad.bots[id].enemies = []
 		if director.state.side_of(id) == MatchRules.SIDE_ATTACK:
-			for item: StringName in [EquipmentCatalog.SMOKE, EquipmentCatalog.FLASH, EquipmentCatalog.FIRE]:
-				bot.weapons.give_utility(item)
-			bot.weapons.utility_thrown.connect(func(item: StringName) -> void: thrown.append(item))
-		bot.enemies = []
-	check(squad.execute != null and squad.execute_phase == BotSquad.Execute.GATHER,
-		"the attackers plan a take of site %s from %s" % [squad.attack_site,
-			SimMap.for_map(map_id).name_of(squad.execute.entrance_id) if squad.execute != null else "nowhere"])
+			attackers.append(squad.bots[id])
+	# What each throw saw: [utility, bots released to push at that moment].
+	var log: Array[Array] = []
+	for bot: BotController in attackers:
+		bot.weapons.utility_thrown.connect(func(item: StringName) -> void:
+			log.append([item, squad.attack.released().size() if squad.attack != null else 0]))
+	var spawns := director.level.spawn_points("attack")
+	var sim := SimMap.for_map(map_id)
 	Engine.time_scale = 4.0
-	var gathered := await wait_until(func() -> bool: return squad.execute_phase != BotSquad.Execute.GATHER, 30.0)
-	check(gathered, 
-		"they gather before the entrance")
-	var went := await wait_until(func() -> bool: return squad.execute_phase == BotSquad.Execute.GO, 20.0)
+	await wait_until(func() -> bool: return director.state.phase == MatchState.Phase.LIVE, 5.0)
+	for style: AttackPlay.Style in [AttackPlay.Style.EXECUTE, AttackPlay.Style.EXECUTE_TOGETHER,
+			AttackPlay.Style.SUPPORTED_ENTRY, AttackPlay.Style.DEFAULT, AttackPlay.Style.SPLIT, AttackPlay.Style.RUSH]:
+		for index: int in attackers.size():
+			var spawn: Array = spawns[index % spawns.size()]
+			attackers[index].respawn_at((spawn[0] as Vector3) + Vector3(0.9 * floorf(float(index) / spawns.size()), 0, 0), float(spawn[1]))
+			attackers[index].rng.seed = 40 + index
+			for item: StringName in [EquipmentCatalog.SMOKE, EquipmentCatalog.FLASH, EquipmentCatalog.FIRE]:
+				if attackers[index].weapons.utility_count(item) == 0:
+					attackers[index].weapons.give_utility(item)
+		await wait_physics_frames(2)
+		log.clear()
+		squad.forced_style = style
+		squad.plan_attack()
+		var play := squad.attack
+		var name := AttackPlay.STYLE_NAMES[style]
+		if play == null:
+			check(false, "%s: the attackers have a play" % name)
+			continue
+		var first_phase := play.lanes[0].phase
+		var paired: Array[bool] = [false]
+		var went := await wait_until(func() -> bool:
+			for lane: AttackPlay.Lane in play.lanes:
+				if lane.trader != null and lane.entry != null:
+					paired[0] = true
+			return play.is_going() and (log.size() > 0 or style == AttackPlay.Style.RUSH or style == AttackPlay.Style.DEFAULT
+				or play.lanes.all(func(lane: AttackPlay.Lane) -> bool: return lane.throws.is_empty())), 60.0)
+		var throws := ", ".join(log.map(func(entry: Array) -> String: return "%s@%d" % [String(entry[0]).trim_prefix("utl_"), entry[1]]))
+		match style:
+			AttackPlay.Style.EXECUTE:
+				check(went and first_phase == AttackPlay.Phase.GATHER and log.size() >= 2 and log.back()[0] == EquipmentCatalog.FLASH
+					and log.all(func(entry: Array) -> bool: return int(entry[1]) == 0),
+					"execute: they gather, smoke, flash in last and only then go (%s)" % throws)
+			AttackPlay.Style.EXECUTE_TOGETHER:
+				check(went and not log.is_empty() and int(log[0][1]) > 0,
+					"execute together: the first grenade flies with teammates already pushing (%s)" % throws)
+			AttackPlay.Style.SUPPORTED_ENTRY:
+				check(went and log.size() >= 2 and log[0][0] == EquipmentCatalog.FLASH
+					and log.slice(1).any(func(entry: Array) -> bool: return int(entry[1]) >= 2 and int(entry[1]) < attackers.size()),
+					"supported entry: a flash first, the entry pair goes while the supports keep throwing (%s)" % throws)
+			AttackPlay.Style.DEFAULT:
+				check(went and first_phase == AttackPlay.Phase.APPROACH and log.size() <= 1,
+					"default: no gathering; at the entrance one flash at most, off the cuff (%s)" % throws)
+			AttackPlay.Style.SPLIT:
+				var entrances := play.lanes.map(func(lane: AttackPlay.Lane) -> String: return sim.name_of(lane.plan.entrance_id))
+				check(went and play.lanes.size() == 2 and entrances[0] != entrances[1],
+					"split: two groups take two lanes (%s) and push together (%s)" % [" and ".join(entrances), throws])
+			AttackPlay.Style.RUSH:
+				check(went and log.is_empty() and first_phase == AttackPlay.Phase.GO, "rush: straight in, no utility")
+		if style != AttackPlay.Style.RUSH:
+			check(paired[0], "%s: the first two in go as a pair (double peek)" % name)
 	Engine.time_scale = 1.0
-	check(went and thrown.has(EquipmentCatalog.SMOKE) and thrown.back() == EquipmentCatalog.FLASH,
-		"they smoke, flash in last, then go (%s)" % ", ".join(thrown.map(
-		func(item: StringName) -> String: return String(item))))
+	squad.forced_style = -1
 	app.set("last_match_result", null)
 	await despawn(sandbox)
 	await wait_frames(2)

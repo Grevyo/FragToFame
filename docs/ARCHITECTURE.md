@@ -955,9 +955,27 @@ competition settings arrive with M19.
     nearest the defence spawn;
   - the next hold within 18 m gets fire;
   - the flash pops 2.4 m up and 5 m past the entrance.
-  `BotSquad` runs it as gather → utility → go. Contact, a drop or plant, or under 30 s left
-  skips straight to go. A throw with no line-up from the staging point is retried from the
-  doorway. Going in waits until the flash has actually left the hand.
+- **Attack styles (`AttackPlay`, M7 C part 1).** Each round `BotSquad` builds the attackers' play.
+  `AttackPlay.choose_style` weighs the style from players and utility carried: a split needs four
+  players and a second way in, and executes need utility. A play is one lane (a `SiteExecute`)
+  or two for a split; a second lane's way in must not be reached through the site.
+  - Each lane runs approach or gather, then utility, then go. `order_for(bot)` gives each bot a
+    goal or a hold; `{}` means push the site as before.
+  - Throws are handed out in parallel, one line-up solve per squad decision, to carriers that
+    are free. A throw with no line-up from the gathering spot is retried from the doorway.
+  - Each style decides who is let go when. Execute waits for the flash to leave the hand. Execute
+    together releases non-throwers at once and throwers as their grenade leaves. Supported entry
+    lets the entry pair go off the first flash while supports throw the rest.
+  - The two bots nearest the entrance (the bomb carrier only if nobody else) form the entry
+    pair. The trader is ordered to the entry's shoulder until the entrance, a double peek.
+  - Contact, a drop or plant, or under 30 s left sends everyone in.
+  - The utility window scales with the slowest thrower's line-up time.
+  - Each style throws at its own hurry (`AttackPlay.HURRY`). `BotSkill.throw_timing` turns a
+    hurry into this throw's settle time and spread: the pace varies around `lineup_time`, about
+    7% of throws (more when hurried) are snapped off at once, and spread grows as the throw gets
+    quicker, up to 3.2× for a snap.
+  - `lineup_time` follows the raw Utility ability on a curve: about 6 s at Utility 5, 1.5 s at
+    55 and 0.5 s at 90+.
 - **Everything from stats.** Every number that makes one bot play better than another lives in
   `BotSkill`. In a career match it is derived from that AI player's abilities
   (`BotSkill.from_abilities`); the sandbox uses the easy/normal/hard presets. Nothing a bot does

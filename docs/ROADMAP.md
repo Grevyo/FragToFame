@@ -255,10 +255,21 @@ committed on its own:
       discipline, angle checking, patience on a lost angle, flash awareness and spotting range
       (see ARCHITECTURE "Everything from stats"). Self pop-flashes for a lone peek come with
       stage C's roles.
-- [ ] **C. Team executes.** The career sim's round plans ([RoundPlanner]) drive the match bots:
-      default and map control, gather at the staging place, utility on the call, the entry goes
-      first with a trader a step behind, the planter covered; defenders anchor, rotate on
-      information and retake together.
+- [ ] **C. Team executes.** 🔶 Part 1 done 2026-11-22: attack styles ([AttackPlay]), chosen
+      per round from what the team carries (owner: tactics decide who throws and who pushes).
+      - Rush: straight in.
+      - Default: move up together, one off-the-cuff flash at the entrance and a peek off it.
+      - Execute: gather, parallel smokes, the flash once they bloom, then everyone goes.
+      - Execute together: everyone throws and pushes at once; hurried throws miss more.
+      - Supported entry: the flash first, the entry pair goes while supports keep throwing.
+      - Split: two groups, two lanes, one push.
+      In every style the first two in double-peek the entrance as a pair, with the bomb carrier
+      behind them. Each throw's pace varies around the thrower's usual time: sometimes half a
+      second longer, now and then snapped off at once, and a quicker throw goes wider. Novices
+      take five to eight seconds to line up.
+      Still to do: the career sim's round plans ([RoundPlanner]) choosing the style, site and
+      roles (default, execute, split, rush, fake); the planter covered; defenders anchoring,
+      rotating on information and retaking together.
 - [ ] **D. IGL calls.** Mid-round adaptations (rotate, save, regroup) and human IGL commands
       issuing the same calls.
 
@@ -1155,3 +1166,4 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
 | 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |
 | 2026-11-22 | Milestone 7 stage B: bot utility. Bots buy grenades and throw solved line-ups (the same flight and fuse as a live grenade, so no throws through walls): attackers gather before an entrance, smoke the nearest hold and the rotation, burn a near hold, flash in from the doorway and go in together, turning away from their own flashes; defenders throw delay utility at a push. Every bot behaviour is now stat-driven: throw spread and line-up time from Utility usage, plus discipline, angle checking, patience, flash awareness and spotting range from the matching abilities. |
+| 2026-11-22 | Milestone 7 stage C part 1: attack styles (owner request). Each round the attacking bots rush, play a default with an off-the-cuff flash and peek, execute, throw-and-go together, send an entry pair in off a support's flash, or split two lanes, with an entry pair double-peeking the entrance. Throw pace varies throw to throw (snapped throws go wide); novices take five to eight seconds to line up. |

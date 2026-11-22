@@ -5,31 +5,23 @@ extends Node
 ## carrier plants, defenders split between sites, everyone converges on a planted bomb and
 ## defenders defuse. Team tactics and the IGL replace this simple layer in Milestone 7.
 ##
-## Utility (Milestone 7 B): bots buy grenades on rifle rounds. Attackers gather before the
-## entrance of their site ([SiteExecute]), smoke the hold nearest it and the defenders' rotation,
-## burn the next hold, flash in over the entrance and go in together; defenders throw delay
-## utility at attackers seen pushing near them. Every throw is solved against the map
-## ([UtilityLineup]) and thrown by the bot as a player would.
+## Utility and attack styles (Milestone 7 B, C): bots buy grenades on rifle rounds, and each
+## round the attackers take their site in one of several styles ([AttackPlay]: rush, default
+## with an off-the-cuff flash, execute, throw-and-go, supported entry, split from two lanes) with
+## an entry pair double-peeking the entrance; defenders throw delay utility at attackers seen
+## pushing near them. Every throw is solved against the map ([UtilityLineup]) and thrown by the
+## bot as a player would, at its own pace.
 
 const CALLSIGNS: Array[String] = ["Ardent", "Basalt", "Cipher", "Drift", "Ember", "Flint", "Grit",
 	"Halcyon", "Ion", "Jolt"]
 const TEAM_KEYS: Array[StringName] = [&"home", &"away"]
 const TEAM_COLORS: Array[Color] = [Color("b8542a"), Color("2e7d8c")]
 const DECIDE_INTERVAL: float = 0.25
-## Execute timing (seconds): give up gathering, give up on utility, go after the flash.
-const GATHER_LIMIT: float = 14.0
-const UTILITY_LIMIT: float = 12.0
-const GO_AFTER_FLASH: float = 0.45
-## Bots within this distance of the staging place count as gathered; utility is thrown from there.
-const GATHERED_RADIUS: float = 6.0
-## Line-ups must go off this close to their target (metres).
-const LINEUP_TOLERANCE: float = 2.5
 ## Utility each side wants on a rifle round, in buying order.
 const ATTACK_UTILITY: Array[StringName] = [EquipmentCatalog.SMOKE, EquipmentCatalog.FLASH, EquipmentCatalog.FIRE,
 	EquipmentCatalog.FLASH]
 const DEFENCE_UTILITY: Array[StringName] = [EquipmentCatalog.FIRE, EquipmentCatalog.SMOKE, EquipmentCatalog.FRAG]
 
-enum Execute { NONE, GATHER, UTILITY, GO }
 
 var director: MatchDirector
 var bots: Dictionary[String, BotController] = {}
@@ -47,22 +39,15 @@ var skills: Dictionary[String, BotSkill] = {}
 var _decide_timer: float = 0.0
 ## One shared picture per team (index): places cleared and enemies seen ([TeamKnowledge]).
 var knowledge: Array[TeamKnowledge] = []
-## This round's take of the attack site (null on maps without a simulation graph: walk straight
-## in) and where it stands.
-var execute: SiteExecute = null
-var execute_phase: Execute = Execute.NONE
+## This round's attack (null on maps without a simulation graph, or when no bot attacks: they
+## walk straight in) and, for tests and tools, a style to force instead of choosing one.
+var attack: AttackPlay = null
+var forced_style: int = -1
 var _sim_map: SimMap = null
-var _phase_time: float = 0.0
-## Throws still to make this execute: {utility: StringName, target: Vector3}.
-var _pending_throws: Array[Dictionary] = []
-var _smoked_at: float = -1.0
-var _flashed_at: float = -1.0
 ## Defenders who already used their delay utility this round.
 var _delayed: Dictionary[String, bool] = {}
-## A throw that had no line-up from the staging place: its thrower walks to the entrance's throw
-## spot to try from there ("" when none).
-var _walker_id: String = ""
-var _walk_throw: Dictionary = {}
+## Line-ups must go off this close to their target (metres).
+const LINEUP_TOLERANCE: float = 2.5
 var _site_positions: Dictionary[String, Vector3] = {}
 ## Optional "ai_hold" hint pieces per bombsite letter (authored in the map editor).
 var _hold_points: Dictionary[String, Array] = {}
@@ -119,7 +104,7 @@ func spawn_bots() -> void:
 			director.state.setup.team_colour(player_state.team, TEAM_COLORS[player_state.team]))
 		director.level.add_child(bot)
 		bot.health.died.connect(_on_bot_died.bind(bot))
-		bot.utility_finished.connect(_on_utility_finished)
+		bot.utility_finished.connect(_on_utility_finished.bind(bot))
 		bot.knowledge = knowledge[player_state.team] if not knowledge[player_state.team].places.is_empty() else null
 		bots[id] = bot
 	var everyone := healths()
@@ -162,7 +147,7 @@ func on_round_started() -> void:
 			bot.health.armour = player_state.armour
 			bot.health.has_helmet = player_state.helmet
 			bot.frozen = true
-	_plan_execute()
+	plan_attack()
 	_decide_timer = 0.0
 
 
@@ -188,7 +173,6 @@ func physics_update(delta: float) -> void:
 		return
 	for team_knowledge: TeamKnowledge in knowledge:
 		team_knowledge.advance(delta)
-	_phase_time += delta
 	_decide_timer -= delta
 	if _decide_timer <= 0.0:
 		_decide_timer = DECIDE_INTERVAL
@@ -199,7 +183,7 @@ func physics_update(delta: float) -> void:
 # --- Decisions -------------------------------------------------------------------------------
 
 func _decide() -> void:
-	_advance_execute()
+	_advance_attack()
 	_defender_delay()
 	var state := director.state
 	var attack_spawn := director.level.spawn_point("attack")[0] as Vector3
@@ -218,14 +202,7 @@ func _decide() -> void:
 				bot.set_watch_point(defence_spawn + Vector3(0, 1.5, 0))
 			elif id == dropped_runner:
 				bot.set_goal(_on_navmesh(state.bomb_position))
-			elif execute_phase == Execute.GATHER or execute_phase == Execute.UTILITY:
-				if id == _walker_id:
-					bot.set_goal(_on_navmesh(execute.throw_spot))
-					bot.set_watch_point(execute.entrance + Vector3(0, 1.5, 0))
-				elif not bot.is_throwing():
-					bot.set_goal(_on_navmesh(execute.staging + spread))
-					bot.set_watch_point(execute.entrance + Vector3(0, 1.5, 0))
-			elif _site_positions.has(attack_site):
+			elif not _follow_order(bot, spread) and _site_positions.has(attack_site):
 				bot.set_goal(_on_navmesh(_site_positions[attack_site] + (Vector3.ZERO if id == state.bomb_carrier_id else spread)))
 				bot.set_watch_point(defence_spawn + Vector3(0, 1.5, 0))
 			bot.interact_held = id == state.bomb_carrier_id and state.phase == MatchState.Phase.LIVE \
@@ -309,76 +286,54 @@ func _buy(id: String) -> void:
 
 # --- Utility -----------------------------------------------------------------------------------
 
-## A new round: plan the take of this round's attack site (only when bots attack).
-func _plan_execute() -> void:
-	execute = null
-	execute_phase = Execute.NONE
-	_phase_time = 0.0
-	_pending_throws.clear()
-	_smoked_at = -1.0
-	_flashed_at = -1.0
+## A new round: the attackers' play for it (only when bots attack).
+func plan_attack() -> void:
+	attack = null
 	_delayed.clear()
-	_walker_id = ""
-	_walk_throw = {}
-	if attack_site.is_empty() or _living_attackers().is_empty():
+	var attackers := _living_attackers()
+	if attack_site.is_empty() or attackers.is_empty() or _sim_map == null:
 		return
-	execute = SiteExecute.plan(_sim_map, attack_site, _hold_points.get(attack_site, []))
-	if execute == null:
-		return
-	execute_phase = Execute.GATHER
-	for point: Vector3 in execute.smokes:
-		_pending_throws.append({"utility": EquipmentCatalog.SMOKE, "target": point})
-	if execute.fire != Vector3.INF:
-		_pending_throws.append({"utility": EquipmentCatalog.FIRE, "target": execute.fire})
-	if execute.flash != Vector3.INF:
-		_pending_throws.append({"utility": EquipmentCatalog.FLASH, "target": execute.flash})
+	var utility := 0
+	var flashes := 0
+	for bot: BotController in attackers:
+		for item: StringName in EquipmentCatalog.UTILITY:
+			utility += bot.weapons.utility_count(item)
+		flashes += bot.weapons.utility_count(EquipmentCatalog.FLASH)
+	var entrances := _sim_map.entrances("site_" + attack_site).size()
+	var style := forced_style as AttackPlay.Style if forced_style >= 0 \
+		else AttackPlay.choose_style(rng, attackers.size(), utility, flashes, entrances)
+	attack = AttackPlay.create(style, _sim_map, attack_site, _hold_points.get(attack_site, []), attackers,
+		director.level.get_world_3d().direct_space_state, rng, director.state.bomb_carrier_id)
 
 
-## Gather, then utility, then go. Contact with the enemy, a dropped bomb or the clock cuts it short.
-func _advance_execute() -> void:
-	if execute_phase == Execute.NONE or execute_phase == Execute.GO:
-		return
+## Moves the play on. Contact with the enemy, a dropped or planted bomb or the clock running
+## down sends everyone in at once.
+func _advance_attack() -> void:
 	var state := director.state
-	if state.phase == MatchState.Phase.FREEZE:
-		_phase_time = 0.0
+	if attack == null or state.phase != MatchState.Phase.LIVE:
 		return
 	var attackers := _living_attackers()
-	if attackers.is_empty() or state.is_bomb_planted or state.is_bomb_dropped or state.phase != MatchState.Phase.LIVE \
-			or state.phase_time_left < 30.0 or attackers.any(func(bot: BotController) -> bool: return bot.target != null):
-		execute_phase = Execute.GO
-		return
-	match execute_phase:
-		Execute.GATHER:
-			var gathered := attackers.all(func(bot: BotController) -> bool:
-				return _flat_distance(bot.global_position, execute.staging) <= GATHERED_RADIUS)
-			if gathered or _phase_time > GATHER_LIMIT:
-				execute_phase = Execute.UTILITY
-				_phase_time = 0.0
-		Execute.UTILITY:
-			if _phase_time > UTILITY_LIMIT or (_flashed_at >= 0.0 and _phase_time - _flashed_at >= GO_AFTER_FLASH):
-				execute_phase = Execute.GO
-				return
-			if attackers.any(func(bot: BotController) -> bool: return bot.is_throwing()):
-				return
-			if not _walker_id.is_empty():
-				_walk_and_throw()
-				return
-			if _pending_throws.is_empty():
-				if _flashed_at < 0.0:
-					execute_phase = Execute.GO
-				return
-			# The flash waits for the smokes to bloom.
-			var next: Dictionary = _pending_throws[0]
-			if next["utility"] == EquipmentCatalog.FLASH and _smoked_at >= 0.0 and _phase_time - _smoked_at < 1.2:
-				return
-			_pending_throws.pop_front()
-			var utility := next["utility"] as StringName
-			var carrier := _carrier(attackers, utility)
-			if carrier != null and not _throw_now(carrier, utility, next["target"] as Vector3):
-				# No line-up from here: walk up to the entrance and try from there.
-				_walker_id = carrier.bot_id
-				_walk_throw = next
-				_walk_throw["since"] = _phase_time
+	var cut_short := attackers.is_empty() or state.is_bomb_planted or state.is_bomb_dropped or state.phase_time_left < 30.0 \
+		or attackers.any(func(bot: BotController) -> bool: return bot.target != null)
+	attack.carrier_id = state.bomb_carrier_id
+	attack.update(DECIDE_INTERVAL, cut_short)
+
+
+## Sets [param bot]'s goal from its part in the attack. False when it has none (push the site).
+func _follow_order(bot: BotController, spread: Vector3) -> bool:
+	if attack == null:
+		return false
+	var order := attack.order_for(bot)
+	if order.is_empty():
+		return false
+	if order.get("hold", false):
+		bot.set_goal(bot.global_position)
+	else:
+		var goal := order["goal"] as Vector3
+		bot.set_goal(_on_navmesh(goal + (spread if order.get("spread", false) else Vector3.ZERO)))
+	if order.has("watch"):
+		bot.set_watch_point(order["watch"] as Vector3)
+	return true
 
 
 func _living_attackers() -> Array[BotController]:
@@ -387,28 +342,6 @@ func _living_attackers() -> Array[BotController]:
 		if bots[id].is_alive() and director.state.side_of(id) == MatchRules.SIDE_ATTACK:
 			list.append(bots[id])
 	return list
-
-
-## The thrower walking to the entrance: throws once there (or gives up after a few seconds),
-## then rejoins the others.
-func _walk_and_throw() -> void:
-	var bot: BotController = bots.get(_walker_id)
-	var alive := bot != null and bot.is_alive()
-	var arrived := alive and _flat_distance(bot.global_position, execute.throw_spot) <= 1.0
-	if alive and not arrived and _phase_time - float(_walk_throw["since"]) < 6.0:
-		return
-	if arrived:
-		_throw_now(bot, _walk_throw["utility"] as StringName, _walk_throw["target"] as Vector3)
-	_walker_id = ""
-	_walk_throw = {}
-
-
-## The first of [param candidates] carrying [param utility] and free to throw (null when none).
-func _carrier(candidates: Array[BotController], utility: StringName) -> BotController:
-	for bot: BotController in candidates:
-		if bot.weapons.utility_count(utility) > 0 and not bot.is_throwing() and bot.target == null:
-			return bot
-	return null
 
 
 ## [param bot] throws [param utility] at [param target] if the map allows a line-up from where it
@@ -420,15 +353,10 @@ func _throw_now(bot: BotController, utility: StringName, target: Vector3) -> boo
 	return lineup != null and bot.throw_utility(lineup)
 
 
-## Times the execute from when a grenade actually leaves a hand.
-func _on_utility_finished(utility: StringName, thrown: bool) -> void:
-	if not thrown:
-		return
-	var kind := EquipmentCatalog.utility_kind(utility)
-	if kind == EquipmentCatalog.KIND_FLASH:
-		_flashed_at = _phase_time
-	elif kind == EquipmentCatalog.KIND_SMOKE:
-		_smoked_at = _phase_time
+## A grenade left a bot's hand (or a throw was given up): the attack's timing hangs on it.
+func _on_utility_finished(utility: StringName, thrown: bool, bot: BotController) -> void:
+	if attack != null:
+		attack.on_utility_finished(bot, utility, thrown)
 
 
 ## Defenders throw delay utility (fire, then frag, then smoke) at attackers a teammate has just

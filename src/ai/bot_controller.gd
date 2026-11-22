@@ -121,8 +121,10 @@ var _strafing_now: bool = false
 ## The line-up being thrown (null when none) and how long is left to throw it.
 var _throw: UtilityLineup = null
 var _throw_left: float = 0.0
-## Seconds still to spend lined up before letting go (from [member BotSkill.lineup_time]).
+## Seconds still to spend lined up before letting go, and the release spread of this throw
+## (from [method BotSkill.throw_timing]).
 var _throw_settle: float = 0.0
+var _throw_spread: float = 0.0
 
 
 ## Configures identity before the bot enters the tree.
@@ -323,9 +325,9 @@ func _physics_process(delta: float) -> void:
 
 # --- Utility -------------------------------------------------------------------------------
 
-## Throws [param lineup] (stand still, take the utility out, line up and throw). False when the
-## bot carries none of it.
-func throw_utility(lineup: UtilityLineup) -> bool:
+## Throws [param lineup] (stand still, take the utility out, line up and throw) at the thrower's
+## own pace, quicker when [param hurry] is below 1. False when the bot carries none of it.
+func throw_utility(lineup: UtilityLineup, hurry: float = 1.0) -> bool:
 	if lineup == null or weapons.utility_count(lineup.utility_id) <= 0:
 		return false
 	for index: int in weapons.weapons.size():
@@ -333,7 +335,9 @@ func throw_utility(lineup: UtilityLineup) -> bool:
 			weapons.select_index(index)
 			break
 	_throw = lineup
-	_throw_settle = skill.lineup_time * rng.randf_range(0.8, 1.3)
+	var timing := skill.throw_timing(rng, hurry)
+	_throw_settle = timing.x
+	_throw_spread = timing.y
 	_throw_left = THROW_GIVE_UP + _throw_settle
 	return true
 
@@ -357,7 +361,7 @@ func _throw_step(delta: float) -> void:
 	_throw_settle -= delta
 	if _throw_settle > 0.0:
 		return
-	set_view(wanted + Vector2(rng.randfn(0.0, skill.utility_error), rng.randfn(0.0, skill.utility_error)))
+	set_view(wanted + Vector2(rng.randfn(0.0, _throw_spread), rng.randfn(0.0, _throw_spread)))
 	var lineup := _throw
 	_throw = null
 	var thrown := weapons.throw_current(lineup.speed)

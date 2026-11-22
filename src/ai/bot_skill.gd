@@ -44,9 +44,13 @@ var search_hold: float = 1.0
 ## of the team's calls turn late and catch some of it.
 var flash_lead: float = 0.7
 ## Throwing: spread of the release around the line-up (degrees; a clumsy throw lands off the
-## spot) and the seconds taken lining up before letting go (never instant).
-var utility_error: float = 1.1
-var lineup_time: float = 0.85
+## spot) and the usual seconds taken lining up before letting go. Each throw varies around these
+## ([method throw_timing]): a quicker throw than usual lands wider.
+var utility_error: float = 1.0
+var lineup_time: float = 1.5
+
+## How often a throw is snapped off with no settling at all (more often when hurried).
+const SNAP_CHANCE: float = 0.07
 
 
 ## Bot mechanics from an AI professional's simulated abilities (1–100, see CareerCatalog).
@@ -74,19 +78,33 @@ static func from_abilities(abilities: Dictionary, label_text: String = "") -> Bo
 	skill.strafe = clampf(lerpf(easy.strafe, hard.strafe, _blend(abilities, ["movement", "spray_control"])), 0.0, 1.0)
 	skill.peek = clampf(lerpf(easy.peek, hard.peek, _blend(abilities, ["game_sense", "movement"])), 0.0, 1.0)
 	var sense := _blend(abilities, ["game_sense", "positioning"])
-	var utility := _blend(abilities, ["utility"])
 	skill.view_distance = lerpf(easy.view_distance, hard.view_distance, game_sense)
 	skill.accurate_share = maxf(lerpf(easy.accurate_share, hard.accurate_share, _blend(abilities, ["movement", "composure"])), 0.22)
 	skill.clearing = clampf(lerpf(easy.clearing, hard.clearing, sense), 0.1, 1.0)
 	skill.search_hold = maxf(lerpf(easy.search_hold, hard.search_hold, sense), 0.3)
 	skill.flash_lead = maxf(lerpf(easy.flash_lead, hard.flash_lead, _blend(abilities, ["teamwork", "communication"])), 0.2)
-	skill.utility_error = maxf(lerpf(easy.utility_error, hard.utility_error, utility), 0.15)
-	skill.lineup_time = maxf(lerpf(easy.lineup_time, hard.lineup_time, _blend(abilities, ["utility", "composure"])), 0.35)
+	# Line-ups follow the raw Utility ability on a curve: a novice can take five to eight seconds
+	# and scatter wide, a specialist half a second and lands close.
+	var thrower := clampf((0.75 * float(abilities.get("utility", 50)) + 0.25 * float(abilities.get("composure", 50))) / 100.0, 0.0, 1.0)
+	skill.utility_error = 0.25 + 3.5 * pow(1.0 - clampf(float(abilities.get("utility", 50)) / 100.0, 0.0, 1.0), 2.0)
+	skill.lineup_time = 0.45 + 7.5 * pow(1.0 - thrower, 2.5)
 	var overall := 0.0
 	for value: Variant in abilities.values():
 		overall += float(value)
 	skill.label = label_text if not label_text.is_empty() else "Rated %d" % roundi(overall / maxf(abilities.size(), 1))
 	return skill
+
+
+## One throw's timing: Vector2(seconds lined up before letting go, release spread in degrees).
+## The pace varies throw to throw around the thrower's usual time (sometimes half a second
+## longer, now and then snapped off at once); the quicker the throw against that usual time, the
+## wider it goes. [param hurry] below 1 is a call to throw fast (a throw-and-go or a rush).
+func throw_timing(dice: RandomNumberGenerator, hurry: float = 1.0) -> Vector2:
+	var pace := clampf(dice.randfn(1.0, 0.35), 0.3, 2.0) * clampf(hurry, 0.1, 1.5)
+	if dice.randf() < SNAP_CHANCE * (2.0 - clampf(hurry, 0.0, 1.0)):
+		pace = 0.0
+	var spread := utility_error * clampf(1.0 / sqrt(maxf(pace, 0.1)), 0.75, 3.2)
+	return Vector2(lineup_time * pace, spread)
 
 
 ## 0 at ability 35, 1 at 90, up to 1.12 for elite values (mean of [param keys]).
@@ -119,7 +137,7 @@ static func preset(name: StringName) -> BotSkill:
 			skill.search_hold = 0.5
 			skill.flash_lead = 0.3
 			skill.utility_error = 2.6
-			skill.lineup_time = 1.5
+			skill.lineup_time = 4.5
 		&"hard":
 			skill.label = "Hard"
 			skill.reaction_time = 0.22
@@ -138,6 +156,6 @@ static func preset(name: StringName) -> BotSkill:
 			skill.clearing = 0.95
 			skill.search_hold = 1.5
 			skill.flash_lead = 1.0
-			skill.utility_error = 0.35
+			skill.utility_error = 0.3
 			skill.lineup_time = 0.5
 	return skill

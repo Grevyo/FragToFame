@@ -29,12 +29,22 @@ var flash: Vector3 = Vector3.INF
 
 
 ## The take of site [param letter] on [param map] with the hold hints of [param holds] (the map
-## document's "ai_hold" pieces for that site). Null when the map has no walk from attack spawn.
-static func plan(map: SimMap, letter: String, holds: Array = []) -> SiteExecute:
+## document's "ai_hold" pieces for that site), through [param via] (an entrance place; default:
+## the one on the walked route from attack spawn). Null when the map has no such walk.
+static func plan(map: SimMap, letter: String, holds: Array = [], via: String = "") -> SiteExecute:
 	if map == null:
 		return null
 	var site_id := "site_" + letter
 	var route := map.route(map.spawn("attack"), site_id)
+	if not via.is_empty():
+		route = map.route(map.spawn("attack"), via)
+		if route.is_empty() or not map.entrances(site_id).has(via):
+			return null
+		# A way in that is only reached through the site itself is no other way in.
+		var on_site := map.site_cluster(site_id)
+		if route.any(func(id: String) -> bool: return on_site.has(id)):
+			return null
+		route.append(site_id)
 	if route.size() < 2:
 		return null
 	var cluster := map.site_cluster(site_id)

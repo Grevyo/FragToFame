@@ -85,7 +85,7 @@ func _build() -> void:
 		"A desert old town at night, lit by lanterns, braziers and strings of bulbs, on two levels. A, Dyers' Court, up on the defenders' plateau: climb the long Spice Road to the Spice Arch, or the Balcony Steps off mid. B, Cistern Yard, down in the low town: through the covered Souk or Lantern Passage. Mid bends twice up to the Mid Doors and the Mid Steps.")
 	# Night: a cold, low moon and a deep blue sky; the town is lit by its lamps.
 	controller.set_lighting({"sun_yaw": 128.0, "sun_pitch": 38.0, "sun_energy": 0.28, "sun_color": "9db4e6",
-		"ambient_color": "28324c", "ambient_energy": 0.42, "haze": 0.3})
+		"ambient_color": "28324c", "ambient_energy": 0.42, "haze": 0.3, "sky": "desert_night"})
 	_ground()
 	_buildings()
 	_facades()

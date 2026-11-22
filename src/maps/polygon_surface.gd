@@ -31,6 +31,16 @@ static func piece(points: PackedVector3Array, thickness: float) -> Dictionary:
 	return result
 
 
+## True when [param point] (world) lies over the drawn outline of a surface piece, not just
+## inside its bounding box: an angled strip's box also covers the ground beside it.
+static func footprint_has_point(piece: Dictionary, point: Vector3) -> bool:
+	var points := _local_points(piece["size"] as Vector3, piece.get("props", {}) as Dictionary)
+	if points.size() < 3:
+		return false
+	var local := MapDocument.piece_transform(piece).affine_inverse() * point
+	return Geometry2D.is_point_in_polygon(Vector2(local.x, local.z), _footprint(points))
+
+
 static func is_valid(props: Dictionary) -> bool:
 	var points := _local_points(Vector3.ONE, props)
 	return not _triangulate(points).is_empty()

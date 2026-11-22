@@ -382,6 +382,13 @@ func _test_building_dressing() -> void:
 		and outdoors.sdfgi_enabled and outdoors.fog_enabled, "maps get a sky, occlusion, global illumination and haze")
 	MapLighting.apply_atmosphere({"haze": 0.0}, sky_sun, outdoors)
 	check(not outdoors.fog_enabled, "haze 0 turns the haze off")
+	check(outdoors.sky.sky_material is ProceduralSkyMaterial, "without a sky ID the plain tinted sky is used")
+	for sky_id: String in MapSkies.ids():
+		MapLighting.apply_atmosphere({"sky": sky_id}, sky_sun, outdoors)
+		var painted := outdoors.sky.sky_material as ShaderMaterial
+		check(painted != null and painted.get_shader_parameter(&"panorama") is Texture2D,
+			"sky %s loads its panorama" % sky_id)
+	check(MapLighting.normalised({"sky": "no_such_sky"})["sky"] == "", "an unknown sky falls back to the plain one")
 	sky_sun.free()
 
 

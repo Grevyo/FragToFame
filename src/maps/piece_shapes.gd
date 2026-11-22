@@ -10,6 +10,8 @@ extends RefCounted
 ## pieces stay consistent.
 
 const MIN_OPENING: float = 0.8
+## Shapes of the "tree" piece ("form" prop).
+const TREE_FORMS: Array[String] = ["conifer", "broadleaf", "poplar"]
 
 
 static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dictionary]:
@@ -42,7 +44,7 @@ static func parts(type: String, size: Vector3, props: Dictionary) -> Array[Dicti
 		"banner":
 			return _banner(size)
 		"tree":
-			return _tree(size)
+			return _tree(size, str(props.get("form", "conifer")))
 		"shipping_container":
 			return _container(size)
 		"column":
@@ -771,9 +773,23 @@ static func _container(size: Vector3) -> Array[Dictionary]:
 	return list
 
 
-## A trunk under three tapering layers of foliage. The canopy blocks sight and shots.
-static func _tree(size: Vector3) -> Array[Dictionary]:
+## A tree in one of [constant TREE_FORMS]; the canopy blocks sight and shots. "conifer" is a
+## trunk under three tapering layers of foliage, "broadleaf" a round crown on a tall trunk and
+## "poplar" a narrow column of foliage from low down.
+static func _tree(size: Vector3, form: String = "conifer") -> Array[Dictionary]:
 	var diameter := minf(size.x, size.z)
+	if form == "broadleaf" or form == "poplar":
+		var broad := form == "broadleaf"
+		var trunk_height := size.y * (0.42 if broad else 0.14)
+		var trunk_diameter := maxf(0.2, diameter * (0.09 if broad else 0.16))
+		var crown: Array[Vector2] = [Vector2(0.1, 0.35), Vector2(0.2, 0.85), Vector2(0.45, 1.0),
+			Vector2(0.75, 0.82), Vector2(0.92, 0.45), Vector2(1.0, 0.1)]
+		if broad:
+			crown = [Vector2(0.36, 0.3), Vector2(0.42, 0.72), Vector2(0.52, 0.94), Vector2(0.64, 1.0),
+				Vector2(0.78, 0.9), Vector2(0.9, 0.62), Vector2(1.0, 0.18)]
+		var parts: Array[Dictionary] = [_cyl(trunk_diameter, trunk_height, Vector3(0, trunk_height / 2.0, 0), "wood_dark")]
+		parts.append_array(_turned_body(size, crown))
+		return parts
 	var trunk := size.y * 0.35
 	var list: Array[Dictionary] = [_cyl(maxf(0.25, diameter * 0.1), trunk, Vector3(0, trunk / 2.0, 0), "wood_dark")]
 	var layer_height := (size.y - trunk) / 3.0

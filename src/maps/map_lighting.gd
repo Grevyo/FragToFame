@@ -5,7 +5,7 @@ extends RefCounted
 
 const DEFAULTS: Dictionary = {
 	"sun_yaw": 30.0, "sun_pitch": 45.0, "sun_energy": 1.0, "sun_color": "ffffff",
-	"ambient_color": "8c99ad", "ambient_energy": 0.6, "haze": 0.35,
+	"ambient_color": "8c99ad", "ambient_energy": 0.6, "haze": 0.35, "sky": "",
 }
 const LIMITS: Dictionary[String, Vector2] = {
 	"sun_yaw": Vector2(0, 360), "sun_pitch": Vector2(5, 90), "sun_energy": Vector2(0, 4),
@@ -25,6 +25,10 @@ static func normalised(lighting: Dictionary) -> Dictionary:
 			var value: Variant = lighting[key]
 			if value is int or value is float:
 				result[key] = clampf(float(value), LIMITS[key].x, LIMITS[key].y)
+		elif key == "sky":
+			# A panorama from MapSkies; anything unknown falls back to the plain sky.
+			var sky_id := str(lighting[key])
+			result[key] = sky_id if MapSkies.has(sky_id) else ""
 		else:
 			var fallback := Color.from_string(str(DEFAULTS[key]), Color.WHITE)
 			result[key] = Color.from_string(str(lighting[key]), fallback).to_html(false)
@@ -80,16 +84,8 @@ static func apply_atmosphere(lighting: Dictionary, sun: DirectionalLight3D, envi
 	if environment == null:
 		return
 	var horizon := ambient.lerp(sun_color, 0.35).lightened(0.18)
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = ambient.darkened(0.35).lerp(Color("3d6aa8"), 0.55)
-	sky_material.sky_horizon_color = horizon
-	sky_material.sky_curve = 0.12
-	sky_material.ground_horizon_color = horizon
-	sky_material.ground_bottom_color = ambient.darkened(0.7)
-	sky_material.sun_angle_max = 24.0
-	sky_material.sun_curve = 0.12
 	var sky := Sky.new()
-	sky.sky_material = sky_material
+	sky.sky_material = _sky_material(str(settings["sky"]), ambient, horizon)
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = sky
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
@@ -131,3 +127,19 @@ static func apply_atmosphere(lighting: Dictionary, sun: DirectionalLight3D, envi
 	environment.adjustment_enabled = true
 	environment.adjustment_contrast = 1.06
 	environment.adjustment_saturation = 1.0 + 0.08 * elevation
+
+
+## The map's painted panorama (MapSkies) or, without one, a plain sky tinted by the light colours.
+static func _sky_material(sky_id: String, ambient: Color, horizon: Color) -> Material:
+	var painted := MapSkies.material(sky_id)
+	if painted != null:
+		return painted
+	var plain := ProceduralSkyMaterial.new()
+	plain.sky_top_color = ambient.darkened(0.35).lerp(Color("3d6aa8"), 0.55)
+	plain.sky_horizon_color = horizon
+	plain.sky_curve = 0.12
+	plain.ground_horizon_color = horizon
+	plain.ground_bottom_color = ambient.darkened(0.7)
+	plain.sun_angle_max = 24.0
+	plain.sun_curve = 0.12
+	return plain

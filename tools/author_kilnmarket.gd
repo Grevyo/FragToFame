@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tools/map_author_base.gd"
 ## Authoring session for the official map "Kilnmarket".
 ##
 ## This is NOT a map generator. It opens the shipped Creation Studio scene and performs the same
@@ -11,126 +11,43 @@ extends SceneTree
 ## Run:  <godot> --headless --path <project> --script res://tools/author_kilnmarket.gd
 ## It prints the validation report and the route timings used to tune the layout.
 
-const STUDIO: String = "res://scenes/creation_studio/creation_studio.tscn"
-const STAGING_DIR: String = "user://authoring/kilnmarket"
-const OFFICIAL_ID: String = "map_f2f_kilnmarket"
-
-var studio: Node
-var controller: MapEditController
+func _official_id() -> String:
+	return "map_f2f_kilnmarket"
 
 
-func _initialize() -> void:
-	_run.call_deferred()
+## Version 2: the Overlook stair was lengthened so bots can always climb it.
+## Version 3: lamp fixtures in its dark corners and everyday props along the walls.
+## Version 4 (owner, 2026-11-22: flesh it out and give it its own character): a potters' quarter at
+## a hazy noon. Paved yards and lanes, every street wall dressed (fired-clay plinths, painted
+## shutters, vigas, doors), kiln chimneys and drying racks on the roofs, glazed-tile fountains,
+## drying racks of pots, awnings and a hazy sky over terracotta hills.
+func _revision() -> int:
+	return 4
 
 
-func _run() -> void:
-	await process_frame
-	studio = (load(STUDIO) as PackedScene).instantiate()
-	root.add_child(studio)
-	await process_frame
-	await process_frame
-	studio.set("storage", MapStorage.new(STAGING_DIR))
-	studio.set("autosave", MapAutosave.new(STAGING_DIR.path_join("autosave")))
-	studio.set("tactic_storage", TacticStorage.new(STAGING_DIR.path_join("tactics")))
-	controller = studio.get("controller") as MapEditController
-	(studio.get("ui") as StudioUI).confirm_dialog.hide()
-
-	# Start from the blank template and clear it.
-	studio.call("load_template", "blank")
-	studio.call("select_all")
-	controller.delete_selection()
+func _build() -> void:
 	controller.set_metadata("Kilnmarket", "F2F official",
-		"Desert pottery town. Three lanes: the Salt Road to the Kiln Yard (A), Spice Row through the middle, and the Culvert to the Cistern (B).")
-	controller.set_lighting({"sun_yaw": 215.0, "sun_pitch": 55.0, "sun_energy": 1.25, "sun_color": "fff0d8",
-		"ambient_color": "c8b8a0", "ambient_energy": 0.7})
+		"Potters' quarter at noon. Three lanes: the Salt Road to the Kiln Yard (A), Spice Row through the middle, and the Culvert to the Cistern (B).")
+	controller.set_lighting({"sun_yaw": 215.0, "sun_pitch": 58.0, "sun_energy": 1.35, "sun_color": "fff0d6",
+		"ambient_color": "d2bea0", "ambient_energy": 0.68, "haze": 0.45, "sky": "hazy_noon"})
 
 	_ground_and_buildings()
 	_a_side()
 	_mid()
 	_b_side()
 	_lamps_and_props()
+	_potters_quarter()
 	_spawns_and_zones()
 	_callouts()
 	_tactical()
-
-	var report: Dictionary = studio.call("validation_report")
-	print("\n== Kilnmarket: %d pieces ==" % controller.document.pieces.size())
-	for error: String in report["errors"]:
-		print("ERROR: ", error)
-	for warning: String in report["warnings"]:
-		print("Warning: ", warning)
-	print(report["timing_text"])
-	print("navmesh: %d polygons, analysis %d ms" % [(studio.get("analysis") as MapAnalysis).polygon_count(),
-		(studio.get("analysis") as MapAnalysis).bake_msec])
-
-	var err: Error = studio.call("save_map")
-	print("save: ", error_string(err), "  ->  ", studio.get("current_path"))
-	if err == OK and (report["errors"] as Array).is_empty():
-		_publish(str(studio.get("current_path")))
-	studio.queue_free()
-	await process_frame
-	quit(0 if err == OK else 1)
-
-
-## Publishing step: the saved file is copied to the official folder under the official map ID.
-func _publish(saved_path: String) -> void:
-	var doc := MapStorage.new(STAGING_DIR).load_path(saved_path)
-	doc.map_id = OFFICIAL_ID
-	doc.revision = 3
-	# Version 2: the Overlook stair was lengthened so bots can always climb it.
-	# Version 3: lamp fixtures in its dark corners and everyday props along the walls.
-	doc.content_version = 3
-	doc.content_hash = doc.content_fingerprint()
-	DirAccess.make_dir_recursive_absolute(OfficialMaps.DIRECTORY)
-	var file := FileAccess.open(OfficialMaps.path_for(OFFICIAL_ID), FileAccess.WRITE)
-	file.store_string(doc.to_json() + "\n")
-	file.close()
-	print("published: ", OfficialMaps.path_for(OFFICIAL_ID))
-
-
-# --- editor operations --------------------------------------------------------------------------
-
-func _layer(layer_name: String) -> void:
-	for entry: Dictionary in controller.document.layers:
-		if entry["name"] == layer_name:
-			studio.set("active_layer", entry["id"])
-			return
-	studio.set("active_layer", controller.add_layer(layer_name))
-
-
-## Palette → click to place → inspector edits (size, rotation, props, material).
-func put(type: String, position: Vector3, size: Vector3 = Vector3.ZERO, rotation: float = 0.0,
-		props: Dictionary = {}, material: String = "") -> String:
-	studio.call("_on_piece_type_selected", type)
-	var id: String = studio.call("place_at", position)
-	var piece := controller.document.get_piece(id)
-	piece["position"] = position  # Lights are placed raised; the inspector sets the exact height.
-	if size != Vector3.ZERO:
-		piece["size"] = size
-	piece["rotation_y"] = rotation
-	(piece["props"] as Dictionary).merge(props, true)
-	piece["material"] = material
-	controller.update_piece(piece, "Edit properties")
-	return id
-
-
-## A box-shaped piece covering x1..x2 by z1..z2 from the ground up to [param height].
-func mass(type: String, x1: float, x2: float, z1: float, z2: float, height: float, material: String = "",
-		base: float = 0.0) -> String:
-	return put(type, Vector3((x1 + x2) / 2.0, base, (z1 + z2) / 2.0), Vector3(x2 - x1, height, z2 - z1), 0.0, {}, material)
-
-
-func area(area_name: String, x1: float, x2: float, z1: float, z2: float, role: String = "", base: float = 0.0) -> String:
-	return put("callout", Vector3((x1 + x2) / 2.0, base, (z1 + z2) / 2.0), Vector3(x2 - x1, 3.0, z2 - z1), 0.0,
-		{"name": area_name, "role": role})
 
 
 # --- the map ------------------------------------------------------------------------------------
 
 func _ground_and_buildings() -> void:
-	_layer("Ground")
+	layer("Ground")
 	put("floor_sand", Vector3(1, -1, 9), Vector3(122, 1, 106))
-	_layer("Buildings")
+	layer("Buildings")
 	# Town edge.
 	mass("building", -60, 62, -44, -40, 6.0, "sandstone")
 	mass("building", -60, -56, -44, 62, 6.0, "sandstone")
@@ -167,7 +84,7 @@ func _ground_and_buildings() -> void:
 
 
 func _a_side() -> void:
-	_layer("Buildings")
+	layer("Buildings")
 	# Kiln Gate: the Salt Road narrows to an arch before the yard.
 	put("arch", Vector3(-51, 0, 2), Vector3(10, 5, 0.8), 0.0, {"opening_width": 4.6, "opening_height": 3.0}, "sandstone")
 	# Potter's Steps: stairs up to a terrace, then down into the yard through a gap in its wall.
@@ -184,7 +101,7 @@ func _a_side() -> void:
 	put("arch", Vector3(0, 0, -15), Vector3(6, 4.5, 0.6), 90.0, {"opening_width": 3.0, "opening_height": 2.4}, "sandstone")
 	mass("roof", -28, 0, -18, -12, 0.3, "mud_brick", 4.0)
 
-	_layer("Props")
+	layer("Props")
 	# Salt Road cover.
 	put("vehicle_truck", Vector3(-48.5, 0, 26))
 	put("crate_stack", Vector3(-54.6, 0, 14), Vector3.ZERO, 90.0)
@@ -205,13 +122,13 @@ func _a_side() -> void:
 	# Weighhouse interior.
 	put("crate_stack", Vector3(-14, 0, -17.2))
 	put("crate_long", Vector3(-22, 0, -12.7))
-	_layer("Lights")
+	layer("Lights")
 	put("light_lamp", Vector3(-20, 3.4, -15), Vector3.ZERO, 0.0, {"energy": 2.0, "range": 10.0})
 	put("light_lamp", Vector3(-8, 3.4, -15), Vector3.ZERO, 0.0, {"energy": 2.0, "range": 10.0})
 
 
 func _mid() -> void:
-	_layer("Props")
+	layer("Props")
 	# Spice Row: stalls on alternating sides break the long view up the street.
 	put("market_stall", Vector3(-0.8, 0, 36), Vector3.ZERO, 270.0)
 	put("market_stall", Vector3(-7.2, 0, 29), Vector3.ZERO, 90.0)
@@ -235,12 +152,12 @@ func _mid() -> void:
 	studio.call("paste_at", Vector3(26, 0, -16.5))
 	controller.set_selection_material("cloth_striped")
 	controller.select("")
-	_layer("Buildings")
+	layer("Buildings")
 	put("double_door", Vector3(30, 0, -15), Vector3(6, 4, 0.5), 90.0, {"opening_width": 2.4, "opening_height": 2.6})
 
 
 func _b_side() -> void:
-	_layer("Buildings")
+	layer("Buildings")
 	# Culvert: a roofed, lamp-lit tunnel that ends in a single doorway.
 	mass("roof", 34, 38, 20, 47, 0.4, "mud_brick", 3.2)
 	mass("roof", 34, 46, 16, 20, 0.4, "mud_brick", 3.2)
@@ -251,12 +168,12 @@ func _b_side() -> void:
 	# 6 m long (22.6°): steeper stairs only bake for bots by luck (MapAnalysis.bot_slope_limit).
 	put("stairs_stone", Vector3(37, 0, -23), Vector3(3, 2.5, 6), 270.0)
 	put("wall_parapet", Vector3(49, 2.5, -20.2), Vector3(18, 1.2, 0.4))
-	_layer("Lights")
+	layer("Lights")
 	put("light_lamp", Vector3(36, 2.6, 36), Vector3.ZERO, 0.0, {"energy": 1.8, "range": 9.0})
 	put("light_lamp", Vector3(38, 2.6, 18), Vector3.ZERO, 0.0, {"energy": 1.8, "range": 9.0})
 	put("light_lamp", Vector3(44, 2.6, 10), Vector3.ZERO, 0.0, {"energy": 1.8, "range": 9.0})
 
-	_layer("Props")
+	layer("Props")
 	# Cistern (site B).
 	put("well", Vector3(45, 0, -9), Vector3(4, 1.1, 4))
 	put("crate_large", Vector3(39.5, 0, -4.5))
@@ -281,7 +198,7 @@ func _b_side() -> void:
 
 
 func _spawns_and_zones() -> void:
-	_layer("Gameplay")
+	layer("Gameplay")
 	for x: float in [0.0, -2.0, 2.0, -4.0, 4.0]:
 		put("spawn_attack", Vector3(x, 0, 53))
 		put("spawn_defence", Vector3(x, 0, -36), Vector3.ZERO, 180.0)
@@ -292,7 +209,7 @@ func _spawns_and_zones() -> void:
 
 
 func _callouts() -> void:
-	_layer("Tactics")
+	layer("Tactics")
 	area("Caravan Gate", -12, 12, 44, 58)
 	area("West Bend", -56, -12, 47, 55)
 	area("Salt Road", -56, -46, 6, 47)
@@ -325,7 +242,7 @@ func _callouts() -> void:
 
 
 func _tactical() -> void:
-	_layer("Tactics")
+	layer("Tactics")
 	var anchors: Array[Array] = [
 		["Kiln plant open", "plant", Vector3(-44, 0, -9.8)],
 		["Kiln plant safe", "plant", Vector3(-48.6, 0, -15.4)],
@@ -363,7 +280,7 @@ func _tactical() -> void:
 ## nearest wall, or hung from the ceiling indoors), and everyday clutter against walls along the
 ## routes, clear of doors, stairs, bombsites, spawns and timing chokepoints.
 func _lamps_and_props() -> void:
-	_layer("Lamps")
+	layer("Lamps")
 	for entry: Array in [
 		["lamp_hanging", Vector3(-2.00, 3.10, -16.00), 0.0],
 		["lamp_wall", Vector3(34.25, 2.10, 26.00), 90.0],
@@ -398,7 +315,7 @@ func _lamps_and_props() -> void:
 		["lamp_wall", Vector3(30.25, 2.10, -4.00), 90.0],
 	]:
 		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
-	_layer("Street life")
+	layer("Street life")
 	for entry: Array in [
 		["sack_pile", Vector3(-22.00, 0.00, -17.39), 0.0],
 		["sack_pile", Vector3(-44.00, 0.00, 54.39), 180.0],
@@ -424,5 +341,122 @@ func _lamps_and_props() -> void:
 		["pottery_jar", Vector3(12.00, 0.00, -12.46), 180.0],
 		["sack_pile", Vector3(-0.61, 0.00, 17.00), -90.0],
 		["braced_crate", Vector3(45.00, 0.00, 19.37), 180.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+
+
+# --- the potters' quarter (version 4) -----------------------------------------------------------
+
+## Paving, dressed street walls, roofs that read as a working potters' town, and racks of pots.
+func _potters_quarter() -> void:
+	layer("Paving")
+	# Each finish laid 2 cm proud of the sand (bots step 10 cm).
+	for entry: Array in [
+		[-56, -28, -26, -2, "tile_terracotta"],   # Kiln Yard
+		[-56, -46, -2, 47, "packed_earth"],       # Kiln Gate and the Salt Road
+		[-8, 0, 10, 44, "cobblestone"],           # Spice Row
+		[-8, 8, 4, 10, "cobblestone"],            # Dogleg
+		[0, 8, -28, 4, "flagstones"],             # Clock Lane, Crossing, Garrison Lane
+		[-14, 14, -40, -28, "stone_paving"],      # Garrison
+		[8, 28, -18, -12, "packed_earth"],        # Dyers' Cut
+		[30, 58, -20, 4, "limestone"],            # Cistern
+		[-12, 12, 44, 58, "packed_earth"],        # Caravan Gate
+		[12, 38, 47, 55, "cobblestone"],          # Tanners' Lane
+	]:
+		mass("floor", float(entry[0]), float(entry[1]), float(entry[2]), float(entry[3]), 0.05, str(entry[4]), -0.03)
+	layer("Facades")
+	dress_facades({
+		"plinth": "fired_clay", "plinth_h": 0.6,
+		"cornice": "tile_terracotta", "cornice_h": 0.35,
+		"window": {"type": "window", "size": Vector3(1.0, 1.4, 0.3),
+			"props": {"panes_x": 2, "panes_y": 2, "shutters": true},
+			"materials": ["cloth_blue", "wood_dark", "cloth_blue", "weathered_wood"]},
+		"window_every": 4.0, "first_sill": 1.2, "storey": 3.0, "blank": 0.3,
+		"door": {"type": "door", "size": Vector3(1.3, 2.5, 0.3), "props": {"panels": 2, "fanlight": false},
+			"materials": ["cloth_blue", "wood_dark", "weathered_wood"]},
+		"door_chance": 0.5, "beams": "wood_dark",
+		"extra": _glazed_panel,
+	}, Rect2(-56, -40, 114, 98))
+	layer("Roofs")
+	_roofs()
+	layer("Pottery")
+	_pottery()
+
+
+## Above some doors a glazed tile panel, the potters' sign.
+func _glazed_panel(run: Dictionary) -> void:
+	var door_at := float(run["door_at"])
+	if door_at < 0.0 or int(run["pick"]) % 2 == 1:
+		return
+	band(run["from"] as Vector2, run["along"] as Vector2, run["facing"] as Vector2, door_at - 0.9, door_at + 0.9,
+		float(run["ground"]) + 2.75, 0.5, 0.06, "cloth_blue", float(run["yaw"]))
+	band(run["from"] as Vector2, run["along"] as Vector2, run["facing"] as Vector2, door_at - 0.7, door_at + 0.7,
+		float(run["ground"]) + 2.85, 0.3, 0.08, "limewash", float(run["yaw"]))
+
+
+## Kiln chimneys, water jars and drying racks on the flat roofs, a parapet round each.
+func _roofs() -> void:
+	var tops: Array[Dictionary] = []
+	for piece: Dictionary in controller.document.pieces:
+		if str(piece["type"]) == "building":
+			tops.append(footprint(piece))
+	for fp: Dictionary in tops:
+		var half: Vector2 = fp["half"]
+		var centre: Vector2 = fp["centre"]
+		var top := float(fp["top"])
+		if half.x < 1.5 or half.y < 1.5:
+			continue
+		var pick := pick_at(centre, 7)
+		match pick % 4:
+			0:
+				# A kiln chimney: a brick stack with a soot-black crown.
+				var at := centre + Vector2(half.x - 1.2, -half.y + 1.2)
+				put("column", Vector3(at.x, top, at.y), Vector3(1.1, 3.6, 1.1), 0.0, {}, "red_brick")
+				put("column", Vector3(at.x, top + 3.6, at.y), Vector3(1.3, 0.5, 1.3), 0.0, {}, "metal_dark")
+			1:
+				# Water jars by a roof hatch.
+				for k: int in 3:
+					put("pottery_jar", Vector3(centre.x - 1.0 + k * 0.9, top, centre.y + half.y - 0.8), Vector3.ZERO, float(k * 40), {}, "fired_clay")
+				put("block", Vector3(centre.x + 1.5, top, centre.y), Vector3(1.2, 0.4, 1.2), 0.0, {}, "weathered_wood")
+			2:
+				# A drying rack of new pots under a canvas shade.
+				if half.x >= 3.0 and half.y >= 2.5:
+					put("awning", Vector3(centre.x, top, centre.y), Vector3(4.0, 2.4, 3.0), 0.0, {}, "canvas")
+					for k: int in 2:
+						put("market_shelf", Vector3(centre.x - 0.8 + k * 1.6, top, centre.y), Vector3.ZERO, 0.0, {}, "weathered_wood")
+			_:
+				pass
+
+
+## Pots stacked against the walls of the yards, as a potters' quarter keeps them: clear of the
+## doors, stairs, spawns and the routes' chokepoints.
+func _pottery() -> void:
+	for entry: Array in [
+		# Kiln Yard: racks of fired pots along the north wall, a stack by the kilns.
+		["market_shelf", Vector3(-52.5, 0, -25.6), 0.0],
+		["market_shelf", Vector3(-44.0, 0, -25.6), 0.0],
+		["pottery_jar", Vector3(-55.3, 0, -12.0), 0.0],
+		["pottery_jar", Vector3(-55.3, 0, -11.1), 30.0],
+		["pottery_jar", Vector3(-54.5, 0, -11.5), 60.0],
+		["kiln", Vector3(-31.2, 0, -24.0), 0.0],
+		# Cistern: jars at the well and along the east wall.
+		["pottery_jar", Vector3(57.3, 0, -2.0), 0.0],
+		["pottery_jar", Vector3(57.3, 0, -1.1), 45.0],
+		["pottery_jar", Vector3(57.3, 0, 0.8), 15.0],
+		["stone_trough", Vector3(42.0, 0, 3.4), 0.0],
+		# Garrison: the potters' guild stores.
+		["market_shelf", Vector3(-12.0, 0, -39.6), 0.0],
+		["market_shelf", Vector3(12.0, 0, -39.6), 0.0],
+		["pottery_jar", Vector3(13.3, 0, -33.0), 0.0],
+		["pottery_jar", Vector3(13.3, 0, -32.1), 70.0],
+		# Caravan Gate: crates of pots waiting for the caravans.
+		["braced_crate", Vector3(-10.8, 0, 56.6), 0.0],
+		["braced_crate", Vector3(10.8, 0, 56.6), 0.0],
+		["pottery_jar", Vector3(-11.3, 0, 54.6), 20.0],
+		["pottery_jar", Vector3(11.3, 0, 54.6), 50.0],
+		# Tanners' Lane and the West Bend.
+		["pottery_jar", Vector3(36.6, 0, 54.4), 0.0],
+		["pottery_jar", Vector3(-55.3, 0, 52.0), 0.0],
+		["pottery_jar", Vector3(-55.3, 0, 52.9), 35.0],
 	]:
 		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))

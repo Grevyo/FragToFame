@@ -83,6 +83,7 @@
 		"ambient_color": "28324c",
 		"ambient_energy": 0.42,
 		"haze": 0.3,
+		"sky": "desert_night",
 		"sun_color": "9db4e6",
 		"sun_energy": 0.28,
 		"sun_pitch": 38.0,

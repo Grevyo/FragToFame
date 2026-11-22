@@ -66,7 +66,7 @@ src/core/input_actions.gd       InputActions: action names + default bindings, r
   world/block_builder.gd      BlockBuilder: textured static box geometry helper
   maps/                       MAPS: PieceCatalog, PieceShapes, MapMaterials, MapDocument (f2f.map v2),
                               MapBuilder, MapValidator, MapStorage, MapAutosave, MapTemplates,
-                              MapEditController, MapSnapping, MapClipboard, MapPrefabs, MapLighting,
+                              MapEditController, MapSnapping, MapClipboard, MapPrefabs, MapLighting, MapSkies,
                               MapZones, MapTactical, OfficialMaps
   ai/map_analysis.gd          MapAnalysis: navmesh reachability, islands, route timings
   tactics/                    TacticDocument (f2f.tactic v2), TacticStorage, TacticPreview,
@@ -248,9 +248,17 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
 - **Materials and lighting.** `MapMaterials` generates and caches original 128 px albedo and
   normal maps with mipmaps. World-space mapping keeps repeats aligned across neighbouring pieces.
   The Inspector uses 32 px swatches. A piece's material falls back to its type default, then to the dev
-  checker. `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
+  checker. The Tree piece has a `form` (conifer, broadleaf, poplar), built from turned sections.
+  `MapLighting` applies a map's sun and ambient settings in the editor and the runtime;
   empty settings leave the scene defaults. `MapLighting.apply_atmosphere` sets the shared look
-  (sky, shadows, SSAO, SDFGI, haze, glow, tonemap) in both, so the editor shows what the game draws. `light_lamp` and `light_spot` pieces emit in both.
+  (sky, shadows, SSAO, SDFGI, haze, glow, tonemap) in both, so the editor shows what the game draws.
+  **Skies.** A map's lighting may name a painted sky (`sky`; empty keeps the plain procedural sky
+  tinted by the sun and ambient). `MapSkies` lists them (label, panorama file, brightness, sun or
+  moon disc, halo) and builds a `ShaderMaterial` on `map_sky.gdshader`, which samples the
+  equirectangular panorama and draws the disc at the sun's direction, so moving the sun moves the
+  disc. Unknown IDs fall back to the plain sky. The panoramas (`assets/skies/*.webp`, 4096 × 2048,
+  imported lossless without mipmaps) are original, painted in code by `tools/generate_skies.py`
+  (numpy and Pillow; developer-only, the game only loads the images). `light_lamp` and `light_spot` pieces emit in both.
   **Lamp fixtures** (`lamp_wall`, `lamp_post`, `lamp_hanging`, `lamp_bulkhead`, `brazier`) are
   ordinary `compound` pieces whose catalogue entry also has `light` (default energy, range,
   colour) and `light_at` (light position as a fraction of the piece size). `MapBuilder` adds one
@@ -306,12 +314,26 @@ fixtures, the career host choosing a match host, spectating, NAT traversal / Ste
   ramps and drops between levels) and `floor_shape` does the same for any outline with the Draw
   Surface tool; `wall_line`/`walls_around` place angled walls with gaps, and `prism` draws an
   upright brush of any footprint. `_revision()` sets the revision a republished map ships as.
+  `dress_facades`/`dress_outline` do what a person does along every street: walk each wall face
+  that looks onto walkable ground (skipping faces hidden by other solids or standing on lintels)
+  and place a plinth, cornice, windows per storey, doors, lamps and a map-specific `extra` from a
+  style dictionary; doors and windows stay inside their run and clear of blocking solids, and
+  `min_ground`/`max_ground` dress one level at a time. `bunting` strings pennants as brushes.
+  Barnwell's session traces a drawing instead: its coordinates are pixels on the owner's drawing,
+  the walkable network is drawn as strips and areas, and fences are placed along the network's
+  combined outline (every edge clipped by the other areas), so gardens close themselves. Floors
+  that are not roads are cut by the roads before they are drawn, houses keep clear of the fence
+  line (a house facing the network leaves its front open, with side fences), and street furniture is placed by walking the road lines and kept only where its footprint
+  lies wholly on a road.
+- **Floor support.** When the analysis asks what a navmesh region stands on, a drawn surface counts
+  only inside its drawn outline (`PolygonSurface.footprint_has_point`), not its bounding box, so the
+  ground beside an angled road is not reported as unreachable floor.
 - **Sealed pockets.** The face-based bake leaves navmesh inside closed solids. The island check
   skips points inside blocks, wedges, compound parts and closed brushes (an upward ray crossing
   the brush's faces an odd number of times).
   `tools/capture_map.gd` saves screenshots of any map (it needs a window).
 - **Official maps.** `OfficialMaps` lists files in `res://data/maps/official` (Kilnmarket,
-  Switchyard, Cluts, Kestrel Keep, Barnwell, Saffra). They load through
+  Switchyard, Cluts, Kestrel Keep, Barnwell, Saffra, Rooftops). They load through
   `MapDocument.from_dict` like any saved map. Opening one in the studio allows playtest and
   tactics as shipped; saving creates the player's copy under a new ID. `App.map_by_id` resolves
   official maps, the dev arena and saved maps for practice and career fixtures.
@@ -1230,6 +1252,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-15 | Kilnmarket authored by a session script that drives the Creation Studio scene (`tools/author_kilnmarket.gd`) | A headless agent cannot click; this uses only editor operations and leaves a rebuildable record. To be replaced by hand edits in the editor as the map is iterated |
 | 2026-11-19 | Bot slope limit derived from the navmesh settings, not the agent's max slope | The 46° agent slope never applies to stairs: a 0.1 m climb over a 0.2 m cell splits any slope above about 26°, so validation warns at 24° |
 | 2026-11-19 | Official maps share `tools/map_author_base.gd` | Each map script holds only its own layout; validate, save and publish behave the same for every map |
+| 2026-11-22 | Skies are painted panoramas generated offline by a script, drawn by a small sky shader | Original, reviewable content with no asset pipeline; one image per map instead of a procedural sky that cannot show a skyline. The script needs numpy and Pillow on a developer machine only |
 | 2026-11-15 | User bindings stored as strings per action and applied to `InputMap`; conflicts scoped by context | Gameplay code keeps using action names; game and editor can reuse keys |
 | 2026-11-15 | Esc is locked to the pause menu | A player can never bind themselves out of the menus |
 | 2026-11-16 | Third-party weapon models (CC BY 4.0) and real weapon names, at the owner's direction | Supersedes "all content original" for weapons only; attribution in CREDITS.md. Two models have no recorded licence (open item) |

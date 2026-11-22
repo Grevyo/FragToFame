@@ -1,746 +1,801 @@
 extends "res://tools/map_author_base.gd"
-## Authoring session for the official map "Barnwell": a 1950s English housing estate of
-## red-brick semi-detached houses with rendered upper floors, tiled gable roofs and chimneys,
-## gravel drives, privet hedges, panel fences and telegraph poles. The layout follows the
-## owner's drawing: three lanes run north to south (the West Lane, Ashby Avenue in the middle and
-## Fen Walk) from the defenders on Larch Road to the attackers on Marsh Lane in the south-east,
-## with a block either side of the avenue. Every name is made up.
+## Authoring session for the official map "Barnwell": a 1950s council estate on the edge of the
+## fens on a bright late-summer day, traced from the owner's drawing over the street map of a real
+## place (owner, 2026-11-22: rework it from the map and the real location). Red-brick semis with
+## white upper floors under gabled tile roofs, chimneys and aerials, gravel drives, privet hedges,
+## panel fences, telegraph poles, poplars and broadleaf trees, and a primary school beyond the
+## estate.
 ##
-## Site A is the Green in the east block, entered by the West Gate off the avenue (short) or the
-## Fen Gap off Fen Walk (long). Site B is the Lock-ups, a garage court in the west block, entered
-## by the Ginnel Mouth off the avenue (short), the Chapel Gate at the top of Chapel Path, or
-## Church Walk from the West Lane through the churchyard. Larch Alley and Garage Drive bring the
-## defenders down from Larch Road.
+## Every coordinate below is a pixel on the owner's drawing (north up), scaled by [constant S]
+## metres per pixel round [constant ORIGIN]: the drawing's black lines are the lanes (a loop round
+## the estate and Edinburgh Avenue up the middle), its brown lines the footpaths to the sites, its
+## orange lines the attackers' paths from their house, the blue box the defenders' spawn and the
+## red box the attackers' house. The houses stand where the street map shows them; the people,
+## house numbers and interiors are not reproduced.
 ##
-## Bots cannot climb more than 0.1 m, so there are no kerbs: pavements sit 2 cm proud.
+## Only the lanes, paths, sites and forecourts are walkable. Their combined outline is fenced or
+## hedged all round, so every back garden is closed off, as on a real estate.
 ##
 ## Run:  <godot> --headless --path <project> --script res://tools/author_barnwell.gd
 ## (add `-- --dry-run` to validate and print timings without publishing).
 
-const SITE_A: Vector3 = Vector3(29, 0, -12)
-const SITE_B: Vector3 = Vector3(-27, 0, -11)
-const WEST: float = -56.0
-const EAST: float = 50.0
-const FENCE: float = 1.85
-const EAVE: float = 5.4
-const RIDGE: float = 7.9
-const DEPTH: float = 8.0
-const PAVE_TOP: float = 0.02
+const S: float = 0.17
+const ORIGIN: Vector2 = Vector2(720, 480)
+const FLOOR_T: float = 0.05
+## How far a house or a drive stands back from the walkable network: the thickest hedge plus a gap.
+const HOUSE_CLEARANCE: float = 1.25
+const EAVE: float = 5.1
+## Drawing pixels of the spawns (the blue and red boxes) and the bombsite centres.
+const DEFENDERS: Vector2 = Vector2(734, 232)
+const ATTACKERS: Vector2 = Vector2(890, 868)
+const SITE_A: Vector2 = Vector2(920, 400)
+const SITE_B: Vector2 = Vector2(561, 392)
+const RIDGE: float = 7.5
 
-## Houses facing the play space: [x1, x2, halves]. North row fronts on Larch Road at z -40,
-## south row on Marsh Lane at z 42.
-const NORTH_ROW: Array = [[-49.5, -38.5, 2], [-36.0, -25.0, 2], [-18.0, -11.0, 1],
-	[19.5, 31.0, 2], [32.5, 43.5, 2]]
-const SOUTH_ROW: Array = [[-48.5, -35.5, 2], [-24.5, -11.5, 2], [19.0, 30.5, 2], [32.0, 43.5, 2]]
-## The rows across the two roads (backdrop, fronting the play space).
-const FAR_ROW: Array = [[-55.0, -43.0, 2], [-40.0, -28.0, 2], [-25.0, -13.0, 2], [-10.0, 2.0, 2],
-	[5.0, 17.0, 2], [20.0, 32.0, 2], [35.0, 47.0, 2]]
+## Walkable areas: {"poly": PackedVector2Array (world x/z), "kind": String}.
+var _walk: Array[Dictionary] = []
+## House footprints (world), for keeping trees and props off them.
+var _houses: Array[PackedVector2Array] = []
+## The open fronts of houses that face the network: no fence or hedge is placed inside one.
+var _open_fronts: Array[PackedVector2Array] = []
+## How far a house's open front reaches past its front corners on each side, so the drive and its
+## car stay inside it.
+const FRONT_SPREAD: float = 1.8
+## A garden gate's width, posts included.
+const GATE_WIDTH: float = 1.2
+
+## Fence styles per kind of walkable area: [type, material, height, thickness]; a run takes one
+## style picked from its position, so long edges mix hedge and fence like real front gardens.
+const FENCES: Dictionary = {
+	"road": [["block", "hedge", 1.75, 0.9], ["wall", "planks", 1.85, 0.12], ["block", "hedge", 1.6, 0.8]],
+	"lane": [["wall", "planks", 1.85, 0.12], ["block", "hedge", 1.8, 0.9]],
+	"alley": [["wall", "planks", 1.85, 0.12], ["wall", "weathered_wood", 1.85, 0.12]],
+	"path": [["block", "hedge", 1.9, 1.0], ["wall", "weathered_wood", 1.8, 0.12]],
+	"court": [["wall", "red_brick", 2.0, 0.3]],
+	"green": [["block", "hedge", 1.7, 0.9]],
+	"forecourt": [["wall", "red_brick", 1.8, 0.3], ["block", "hedge", 1.7, 0.9]],
+}
 
 
 func _official_id() -> String:
 	return "map_f2f_barnwell"
 
 
+## Revision 3 (owner, 2026-11-22): rebuilt from the owner's drawing and the real place: the lane
+## loop and Edinburgh Avenue, footpaths to a garage court (B) and a green (A), the attackers'
+## paths from their house on Barnwell Road, and a fenland summer sky.
 func _revision() -> int:
-	return 1
+	return 3
 
 
 func _build() -> void:
 	controller.set_metadata("Barnwell", "F2F official",
-		"A 1950s English housing estate with three lanes north to south: the West Lane, Ashby Avenue in the middle and Fen Walk. A: the Green, by the West Gate off the avenue or the Fen Gap off Fen Walk. B: the Lock-ups garage court, by the Ginnel Mouth off the avenue, Chapel Path or Church Walk from the West Lane.")
-	controller.set_lighting({"sun_yaw": 205.0, "sun_pitch": 38.0, "sun_energy": 0.85, "sun_color": "f1eee6",
-		"ambient_color": "aeb8c2", "ambient_energy": 0.78})
-	_ground()
-	_roads()
+		"A 1950s council estate on the edge of the fens, traced from a real place. Defenders hold the top of Edinburgh Avenue; attackers start outside their house on Barnwell Road. A: the Green, by the Avenue Gap, the Green Gate up the garden paths or the SE Alley. B: the garage court, by the North Path, the West Path, the Avenue Path or the Back Gate from the ginnels.")
+	controller.set_lighting({"sun_yaw": 222.0, "sun_pitch": 42.0, "sun_energy": 1.25, "sun_color": "fff2dc",
+		"ambient_color": "c4d2e2", "ambient_energy": 0.62, "haze": 0.22, "sky": "fen_summer"})
+	layer("Ground")
+	mass("block", -100, 150, -75, 105, 1.0, "grass_worn", -1.0)
 	_lanes()
-	_houses()
-	_gardens()
-	_avenue()
+	_footpaths()
+	_sites()
+	_estate_houses()
+	_backdrop()
+	_fences()
 	_lockups()
 	_green()
-	_chapel()
 	_street_furniture()
-	_curves()
-	_barn_and_well()
-	_props()
+	_trees()
 	_gameplay()
 	_callouts()
 	_tactical()
 
 
-# --- helpers ------------------------------------------------------------------------------------
+# --- drawing coordinates --------------------------------------------------------------------------
 
-## A walkable surface 2 cm above the tarmac.
-func pave(x1: float, x2: float, z1: float, z2: float, material: String, top: float = PAVE_TOP) -> void:
-	mass("floor", x1, x2, z1, z2, top + 0.03, material, -0.03)
-
-
-## Garden lawn out of play: a block (not a floor), so the analysis does not report it as an island.
-func lawn(x1: float, x2: float, z1: float, z2: float, material: String = "grass_worn") -> void:
-	mass("block", x1, x2, z1, z2, 0.05, material, -0.02)
+## A pixel on the owner's drawing in world x/z.
+static func p(px: float, py: float) -> Vector2:
+	return (Vector2(px, py) - ORIGIN) * S
 
 
-func fence(x1: float, x2: float, z1: float, z2: float, material: String = "planks", height: float = FENCE) -> void:
-	walls_around([Vector2(x1, z1), Vector2(x2, z1), Vector2(x2, z2), Vector2(x1, z2)], height, 0.0, material,
-		{}, [], "wall", 0.12)
+static func pts(list: Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for point: Array in list:
+		out.append(p(float(point[0]), float(point[1])))
+	return out
 
 
-## A fenced back garden (and the house standing on its front edge).
-func plot(x1: float, x2: float, z1: float, z2: float, material: String = "planks", height: float = FENCE) -> void:
-	lawn(x1, x2, z1, z2)
-	fence(x1, x2, z1, z2, material, height)
+## A walkable strip along a drawn line, [param width] m wide with square ends (so strips that meet
+## overlap), and optionally a narrower strip of [param inner_material] down its middle (tarmac
+## between pavements).
+func strip(kind: String, line: Array, width: float, material: String, top: float, inner: float = 0.0,
+		inner_material: String = "") -> void:
+	var points := pts(line)
+	for poly: PackedVector2Array in Geometry2D.offset_polyline(points, width / 2.0, Geometry2D.JOIN_MITER, Geometry2D.END_SQUARE):
+		_draw_floor(poly, kind, top, material)
+		_walk.append({"poly": poly, "kind": kind})
+	if inner > 0.0:
+		for poly: PackedVector2Array in Geometry2D.offset_polyline(points, inner / 2.0, Geometry2D.JOIN_MITER, Geometry2D.END_BUTT):
+			_floor_surface(poly, top + 0.01, FLOOR_T, inner_material)
 
 
-## The yaw that faces from [param from] toward [param to] (0 faces -Z).
-static func face(from: Vector3, to: Vector3) -> float:
-	return rad_to_deg(atan2(-(to.x - from.x), -(to.z - from.z)))
+## A walkable area of any outline.
+func zone(kind: String, outline: Array, material: String, top: float) -> PackedVector2Array:
+	var poly := pts(outline)
+	_draw_floor(poly, kind, top, material)
+	_walk.append({"poly": poly, "kind": kind})
+	return poly
 
 
-## A gable roof over x1..x2 by z1..z2 drawn with the brush tool, its ridge along X (or Z).
-func gable(x1: float, x2: float, z1: float, z2: float, eave: float, ridge: float, material: String,
-		along_x: bool = true) -> void:
-	var vertices: Array = [[x1, eave, z1], [x2, eave, z1], [x2, eave, z2], [x1, eave, z2]]
-	var faces: Array = [0, 1, 2, 0, 2, 3]
-	if along_x:
-		var zm := (z1 + z2) / 2.0
-		vertices.append_array([[x1, ridge, zm], [x2, ridge, zm]])
-		faces.append_array([0, 4, 5, 0, 5, 1, 3, 2, 5, 3, 5, 4, 0, 3, 4, 1, 5, 2])
-	else:
-		var xm := (x1 + x2) / 2.0
-		vertices.append_array([[xm, ridge, z1], [xm, ridge, z2]])
-		faces.append_array([0, 4, 5, 0, 5, 3, 1, 2, 5, 1, 5, 4, 0, 1, 4, 3, 5, 2])
-	if (studio.call("draw_brushes", [{"vertices": vertices, "faces": faces, "two_sided": true, "material": material}]) as Array).is_empty():
-		printerr("Brush refused roof ", [x1, x2, z1, z2])
+## Draws [param poly] as floor. Anything that is not a road or lane is drawn less the parts over
+## the roads and lanes laid before it, so footpaths, sites and forecourts stop at the kerb instead
+## of being painted across the tarmac.
+func _draw_floor(poly: PackedVector2Array, kind: String, top: float, material: String) -> void:
+	var parts: Array[PackedVector2Array] = [poly]
+	if not is_road(kind):
+		for entry: Dictionary in _walk:
+			if not is_road(str(entry["kind"])):
+				continue
+			var kept: Array[PackedVector2Array] = []
+			for part: PackedVector2Array in parts:
+				kept.append_array(_cut(part, entry["poly"]))
+			parts = kept
+	for part: PackedVector2Array in parts:
+		if absf(_area(part)) > 0.05:
+			_floor_surface(part, top, FLOOR_T, material)
 
 
-## A hipped roof over x1..x2 by z1..z2 (ridge along X, the ends sloping in as far as the sides).
-func hip(x1: float, x2: float, z1: float, z2: float, eave: float, ridge: float, material: String) -> void:
-	var zm := (z1 + z2) / 2.0
-	var inset := minf((z2 - z1) / 2.0, (x2 - x1) / 2.0 - 0.1)
-	var vertices: Array = [[x1, eave, z1], [x2, eave, z1], [x2, eave, z2], [x1, eave, z2],
-		[x1 + inset, ridge, zm], [x2 - inset, ridge, zm]]
-	var faces: Array = [0, 1, 2, 0, 2, 3, 0, 1, 5, 0, 5, 4, 3, 4, 5, 3, 5, 2, 0, 4, 3, 1, 2, 5]
-	if (studio.call("draw_brushes", [{"vertices": vertices, "faces": faces, "two_sided": true, "material": material}]) as Array).is_empty():
-		printerr("Brush refused hipped roof ", [x1, x2, z1, z2])
+static func is_road(kind: String) -> bool:
+	return kind == "road" or kind == "lane"
 
 
-## Points round an arc (x/z plane), [param a0] to [param a1] degrees, 0 along +X, 90 along +Z.
-static func arc(centre: Vector2, radius: float, a0: float, a1: float, steps: int) -> Array[Vector2]:
-	var points: Array[Vector2] = []
-	for i: int in steps + 1:
-		var angle := deg_to_rad(lerpf(a0, a1, float(i) / steps))
-		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
-	return points
+# --- the walkable network (the owner's lines) -----------------------------------------------------
+
+func _lanes() -> void:
+	layer("Lanes")
+	# The north road and Barnwell Road have pavements; the back lanes are plain tarmac.
+	strip("road", NORTH_ROAD, 8.0, "concrete", 0.05, 5.6, "tarmac")
+	strip("road", BARNWELL_ROAD, 8.0, "concrete", 0.05, 5.6, "tarmac")
+	strip("road", AVENUE, 9.0, "concrete", 0.05, 6.2, "tarmac")
+	strip("lane", [[1000, 240], [1090, 280], [1150, 340], [1168, 410], [1140, 480], [1085, 540], [1045, 585]], 6.0, "tarmac", 0.055)
+	strip("lane", [[1240, 665], [1130, 810], [1010, 965]], 6.0, "tarmac", 0.055)
+	strip("lane", [[700, 752], [560, 735], [432, 728]], 6.0, "tarmac", 0.055)
+	strip("lane", [[432, 728], [425, 640], [432, 560], [380, 545], [305, 530], [300, 440], [310, 352], [420, 345],
+		[432, 250], [432, 186]], 6.0, "tarmac", 0.055)
+	strip("path", [[1045, 585], [1150, 622], [1240, 665]], 4.0, "gravel", 0.058)
 
 
-## A round solid (planter, bed, trampoline, island) of [param radius] from [param base] up.
-func disc(centre: Vector2, radius: float, base: float, height: float, material: String, steps: int = 16) -> void:
-	var outline: Array = arc(centre, radius, 0.0, 360.0 - 360.0 / steps, steps - 1)
-	prism(outline, base, height, material)
+func _footpaths() -> void:
+	layer("Footpaths")
+	# West block: the paths into the garage court and the ginnels south of it.
+	strip("alley", [[628, 196], [626, 240], [616, 300]], 3.0, "flagstones", 0.062)        # North Path
+	strip("alley", [[305, 416], [476, 420]], 3.0, "flagstones", 0.062)                    # West Path
+	strip("alley", [[606, 404], [720, 412]], 3.0, "flagstones", 0.062)                    # Avenue Path
+	strip("alley", [[376, 545], [378, 500], [552, 494]], 3.0, "concrete", 0.062)          # Back Alley
+	strip("alley", [[486, 497], [486, 597], [442, 597]], 3.0, "concrete", 0.062)          # Allotment Path
+	strip("alley", [[486, 548], [540, 548]], 3.0, "concrete", 0.062)
+	strip("alley", [[548, 480], [542, 560], [538, 730]], 3.0, "concrete", 0.062)          # Ginnel
+	strip("alley", [[548, 505], [578, 515], [580, 582], [702, 600]], 3.0, "concrete", 0.062)  # Dog Leg
+	# East block: the paths onto the Green.
+	strip("alley", [[884, 212], [870, 280], [848, 355]], 3.0, "flagstones", 0.062)        # North Alley
+	strip("alley", [[722, 466], [845, 472], [884, 456]], 3.0, "flagstones", 0.062)        # Avenue Gap
+	strip("alley", [[1048, 580], [990, 540], [985, 515], [994, 492]], 3.0, "flagstones", 0.062)  # SE Alley
+	# The attackers' paths (orange): up the garden paths from their house to the Green.
+	strip("path", [[852, 470], [858, 520], [845, 585]], 3.5, "packed_earth", 0.058)       # Green Gate path
+	strip("path", [[845, 585], [820, 592], [815, 622], [803, 660], [838, 686], [856, 705], [852, 745]], 3.5, "packed_earth", 0.058)
+	strip("path", [[845, 585], [880, 592], [930, 620], [962, 655], [965, 682], [930, 692], [906, 702], [905, 745], [852, 745]], 3.5, "packed_earth", 0.058)
+	strip("path", [[838, 686], [800, 740], [760, 782]], 3.5, "packed_earth", 0.058)
+	strip("path", [[930, 692], [988, 740], [980, 800], [1058, 856]], 3.5, "packed_earth", 0.058)
 
 
-## A walkable path along [param points] (x/z), [param width] wide, drawn segment by segment with
-## round joints, a centimetre above the ground it crosses.
-func path(points: Array[Vector2], width: float, material: String, top: float = 0.03) -> void:
+func _sites() -> void:
+	layer("Sites and forecourts")
+	zone("court", [[472, 296], [612, 296], [606, 488], [470, 474]], "concrete", 0.066)            # B: the garage court
+	zone("green", [[838, 350], [1040, 375], [1050, 410], [992, 495], [884, 456], [836, 445]], "grass_worn", 0.066)  # A
+	zone("forecourt", [[640, 205], [735, 205], [732, 286], [640, 286]], "concrete", 0.052)        # defenders' corner
+	zone("forecourt", [[833, 797], [915, 842], [934, 908], [812, 842]], "gravel", 0.052)          # attackers' drives
+
+
+# --- fences: the outline of the walkable network --------------------------------------------------
+
+## Every edge of every walkable area, less the parts inside another walkable area, is the edge of
+## the network: a hedge, fence or wall stands just outside it.
+func _fences() -> void:
+	layer("Fences and hedges")
+	for index: int in _walk.size():
+		var poly: PackedVector2Array = _walk[index]["poly"]
+		var styles: Array = FENCES[_walk[index]["kind"]]
+		for i: int in poly.size():
+			var a := poly[i]
+			var b := poly[(i + 1) % poly.size()]
+			if a.distance_to(b) < 0.05:
+				continue
+			var parts: Array[PackedVector2Array] = [PackedVector2Array([a, b])]
+			for other: int in _walk.size():
+				if other == index or parts.is_empty():
+					continue
+				var kept: Array[PackedVector2Array] = []
+				for part: PackedVector2Array in parts:
+					kept.append_array(Geometry2D.clip_polyline_with_polygon(part, _walk[other]["poly"]))
+				parts = kept
+			for front: PackedVector2Array in _open_fronts:
+				var kept: Array[PackedVector2Array] = []
+				for part: PackedVector2Array in parts:
+					kept.append_array(Geometry2D.clip_polyline_with_polygon(part, front))
+				parts = kept
+			for part: PackedVector2Array in parts:
+				_fence_run(part[0], part[part.size() - 1], a, b, poly, styles)
+
+
+## One run of fence outside [param poly] from [param from] to [param to]. Ends at the area's own
+## corners overlap by half the thickness so corners close; ends cut by another area stop flush.
+func _fence_run(from: Vector2, to: Vector2, a: Vector2, b: Vector2, poly: PackedVector2Array, styles: Array) -> void:
+	var length := from.distance_to(to)
+	if length < 0.3:
+		return
+	var dir := (to - from) / length
+	var normal := Vector2(-dir.y, dir.x)
+	var mid := (from + to) / 2.0
+	if Geometry2D.is_point_in_polygon(mid + normal * 0.05, poly):
+		normal = -normal
+	var style: Array = styles[pick_at(mid, 3) % styles.size()]
+	var thickness := float(style[3])
+	var start := 0.0
+	var end := length
+	if from.distance_to(a) < 0.01 or from.distance_to(b) < 0.01:
+		start -= thickness / 2.0
+	if to.distance_to(a) < 0.01 or to.distance_to(b) < 0.01:
+		end += thickness / 2.0
+	var yaw := rad_to_deg(atan2(-dir.y, dir.x))
+	var runs: Array[Vector2] = [Vector2(start, end)]
+	# Now and then a long plank fence has a garden gate in it, so the back gardens look reachable.
+	if str(style[0]) == "wall" and str(style[1]) != "red_brick" and length > 6.0 and pick_at(mid, 9) % 3 == 0:
+		var g := (start + end) / 2.0 + float(pick_at(mid, 4) % 3 - 1) * 1.5
+		runs = [Vector2(start, g - GATE_WIDTH / 2.0), Vector2(g + GATE_WIDTH / 2.0, end)]
+		_gate(from + dir * g + normal * (thickness / 2.0), dir, pick_at(mid, 6))
+	for run: Vector2 in runs:
+		var centre := from + dir * ((run.x + run.y) / 2.0) + normal * (thickness / 2.0)
+		put(str(style[0]), Vector3(centre.x, 0, centre.y), Vector3(run.y - run.x, float(style[2]), thickness), yaw, {}, str(style[1]))
+
+
+## A closed garden gate [constant GATE_WIDTH] m wide centred on [param centre] in a fence running
+## along [param dir]: two posts, a boarded leaf a little lower than the fence with a rail across
+## each face, and a latch. It is solid, like the fence.
+func _gate(centre: Vector2, dir: Vector2, pick: int) -> void:
+	var yaw := rad_to_deg(atan2(-dir.y, dir.x))
+	var normal := Vector2(-dir.y, dir.x)
+	var leaf: String = ["weathered_wood", "wood_dark", "planks", "plaster_white"][pick % 4]
+	for side: float in [-1.0, 1.0]:
+		var post := centre + dir * (side * (GATE_WIDTH / 2.0 - 0.06))
+		put("block", Vector3(post.x, 0, post.y), Vector3(0.12, 1.95, 0.12), yaw, {}, "wood_dark")
+	put("block", Vector3(centre.x, 0.06, centre.y), Vector3(GATE_WIDTH - 0.26, 1.66, 0.06), yaw, {}, leaf)
+	for face: float in [-1.0, 1.0]:
+		var at := centre + normal * (face * 0.055)
+		for height: float in [0.3, 1.35]:
+			put("block", Vector3(at.x, height, at.y), Vector3(GATE_WIDTH - 0.3, 0.1, 0.05), yaw, {}, leaf)
+		var latch := at + dir * (GATE_WIDTH / 2.0 - 0.25) + normal * (face * 0.02)
+		put("block", Vector3(latch.x, 1.0, latch.y), Vector3(0.14, 0.06, 0.06), yaw, {}, "metal_dark")
+
+
+## True when [param footprint] overlaps a house already placed.
+func overlaps_house(footprint: PackedVector2Array) -> bool:
+	for other: PackedVector2Array in _houses:
+		if not Geometry2D.intersect_polygons(footprint, other).is_empty():
+			return true
+	return false
+
+
+## True when [param footprint] grown by [param margin] touches the walkable network.
+func blocked(footprint: PackedVector2Array, margin: float) -> bool:
+	for grown: PackedVector2Array in Geometry2D.offset_polygon(footprint, margin):
+		for entry: Dictionary in _walk:
+			if not Geometry2D.intersect_polygons(grown, entry["poly"]).is_empty():
+				return true
+	return false
+
+
+# --- houses ---------------------------------------------------------------------------------------
+
+## The estate's houses inside the lane loop: [px, py, width px, depth px, facing (0 north, 90
+## east), halves]. They stand where the street map shows them.
+const ESTATE: Array = [
+	[567, 268, 75, 40, 0, 2], [669, 329, 78, 38, 90, 2], [648, 458, 66, 40, 90, 2], [632, 545, 57, 40, 90, 2],
+	[624, 643, 60, 42, 90, 2], [360, 456, 71, 42, 0, 2], [431, 456, 71, 42, 0, 2], [490, 655, 70, 40, 180, 2],
+	[820, 326, 63, 44, 270, 2], [805, 421, 62, 40, 270, 2], [796, 520, 72, 44, 270, 2], [784, 594, 70, 36, 270, 2],
+	[768, 688, 63, 40, 270, 2], [925, 322, 52, 46, 180, 2], [978, 330, 58, 42, 188, 2], [1078, 392, 62, 40, 250, 2],
+	[1028, 508, 70, 40, 225, 2], [962, 572, 62, 40, 315, 2], [1010, 662, 70, 40, 225, 2], [883, 791, 80, 44, 210, 2],
+	[975, 842, 80, 44, 210, 2], [1110, 676, 75, 42, 225, 2],
+]
+## The houses round the outside of the loop, fronting the lanes (scenery).
+const OUTSIDE: Array = [
+	[460, 86, 75, 42, 180, 2], [550, 115, 68, 38, 180, 2], [684, 30, 60, 44, 90, 2], [682, 110, 60, 44, 90, 2],
+	[850, 35, 62, 46, 270, 2], [834, 138, 62, 44, 270, 2], [962, 165, 72, 40, 180, 2], [1058, 193, 68, 40, 190, 2],
+	[1150, 228, 70, 40, 210, 2], [1230, 282, 70, 40, 225, 2], [1282, 370, 64, 42, 270, 2], [1245, 445, 62, 40, 270, 2],
+	[1185, 545, 60, 42, 300, 2], [355, 225, 72, 42, 90, 2], [355, 300, 72, 42, 90, 2], [350, 120, 70, 40, 135, 2],
+	[230, 420, 70, 44, 90, 2], [225, 520, 70, 44, 90, 2], [310, 690, 62, 44, 90, 2], [310, 760, 62, 44, 90, 2],
+	[392, 800, 70, 40, 0, 2], [486, 802, 62, 42, 0, 2], [576, 806, 68, 38, 0, 2], [655, 832, 56, 44, 30, 2],
+	[735, 870, 80, 40, 30, 2], [800, 962, 72, 40, 30, 2], [900, 990, 66, 42, 0, 2],
+]
+
+
+func _estate_houses() -> void:
+	layer("Houses")
+	for entry: Array in ESTATE:
+		_place_house(entry)
+
+
+## Places a house from a list entry. A house keeps [constant HOUSE_CLEARANCE] m from the walkable
+## network, so the hedges and fences outside it never stand in a wall. Where the drawn footprint is
+## too close (the street map's outlines are rough) it is nudged up to 2.1 m or made up to 25 %
+## smaller, keeping as close to the drawing as it can; a house that still does not fit is left out.
+func _place_house(entry: Array) -> void:
+	var drawn := p(float(entry[0]), float(entry[1]))
+	var facing_angle := deg_to_rad(float(entry[4]))
+	var facing := Vector2(sin(facing_angle), -cos(facing_angle))
+	var yaw := rad_to_deg(atan2(facing.x, facing.y))
+	var along := Vector2(cos(deg_to_rad(yaw)), -sin(deg_to_rad(yaw)))
+	var shifts: Array[Vector2] = [Vector2.ZERO]
+	for step: float in [0.7, 1.4, 2.1]:
+		shifts.append_array([Vector2(0, step), Vector2(0, -step), Vector2(step, 0), Vector2(-step, 0)])
+	for scale: float in [1.0, 0.92, 0.84, 0.75]:
+		for shift: Vector2 in shifts:
+			var centre := drawn + along * shift.x + facing * shift.y
+			var w := float(entry[2]) * S * scale
+			var d := float(entry[3]) * S * scale
+			var footprint := PackedVector2Array([centre - along * w / 2 - facing * d / 2, centre + along * w / 2 - facing * d / 2,
+				centre + along * w / 2 + facing * d / 2, centre - along * w / 2 + facing * d / 2])
+			if not blocked(footprint, HOUSE_CLEARANCE) and not overlaps_house(footprint):
+				_houses.append(footprint)
+				house(centre, along, facing, yaw, w, d, int(entry[5]), pick_at(drawn, 11))
+				_open_front(centre, along, facing, w, d)
+				return
+	printerr("House at drawing ", entry[0], ",", entry[1], " touches a path; left out.")
+
+
+## Opens the front of a house onto the street: where the network lies within 9 m in front of it,
+## the hedge or fence across its front is left out (see [method _fences]) and a garden fence runs
+## from each side of the house to the street instead, so nothing stands in front of the doors and
+## the gardens behind stay closed.
+func _open_front(centre: Vector2, along: Vector2, facing: Vector2, w: float, d: float) -> void:
+	var front := centre + facing * (d / 2.0)
+	var reach := _reach(front, facing, 9.0)
+	if reach < 0.0:
+		return
+	var spread := FRONT_SPREAD
+	var own: PackedVector2Array = _houses[_houses.size() - 1]
+	for attempt: float in [FRONT_SPREAD, 0.2]:
+		spread = attempt
+		var wide := box_footprint(front + facing * ((reach + 1.5) / 2.0), facing, reach + 1.5, w + spread * 2.0)
+		var clear := true
+		for other: PackedVector2Array in _houses:
+			if other != own and not Geometry2D.intersect_polygons(wide, other).is_empty():
+				clear = false
+		if clear:
+			break
+	_open_fronts.append(box_footprint(front + facing * ((reach + 1.5) / 2.0), facing, reach + 1.5, w + spread * 2.0))
+	for side: float in [-1.0, 1.0]:
+		var corner := front + along * (side * (w / 2.0 + spread))
+		var to_street := _reach(corner, facing, reach + 1.5)
+		if to_street < 0.0:
+			to_street = reach
+		_garden_fence(corner, corner + facing * to_street)
+		if spread > 0.3:
+			# Between the house and its side fence: mostly a gate to the back garden.
+			var wall := front + along * (side * w / 2.0)
+			if pick_at(wall, 8) % 4 != 0:
+				var out := along * side
+				_gate(wall + out * (GATE_WIDTH / 2.0), out, pick_at(wall, 6))
+				_garden_fence(wall + out * GATE_WIDTH, corner)
+			else:
+				_garden_fence(corner, wall)
+
+
+## How far from [param from] along [param dir] the walkable network starts, up to
+## [param limit] m; -1 when it does not.
+func _reach(from: Vector2, dir: Vector2, limit: float) -> float:
+	var t := 0.1
+	while t <= limit:
+		for entry: Dictionary in _walk:
+			if Geometry2D.is_point_in_polygon(from + dir * t, entry["poly"]):
+				return t
+		t += 0.1
+	return -1.0
+
+
+## A plank garden fence from [param a] to [param b].
+func _garden_fence(a: Vector2, b: Vector2) -> void:
+	var length := a.distance_to(b)
+	if length < 0.3:
+		return
+	var mid := (a + b) / 2.0
+	put("wall", Vector3(mid.x, 0, mid.y), Vector3(length + 0.12, 1.85, 0.12), rad_to_deg(atan2(-(b.y - a.y), b.x - a.x)), {}, "planks")
+
+
+## A semi like the ones on the street: brick ground floor, white upper floor, a gabled (now and
+## then hipped) tile roof with a chimney stack and an aerial on the party wall; per half a front
+## door under a little canopy at the outer end, a wide front window, two windows upstairs, back
+## windows and a back door, a bin by the door and a gravel drive.
+func house(centre: Vector2, along: Vector2, facing: Vector2, yaw: float, w: float, d: float, halves: int, pick: int) -> void:
+	var upper: String = ["render", "render", "plaster_white", "red_brick"][pick % 4]
+	put("building", Vector3(centre.x, 0, centre.y), Vector3(w, 2.7, d), yaw, {}, "red_brick")
+	put("building", Vector3(centre.x, 2.7, centre.y), Vector3(w, EAVE - 2.7, d), yaw, {}, upper)
+	put("block", Vector3(centre.x, 2.62, centre.y), Vector3(w + 0.06, 0.12, d + 0.06), yaw, {}, "concrete")
+	roof(centre, along, facing, w / 2.0 + 0.3, d / 2.0 + 0.35, pick % 5 == 0, "slate" if pick % 7 == 0 else "roof_tile")
+	var stack := centre + along * (0.0 if halves == 2 else w * 0.3)
+	put("block", Vector3(stack.x, RIDGE - 1.2, stack.y), Vector3(1.0, 2.1, 0.7), yaw, {}, "red_brick")
+	put("pillar", Vector3(stack.x + along.x * 0.3, RIDGE + 0.9, stack.y + along.y * 0.3), Vector3(0.06, 1.6, 0.06), 0.0, {}, "metal_dark")
+	# The aerial's boom on top of the mast, pointing out over the front, with two elements.
+	var boom := stack + along * 0.3 + facing * 0.2
+	put("block", Vector3(boom.x, RIDGE + 2.45, boom.y), Vector3(0.05, 0.05, 1.3), yaw, {}, "metal_dark")
+	for element: float in [-0.35, 0.35]:
+		var at := boom + facing * element
+		put("block", Vector3(at.x, RIDGE + 2.45, at.y), Vector3(0.7 if element < 0.0 else 0.45, 0.05, 0.05), yaw, {}, "metal_dark")
+	var front := centre - along * w / 2.0 + facing * d / 2.0
+	var back := centre + along * w / 2.0 - facing * d / 2.0
+	var hw := w / float(halves)
+	var doors: Array[String] = ["wood_dark", "cloth_red", "plaster_white", "cloth_blue"]
+	for i: int in halves:
+		var outer := i == 0
+		var t0 := float(i) * hw
+		var door_t := t0 + hw * (0.2 if outer else 0.8)
+		var window_t := t0 + hw * (0.62 if outer else 0.38)
+		fixture("door", front, along, facing, door_t, 0.0, Vector3(0.95, 2.05, 0.24), {"panels": 1, "fanlight": false},
+			doors[(pick + i) % doors.size()], yaw)
+		var canopy := front + along * door_t + facing * 0.45
+		put("roof", Vector3(canopy.x, 2.25, canopy.y), Vector3(1.5, 0.08, 0.9), yaw, {}, "slate")
+		fixture("window", front, along, facing, window_t, 0.9, Vector3(1.8, 1.2, 0.2), {"panes_x": 3, "panes_y": 1},
+			"plaster_white", yaw)
+		for upstairs: float in [0.28, 0.72]:
+			fixture("window", front, along, facing, t0 + hw * upstairs, 3.3, Vector3(1.1, 1.1, 0.2), {"panes_x": 2, "panes_y": 1},
+				"plaster_white", yaw)
+		var bt := w - (t0 + hw * 0.5)
+		fixture("window", back, -along, -facing, bt, 0.9, Vector3(1.6, 1.1, 0.2), {"panes_x": 2, "panes_y": 1}, "plaster_white", yaw + 180.0)
+		fixture("window", back, -along, -facing, bt, 3.3, Vector3(1.1, 1.0, 0.2), {"panes_x": 2, "panes_y": 1}, "plaster_white", yaw + 180.0)
+		# The drive at the outer end and a bin by the door, where the garden has room.
+		var drive := front + along * (t0 + hw * (0.15 if outer else 0.85)) + facing * 2.6
+		var apron := PackedVector2Array([drive - along * 1.4 - facing * 2.4, drive + along * 1.4 - facing * 2.4,
+			drive + along * 1.4 + facing * 2.4, drive - along * 1.4 + facing * 2.4])
+		if not blocked(apron, HOUSE_CLEARANCE) and not overlaps_house(apron):
+			put("block", Vector3(drive.x, 0, drive.y), Vector3(2.8, 0.05, 4.8), yaw, {}, "gravel")
+			if (pick + i) % 3 == 0:
+				put("vehicle_car", Vector3(drive.x, 0.05, drive.y), Vector3.ZERO, yaw, {},
+					["slate", "cloth_red", "plaster_white", "cloth_blue", "metal_dark"][(pick + i) % 5])
+		var bin := front + along * (door_t + (0.9 if outer else -0.9)) + facing * 0.5
+		put("block", Vector3(bin.x, 0, bin.y), Vector3(0.6, 1.1, 0.7), yaw, {}, ["metal_painted", "metal_dark", "cloth_blue"][(pick + i) % 3])
+
+
+## A gable roof (or a hipped one) over a house turned to [param along]/[param facing], drawn as a
+## brush: eaves [param hx] by [param hz] from the centre, ridge along the front.
+func roof(centre: Vector2, along: Vector2, facing: Vector2, hx: float, hz: float, hipped: bool, material: String) -> void:
+	var corners: Array[Vector2] = [centre - along * hx - facing * hz, centre + along * hx - facing * hz,
+		centre + along * hx + facing * hz, centre - along * hx + facing * hz]
+	var inset := minf(hz, hx - 0.1) if hipped else 0.0
+	var ridge_a := centre - along * (hx - inset)
+	var ridge_b := centre + along * (hx - inset)
+	var vertices: Array = []
+	for corner: Vector2 in corners:
+		vertices.append([corner.x, EAVE, corner.y])
+	vertices.append_array([[ridge_a.x, RIDGE, ridge_a.y], [ridge_b.x, RIDGE, ridge_b.y]])
+	var faces: Array = [0, 1, 2, 0, 2, 3, 0, 4, 5, 0, 5, 1, 3, 2, 5, 3, 5, 4, 0, 3, 4, 1, 5, 2]
+	studio.call("draw_brushes", [{"vertices": vertices, "faces": faces, "two_sided": true, "material": material}])
+
+
+func _backdrop() -> void:
+	layer("Houses round the estate (scenery)")
+	for entry: Array in OUTSIDE:
+		_place_house(entry)
+	# The primary school beyond the school lane: a long single-storey brick block with a flat roof,
+	# a band of windows and a playground fence.
+	var school := p(1400, 760)
+	put("building", Vector3(school.x, 0, school.y), Vector3(25, 4.2, 34), 0.0, {}, "red_brick")
+	put("roof", Vector3(school.x, 4.2, school.y), Vector3(25.6, 0.4, 34.6), 0.0, {}, "metal_dark")
+	put("block", Vector3(school.x - 12.55, 1.2, school.y), Vector3(0.12, 1.6, 30), 0.0, {}, "glass")
+	put("building", Vector3(school.x - 6, 0, school.y - 24), Vector3(14, 6.5, 14), 0.0, {}, "red_brick")
+	put("roof", Vector3(school.x - 6, 6.5, school.y - 24), Vector3(14.6, 0.4, 14.6), 0.0, {}, "metal_dark")
+
+
+## B: the garage court. A row of flat-roofed lock-ups stands in its west half with a narrow gap
+## behind them; the court's walls are the backs of gardens.
+func _lockups() -> void:
+	layer("Garage court (B)")
+	var centre := p(499, 357)
+	var w := 78.0 * S
+	var d := 38.0 * S
+	put("building", Vector3(centre.x, 0, centre.y), Vector3(d, 2.5, w), 0.0, {}, "red_brick")
+	put("roof", Vector3(centre.x + 0.2, 2.5, centre.y), Vector3(d + 0.6, 0.15, w + 0.3), 0.0, {}, "concrete")
+	var door_face := centre.x + d / 2.0
+	var z := centre.y - w / 2.0 + 1.6
+	var k := 0
+	while z < centre.y + w / 2.0 - 1.2:
+		put("block", Vector3(door_face + 0.04, 0, z), Vector3(0.08, 2.05, 2.3), 0.0, {},
+			["metal_painted", "metal_rust", "cloth_blue", "metal_painted"][k % 4])
+		z += 2.9
+		k += 1
+	# A car with its bonnet up, tyres, a skip and pallets for cover.
+	put("vehicle_car", Vector3(p(572, 330).x, 0.07, p(572, 330).y), Vector3.ZERO, 15.0, {}, "cloth_red")
+	put("barrel_cluster", Vector3(p(530, 460).x, 0.07, p(530, 460).y), Vector3(1.4, 0.9, 1.4), 0.0, {}, "rubber")
+	put("shipping_container", Vector3(p(590, 445).x, 0.07, p(590, 445).y), Vector3(1.9, 1.5, 3.8), 80.0, {}, "hazard_paint")
+	put("pallet", Vector3(p(545, 318).x, 0.07, p(545, 318).y), Vector3(1.2, 0.6, 1.0), 10.0)
+	put("crate_stack", Vector3(p(522, 425).x, 0.07, p(522, 425).y), Vector3(2.4, 1.2, 1.2), 90.0, {}, "weathered_wood")
+
+
+## A: the Green, the estate's grassed open space with a bench, a bin, goalposts and a
+## sapling or two.
+func _green() -> void:
+	layer("The Green (A)")
+	put("park_bench", Vector3(p(905, 380).x, 0.07, p(905, 380).y), Vector3.ZERO, 180.0)
+	put("park_bench", Vector3(p(985, 400).x, 0.07, p(985, 400).y), Vector3.ZERO, 200.0)
+	for post: Array in [[968, 445], [988, 430]]:
+		put("pillar", Vector3(p(post[0], post[1]).x, 0.07, p(post[0], post[1]).y), Vector3(0.12, 2.0, 0.12), 0.0, {}, "plaster_white")
+	var bar := (p(968, 445) + p(988, 430)) / 2.0
+	put("block", Vector3(bar.x, 2.07, bar.y), Vector3(4.2, 0.12, 0.12), 37.0, {}, "plaster_white")
+	for sapling: Array in [[870, 400], [1010, 395], [930, 455]]:
+		put("tree", Vector3(p(sapling[0], sapling[1]).x, 0.07, p(sapling[0], sapling[1]).y), Vector3(2.6, 6.0, 2.6), 0.0,
+			{"form": "broadleaf"}, "foliage")
+	put("block", Vector3(p(880, 438).x, 0.07, p(880, 438).y), Vector3(1.8, 1.0, 0.9), 15.0, {}, "metal_painted")   # electricity box
+	put("block", Vector3(p(1030, 400).x, 0.07, p(1030, 400).y), Vector3(0.6, 0.9, 0.6), 0.0, {}, "metal_dark")       # dog bin
+
+
+# --- street furniture -----------------------------------------------------------------------------
+
+const NORTH_ROAD: Array = [[432, 186], [600, 189], [740, 196], [870, 214], [1000, 240]]
+const AVENUE: Array = [[740, 196], [728, 350], [718, 500], [705, 640], [695, 752]]
+const BARNWELL_ROAD: Array = [[1010, 965], [900, 905], [790, 820], [700, 752]]
+const CAR_COLOURS: Array[String] = ["slate", "cloth_red", "plaster_white", "cloth_blue", "metal_dark", "metal_painted"]
+
+
+## Points every [param spacing] m along a drawn line, starting [param start] m in (half the spacing
+## by default) and [param offset] m to its left (negative: to its right), each with the line's
+## direction there: {"at": Vector2, "dir": Vector2}.
+static func along_line(line: Array, spacing: float, offset: float, start: float = -1.0) -> Array[Dictionary]:
+	var points := pts(line)
+	var result: Array[Dictionary] = []
+	var next := spacing / 2.0 if start < 0.0 else start
+	var walked := 0.0
 	for i: int in points.size() - 1:
 		var a := points[i]
 		var b := points[i + 1]
-		var side := (b - a).normalized().orthogonal() * (width / 2.0)
-		surface([a + side, b + side, b - side, a - side], top, 0.05, material)
-	for i: int in range(1, points.size() - 1):
-		var joint: Array = arc(points[i], width / 2.0, 0.0, 315.0, 7)
-		surface(joint, top, 0.05, material)
+		var length := a.distance_to(b)
+		var dir := (b - a) / length
+		while next <= walked + length:
+			result.append({"at": a + dir * (next - walked) + Vector2(-dir.y, dir.x) * offset, "dir": dir})
+			next += spacing
+		walked += length
+	return result
 
 
-## A quadratic curve from [param a] through the pull of [param control] to [param b].
-static func curve(a: Vector2, control: Vector2, b: Vector2, steps: int = 8) -> Array[Vector2]:
-	var points: Array[Vector2] = []
-	for i: int in steps + 1:
-		var t := float(i) / steps
-		points.append(a.lerp(control, t).lerp(control.lerp(b, t), t))
-	return points
+## A rectangle [param length] along [param dir] by [param width] round [param at].
+static func box_footprint(at: Vector2, dir: Vector2, length: float, width: float) -> PackedVector2Array:
+	var side := Vector2(-dir.y, dir.x) * (width / 2.0)
+	var ahead := dir * (length / 2.0)
+	return PackedVector2Array([at - ahead - side, at + ahead - side, at + ahead + side, at - ahead + side])
 
 
-## A door or window set into a wall facing along Z: its glazed or panelled face outward
-## ([param outward] +1 for +Z, -1 for -Z), just proud of the wall surface at [param face_z].
-func opening(type: String, x: float, y: float, face_z: float, outward: float, size: Vector3, props: Dictionary = {}) -> void:
-	put(type, Vector3(x, y, face_z + outward * (size.z / 2.0 - 0.03)), size, 0.0 if outward > 0.0 else 180.0, props, "wood_dark")
+## The yaw that turns a piece's local Z along [param dir] (its local X then lies across it).
+static func yaw_along(dir: Vector2) -> float:
+	return rad_to_deg(atan2(dir.x, dir.y))
 
 
-## The same for a wall facing along X ([param outward] +1 for +X, -1 for -X).
-func opening_x(type: String, face_x: float, y: float, z: float, outward: float, size: Vector3, props: Dictionary = {}) -> void:
-	put(type, Vector3(face_x + outward * (size.z / 2.0 - 0.03), y, z), size, 90.0 if outward > 0.0 else -90.0, props, "wood_dark")
+## True when a [param length] by [param width] thing at [param point] lies wholly on roads and lanes,
+## keeps [param clearance] m from every footpath, site and forecourt and 8 m from both spawns, so
+## nothing parked or planted on a street stands in a hedge, blocks the mouth of a path or crowds a
+## spawn.
+func fits_on_road(point: Dictionary, length: float, width: float, clearance: float) -> bool:
+	var at: Vector2 = point["at"]
+	var footprint := box_footprint(at, point["dir"] as Vector2, length, width)
+	var rest: Array[PackedVector2Array] = [footprint]
+	for entry: Dictionary in _walk:
+		if is_road(str(entry["kind"])):
+			var kept: Array[PackedVector2Array] = []
+			for part: PackedVector2Array in rest:
+				kept.append_array(_cut(part, entry["poly"]))
+			rest = kept
+	for part: PackedVector2Array in rest:
+		if absf(_area(part)) > 0.01:
+			return false
+	for spawn_px: Vector2 in [DEFENDERS, ATTACKERS]:
+		if at.distance_to(p(spawn_px.x, spawn_px.y)) < 8.0:
+			return false
+	for grown: PackedVector2Array in Geometry2D.offset_polygon(footprint, clearance):
+		for entry: Dictionary in _walk:
+			if not is_road(str(entry["kind"])) and not Geometry2D.intersect_polygons(grown, entry["poly"]).is_empty():
+				return false
+	return true
 
 
-## An angled bay window on a facade at [param face_z]: brick base, glazing and a slate cap.
-func bay(x: float, face_z: float, outward: float) -> void:
-	var o := outward
-	var outline: Array = [Vector2(x - 1.25, face_z), Vector2(x + 1.25, face_z), Vector2(x + 0.85, face_z + o * 0.75),
-		Vector2(x - 0.85, face_z + o * 0.75)]
-	prism(outline, 0.0, 0.75, "red_brick")
-	prism(outline, 0.75, 1.5, "glass")
-	for corner: Vector2 in outline:
-		put("pillar", Vector3(corner.x, 0.75, corner.y + o * 0.03), Vector3(0.09, 1.5, 0.09), 0.0, {}, "wood_dark")
-	for along: float in [-0.42, 0.42]:
-		put("pillar", Vector3(x + along, 0.75, face_z + o * 0.77), Vector3(0.07, 1.5, 0.07), 0.0, {}, "wood_dark")
-	put("block", Vector3(x, 1.5, face_z + o * 0.77), Vector3(1.7, 0.06, 0.06), 0.0, {}, "wood_dark")
-	var cap: Array = [Vector2(x - 1.4, face_z), Vector2(x + 1.4, face_z), Vector2(x + 0.95, face_z + o * 0.9),
-		Vector2(x - 0.95, face_z + o * 0.9)]
-	prism(cap, 2.25, 0.22, "slate")
+## Parks a car (or a van) at each point that has room, turned along the street.
+func park(points: Array[Dictionary], type: String, length: float, width: float) -> void:
+	for point: Dictionary in points:
+		var at: Vector2 = point["at"]
+		if fits_on_road(point, length + 0.4, width + 0.2, 1.0):
+			put(type, Vector3(at.x, 0.06, at.y), Vector3.ZERO, yaw_along(point["dir"] as Vector2), {},
+				CAR_COLOURS[pick_at(at, 5) % CAR_COLOURS.size()])
 
 
-## One house (two halves for a semi): brick ground floor, rendered upper floor, tiled gable or
-## hipped roof, chimney with an aerial, drainpipes; per half a front door under a canopy, a bay
-## or flat front window, upper windows, back windows and a wheelie bin. Every door and window
-## faces out of the house. [param front] is the facade's z; the house runs [constant DEPTH] back
-## from it, toward -Z when it faces south.
-func house(x1: float, x2: float, front: float, faces_south: bool, halves: int) -> void:
-	var back := front - DEPTH if faces_south else front + DEPTH
-	var out_front := 1.0 if faces_south else -1.0
-	var z1 := minf(front, back)
-	var z2 := maxf(front, back)
-	var style := posmod(int(roundf(x1 * 3.0 + front)), 4)
-	mass("building", x1, x2, z1, z2, 2.8, "red_brick")
-	mass("building", x1, x2, z1, z2, EAVE - 2.8, "render" if style != 3 else "red_brick", 2.8)
-	if style % 2 == 0:
-		hip(x1 - 0.3, x2 + 0.3, z1 - 0.35, z2 + 0.35, EAVE, RIDGE, "roof_tile")
-	else:
-		gable(x1 - 0.25, x2 + 0.25, z1 - 0.35, z2 + 0.35, EAVE, RIDGE, "roof_tile" if style != 3 else "slate")
-	var stack_x := (x1 + x2) / 2.0 if halves == 2 else x1 + 1.4
-	var stack_z := (z1 + z2) / 2.0
-	put("block", Vector3(stack_x, 6.6, stack_z), Vector3(0.9 if halves == 1 else 1.4, 2.4, 0.8), 0.0, {}, "red_brick")
-	put("pillar", Vector3(stack_x + 0.3, 9.0, stack_z), Vector3(0.06, 1.5, 0.06), 0.0, {}, "metal_dark")
-	put("block", Vector3(stack_x + 0.3, 10.2, stack_z), Vector3(0.05, 0.05, 1.1), 0.0, {}, "metal_dark")
-	for corner: float in [x1 + 0.08, x2 - 0.08]:
-		put("pillar", Vector3(corner, 0, front + out_front * 0.08), Vector3(0.1, EAVE, 0.1), 0.0, {}, "metal_dark")
-	var width := (x2 - x1) / halves
-	var bins_colour: Array[String] = ["metal_painted", "metal_dark", "cloth_blue"]
-	for i: int in halves:
-		var hx := x1 + i * width
-		var mirrored := i == 1
-		var door_x := hx + width * (0.78 if mirrored else 0.22)
-		var bay_x := hx + width * (0.38 if mirrored else 0.62)
-		opening("door", door_x, 0.0, front, out_front, Vector3(1.0, 2.1, 0.26), {"fanlight": false})
-		put("roof", Vector3(door_x, 2.3, front + out_front * 0.45), Vector3(1.6, 0.1, 0.9), 0.0, {}, "slate")
-		if (style + i) % 3 != 2:
-			bay(bay_x, front, out_front)
-		else:
-			opening("window", bay_x, 0.85, front, out_front, Vector3(1.9, 1.3, 0.3), {"panes_x": 3})
-		for along: float in [0.27, 0.73]:
-			opening("window", hx + width * along, 3.3, front, out_front, Vector3(1.2, 1.25, 0.3))
-			opening("window", hx + width * along, 3.3, back, -out_front, Vector3(1.1, 1.2, 0.3))
-		opening("window", hx + width * 0.5, 0.85, back, -out_front, Vector3(2.0, 1.3, 0.3), {"panes_x": 3})
-		var bin_x := hx + (width - 0.5 if mirrored else 0.5)
-		put("block", Vector3(bin_x, 0, front + out_front * 0.5), Vector3(0.6, 1.1, 0.7), 0.0, {},
-			bins_colour[posmod(style + i, 3)])
+## The points where an upright street thing [param size] m across has room on the pavement.
+func street_points(points: Array[Dictionary], size: float) -> Array[Dictionary]:
+	var used: Array[Dictionary] = []
+	for point: Dictionary in points:
+		if fits_on_road(point, size, size, 0.6):
+			used.append(point)
+	return used
 
 
-## Front gardens between a low brick wall at [param wall_z] and the facades at [param house_z]:
-## lawn, a gravel drive for each half, the wall open at the drives.
-func front_gardens(x1: float, x2: float, wall_z: float, house_z: float, houses: Array) -> void:
-	var z1 := minf(wall_z, house_z)
-	var z2 := maxf(wall_z, house_z)
-	pave(x1, x2, z1, z2, "grass_worn")
-	var drives: Array[float] = []
-	for entry: Array in houses:
-		var hx1 := float(entry[0])
-		var hx2 := float(entry[1])
-		if hx1 < x1 - 0.01 or hx2 > x2 + 0.01:
-			continue
-		drives.append(hx1 + 1.6)
-		if int(entry[2]) == 2:
-			drives.append(hx2 - 1.6)
-	drives.sort()
-	var gaps: Array = []
-	for drive: float in drives:
-		pave(drive - 1.5, drive + 1.5, z1, z2, "gravel", PAVE_TOP + 0.01)
-		gaps.append([maxf(drive - 1.5 - x1, 0.0), minf(drive + 1.5 - x1, x2 - x1)])
-	wall_line(Vector2(x1, wall_z), Vector2(x2, wall_z), 0.75, 0.0, "red_brick", gaps, "wall", 0.25)
-
-
-## A wooden telegraph pole with its cross-arm.
-func pole(x: float, z: float) -> void:
-	put("pillar", Vector3(x, 0, z), Vector3(0.26, 8.4, 0.26), 0.0, {}, "weathered_wood")
-	put("block", Vector3(x, 7.9, z), Vector3(1.5, 0.12, 0.14), 0.0, {}, "weathered_wood")
-
-
-## An overhead wire between two poles.
-func wire(a: Vector2, b: Vector2, height: float = 7.95) -> void:
-	var centre := (a + b) / 2.0
-	var yaw := rad_to_deg(atan2(-(b.y - a.y), b.x - a.x))
-	put("block", Vector3(centre.x, height, centre.y), Vector3(a.distance_to(b), 0.05, 0.05), yaw, {}, "metal_dark")
-
-
-func shed(x: float, z: float, yaw: float = 0.0) -> void:
-	put("block", Vector3(x, 0, z), Vector3(2.0, 2.1, 2.4), yaw, {}, "weathered_wood")
-	put("roof", Vector3(x, 2.1, z), Vector3(2.3, 0.12, 2.7), yaw, {}, "slate")
-
-
-func bins(x: float, z: float, yaw: float = 0.0) -> void:
-	put("block", Vector3(x, 0, z), Vector3(0.6, 1.1, 0.7), yaw, {}, "metal_painted")
-
-
-# --- the map ------------------------------------------------------------------------------------
-
-func _ground() -> void:
-	layer("Ground and boundary")
-	mass("floor", WEST - 0.6, EAST + 0.6, -68, 68, 1.0, "tarmac", -1.0)
-	mass("wall", WEST - 0.6, WEST, -68, 68, 3.2, "red_brick")
-	mass("wall", EAST, EAST + 0.6, -68, 68, 3.2, "red_brick")
-
-
-## Larch Road (z -56..-44) and Marsh Lane (z 45..57): pavements, centre lines, far-side houses.
-func _roads() -> void:
-	layer("Roads")
-	pave(WEST, EAST, -56, -54, "concrete")
-	pave(WEST, EAST, -46, -44, "concrete")
-	pave(WEST, EAST, 45, 47, "concrete")
-	pave(WEST, EAST, 55, 57, "concrete")
-	var x := WEST + 2.0
-	while x < EAST - 3.0:
-		mass("floor", x, x + 2.5, -50.08, -49.92, 0.05, "plaster_white", -0.025)
-		mass("floor", x, x + 2.5, 50.92, 51.08, 0.05, "plaster_white", -0.025)
-		x += 6.0
-	# The far side of both roads: front gardens and houses facing the estate.
-	front_gardens(WEST, EAST, -56, -59.5, FAR_ROW)
-	front_gardens(WEST, EAST, 57, 59.5, FAR_ROW)
-	lawn(WEST, EAST, -68, -59.5)
-	lawn(WEST, EAST, 59.5, 68)
-	layer("Houses")
-	for entry: Array in FAR_ROW:
-		house(float(entry[0]), float(entry[1]), -59.5, true, int(entry[2]))
-		house(float(entry[0]), float(entry[1]), 59.5, false, int(entry[2]))
-	# A fence 1 m behind each far facade line closes the gaps between houses.
-	wall_line(Vector2(WEST, -60.5), Vector2(EAST, -60.5), 2.2, 0.0, "planks", [], "wall", 0.12)
-	wall_line(Vector2(WEST, 60.5), Vector2(EAST, 60.5), 2.2, 0.0, "planks", [], "wall", 0.12)
-
-
-## The three lanes north to south (the owner's black lines): the West Lane, Ashby Avenue in the
-## middle and Fen Walk; and the alleys, paths and the two sites.
-func _lanes() -> void:
-	layer("Lanes")
-	# Ashby Avenue: the main lane, carriageway x -5..5 with pavements and grass verges.
-	pave(-7, -5, -44, 45, "concrete")
-	pave(5, 7, -44, 45, "concrete")
-	pave(-10, -7, -44, 45, "grass_worn")
-	pave(7, 10, -44, 45, "grass_worn")
-	var z := -42.0
-	while z < 43.0:
-		if z + 2.5 < 12.0 or z > 16.0:
-			mass("floor", -0.08, 0.08, z, z + 2.5, 0.05, "plaster_white", -0.025)
-		z += 6.0
-	pave(WEST, -51, -44, 45, "grass_worn")     # West Lane (a gravel path winds along it)
-	pave(-51, -41, -10, -4, "flagstones")      # Church Walk
-	pave(-23, -19, -44, -26, "concrete")       # Garage Drive
-	pave(15, 19, -44, -26, "flagstones")       # Larch Alley
-	pave(44, EAST, -44, 45, "grass_worn")      # Fen Walk (a dirt path winds along it)
-	pave(-41, -10, 22, 27, "gravel")           # Back Lane (west)
-	pave(10, 44, 22, 27, "gravel")             # Garage Row (east)
-	pave(-32, -27, 2, 22, "flagstones")        # Chapel Path
-	pave(-32, -27, 27, 45, "flagstones")
-	pave(14, 18, 27, 45, "flagstones")         # Kennel Ginnel
-	pave(-41, -11, -26, 2, "concrete")         # the Lock-ups court
-	pave(11, 43, -26, 2, "grass_worn")         # the Green
-	pave(10, 15, -44, -40, "concrete")         # the corner shop's forecourt
-	pave(10, 14, 42, 45, "concrete")           # the garage forecourt
-	for gap: Array in [[-11, -10, -26, -24], [-11, -10, -6, -1], [10, 11, -26, -24], [10, 11, -11, -6], [43, 44, -16, -10]]:
-		pave(gap[0], gap[1], gap[2], gap[3], "flagstones")
-	# Hedges between the avenue's verges and the sites, open at the gaps.
-	layer("Hedges")
-	for hedge: Array in [[-11, -10, -24, -6], [-11, -10, -1, 2], [10, 11, -24, -11], [10, 11, -6, 2],
-			[43, 44, -26, -16], [43, 44, -10, 2]]:
-		mass("block", hedge[0], hedge[1], hedge[2], hedge[3], 2.1, "hedge")
-
-
-func _houses() -> void:
-	layer("Houses")
-	for entry: Array in NORTH_ROW:
-		house(float(entry[0]), float(entry[1]), -40.0, false, int(entry[2]))
-	for entry: Array in SOUTH_ROW:
-		house(float(entry[0]), float(entry[1]), 42.0, true, int(entry[2]))
-	for segment: Array in [[-51.0, -23.0], [-19.0, -10.0], [19.0, 44.0]]:
-		front_gardens(float(segment[0]), float(segment[1]), -44, -40, NORTH_ROW)
-	for segment: Array in [[-51.0, -32.0], [-27.0, -10.0], [18.0, 44.0]]:
-		front_gardens(float(segment[0]), float(segment[1]), 45, 42, SOUTH_ROW)
-	# The corner shop on Larch Road and the avenue: single storey, flat roof, shop window.
-	mass("building", 10.5, 14.6, -40, -32, 3.4, "red_brick")
-	put("roof", Vector3(12.55, 3.4, -36), Vector3(4.5, 0.2, 8.4), 0.0, {}, "slate")
-	opening("window", 12.8, 0.6, -40, -1.0, Vector3(2.6, 1.8, 0.3), {"panes_x": 3, "panes_y": 1})
-	opening_x("door", 10.5, 0.0, -38.2, -1.0, Vector3(1.0, 2.1, 0.26), {"fanlight": false})
-	put("roof", Vector3(12.55, 2.45, -40.6), Vector3(4.2, 0.08, 1.2), 0.0, {}, "cloth_striped")   # awning
-	put("enamel_sign", Vector3(12.55, 2.6, -40.2), Vector3(3.6, 0.6, 0.08), 180.0, {"text": "STORES"}, "metal_dark")
-	# A pair of garages on Marsh Lane at the foot of the avenue.
-	mass("building", 10.4, 13.6, 35, 42, 2.6, "red_brick")
-	put("roof", Vector3(12.0, 2.6, 38.5), Vector3(3.6, 0.15, 7.4), 0.0, {}, "slate")
-	put("shutter_panel", Vector3(12.0, 0, 42), Vector3(2.6, 2.1, 0.2), 0.0, {}, "metal_painted")
-	# The attackers' house on Marsh Lane: a garage beside it and a hedge along its front wall.
-	mass("building", 30.7, 31.9, 36.0, 42.0, 2.5, "red_brick")
-	put("roof", Vector3(31.3, 2.5, 39.0), Vector3(1.4, 0.12, 6.2), 0.0, {}, "slate")
-	mass("block", 22.0, 26.0, 44.75, 45.25, 1.3, "hedge")
-
-
-## Back gardens out of play behind panel fences: sheds, washing lines, trees.
-func _gardens() -> void:
-	layer("Gardens")
-	# Plot fences start 1 m inside the houses, so they close the side gaps without covering facades.
-	for entry: Array in [[-51, -23, -39, -26], [-19, -10, -39, -26], [10, 15, -39, -26], [19, 44, -39, -26],
-			[-51, -32, 27, 41], [-27, -10, 27, 41], [10, 14, 27, 41], [18, 44, 27, 41],
-			[-41, -32, 2, 22], [-27, -10, 2, 22]]:
-		plot(entry[0], entry[1], entry[2], entry[3])
-	for entry: Array in [[-46.0, -29.0], [-33.0, -29.5], [-13.0, -29.0], [25.0, -29.0], [39.0, -29.5],
-			[-47.0, 30.0], [-16.0, 30.0], [24.0, 30.0], [38.0, 30.5], [-36.0, 8.0], [-20.0, 18.0]]:
-		shed(float(entry[0]), float(entry[1]))
-	for entry: Array in [[-40.5, -29.5], [-22.5, 29.5], [35.0, -29.0], [-15.0, 6.0]]:
-		put("washing_line", Vector3(float(entry[0]), 0, float(entry[1])), Vector3(4.5, 2.6, 0.2), 0.0, {}, "canvas")
-	for entry: Array in [[-28.0, -28.0], [28.0, 31.0], [-40.0, 30.0], [-22.0, 10.0], [-38.0, 16.0]]:
-		put("tree", Vector3(float(entry[0]), 0, float(entry[1])), Vector3(4.5, 7.5, 4.5), 0.0, {}, "foliage")
-	# Allotments between the Green and Garage Row: raised beds, a shed, a water butt.
-	plot(10, 44, 2, 22, "planks", FENCE)
-	for row: int in 4:
-		for column: int in 3:
-			put("planter", Vector3(14.0 + column * 6.0, 0, 6.0 + row * 4.0), Vector3(3.6, 0.45, 1.4), 0.0, {}, "weathered_wood")
-	put("coopered_barrel", Vector3(29.0, 0, 20.5), Vector3.ZERO, 0.0, {}, "weathered_wood")
-	put("vehicle_cart", Vector3(28.5, 0, 9.0), Vector3.ZERO, 20.0)
-	put("block", Vector3(25.0, 0, 4.0), Vector3(2.4, 2.2, 3.2), 0.0, {}, "glass")       # greenhouse
-	put("roof", Vector3(25.0, 2.2, 4.0), Vector3(2.5, 0.06, 3.3), 0.0, {}, "glass")
-
-
-## Ashby Avenue, the middle lane from Larch Road to Marsh Lane: parked cars, a van, a skip, a bus
-## shelter and a traffic island break up the long view; a zebra crossing at z 12..16.
-func _avenue() -> void:
-	layer("Ashby Avenue")
-	for i: int in 9:
-		var x := -4.6 + i * 1.1
-		mass("floor", x, x + 0.55, 12.4, 15.6, 0.055, "plaster_white", -0.03)
-	for beacon: Vector2 in [Vector2(-5.6, 11.6), Vector2(5.6, 16.4)]:
-		put("pillar", Vector3(beacon.x, 0, beacon.y), Vector3(0.14, 2.5, 0.14), 0.0, {}, "metal_dark")
-		put("block", Vector3(beacon.x, 2.5, beacon.y), Vector3(0.36, 0.36, 0.36), 0.0, {}, "lamp_glass")
-	for car: Array in [[-3.6, -30.0, "plaster_white"], [3.6, -21.0, "cloth_red"], [-3.6, -4.0, "slate"],
-			[3.6, 6.0, "cloth_blue"], [-3.6, 24.0, "cloth_red"], [3.6, 33.0, "slate"]]:
-		put("vehicle_car", Vector3(float(car[0]), 0, float(car[1])), Vector3.ZERO, 0.0, {}, str(car[2]))
-	put("vehicle_truck", Vector3(3.4, 0, -36.0), Vector3.ZERO, 0.0, {}, "plaster_white")
-	# Traffic island in the middle of the road: a brick planter with a bollard at each end.
-	disc(Vector2(0, 19), 1.3, 0.0, 0.6, "red_brick")
-	disc(Vector2(0, 19), 1.05, 0.6, 0.45, "hedge")
-	for end: float in [16.6, 21.4]:
-		put("bollard", Vector3(0, 0, end), Vector3.ZERO, 0.0)
-	# Bus shelter on the east pavement.
-	put("block", Vector3(6.6, 0, -9.0), Vector3(0.12, 2.3, 3.2), 0.0, {}, "glass")
-	put("roof", Vector3(6.1, 2.3, -9.0), Vector3(1.4, 0.1, 3.4), 0.0, {}, "metal_dark")
-	put("park_bench", Vector3(6.2, 0, -9.0), Vector3(1.6, 0.9, 0.5), 90.0)
-	mass("block", -2.2, 0.8, -14.0, -12.2, 1.5, "metal_painted")       # builder's skip
-
-
-## The Lock-ups: two rows of garages round a concrete court (site B). The west row is broken by
-## Church Walk, which comes in from the West Lane through the churchyard.
-func _lockups() -> void:
-	layer("Lock-ups")
-	for i: int in 5:
-		var x1 := -41.0 + i * 3.4
-		mass("block", x1, x1 + 3.4, -26, -20, 2.6, "concrete")
-		put("shutter_panel", Vector3(x1 + 1.7, 0, -20), Vector3(2.7, 2.1, 0.2), 0.0, {}, "metal_painted")
-	put("roof", Vector3(-32.5, 2.6, -23), Vector3(17.4, 0.15, 6.4), 0.0, {}, "slate")
-	for z1: float in [-18.0, -14.0, -4.0]:
-		mass("block", -41, -36, z1, z1 + 4.0, 2.6, "concrete")
-		put("shutter_panel", Vector3(-36, 0, z1 + 2.0), Vector3(3.2, 2.1, 0.2), 90.0, {}, "metal_painted")
-	put("roof", Vector3(-38.5, 2.6, -14), Vector3(5.4, 0.15, 8.4), 0.0, {}, "slate")
-	put("roof", Vector3(-38.5, 2.6, -2), Vector3(5.4, 0.15, 4.4), 0.0, {}, "slate")
-	# Cover in the court.
-	put("vehicle_car", Vector3(-25.5, 0, -10), Vector3.ZERO, 70.0, {}, "cloth_blue")
-	mass("block", -22.0, -18.2, -1.6, 0.2, 1.5, "metal_painted")        # builder's skip
-	for i: int in 3:
-		put("pallet", Vector3(-33.0, 0.15 * i, -15.5), Vector3.ZERO, 0.0)
-	put("crate_stack", Vector3(-15.5, 0, -17.5), Vector3.ZERO, 90.0)
-	put("wall_half", Vector3(-17.5, 0, -8.5), Vector3(3.2, 1.1, 0.35), 90.0, {}, "red_brick")
-	put("barrel_cluster", Vector3(-34.8, 0, -1.0), Vector3.ZERO, 0.0)
-	bins(-29.0, -19.3)
-	bins(-28.2, -19.3)
-
-
-## The Green: grass, oaks, a fenced playground, benches and an electricity substation (site A).
-func _green() -> void:
-	layer("The Green")
-	for tree: Vector2 in [Vector2(13.5, -1.0), Vector2(40.5, -23.5), Vector2(13.5, -18.0), Vector2(40.0, -1.0)]:
-		put("tree", Vector3(tree.x, 0, tree.y), Vector3(5, 8, 5), 0.0, {}, "foliage")
-	put("block", Vector3(24.0, 0, -15.5), Vector3(2.6, 2.3, 1.9), 0.0, {}, "metal_painted")   # substation
-	put("wall_half", Vector3(32.5, 0, -9.0), Vector3(4.0, 1.1, 0.45), 0.0, {}, "red_brick")
-	put("planter", Vector3(20.0, 0, -7.0), Vector3(2.2, 0.9, 0.9), 90.0, {}, "red_brick")
-	# Playground railings with a gate, north-east of the site.
-	for rail: Array in [[Vector2(30, -25), Vector2(38, -25)], [Vector2(38, -25), Vector2(38, -19.5)],
-			[Vector2(30, -19.5), Vector2(33, -19.5)], [Vector2(35, -19.5), Vector2(38, -19.5)], [Vector2(30, -25), Vector2(30, -19.5)]]:
-		var a: Vector2 = rail[0]
-		var b: Vector2 = rail[1]
-		var centre := (a + b) / 2.0
-		put("railing", Vector3(centre.x, 0, centre.y), Vector3(a.distance_to(b), 1.05, 0.08),
-			rad_to_deg(atan2(-(b.y - a.y), b.x - a.x)), {}, "metal_painted")
-	mass("block", 32.5, 35.5, -23.5, -21.5, 1.4, "planks")    # climbing frame
-	put("park_bench", Vector3(33.0, 0, -3.5), Vector3.ZERO, 180.0)
-	put("park_bench", Vector3(23.0, 0, -25.0), Vector3.ZERO, 180.0)
-	put("notice_board", Vector3(13.6, 0, -15.0), Vector3.ZERO, -90.0)
-	bins(41.8, -6.0)
-
-
-## The chapel and its churchyard between the West Lane and the Lock-ups, crossed by Church Walk.
-func _chapel() -> void:
-	layer("Chapel")
-	lawn(-51, -41, -26, 27)
-	wall_line(Vector2(-41, -26), Vector2(-41, 27), 2.4, 0.0, "red_brick", [[16.0, 22.0]], "wall", 0.35)
-	wall_line(Vector2(-51, -26), Vector2(-51, 27), 2.4, 0.0, "red_brick", [[16.0, 22.0]], "wall", 0.35)
-	wall_line(Vector2(-51, 27), Vector2(-41, 27), 2.4, 0.0, "red_brick", [], "wall", 0.35)
-	for side: float in [-10.0, -4.0]:
-		wall_line(Vector2(-51, side), Vector2(-41, side), 1.6, 0.0, "metal_dark", [], "wall", 0.08)
-	mass("building", -50, -44, 0, 22, 6.5, "red_brick")
-	gable(-50.4, -43.6, -0.3, 22.3, 6.5, 10.6, "slate", false)
-	for z: float in [4.0, 9.0, 14.0, 19.0]:
-		opening_x("window", -44, 2.0, z, 1.0, Vector3(1.1, 2.8, 0.3), {"panes_x": 2, "panes_y": 4})
-		opening_x("window", -50, 2.0, z, -1.0, Vector3(1.1, 2.8, 0.3), {"panes_x": 2, "panes_y": 4})
-	put("block", Vector3(-47, 0, -1.2), Vector3(2.6, 3.4, 1.2), 0.0, {}, "red_brick")   # porch
-	gable(-48.5, -45.5, -1.95, -0.5, 3.4, 4.6, "slate", false)
-	opening("door", -47, 0.0, -1.8, -1.0, Vector3(1.4, 2.6, 0.26))
-	# The rounded apse at the south end, with a half-cone roof.
-	var rim := arc(Vector2(-47, 22), 3.0, 0.0, 180.0, 10)
-	prism(Array(rim), 0.0, 6.5, "red_brick")
-	var vertices: Array = [[-47.0, 9.4, 22.0]]
-	var faces: Array = []
-	for i: int in rim.size():
-		var rp := arc(Vector2(-47, 22), 3.3, 0.0, 180.0, 10)[i]
-		vertices.append([rp.x, 6.5, rp.y])
-		if i > 0:
-			faces.append_array([0, i, i + 1])
-	studio.call("draw_brushes", [{"vertices": vertices, "faces": faces, "two_sided": true, "material": "slate"}])
-	for angle: float in [45.0, 90.0, 135.0]:
-		var at := Vector2(-47, 22) + Vector2(cos(deg_to_rad(angle)), sin(deg_to_rad(angle))) * 3.0
-		put("window", Vector3(at.x, 2.4, at.y) + Vector3(cos(deg_to_rad(angle)), 0, sin(deg_to_rad(angle))) * 0.12,
-			Vector3(0.8, 2.4, 0.3), rad_to_deg(atan2(cos(deg_to_rad(angle)), sin(deg_to_rad(angle)))), {"panes_x": 1, "panes_y": 4}, "wood_dark")
-	for stone: Vector2 in [Vector2(-43.0, -18), Vector2(-43.0, -14), Vector2(-46.0, -18), Vector2(-49.0, -14),
-			Vector2(-46.0, -22), Vector2(-42.5, 8), Vector2(-42.5, 16), Vector2(-42.8, 24), Vector2(-50.3, 24.5)]:
-		put("block", Vector3(stone.x, 0, stone.y), Vector3(0.6, 0.9, 0.15), 0.0, {}, "limestone")
-	put("tree", Vector3(-42.8, 0, -22.5), Vector3(5, 8, 5), 0.0, {}, "foliage")
-
-
-## Telegraph poles and wires, street lamps, parked cars, bins, bollards and street signs.
 func _street_furniture() -> void:
 	layer("Street furniture")
-	var larch: Array[Vector2] = [Vector2(-50, -45), Vector2(-33, -45), Vector2(-14, -45), Vector2(24, -45), Vector2(41, -45)]
-	var marsh: Array[Vector2] = [Vector2(-50, 46), Vector2(-34, 46), Vector2(-15, 46), Vector2(29, 46), Vector2(41, 46)]
-	var fen: Array[Vector2] = [Vector2(49.4, -30), Vector2(49.4, -8), Vector2(49.4, 14), Vector2(49.4, 34)]
-	for line: Array[Vector2] in [larch, marsh, fen]:
-		for i: int in line.size():
-			pole(line[i].x, line[i].y)
-			if i > 0:
-				wire(line[i - 1], line[i])
-	wire(Vector2(41, -45), Vector2(49.4, -30))
-	wire(Vector2(49.4, 34), Vector2(41, 46))
-	for x: float in [-44.0, -24.0, -4.0, 16.0, 36.0]:
-		put("lamp_post", Vector3(x, 0, -55.2), Vector3(0.5, 5.5, 0.5), 180.0)
-		put("lamp_post", Vector3(x, 0, 56.2), Vector3(0.5, 5.5, 0.5), 0.0)
-	for spot_at: Vector3 in [Vector3(-6.2, 0, 30), Vector3(-6.2, 0, -18), Vector3(6.2, 0, -26), Vector3(-27.6, 0, 12),
-			Vector3(17.4, 0, 36), Vector3(45.0, 0, -36), Vector3(45.0, 0, 10)]:
-		put("lamp_post", spot_at, Vector3(0.5, 4.2, 0.5), 0.0)
-	# Warm fill where the houses shade the sites and lanes: the Lock-ups court, the Green and the
-	# Ginnel Mouth under the eaves.
-	lamp(Vector3(-30.0, 3.2, -11.0), 1.6, 10.0)
-	lamp(Vector3(-20.0, 3.2, -3.5), 1.4, 8.0)
-	lamp(Vector3(30.0, 3.2, -13.0), 1.4, 9.0)
-	spot(Vector3(-10.5, 3.6, -3.5), 2.8, 9.0, 60.0)
-	# Parked cars along the kerbs, clear of both spawns.
-	for car: Array in [[-42.0, -53.0, "cloth_red"], [-30.0, -53.0, "slate"], [24.0, -53.0, "plaster_white"],
-			[38.0, -47.0, "cloth_blue"], [-40.0, 48.5, "plaster_white"], [-21.0, 48.5, "cloth_red"],
-			[38.0, 48.5, "slate"], [-48.0, 53.8, "cloth_blue"], [-6.0, 53.8, "slate"], [44.0, 53.8, "cloth_red"]]:
-		put("vehicle_car", Vector3(float(car[0]), 0, float(car[1])), Vector3.ZERO, 90.0, {}, str(car[2]))
-	put("vehicle_truck", Vector3(47.0, 0, 6.0), Vector3.ZERO, 0.0, {}, "plaster_white")      # van on Fen Walk
-	# A bollard at the foot of each ginnel, and bins.
-	for bollard: Vector2 in [Vector2(-7.5, 44.0), Vector2(16.0, 44.0), Vector2(-29.5, 44.0)]:
-		put("bollard", Vector3(bollard.x, 0, bollard.y), Vector3.ZERO, 0.0)
-	for bin_at: Vector2 in [Vector2(-9.4, 6.0), Vector2(-9.4, 6.8), Vector2(9.4, 0.0), Vector2(43.4, 24.0),
-			Vector2(-31.4, 18.0), Vector2(17.4, 30.0), Vector2(-40.4, 26.4)]:
-		bins(bin_at.x, bin_at.y)
-	put("notice_board", Vector3(-31.9, 0, 32.0), Vector3.ZERO, -90.0)
-	# Street names on the fences, white on black.
-	for sign: Array in [["LARCH ROAD", Vector3(-12.0, 0.25, -44.16), 180.0], ["MARSH LANE", Vector3(-20.0, 0.25, 45.16), 0.0],
-			["ASHBY AVENUE", Vector3(-9.9, 1.0, -30.0), 90.0], ["WEST LANE", Vector3(-51.2, 1.0, 32.0), -90.0],
-			["CHAPEL PATH", Vector3(-27.1, 1.0, 40.0), -90.0], ["FEN WALK", Vector3(44.1, 1.0, 40.0), 90.0]]:
-		put("enamel_sign", sign[1], Vector3(1.8, 0.4, 0.06), float(sign[2]), {"text": sign[0]}, "metal_dark")
+	# Telegraph poles on one pavement with wires between neighbours; street lamps on the other.
+	for line: Array in [[NORTH_ROAD, 3.55], [AVENUE, -4.05], [BARNWELL_ROAD, 3.55]]:
+		var last := Vector2.INF
+		for point: Dictionary in street_points(along_line(line[0] as Array, 26.0, float(line[1])), 0.4):
+			var at: Vector2 = point["at"]
+			put("pillar", Vector3(at.x, 0.06, at.y), Vector3(0.26, 8.4, 0.26), 0.0, {}, "weathered_wood")
+			put("block", Vector3(at.x, 7.9, at.y), Vector3(1.5, 0.12, 0.14), yaw_along(point["dir"] as Vector2), {}, "weathered_wood")
+			if last != Vector2.INF and last.distance_to(at) < 40.0:
+				var mid := (last + at) / 2.0
+				put("block", Vector3(mid.x, 7.95, mid.y), Vector3(0.05, 0.05, last.distance_to(at)), yaw_along(at - last), {}, "metal_dark")
+			last = at
+		for point: Dictionary in street_points(along_line(line[0] as Array, 30.0, -float(line[1]), 14.0), 0.4):
+			var at: Vector2 = point["at"]
+			put("lamp_post", Vector3(at.x, 0.06, at.y), Vector3(0.4, 6.0, 0.4), 0.0)
+			lamp(Vector3(at.x, 5.6, at.y), 0.5, 8.0)   # faint by day; the lamp heads are lit
+	# Cars parked down both sides of the avenue, staggered so no sightline runs its length, with a
+	# van halfway; cars along the north road, Barnwell Road and the lanes.
+	park(along_line(AVENUE, 26.0, 2.2, 8.0), "vehicle_car", 4.2, 1.9)
+	park(along_line(AVENUE, 26.0, -2.2, 21.0), "vehicle_car", 4.2, 1.9)
+	park(along_line(AVENUE, 1000.0, 1.9, 60.0), "vehicle_truck", 6.0, 2.4)
+	park(along_line(NORTH_ROAD, 24.0, -1.85, 10.0), "vehicle_car", 4.2, 1.9)
+	park(along_line(BARNWELL_ROAD, 24.0, 1.85, 6.0), "vehicle_car", 4.2, 1.9)
+	park(along_line([[1000, 240], [1090, 280], [1150, 340], [1168, 410], [1140, 480], [1085, 540]], 40.0, 1.6), "vehicle_car", 4.2, 1.9)
+	park(along_line([[700, 752], [560, 735], [432, 728]], 30.0, -1.6), "vehicle_car", 4.2, 1.9)
+	# A skip on the west lane, bins out on the avenue's pavement, a post box and a phone cabinet on
+	# the north road, and the street names.
+	for point: Dictionary in along_line([[305, 530], [300, 440], [310, 352]], 12.0, 1.4, 6.0):
+		if fits_on_road(point, 3.8, 2.0, 1.0):
+			var at: Vector2 = point["at"]
+			put("shipping_container", Vector3(at.x, 0.06, at.y), Vector3(1.8, 1.4, 3.6), yaw_along(point["dir"] as Vector2), {}, "hazard_paint")
+			break
+	for point: Dictionary in street_points(along_line(AVENUE, 37.0, 3.9, 30.0), 0.8):
+		var at: Vector2 = point["at"]
+		put("block", Vector3(at.x, 0.06, at.y), Vector3(0.6, 1.1, 0.7), yaw_along(point["dir"] as Vector2), {}, "metal_painted")
+	var corner := street_points(along_line(NORTH_ROAD, 7.0, -3.3, 30.0), 1.3)
+	if corner.size() >= 2:
+		var box: Vector2 = corner[0]["at"]
+		put("column", Vector3(box.x, 0.06, box.y), Vector3(0.5, 1.1, 0.5), 0.0, {}, "cloth_red")
+		put("block", Vector3(box.x, 1.16, box.y), Vector3(0.6, 0.12, 0.6), 0.0, {}, "metal_dark")
+		var cabinet: Vector2 = corner[1]["at"]
+		put("block", Vector3(cabinet.x, 0.06, cabinet.y), Vector3(1.2, 1.3, 0.5), yaw_along(corner[1]["dir"] as Vector2) + 90.0, {}, "metal_painted")
+	for sign: Array in [["EDINBURGH AVENUE", AVENUE, 4.3], ["BARNWELL ROAD", BARNWELL_ROAD, -3.8]]:
+		for point: Dictionary in along_line(sign[1] as Array, 4.0, float(sign[2]), 12.0):
+			if fits_on_road(point, 2.0, 0.3, 0.6):
+				var at: Vector2 = point["at"]
+				put("enamel_sign", Vector3(at.x, 0.3, at.y), Vector3(2.0, 0.4, 0.06), yaw_along(point["dir"] as Vector2) + 90.0,
+					{"text": sign[0]}, "metal_dark")
+				break
 
 
-## Curves against the grid: winding paths down the West Lane and Fen Walk and across the Green,
-## rounded kerbs where the avenue meets the two roads, a round flower bed and rounded hedge ends.
-func _curves() -> void:
-	layer("Curves")
-	var west: Array[Vector2] = []
-	var fen: Array[Vector2] = []
-	var z := -44.0
-	while z <= 45.0:
-		west.append(Vector2(-53.5 + sin(z * 0.11) * 0.9, z))
-		fen.append(Vector2(47.0 + sin(z * 0.09 + 1.2) * 1.2, z))
-		z += 4.45
-	path(west, 2.4, "gravel")
-	path(fen, 2.6, "dirt")
-	# Across the Green: West Gate to the Fen Gap, and from Larch Alley down to it.
-	path(curve(Vector2(11, -8.5), Vector2(25, 1.0), Vector2(44, -13), 10), 1.8, "gravel")
-	path(curve(Vector2(17, -26), Vector2(20.5, -16), Vector2(26.5, -3.2), 8), 1.6, "gravel")
-	# Rounded kerbs: the pavement sweeps round into the avenue's verges.
-	for corner: Array in [[Vector2(-7, -44), Vector2(-10, -41), 270.0, 360.0], [Vector2(7, -44), Vector2(10, -41), 270.0, 180.0],
-			[Vector2(-7, 45), Vector2(-10, 42), 90.0, 0.0], [Vector2(7, 45), Vector2(10, 42), 90.0, 180.0]]:
-		var outline: Array = [corner[0]]
-		outline.append_array(arc(corner[1], 3.0, float(corner[2]), float(corner[3]), 6))
-		surface(outline, 0.03, 0.05, "concrete")
-	# A round flower bed on the Green.
-	disc(Vector2(16.5, -19.5), 1.7, 0.0, 0.5, "red_brick")
-	disc(Vector2(16.5, -19.5), 1.45, 0.5, 0.35, "hedge")
-	# Rounded ends on the hedges either side of each gap.
-	for end: Vector2 in [Vector2(-10.5, -6), Vector2(-10.5, -1), Vector2(10.5, -11), Vector2(10.5, -6),
-			Vector2(43.5, -16), Vector2(43.5, -10)]:
-		disc(end, 0.62, 0.0, 2.1, "hedge", 10)
+## Trees in the gardens all round: poplars, broadleaf trees and the odd conifer, kept off the
+## houses and back from the paths so they shade the lanes without standing in them.
+func _trees() -> void:
+	layer("Trees")
+	var keep_clear: Array[PackedVector2Array] = []
+	for entry: Dictionary in _walk:
+		keep_clear.append_array(Geometry2D.offset_polygon(entry["poly"], 2.0))
+	for footprint: PackedVector2Array in _houses:
+		keep_clear.append_array(Geometry2D.offset_polygon(footprint, 1.6))
+	var x := -96.0
+	while x < 146.0:
+		var z := -72.0
+		while z < 102.0:
+			var pick := pick_at(Vector2(x, z), 21)
+			var at := Vector2(x + float(pick % 7) - 3.0, z + float((pick / 7) % 7) - 3.0)
+			var clear := pick % 10 < 6
+			for area_poly: PackedVector2Array in keep_clear:
+				if clear and Geometry2D.is_point_in_polygon(at, area_poly):
+					clear = false
+			if clear:
+				var form: String = ["broadleaf", "broadleaf", "poplar", "broadleaf", "poplar", "conifer"][pick % 6]
+				var height := 9.0 + float(pick % 5)
+				var width := 5.5 + float(pick % 3)
+				if form == "poplar":
+					height += 5.0
+					width = 2.6
+				put("tree", Vector3(at.x, 0, at.y), Vector3(width, height, width), 0.0, {"form": form}, "foliage")
+			z += 9.0
+		x += 9.0
 
 
-## The barn behind the allotments and the well on the Green that give Barnwell its name.
-func _barn_and_well() -> void:
-	layer("Barn and well")
-	# A timber barn with a steep slate roof, its great doors facing Garage Row, hay outside.
-	mass("building", 31, 43, 5, 20, 4.6, "weathered_wood")
-	mass("block", 31, 43, 4.9, 5.1, 0.6, "mossy_stone")
-	gable(30.6, 43.4, 4.6, 20.4, 4.6, 9.6, "slate", false)
-	put("block", Vector3(37, 0, 20.08), Vector3(4.6, 4.2, 0.16), 0.0, {}, "wood_dark")
-	put("block", Vector3(37, 0, 20.2), Vector3(0.16, 4.2, 0.1), 0.0, {}, "weathered_wood")
-	put("block", Vector3(37, 5.6, 20.12), Vector3(1.6, 1.4, 0.16), 0.0, {}, "wood_dark")    # hay loft door
-	for vent: float in [33.0, 41.0]:
-		put("block", Vector3(vent, 2.0, 20.06), Vector3(0.9, 1.2, 0.12), 0.0, {}, "wood_dark")
-	for bale: Vector3 in [Vector3(32.5, 0, 21.2), Vector3(33.9, 0, 21.2), Vector3(33.2, 0.9, 21.2)]:
-		put("block", bale, Vector3(1.3, 0.9, 0.7), 0.0, {}, "burlap")
-	# The well: a round stone well with its winding frame on the Green, cover in site A.
-	put("well", Vector3(35.5, 0, -14.5), Vector3.ZERO, 30.0, {}, "mossy_stone")
-
-
-## Everyday clutter: street trees, a post box, grit bin, bus stop, phone cabinet, cones, garden
-## life (trampolines, greenhouses, benches, barbecues), hay on Fen Walk, junk in the Lock-ups and
-## goalposts on the Green.
-func _props() -> void:
-	layer("Props")
-	for tree_z: float in [-36.0, -22.0, 8.0, 28.0, 38.0]:
-		put("tree", Vector3(-8.6, 0, tree_z), Vector3(3.6, 7.0, 3.6), 0.0, {}, "foliage")
-		put("tree", Vector3(8.6, 0, tree_z + 3.0), Vector3(3.6, 7.0, 3.6), 0.0, {}, "foliage")
-	# Larch Road and Marsh Lane.
-	put("column", Vector3(-8.0, 0, -45.3), Vector3(0.5, 1.1, 0.5), 0.0, {}, "cloth_red")          # post box
-	put("block", Vector3(-8.0, 1.1, -45.3), Vector3(0.6, 0.12, 0.6), 0.0, {}, "metal_dark")
-	put("block", Vector3(30.0, 0, -45.3), Vector3(1.0, 0.8, 0.6), 0.0, {}, "plaster_ochre")       # grit bin
-	put("block", Vector3(-17.0, 0, 46.3), Vector3(1.2, 1.3, 0.5), 0.0, {}, "metal_painted")       # phone cabinet
-	put("pillar", Vector3(6.4, 0, -45.6), Vector3(0.1, 2.6, 0.1), 0.0, {}, "metal_dark")          # bus stop
-	put("enamel_sign", Vector3(6.4, 2.3, -45.6), Vector3(0.7, 0.45, 0.05), 180.0, {"text": "BUS"}, "metal_dark")
-	for bench: Array in [[Vector3(-36.0, 0, -55.4), 180.0], [Vector3(26.0, 0, 55.6), 0.0], [Vector3(-55.4, 0, -20.0), 90.0]]:
-		put("park_bench", bench[0], Vector3.ZERO, float(bench[1]))
-	for cone: Vector2 in [Vector2(-3.0, -11.6), Vector2(1.6, -11.6), Vector2(1.6, -14.6), Vector2(-4.2, -12.0)]:
-		put("bollard", Vector3(cone.x, 0, cone.y), Vector3(0.36, 0.7, 0.36), 0.0, {}, "plaster_ochre")
-	# The Lock-ups: tyres, an old sofa, oil drums, a ladder.
-	put("barrel_cluster", Vector3(-33.5, 0, -3.5), Vector3(1.4, 0.9, 1.4), 0.0, {}, "rubber")
-	put("block", Vector3(-21.5, 0, -18.6), Vector3(2.0, 0.45, 0.85), 0.0, {}, "cloth_striped")
-	put("block", Vector3(-21.5, 0.45, -18.95), Vector3(2.0, 0.5, 0.2), 0.0, {}, "cloth_striped")
-	put("block", Vector3(-14.0, 0, 1.0), Vector3(0.6, 0.9, 0.6), 0.0, {}, "metal_rust")
-	put("block", Vector3(-13.2, 0, 1.3), Vector3(0.6, 0.9, 0.6), 0.0, {}, "metal_rust")
-	put("block", Vector3(-24.5, 0.0, -19.9), Vector3(0.5, 2.5, 0.1), 0.0, {}, "weathered_wood")
-	# The Green: goalposts, picnic benches, a bin by each path end, a lamp.
-	for post: float in [15.5, 19.5]:
-		put("pillar", Vector3(post, 0, 0.8), Vector3(0.12, 2.0, 0.12), 0.0, {}, "plaster_white")
-	put("block", Vector3(17.5, 2.0, 0.8), Vector3(4.1, 0.12, 0.12), 0.0, {}, "plaster_white")
-	put("park_bench", Vector3(22.0, 0, -22.5), Vector3.ZERO, 0.0)
-	put("park_bench", Vector3(22.0, 0, -21.3), Vector3.ZERO, 180.0)
-	bins(12.0, -12.0)
-	bins(42.2, -17.0)
-	put("lamp_post", Vector3(27.0, 0, -1.2), Vector3(0.5, 4.2, 0.5), 0.0)
-	# Fen Walk: hay bales by the field fence, a field gate.
-	for bale: Vector3 in [Vector3(49.3, 0, -20.0), Vector3(49.3, 0, -18.6), Vector3(49.3, 0.9, -19.3), Vector3(49.3, 0, 24.0)]:
-		put("block", bale, Vector3(0.9, 0.9, 1.3), 0.0, {}, "burlap")
-	put("railing", Vector3(49.7, 0, -2.0), Vector3(3.0, 1.2, 0.1), 90.0, {}, "weathered_wood")
-	# Back gardens: trampolines, greenhouses, garden benches, barbecues.
-	for trampoline: Vector2 in [Vector2(30.5, -29.0), Vector2(33.0, 30.5), Vector2(-44.0, 30.5)]:
-		disc(trampoline, 1.5, 0.8, 0.08, "rubber", 14)
-		for leg: float in [0.0, 120.0, 240.0]:
-			var at := trampoline + Vector2(cos(deg_to_rad(leg)), sin(deg_to_rad(leg))) * 1.4
-			put("pillar", Vector3(at.x, 0, at.y), Vector3(0.06, 0.8, 0.06), 0.0, {}, "metal_dark")
-	for greenhouse: Vector2 in [Vector2(-17.0, -28.5), Vector2(41.5, -28.5), Vector2(-12.5, 30.5)]:
-		put("block", Vector3(greenhouse.x, 0, greenhouse.y), Vector3(2.0, 2.0, 2.6), 0.0, {}, "glass")
-	for seat: Vector2 in [Vector2(-36.5, -27.0), Vector2(20.5, -27.0), Vector2(-25.0, 28.0), Vector2(41.0, 28.0)]:
-		put("park_bench", Vector3(seat.x, 0, seat.y), Vector3.ZERO, 0.0)
-	for grill: Vector2 in [Vector2(-11.0, -27.0), Vector2(28.5, 28.2)]:
-		put("block", Vector3(grill.x, 0, grill.y), Vector3(0.8, 0.9, 0.5), 0.0, {}, "metal_dark")
-
+# --- gameplay -------------------------------------------------------------------------------------
 
 func _gameplay() -> void:
 	layer("Gameplay")
-	spawns("attack", Vector3(18, 0, 52.5), 0.0, Vector3(26, 3, 8))
-	spawns("defence", Vector3(0, 0, -50), 180.0, Vector3(26, 3, 9))
-	put("bombsite", SITE_A, Vector3(14, 3, 12), 0.0, {"site": "A"})
-	put("bombsite", SITE_B, Vector3(14, 3, 12), 0.0, {"site": "B"})
+	var defenders := p(DEFENDERS.x, DEFENDERS.y)
+	var attackers := p(ATTACKERS.x, ATTACKERS.y)
+	spawns("defence", Vector3(defenders.x, 0.06, defenders.y), 180.0, Vector3(12, 3, 6))
+	spawns("attack", Vector3(attackers.x, 0.06, attackers.y), 320.0, Vector3(12, 3, 6))
+	var a := p(SITE_A.x, SITE_A.y)
+	var b := p(SITE_B.x, SITE_B.y)
+	put("bombsite", Vector3(a.x, 0.07, a.y), Vector3(14, 3, 12), 0.0, {"site": "A"})
+	put("bombsite", Vector3(b.x, 0.07, b.y), Vector3(14, 3, 12), 0.0, {"site": "B"})
+
+
+## A callout over a rectangle of the drawing.
+func callout(name: String, x1: float, y1: float, x2: float, y2: float, role: String = "") -> void:
+	var a := p(x1, y1)
+	var b := p(x2, y2)
+	area(name, a.x, b.x, a.y, b.y, role, 0.05)
 
 
 func _callouts() -> void:
 	layer("Tactics")
-	area("Larch Road", WEST, EAST, -56, -44)
-	area("West Lane", WEST, -51, -44, 45)
-	area("Church Walk", -51, -41, -10, -4, "entrance_b")
-	area("Garage Drive", -23, -19, -44, -26)
-	area("Larch Alley", 15, 19, -44, -26)
-	area("Lock-ups", -41, -11, -26, 2)
-	area("Ginnel Top", -11, -10, -26, -24)
-	area("Ginnel Mouth", -11, -10, -6, -1, "entrance_b")
-	area("Chapel Gate", -32, -27, 0, 4, "entrance_b")
-	area("Chapel Path", -32, -27, 4, 45)
-	area("Back Lane", -41, -10, 22, 27)
-	area("Top of the Avenue", -10, 10, -44, -12)
-	area("Ashby Avenue", -10, 10, -12, 22, "mid")
-	area("Foot of the Avenue", -10, 10, 22, 45)
-	area("West Gate", 10, 11, -11, -6, "entrance_a")
-	area("The Green", 11, 43, -26, 2)
-	area("Fen Gap", 43, 44, -16, -10, "entrance_a")
-	area("Fen Walk", 44, EAST, -44, 45)
-	area("Garage Row", 10, 44, 22, 27)
-	area("Kennel Ginnel", 14, 18, 27, 45)
-	area("Marsh Lane", WEST, EAST, 45, 57)
+	callout("Barnwell Road", 790, 800, 1010, 965)
+	callout("Defenders' Corner", 636, 205, 735, 286)
+	callout("Top Avenue", 700, 286, 760, 380)
+	callout("Mid Avenue", 690, 380, 750, 560, "mid")
+	callout("Bottom Avenue", 680, 560, 730, 752)
+	callout("North Road", 432, 165, 1000, 205)
+	callout("North Path", 605, 215, 636, 296, "entrance_b")
+	callout("Garage Court", 520, 296, 612, 488)
+	callout("Lock-ups", 472, 300, 520, 474)
+	callout("West Path", 320, 405, 470, 430, "entrance_b")
+	callout("Avenue Path", 612, 395, 700, 420, "entrance_b")
+	callout("Back Gate", 535, 482, 560, 505, "entrance_b")
+	callout("Back Alley", 370, 485, 535, 505)
+	callout("Allotment Path", 476, 505, 530, 605)
+	callout("Ginnel", 528, 505, 552, 730)
+	callout("Dog Leg", 560, 505, 700, 605)
+	callout("West Lane", 282, 345, 450, 560)
+	callout("South Lane", 410, 560, 700, 760)
+	callout("North Alley", 840, 215, 890, 350)
+	callout("Avenue Gap", 755, 455, 850, 482)
+	callout("Gap Corner", 850, 450, 886, 480, "entrance_a")
+	callout("The Green", 886, 350, 1050, 450)
+	callout("Green Gate", 840, 482, 866, 525, "entrance_a")
+	callout("Garden Path", 798, 525, 862, 700)
+	callout("Paddock", 862, 585, 972, 745)
+	callout("Back Gardens", 755, 700, 860, 790)
+	callout("Field Gate", 930, 745, 1060, 860)
+	callout("SE Alley", 1000, 500, 1050, 585)
+	callout("SE Corner", 980, 488, 1000, 525, "entrance_a")
+	callout("East Lane", 1000, 240, 1170, 585)
+	callout("Field Path", 1045, 590, 1240, 665)
+	callout("School Lane", 1010, 665, 1240, 965)
 
 
 func _tactical() -> void:
 	layer("Tactics")
-	var west_gate := Vector3(10.5, 0, -8.5)
-	var fen_gap := Vector3(43.5, 0, -13)
-	var ginnel_mouth := Vector3(-10.5, 0, -3.5)
-	var chapel_gate := Vector3(-29.5, 0, 2)
-	anchor("Green plant substation", "plant", SITE_A + Vector3(-3, 0, -2))
-	anchor("Green plant wall", "plant", SITE_A + Vector3(4, 0, 1.5))
-	anchor("Lock-ups plant car", "plant", SITE_B + Vector3(-3, 0, 2))
-	anchor("Lock-ups plant pallets", "plant", SITE_B + Vector3(-5, 0, -4))
-	anchor("Avenue east hold", "default", Vector3(8.5, 0, 4))
-	anchor("Fen Walk hold", "default", Vector3(47, 0, 14))
-	anchor("Avenue west hold", "default", Vector3(-8.5, 0, 6))
-	anchor("West Lane hold", "default", Vector3(-53.5, 0, 10))
-	anchor("Church Walk smoke", "utility", Vector3(-46, 0, -7))
-	anchor("Chapel Path hold", "default", Vector3(-29.5, 0, 16))
-	anchor("Island hold", "default", Vector3(0, 0, 23))
-	anchor("West Gate smoke", "utility", west_gate)
-	anchor("Fen Gap smoke", "utility", fen_gap)
-	anchor("Ginnel Mouth smoke", "utility", ginnel_mouth)
-	anchor("Chapel Gate smoke", "utility", chapel_gate)
-	anchor("Avenue smoke", "utility", Vector3(0, 0, 10))
-	for hold: Array in [[Vector3(38, 0, -3), west_gate, "A"], [Vector3(16, 0, -22), fen_gap, "A"],
-			[Vector3(25, 0, -21), west_gate, "A"], [Vector3(-14, 0, -22), chapel_gate, "B"],
-			[Vector3(-34.5, 0, -18.5), ginnel_mouth, "B"], [Vector3(-19, 0, -18), chapel_gate, "B"]]:
-		hint("ai_hold", hold[0], face(hold[0], hold[1]), str(hold[2]))
-	for cover: Array in [[Vector3(25.5, 0, -15.5), "A"], [Vector3(32.5, 0, -10), "A"],
-			[Vector3(-25.5, 0, -12.5), "B"], [Vector3(-18.5, 0, -8.5), "B"]]:
-		hint("ai_cover", cover[0], 180.0, str(cover[1]))
-	hint("ai_angle", west_gate, face(west_gate, SITE_A), "A")
-	hint("ai_angle", fen_gap, face(fen_gap, SITE_A), "A")
-	hint("ai_angle", ginnel_mouth, face(ginnel_mouth, SITE_B), "B")
-	hint("ai_angle", chapel_gate, face(chapel_gate, SITE_B), "B")
-	var church_walk := Vector3(-38.5, 0, -7)
-	hint("ai_angle", church_walk, face(church_walk, SITE_B), "B")
-	hint("ai_hold", Vector3(-20, 0, -4), face(Vector3(-20, 0, -4), church_walk), "B")
+	var a := p(SITE_A.x, SITE_A.y)
+	var b := p(SITE_B.x, SITE_B.y)
+	anchor("Green benches", "plant", Vector3(a.x - 3, 0.07, a.y - 2))
+	anchor("Green goalposts", "plant", Vector3(a.x + 4, 0.07, a.y + 2))
+	anchor("Court lock-ups", "plant", Vector3(b.x - 4, 0.07, b.y + 2))
+	anchor("Court skip", "plant", Vector3(b.x + 3, 0.07, b.y - 3))
+	anchor("Avenue hold", "default", Vector3(p(720, 470).x, 0.06, p(720, 470).y))
+	anchor("Garden Path hold", "default", Vector3(p(809, 640).x, 0.06, p(809, 640).y))
+	anchor("Ginnel hold", "default", Vector3(p(542, 620).x, 0.06, p(542, 620).y))
+	anchor("Avenue Gap smoke", "utility", Vector3(p(860, 468).x, 0.06, p(860, 468).y))
+	anchor("Green Gate smoke", "utility", Vector3(p(854, 500).x, 0.06, p(854, 500).y))
+	anchor("Back Gate smoke", "utility", Vector3(p(548, 490).x, 0.06, p(548, 490).y))
+	anchor("Avenue Path smoke", "utility", Vector3(p(620, 405).x, 0.06, p(620, 405).y))
+	for hold: Array in [[960, 380, 200.0, "A"], [1020, 420, 230.0, "A"], [900, 400, 150.0, "A"],
+			[590, 330, 200.0, "B"], [540, 460, 20.0, "B"], [595, 470, 330.0, "B"]]:
+		hint("ai_hold", Vector3(p(hold[0], hold[1]).x, 0.07, p(hold[0], hold[1]).y), float(hold[2]), str(hold[3]))
+	for cover: Array in [[970, 425, 180.0, "A"], [905, 385, 180.0, "A"], [575, 340, 180.0, "B"], [590, 440, 0.0, "B"]]:
+		hint("ai_cover", Vector3(p(cover[0], cover[1]).x, 0.07, p(cover[0], cover[1]).y), float(cover[2]), str(cover[3]))
+	for angle: Array in [[870, 462, 90.0, "A"], [856, 495, 0.0, "A"], [605, 404, 270.0, "B"], [548, 482, 0.0, "B"]]:
+		hint("ai_angle", Vector3(p(angle[0], angle[1]).x, 0.07, p(angle[0], angle[1]).y), float(angle[2]), str(angle[3]))
 
 
 func _check(analysis: MapAnalysis) -> bool:
-	var west := analysis.path_length(Vector3(-53.5, 0, 40), Vector3(-53.5, 0, -40))
-	var middle := analysis.path_length(Vector3(0, 0, 44), Vector3(0, 0, -43))
-	print("West Lane end to end: %.1f m; Ashby Avenue end to end: %.1f m" % [west, middle])
-	if west < 0.0 or middle < 0.0 or middle > 100.0:
-		printerr("A lane does not run from Larch Road to Marsh Lane.")
-		return false
-	return analysis.issues.is_empty()
+	var ok := true
+	var defenders := p(DEFENDERS.x, DEFENDERS.y)
+	var attackers := p(ATTACKERS.x, ATTACKERS.y)
+	for route: Array in [["defenders → A", defenders, p(SITE_A.x, SITE_A.y)], ["defenders → B", defenders, p(SITE_B.x, SITE_B.y)],
+			["attackers → A", attackers, p(SITE_A.x, SITE_A.y)], ["attackers → B", attackers, p(SITE_B.x, SITE_B.y)],
+			["attackers → West Path", attackers, p(320, 416)], ["attackers → North Alley", attackers, p(870, 280)]]:
+		var from: Vector2 = route[1]
+		var to: Vector2 = route[2]
+		var length := analysis.path_length(Vector3(from.x, 0.06, from.y), Vector3(to.x, 0.07, to.y))
+		print("%s: %.1f m" % [route[0], length])
+		if length < 0.0:
+			printerr("No route: ", route[0])
+			ok = false
+	return ok and analysis.issues.is_empty()

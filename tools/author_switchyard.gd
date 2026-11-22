@@ -54,15 +54,20 @@ func _official_id() -> String:
 
 
 ## Revision 3: the expanded, angled rework with the tunnel network.
+## Revision 5 (owner, 2026-11-22: flesh it out and give it its own character): a grey, damp
+## morning under a low cloud deck, cooling towers on the plain beyond. Every shed and yard wall
+## dressed with steel-framed clerestory windows, stanchions, hazard kerbs, freight doors and
+## enamel signs; two rail sidings with a parked wagon, catenary masts and signals behind the
+## attackers; puddles in the yards.
 func _revision() -> int:
-	return 4
+	return 5
 
 
 func _build() -> void:
 	controller.set_metadata("Switchyard", "F2F official",
 		"Rail switching station over a turbine works. A: the Machine Hall, under the Control Deck. B: the Turbine Vault, 8 m below ground, reached by ramps, stairs, tunnels, a coal chute and a vent.")
-	controller.set_lighting({"sun_yaw": 230.0, "sun_pitch": 38.0, "sun_energy": 1.1,
-		"sun_color": "e2ecff", "ambient_color": "a9b6c6", "ambient_energy": 0.62})
+	controller.set_lighting({"sun_yaw": 230.0, "sun_pitch": 42.0, "sun_energy": 0.5,
+		"sun_color": "dfe6ee", "ambient_color": "a0acba", "ambient_energy": 0.9, "haze": 0.5, "sky": "overcast_works"})
 	_ground()
 	_machine_hall()
 	_control_deck()
@@ -79,6 +84,7 @@ func _build() -> void:
 	_culvert()
 	_north_stair()
 	_lamps_and_props()
+	_works_character()
 	_gameplay()
 	_callouts()
 	_tactical()
@@ -655,3 +661,83 @@ func _lamps_and_props() -> void:
 		["braced_crate", Vector3(-55.56, 0.00, 71.92), 104.0],
 	]:
 		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+
+
+# --- the works' character (revision 5) ------------------------------------------------------------
+
+## The brush sheds drawn in the surface sections: outline and roof height.
+const SHEDS: Array = [
+	[[Vector2(-50, -62), Vector2(-22, -62), Vector2(-22, -50), Vector2(-36, -44), Vector2(-57, -40)], 7.0],
+	[[Vector2(24, -62), Vector2(58, -56), Vector2(58, -40), Vector2(34, -42), Vector2(24, -50)], 7.0],
+	[[Vector2(-57, -30), Vector2(-38, -32), Vector2(-32, -20), Vector2(-36, -8), Vector2(-54, -4)], 9.0],
+	[[Vector2(-38, 68), Vector2(-27, 64), Vector2(-24, 40), Vector2(-27, 24), Vector2(-34, 22), Vector2(-38, 26)], 7.0],
+	[[Vector2(-60, 46), Vector2(-52, 44), Vector2(-50, 56), Vector2(-60, 60)], 5.0],
+	[[Vector2(27, 66), Vector2(37, 70), Vector2(36, 26), Vector2(30, 22), Vector2(25, 30), Vector2(26, 48)], 7.0],
+]
+
+
+func _works_character() -> void:
+	var works := {
+		"plinth": "hazard_paint", "plinth_h": 0.25,
+		"cornice": "metal_dark", "cornice_h": 0.3,
+		"window": {"type": "window", "size": Vector3(2.2, 1.4, 0.25), "props": {"panes_x": 4, "panes_y": 3, "shutters": false},
+			"materials": ["metal_dark", "metal_painted"]},
+		"window_every": 5.0, "first_sill": 2.6, "storey": 3.4, "blank": 0.25, "min_ground": -0.5,
+		"door": {"type": "freight_gate", "size": Vector3(4.0, 3.2, 0.36), "props": {}, "materials": ["metal_painted", "metal_rust"]},
+		"door_chance": 0.25, "extra": _stanchions,
+	}
+	var site := Rect2(-60, -62, 122, 160)
+	layer("Works facades")
+	for shed: Array in SHEDS:
+		dress_outline(shed[0] as Array, float(shed[1]), works, site)
+	dress_facades(works, site, ["wall", "building"])
+	layer("Sidings")
+	# Two sidings behind the attackers' spawn: ballast, sleepers and rails no higher than a bot's step.
+	for z: float in [92.6, 95.9]:
+		mass("floor", -38, 44, z - 1.3, z + 1.3, 0.05, "gravel", -0.03)
+		var x := -37.6
+		while x <= 43.6:
+			put("block", Vector3(x, 0.0, z), Vector3(0.24, 0.05, 2.4), 0.0, {}, "weathered_wood")
+			x += 1.2
+		for side: float in [-0.72, 0.72]:
+			mass("block", -38, 44, z + side - 0.035, z + side + 0.035, 0.05, "metal_dark", 0.04)
+	# A flat wagon with a container, parked on the far siding.
+	put("block", Vector3(22, 0.09, 95.9), Vector3(12.4, 0.5, 2.5), 90.0, {}, "metal_dark")
+	put("shipping_container", Vector3(22, 0.59, 95.9), Vector3(2.44, 2.6, 12.0), 90.0, {}, "metal_rust")
+	for wheel: float in [-4.5, -3.3, 3.3, 4.5]:
+		put("column", Vector3(22 + wheel, 0.05, 95.1), Vector3(0.7, 0.12, 0.7), 0.0, {}, "metal_dark")
+	# Catenary masts along the sidings and two signals at the ends.
+	for x: float in [-34.0, -20.0, -6.0, 8.0, 36.0]:
+		put("column", Vector3(x, 0, 97.6), Vector3(0.32, 6.6, 0.32), 0.0, {}, "metal_painted")
+		put("block", Vector3(x, 6.2, 95.0), Vector3(0.2, 0.2, 5.4), 0.0, {}, "metal_painted")
+	for x: float in [-36.0, 42.0]:
+		put("column", Vector3(x, 0, 90.6), Vector3(0.22, 4.6, 0.22), 0.0, {}, "metal_dark")
+		put("block", Vector3(x, 4.6, 90.6), Vector3(0.5, 1.1, 0.35), 0.0, {}, "metal_dark")
+		lamp(Vector3(x, 5.4, 90.35), 0.6, 3.0, "ff3020")
+		lamp(Vector3(x, 4.9, 90.35), 0.6, 3.0, "40ff70")
+	layer("Puddles")
+	# Rainwater lying in the yards, 1 cm under the finish so nothing trips on it.
+	for puddle: Array in [[-8, -3, -40, -36.5], [8, 13, 34, 37.5], [32, 36, 0, 3.5], [-20, -15, 82, 85], [-46, -42, -24, -21]]:
+		mass("floor", float(puddle[0]), float(puddle[1]), float(puddle[2]), float(puddle[3]), 0.05, "water", -0.04)
+
+
+## Steel stanchions between the windows and now and then an enamel sign by a door.
+func _stanchions(run: Dictionary) -> void:
+	var from: Vector2 = run["from"]
+	var along: Vector2 = run["along"]
+	var facing: Vector2 = run["facing"]
+	var length := float(run["length"])
+	var ground := float(run["ground"])
+	var top := float(run["top"])
+	var yaw := float(run["yaw"])
+	var door_at := float(run["door_at"])
+	var slots := window_slots(length, 5.0, 2.2)
+	var count := int(slots.x)
+	var offset := slots.y
+	for k: int in count - 1:
+		var t := offset + 5.0 * (float(k) + 0.5)
+		if door_at > 0.0 and absf(t - door_at) < 2.6:
+			continue
+		band(from, along, facing, t - 0.15, t + 0.15, ground + 0.25, top - ground - 0.55, 0.22, "metal_dark", yaw)
+	if door_at > 0.0 and int(run["pick"]) % 3 == 0:
+		fixture("enamel_sign", from, along, facing, door_at, ground + 3.5, Vector3(3.0, 0.65, 0.08), {}, "metal_dark", yaw)

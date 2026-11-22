@@ -22,15 +22,19 @@ func _official_id() -> String:
 
 
 ## Revision 2: lamp fixtures in its dark corners and everyday props along the walls.
+## Revision 3 (owner, 2026-11-22: flesh it out and give it its own character): a highland keep in
+## low golden afternoon light under broken cloud and mountains. Timber-framed village houses
+## under steep slate gables with chimneys, arrow slits and machicolations on the castle, a sanded
+## tiltyard, a grass cloister garth, pennants on every tower and banners along the curtain.
 func _revision() -> int:
-	return 2
+	return 3
 
 
 func _build() -> void:
 	controller.set_metadata("Kestrel Keep", "F2F official",
 		"Granite fortress above a village. A: the Tiltyard, by the West Gate road or the Breach. B: the Cloister, by the Orchard Walk or the Undercroft. Both open onto the Bailey behind the Gatehouse.")
-	controller.set_lighting({"sun_yaw": 140.0, "sun_pitch": 34.0, "sun_energy": 1.05, "sun_color": "fff2dc",
-		"ambient_color": "b7c0c8", "ambient_energy": 0.62})
+	controller.set_lighting({"sun_yaw": 250.0, "sun_pitch": 24.0, "sun_energy": 1.2, "sun_color": "ffd9a6",
+		"ambient_color": "a9b6c6", "ambient_energy": 0.58, "haze": 0.32, "sky": "highland_afternoon"})
 	_ground()
 	_curtain()
 	_gatehouse()
@@ -41,6 +45,7 @@ func _build() -> void:
 	_market()
 	_village()
 	_lamps_and_props()
+	_highland_dressing()
 	_gameplay()
 	_callouts()
 	_tactical()
@@ -215,12 +220,9 @@ func _market() -> void:
 func _village() -> void:
 	layer("Village houses")
 	# West block: West Road (x -64..-50) | houses | Tanner's Alley (x -40..-32) | houses | market.
-	for house: Array in [[-50, -40, -3, 14, 6.5], [-50, -40, 14, 34, 7.5], [-32, -24, 6, 22, 6.0], [-32, -6, 22, 32, 7.0]]:
-		mass("building", house[0], house[1], house[2], house[3], house[4], "limewash")
-		mass("roof", house[0] - 0.4, house[1] + 0.4, house[2] - 0.4, house[3] + 0.4, 0.35, "slate", house[4])
-	for house: Array in [[40, 50, -3, 14, 6.5], [40, 50, 14, 34, 7.5], [24, 32, 6, 22, 6.0], [6, 32, 22, 32, 7.0]]:
-		mass("building", house[0], house[1], house[2], house[3], house[4], "limewash")
-		mass("roof", house[0] - 0.4, house[1] + 0.4, house[2] - 0.4, house[3] + 0.4, 0.35, "slate", house[4])
+	for house: Array in [[-50, -40, -3, 14, 6.5], [-50, -40, 14, 34, 7.5], [-32, -24, 6, 22, 6.0], [-32, -6, 22, 32, 7.0],
+			[40, 50, -3, 14, 6.5], [40, 50, 14, 34, 7.5], [24, 32, 6, 22, 6.0], [6, 32, 22, 32, 7.0]]:
+		_cottage(float(house[0]), float(house[1]), float(house[2]), float(house[3]), float(house[4]))
 	# South of the cross streets (z 32..40): the green's edge.
 	for house: Array in [[-66, -20, 40, 64, 7.0], [20, 66, 40, 64, 7.0]]:
 		mass("building", house[0], house[1], house[2], house[3], house[4], "limewash")
@@ -429,3 +431,106 @@ func _lamps_and_props() -> void:
 		["coopered_barrel", Vector3(-30.00, 0.00, -31.27), 180.0],
 	]:
 		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+
+
+## A village house: limewashed walls under a steep slate gable along its long side, a chimney.
+func _cottage(x1: float, x2: float, z1: float, z2: float, height: float) -> void:
+	mass("building", x1, x2, z1, z2, height, "limewash")
+	var along_x := x2 - x1 >= z2 - z1
+	var span := (z2 - z1) if along_x else (x2 - x1)
+	gable(x1 - 0.4, x2 + 0.4, z1 - 0.4, z2 + 0.4, height, height + span * 0.45, "slate", along_x)
+	var stack := Vector2(x2 - 1.2, (z1 + z2) / 2.0) if along_x else Vector2((x1 + x2) / 2.0, z2 - 1.2)
+	put("block", Vector3(stack.x, height, stack.y), Vector3(0.9, span * 0.45 + 1.4, 0.9), 0.0, {}, "mossy_stone")
+	put("block", Vector3(stack.x, height + span * 0.45 + 1.4, stack.y), Vector3(1.1, 0.2, 1.1), 0.0, {}, "granite_blocks")
+
+
+# --- highland character (revision 3) --------------------------------------------------------------
+
+func _highland_dressing() -> void:
+	layer("Ground finishes")
+	# Each laid 2 cm proud (bots step 10 cm).
+	mass("floor", -61, -30.4, -29.6, -4.4, 0.05, "sand", -0.03)          # the tiltyard, sanded
+	mass("floor", 34, 53, -24, -6, 0.05, "grass_worn", -0.03)            # the cloister garth
+	mass("floor", -66, 66, -45, -30.8, 0.05, "flagstones", -0.03)        # the Inner Ward
+	layer("Village facades")
+	dress_facades({
+		"plinth": "mossy_stone", "plinth_h": 0.5,
+		"window": {"type": "window", "size": Vector3(0.9, 1.1, 0.25), "props": {"panes_x": 3, "panes_y": 3, "shutters": false},
+			"materials": ["wood_dark"]},
+		"window_every": 3.0, "first_sill": 1.1, "storey": 2.8, "blank": 0.2,
+		"door": {"type": "door", "size": Vector3(1.1, 2.2, 0.3), "props": {"panels": 4, "fanlight": false},
+			"materials": ["wood_dark", "weathered_wood"]},
+		"door_chance": 0.6, "extra": _timber_frame,
+	}, Rect2(-66, -3, 132, 67))
+	layer("Castle facades")
+	dress_facades({
+		"plinth": "mossy_stone", "plinth_h": 0.8,
+		"window": {"type": "window", "size": Vector3(0.35, 1.3, 0.3), "props": {"panes_x": 1, "panes_y": 2, "shutters": false},
+			"materials": ["metal_dark"]},
+		"window_every": 3.5, "first_sill": 2.2, "storey": 4.0, "blank": 0.25, "min_height": 3.5,
+		"extra": _machicolations,
+	}, Rect2(-66, -54, 132, 51))
+	layer("Heraldry")
+	# Pennants on poles above every tower, banners along the curtain and the keep.
+	for tower: Array in [[-66, -3.5, 13.0], [66, -3.5, 13.0], [-66, -54, 13.0], [66, -54, 13.0], [-10.5, 2, 9.0],
+			[10.5, 2, 9.0], [-12, -46, 19.0], [12, -46, 19.0], [57, -9, 14.0]]:
+		var at := Vector3(float(tower[0]), float(tower[2]), float(tower[1]))
+		put("column", at, Vector3(0.18, 4.0, 0.18), 0.0, {}, "weathered_wood")
+		put("banner", at + Vector3(0.75, 2.2, 0), Vector3(1.4, 1.6, 0.08), 0.0, {},
+			"cloth_blue" if int(tower[0]) <= 0 else "cloth_red")
+	for x: float in [-24.0, -16.0, 16.0, 24.0]:
+		put("banner", Vector3(x, 2.6, -2.9), Vector3(1.4, 3.4, 0.12), 0.0, {}, "cloth_blue" if x < 0.0 else "cloth_red")
+	for x: float in [-8.0, 8.0]:
+		put("banner", Vector3(x, 9.0, -45.9), Vector3(1.8, 5.0, 0.12), 0.0, {}, "cloth_red")
+	layer("Village life")
+	# Hay and firewood by the houses, washing across the back of the green.
+	for entry: Array in [
+		["sack_pile", Vector3(-48.8, 0, 36.2), 0.0], ["pallet", Vector3(-46.5, 0, 36.4), 0.0],
+		["sack_pile", Vector3(48.8, 0, 36.2), 180.0], ["pallet", Vector3(46.5, 0, 36.4), 0.0],
+		["coopered_barrel", Vector3(-22.6, 0, 40.8), 0.0], ["coopered_barrel", Vector3(22.6, 0, 40.8), 0.0],
+		["washing_line", Vector3(-30, 0, 62.0), 0.0], ["washing_line", Vector3(30, 0, 62.0), 0.0],
+		["planter", Vector3(-19.5, 0, 34.0), 90.0], ["planter", Vector3(19.5, 0, 34.0), -90.0],
+	]:
+		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+
+
+## Dark timber framing on a village wall: posts between the windows, rails at the floors.
+func _timber_frame(run: Dictionary) -> void:
+	var from: Vector2 = run["from"]
+	var along: Vector2 = run["along"]
+	var facing: Vector2 = run["facing"]
+	var length := float(run["length"])
+	var ground := float(run["ground"])
+	var top := float(run["top"])
+	var yaw := float(run["yaw"])
+	var door_at := float(run["door_at"])
+	for y: float in [ground + 0.55, ground + 2.6, top - 0.3]:
+		if y + 0.2 <= top:
+			band(from, along, facing, 0.0, length, y, 0.2, 0.07, "wood_dark", yaw)
+	var slots := window_slots(length, 3.0, 0.9)
+	var count := int(slots.x)
+	var offset := slots.y
+	var posts: Array[float] = [0.1, length - 0.1]
+	for k: int in count - 1:
+		posts.append(offset + 3.0 * (float(k) + 0.5))
+	for t: float in posts:
+		if door_at > 0.0 and absf(t - door_at) < 0.9:
+			continue
+		band(from, along, facing, t - 0.1, t + 0.1, ground + 0.55, top - ground - 0.6, 0.07, "wood_dark", yaw)
+
+
+## A row of stone corbels under the top of a castle wall.
+func _machicolations(run: Dictionary) -> void:
+	var from: Vector2 = run["from"]
+	var along: Vector2 = run["along"]
+	var facing: Vector2 = run["facing"]
+	var length := float(run["length"])
+	var top := float(run["top"])
+	var yaw := float(run["yaw"])
+	if top - float(run["ground"]) < 5.0:
+		return
+	band(from, along, facing, 0.0, length, top - 0.5, 0.5, 0.45, "granite_blocks", yaw)
+	var t := 0.5
+	while t <= length - 0.5:
+		band(from, along, facing, t - 0.18, t + 0.18, top - 1.1, 0.6, 0.35, "granite_blocks", yaw)
+		t += 1.2

@@ -663,9 +663,9 @@ Gaps against building a full competitive map:
 - [x] Second and third official maps: Switchyard (surface A, underground B) and Kestrel Keep (stone
       fortress), both original layouts (owner, 2026-11-18: continue the two drafts). Building
       them added the pieces the editor could not make and a slope warning (below).
-- [ ] Remaining official maps (2–4 more). Barnwell (English estate, owner's drawing) added 2026-11-21. Saffra (desert old town) added 2026-11-21, the seventh.
+- [ ] Remaining official maps (2–4 more). Barnwell (English estate, owner's drawing) added 2026-11-21. Saffra (desert old town) added 2026-11-21, the seventh. Rooftops (two-floor skyscraper top at dusk) finished 2026-11-22, the eighth.
 
-**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 4): a rail
+**Switchyard** (`map_f2f_switchyard`, `tools/author_switchyard.gd`, revision 5): a rail
 switching station over a turbine works, about 120 × 160 m inside an irregular fifteen-sided
 perimeter. Most of the play is on the surface; site B is 8 m underground. Site A is the Machine
 Hall, a seven-sided shed with five ways in (Loading Gate, the Breach in its angled south-west
@@ -683,7 +683,7 @@ and brushes, so little of the map is square. Timings: defenders reach A in 8.8 s
 8.6 s; attackers' first A entrance is 11.5 s (Loading Gate) and first B entrance 11.2 s (Main
 Door); the long Culvert flank is 15.6 s. Rotation A to B is 7.5 s.
 
-**Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`, revision 2): a granite fortress
+**Kestrel Keep** (`map_f2f_kestrel_keep`, `tools/author_kestrel_keep.gd`, revision 3): a granite fortress
 above a village. Site A is the Tiltyard, reached by the West Gate road (long, 14.0 s), the Breach
 in the curtain wall (short, 10.9 s) or the Bailey Arch. Site B is the Cloister, reached by the
 Orchard Walk and Lych Gate (13.9 s), the Undercroft tunnel (10.7 s) or the Bailey Arch. The
@@ -691,29 +691,40 @@ Gatehouse is mid: a portcullis passage under a walkable gallery that overlooks t
 A rampart overlooks the Tiltyard. Defenders reach A in 8.5 s and B in 8.6 s. Rotating through the
 Bailey takes 13.9 s, against a 15.1 s attacker crossing from the Breach to the Undercroft.
 
-**Barnwell** (`map_f2f_barnwell`, `tools/author_barnwell.gd`, revision 1): a 1950s English
-housing estate laid out from the owner's drawing over a real estate plan; the street names are
-made up and the houses generic (no real address or home is reproduced). Red-brick semis, some
-rendered upstairs, under hipped or gable roofs of tile or slate drawn as brushes, with chimneys and
-aerials, angled bay windows, porch canopies, drainpipes, wheelie bins, gravel drives, low brick
-front walls, panel fences, privet hedges, telegraph poles and wires, street lamps, street trees and
-parked cars. The barn behind the allotments and the well on the Green give it its name.
-Three lanes run north to south, the owner's black lines: the West Lane, Ashby Avenue in the middle
-(the main lane, broken up by parked cars, a van, a skip, a bus shelter and a round traffic island)
-and Fen Walk. Curves soften the grid: winding paths down the West Lane and Fen Walk and across the
-Green, rounded kerbs where the avenue meets the roads, round flower beds, rounded hedge ends and
-the chapel's apse. Defenders start on Larch Road to the north, attackers on Marsh Lane in the
-south-east. Site A is the Green in the east block, entered by the West Gate off the avenue
-(attackers 9.8 s) or the Fen Gap off Fen Walk (12.9 s). Site B is the Lock-ups, a garage court in
-the west block, entered by the Ginnel Mouth off the avenue (9.9 s), the Chapel Gate at the top of
-Chapel Path (11.7 s) or Church Walk from the West Lane through the churchyard (14.6 s, the long
-flank). Defenders reach A in 7.5 s and B in 7.8 s, 2.1–2.3 s ahead of the first attacker; mid is
-contested (7.9 s attackers, 8.8 s defenders). Rotating takes 9.8 s. Back gardens, allotments and
-the churchyard are out of play behind fences (blocks, so they are not islands). No kerbs:
-pavements sit 2 cm proud so bots can walk them. Doors and windows are set with their faces
-outward (the Window and Door pieces face local +Z). Five materials came with it: red brick,
-painted render, clay roof tiles, tarmac and privet hedge. Even simulated teams win 41% of rounds
-on attack (eight seeded matches), inside the 32–61% spread of the other maps.
+**Barnwell** (`map_f2f_barnwell`, `tools/author_barnwell.gd`, revision 3): a 1950s council
+estate on the edge of the fens on a bright late-summer day, rebuilt in revision 3 as a direct trace
+of the owner's drawing over the street map of a real place, with the attackers' house from the
+owner's Street View photo (owner, 2026-11-22: rework it from the map and the real location; the
+first two revisions were a grid that did not follow the drawing). Every coordinate in the session
+is a pixel on the drawing at 0.17 m per pixel, which makes the semis life-size. The black lines are
+the lanes: a loop round the estate (the north road, a back lane curving round the east side, a
+field path, the school lane, Barnwell Road, a lane along the south and a stepped west lane) and
+Edinburgh Avenue up the middle. The brown lines are footpaths and the orange lines the attackers'
+garden paths. Only those lanes, paths, the two sites and two forecourts are walkable: the session
+draws them as strips and areas, and the outline of the combined network is fenced, hedged or walled
+all round (each edge of each area less the parts inside another area), so every back garden is
+closed off. Footpaths, sites and forecourts are drawn less the roads under them, so they stop at
+the kerb. Houses stand where the street map shows them, as red-brick semis with white upper
+floors, gabled tile roofs, chimneys and aerials, white windows, door canopies, bins and gravel
+drives; each house and drive keeps 1.25 m clear of the network (the thickest hedge plus a gap), and
+one whose drawn footprint is too close is nudged or made slightly smaller until it fits. Front
+gardens are open to the street (owner: no fences or walls in front of doors): where the network
+lies within 9 m of a house's front, the hedge or fence across it is left out and plank garden
+fences run from the sides of the house to the street, so the gardens behind stay closed. Most
+houses have a gate between the house and the side fence, and now and then a long plank fence
+along a path has a back gate, so the back gardens look reachable (they are closed props). Poplars
+and broadleaf trees fill the gardens. Telegraph poles, street lamps, bins and parked cars are laid
+out along the road lines, turned with the street, and each is placed only where it lies wholly on
+the road, clear of every path mouth and both spawns; cars are parked down both sides of the
+avenue (staggered so no sightline runs its length), and a primary school stands beyond the school
+lane. Defenders start at the top of Edinburgh Avenue (the
+drawing's blue box), attackers on the drives outside their house on Barnwell Road (the red box).
+Site A is the Green, the estate's open space, entered by the Avenue Gap, the Green Gate at the top
+of the garden paths (attackers 11.6 s) or the SE Alley. Site B is the garage court behind the
+gardens west of the avenue, with a row of lock-ups and a gap behind them, entered by the North
+Path, the West Path, the Avenue Path or the Back Gate from the ginnels (attackers 14.0 s at the
+earliest). Defenders reach A in 8.7 s and B in 7.4 s, 2.9 s and 6.6 s ahead of the first attacker;
+rotating takes 10.8 s. B is far from the attackers' house, as in the drawing.
 
 **Saffra** (`map_f2f_saffra`, `tools/author_saffra.gd`, revision 3): the seventh official map,
 a desert old town at night built to the conventions of classic competitive defuse maps, with an
@@ -740,7 +751,46 @@ deep blue sky, with the town lit by its lamps: a lantern by every door and every
 walls, windows lit from inside, strings of bulbs zig-zagging over the streets and across both
 sites, braziers, street lamps in the yards, and lamps hung under every arch and covered passage.
 
-**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 19): a harbour chronometer
+**Skies and character (owner, 2026-11-22: flesh out every map, a fitting sky each, give each its
+own character).** Every official map now names a painted sky in its lighting (`sky`, see
+ARCHITECTURE: MapSkies) and was given a pass of its own, done the way a person dresses a map by
+hand: the authoring base walks every wall that faces walkable ground and places a plinth, a
+cornice, windows per storey (some lit), now and then a door, lamps and the map's own extras, all as
+ordinary pieces. Kilnmarket (revision 4) is a potters' quarter at hazy noon: paved lanes, fired-clay
+plinths, terracotta cornices, blue shutters, glazed tile panels, kiln chimneys, drying racks and
+stacked jars, under terracotta hills with smoking kilns. Switchyard (revision 5) is an overcast,
+damp works morning: steel clerestory windows, stanchions, hazard kerbs, freight doors and enamel
+signs on every shed and yard wall, two rail sidings with a parked wagon, catenary masts and signals
+behind the attackers, puddles in the yards, and cooling towers on the plain. Cluts (revision 20)
+is a bright harbour day under fair-weather cloud with signal flags over the Ticket Quay and the
+Dispatch Yard. Kestrel Keep (revision 3) is a low highland afternoon: limewashed cottages under
+slate gables with chimneys and timber framing, arrow slits and machicolations on the castle,
+pennants and banners, a sanded tiltyard and a grass garth, with mountains behind. Barnwell
+was given a grey afternoon and bunting at first, then rebuilt from the owner's drawing (above).
+Saffra keeps revision 3 and gains its starry desert sky. Layouts and route timings are unchanged.
+
+**Rooftops** (`map_f2f_rooftops`, `tools/author_rooftops.gd`, revision 2): the eighth official
+map, the top of a skyscraper at dusk, on two floors (owner, 2026-11-22: it should look and feel
+like the top of a skyscraper, two floors). It replaces an unfinished draft that was a copy of
+Cluts. The upper floor is the roof deck in the open air, 88 × 116 m inside a stone parapet with
+a glass balustrade: the lift crown under a lit mast in the middle, a north plant room, a cooling
+block with tanks east of mid, the helipad on its raised deck, a garden terrace with trees, a
+pergola and lamps, solar panels and the dock where the window-cleaning gondola's crane parks. The
+lower floor is the tower's top storey under the roof slab: the Sky Lounge, open to the city on
+its west side, the Lift Lobby, an open-plan office behind a curtain wall and the Service
+Corridor. Four stairs (the North Stair, the Garden Stair, the Atrium and the Service Hatch) join
+the floors. The tower's facade drops away below the parapet in glass and spandrel bands, other
+towers with lit floors stand round it, and the city lies far below in the painted dusk sky.
+Attackers start at the Gondola Dock (south), defenders on the Spawn Terrace (north). Site A is
+the Plant Deck on the roof, among chillers and ducts, reached by the East Ledge and Ledge Corner,
+Mid Lane and the Duct Gate, or up the Service Hatch from the office below. Site B is the Sky
+Lounge on the storey below, reached by the Garden Stair and the Bar Door, or down the Atrium and
+through the Lift Lobby and the Lobby Door; defenders come down the North Stair and the Service
+Corridor to the Lounge Door. Defenders reach A in 7.0 s and B in 7.2 s; the attackers' first A
+entrance is the Duct Gate at 10.5 s (3.5 s behind) and their first B entrance the Lobby Door at
+9.6 s (2.4 s behind). Rotating between the sites takes 13.4 s.
+
+**Cluts** (`map_f2f_cluts`, `tools/author_cluts.gd`, revision 20): a harbour chronometer
 exchange traced from the owner's ground-floor sketch, about 100 × 70 m, with a tidal basin and
 quayside skyline beyond the perimeter. Site A is the Dispatch Yard on the surface, entered by
 the Hoist Gate, Dispatch Bend and the Yard Door from the Ramp Yard. Site B is the Darkroom in the
@@ -1017,3 +1067,6 @@ Planned scope:
 | 2026-11-21 | Saffra revision 2 (owner feedback): the defenders' half is a 3 m plateau with stairs up from the low town, A on the plateau favours defenders and B in the low town favours attackers, and mid bends twice so no sightline runs from spawn to spawn. |
 | 2026-11-21 | Saffra revision 3 (owner request): a night map, lit by lanterns at every door and along the walls, lit windows, strings of bulbs over the streets and sites, braziers, street lamps and hanging lamps under the arches and covered passages. |
 | 2026-11-22 | Creation Studio bakes the career simulation graph: on save when the content changed, and with a "Bake sim graph" button, through the same `SimGraphBuilder.bake_to` as the command-line tool, so an editor-made map is complete without developer tools. New "Simulation graph bake" test suite. |
+| 2026-11-22 | Skies and character (owner request): painted panorama skies (`MapSkies`, `tools/generate_skies.py`), one per official map, chosen in the Creation Studio's lighting panel; each map's own light and a dressing pass (facades with plinths, cornices, windows, doors and lamps, plus each map's own extras): Kilnmarket r4, Switchyard r5, Cluts r20, Kestrel Keep r3, Saffra's starry sky. |
+| 2026-11-22 | Rooftops (owner request): the eighth official map, a two-floor skyscraper top at dusk, rebuilt from scratch in place of an unfinished draft: A on the roof's Plant Deck, B in the Sky Lounge on the storey below, joined by four stairs. |
+| 2026-11-22 | Barnwell revision 3 (owner request: rework it from the map and the real location): rebuilt as a trace of the owner's drawing over the street map, with the lane loop, Edinburgh Avenue, footpaths to the garage court (B) and the Green (A), the attackers' garden paths from their house on Barnwell Road, Street View-style semis, a fenland summer sky (`fen_summer`) and broadleaf and poplar trees (new `form` option on the Tree piece). The map analysis no longer reports ground beside an angled drawn surface as unreachable floor. Clipping pass (owner: cars in walls, walls covering houses, paths bleeding onto roads): paths stop at the kerb, houses and drives stand clear of hedges, and street furniture and cars follow the roads and fit on them; front gardens are open to the street, closed at the sides, with garden gates. |

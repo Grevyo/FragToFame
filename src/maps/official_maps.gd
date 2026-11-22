@@ -10,6 +10,7 @@ const MAPS: Dictionary[String, String] = {
 	"map_f2f_kilnmarket": "kilnmarket.f2fmap.json",
 	"map_f2f_switchyard": "switchyard.f2fmap.json",
 	"map_f2f_cluts": "cluts.f2fmap.json",
+	"map_f2f_rooftops": "rooftops.f2fmap.json",
 	"map_f2f_kestrel_keep": "kestrel_keep.f2fmap.json",
 	"map_f2f_barnwell": "barnwell.f2fmap.json",
 	"map_f2f_saffra": "saffra.f2fmap.json",

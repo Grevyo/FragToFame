@@ -498,6 +498,8 @@ func _support_piece(point: Vector3) -> Dictionary:
 		var sloped := PieceCatalog.kind(type) in ["ramp", "stairs"]
 		var supports := MapDocument.piece_contains(piece, point + Vector3(0, -0.1, 0), 0.2) if sloped \
 			else absf(top - point.y) <= 0.35 and MapDocument.piece_contains(piece, Vector3(point.x, top - 0.01, point.z))
+		if supports and (piece.get("props", {}) as Dictionary).has("outline"):
+			supports = PolygonSurface.footprint_has_point(piece, point)
 		if supports and top > best_top:
 			best = piece
 			best_top = top

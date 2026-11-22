@@ -839,11 +839,21 @@ func _build_map_properties(doc: MapDocument, file_path: String) -> void:
 	_inspector.add_child(UIFactory.label("LIGHTING", &"SectionLabel"))
 	var settings := MapLighting.normalised(doc.lighting)
 	var spins: Dictionary[String, SpinBox] = {}
+	var sky_picker := OptionButton.new()
+	var sky_ids: Array[String] = [""]
+	sky_ids.append_array(MapSkies.ids())
+	for sky_id: String in sky_ids:
+		sky_picker.add_item(MapSkies.label(sky_id))
+	sky_picker.select(maxi(sky_ids.find(str(settings["sky"])), 0))
 	var emit_lighting := func() -> void:
 		var next := settings.duplicate()
 		for key: String in spins:
 			next[key] = spins[key].value
+		next["sky"] = sky_ids[maxi(sky_picker.selected, 0)]
 		action_requested.emit(&"lighting", next)
+	_inspector.add_child(UIFactory.label("Sky", &"MutedLabel"))
+	sky_picker.item_selected.connect(emit_lighting.unbind(1))
+	_inspector.add_child(sky_picker)
 	for row: Array in [["Sun direction (°)", "sun_yaw", 5.0], ["Sun height (°)", "sun_pitch", 5.0],
 			["Sun strength", "sun_energy", 0.1], ["Ambient light", "ambient_energy", 0.05],
 			["Distance haze", "haze", 0.05]]:
@@ -934,6 +944,8 @@ func _build_piece_properties(piece: Dictionary, doc: MapDocument) -> void:
 			_number_prop("Panes across", "panes_x", float(props.get("panes_x", 2)), 1, 6, 1)
 			_number_prop("Panes down", "panes_y", float(props.get("panes_y", 2)), 1, 6, 1)
 			_bool_prop("Open shutters", "shutters", bool(props.get("shutters", false)))
+		"tree":
+			_option_prop("Form", "form", PieceShapes.TREE_FORMS, str(props.get("form", "conifer")))
 		"coping_stones":
 			_number_prop("Stone length (m)", "stone_length", float(props.get("stone_length", 0.9)), 0.4, 2.0, 0.05)
 			_number_prop("Variation seed", "seed", float(props.get("seed", 0)), 0, 999, 1)

@@ -6,8 +6,11 @@ func _official_id() -> String:
 	return "map_f2f_cluts"
 
 
+## Revision 20 (owner, 2026-11-22: give each map its own character): a bright, breezy harbour
+## day under fair-weather cloud over open water, with signal flags strung over the Ticket Quay
+## and the Dispatch Yard.
 func _revision() -> int:
-	return 19
+	return 20
 
 
 # Trace coordinates from the supplied ground-floor sketch. North is negative Z.
@@ -110,7 +113,7 @@ func prism(outline: Array, base: float, height: float, material: String = "") ->
 
 func _build() -> void:
 	controller.set_metadata("Cluts","F2F official","A harbour chronometer exchange. From the ticket quay, thread the exchange corridors to the dispatch yard or take the glass-plate stairs below the harbour office.")
-	controller.set_lighting({"sun_yaw":135.0,"sun_pitch":47.0,"sun_energy":1.15,"sun_color":"fff0d8","ambient_color":"cbd9eb","ambient_energy":0.55,"haze":0.3})
+	controller.set_lighting({"sun_yaw":135.0,"sun_pitch":50.0,"sun_energy":1.25,"sun_color":"fff4e2","ambient_color":"c6d8ee","ambient_energy":0.58,"haze":0.22,"sky":"harbour_fair"})
 	layer("Ground plan")
 	var outline: Array = []
 	for point: Vector2 in [Vector2(9,48),Vector2(120,47),Vector2(220,53),Vector2(470,40),
@@ -189,10 +192,12 @@ func _build() -> void:
 	area("East Approach",38,45,1,7)
 	area("Ramp Yard",22,39.6,31.8,34)
 	area("Yard Door",40,42,31.8,34)
+	_signal_flags()
 
 
 # Each boundary follows the floor outline. The deep building faces extend outwards
 # so the playable side keeps the original route widths.
+
 func _harbour_boundary(outline: Array) -> void:
 	layer("Quay perimeter")
 	for i in outline.size():
@@ -977,3 +982,12 @@ func _lamps_and_props() -> void:
 		["coopered_barrel", Vector3(6.00, -5.00, -10.23), 0.0],
 	]:
 		put(str(entry[0]), entry[1] as Vector3, Vector3.ZERO, float(entry[2]))
+
+
+## Signal flags in four colours over the quay and the yard, high above head height.
+func _signal_flags() -> void:
+	layer("Signal flags")
+	var flags: Array = ["hazard_paint", "cloth_blue", "cloth_red", "plaster_white"]
+	bunting(Vector3(-43, 5.2, 12.6), Vector3(-30, 5.2, 18.6), 0.8, flags)
+	bunting(Vector3(-43, 5.0, 18.6), Vector3(-30, 5.0, 12.6), 0.8, flags)
+	bunting(Vector3(42.4, 5.4, 21.0), Vector3(50.6, 5.4, 31.6), 0.7, flags)

@@ -951,8 +951,10 @@ func _ended() -> String:
 			return "defused"
 		if time - planted_at >= BOMB_TIMER:
 			return "detonated"
+		# As in a played match: defenders wiped out after the plant lose by elimination (the
+		# attackers dying does not end a planted round).
 		if defence_left.is_empty():
-			return "detonated"
+			return "eliminated"
 		return ""
 	if defence_left.is_empty():
 		return "eliminated"

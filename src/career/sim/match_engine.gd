@@ -414,7 +414,8 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 				how = "detonated"
 			break
 		if defence_alive.is_empty():
-			how = "eliminated" if not planted else "detonated"
+			# Planted or not, the defenders are wiped out (as in a played match).
+			how = "eliminated"
 			break
 		_note_clutch(attack_alive, defence_alive, attackers, clutch)
 		if not planted and rng.randf() < clampf(PLANT_BASE + PLANT_PER_EDGE * (attack_alive.size() - defence_alive.size()), 0.04, 0.6):

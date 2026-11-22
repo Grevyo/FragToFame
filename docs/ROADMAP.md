@@ -417,9 +417,17 @@ Stages (each validated and committed on its own):
       held-angle edge, and a flash can be dodged (every entry flash used to land: attackers won
       62% of opening duels). Result over 1,400 maps: attack 55% of rounds (maps 43–62%, was
       39–73%), utility damage 10 a round (was 25), flash assists 6% of kills.
-      Still off target: too many rounds end on the bomb (51%) or time (12%) and too few by
-      elimination (37%); map side gaps (Kilnmarket and Rooftops favour attack, Switchyard
-      defence); mean rating 0.95.
+      Second pass (2026-11-22): defenders wiped out after a plant now lose by elimination, as in a
+      played match. Both the round simulation and the duel chain had counted it as a detonation,
+      which is why "too many rounds end on the bomb". Result over 1,900 maps on three seeds:
+      - endings: elimination 56–57% (was 37%), bomb 30–31% (was 51%), time 13%; attack 52–53%
+        of rounds;
+      - blowouts between even teams 29–38% and mean rating 0.948–0.953: both at the edge of
+        their bands, moving with the seed;
+      - still off: per-map side gaps (worst 0.10–0.12). They follow each map's rotation
+        distance between sites: Switchyard (48 m) favours defence at 42% attack; Kilnmarket,
+        Rooftops and Saffra (84–85 m) favour attack at 55–60%. That is map layout, not engine
+        balance; closing it means changing those official maps.
 
 ## Milestone 8 — Tactical Play Creator 🔶
 
@@ -1213,6 +1221,7 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
 | 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |
 | 2026-11-22 | Milestone 7 stage B: bot utility. Bots buy grenades and throw solved line-ups (the same flight and fuse as a live grenade, so no throws through walls): attackers gather before an entrance, smoke the nearest hold and the rotation, burn a near hold, flash in from the doorway and go in together, turning away from their own flashes; defenders throw delay utility at a push. Every bot behaviour is now stat-driven: throw spread and line-up time from Utility usage, plus discipline, angle checking, patience, flash awareness and spotting range from the matching abilities. |
+| 2026-11-22 | Milestone 21 stage H, second tuning pass: post-plant wipes count as eliminations (sim and duel chain), putting round endings on target. Map side gaps remain and follow rotation distance (map layout). |
 | 2026-11-22 | Milestone 22 stage B: bots hear running, shots, reloads and grenades within a player's hearing (from game sense), turn to check, and share it with their team. Walking is never heard. Milestone 22 complete; next: Milestone 21 stage H (tuning). |
 | 2026-11-22 | Milestone 22 stage A: sound. 48 original generated effects (guns, reloads, footsteps by surface, grenades, bomb, hits, interface), audio buses and volume settings, positional sound muffled through walls; running is audible and walking is silent. |
 | 2026-11-22 | Milestone 7 stage E: team economy; Milestone 7 complete. Bot teams buy on their leader's call (the sim's own economy), by role, with drops for broke teammates. Next: Milestone 22 (sound). |

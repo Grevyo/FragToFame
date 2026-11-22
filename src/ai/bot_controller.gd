@@ -110,6 +110,11 @@ var _strafe_dir: float = 1.0
 var _strafe_left: float = 0.0
 ## The place being cleared ({} when none) and when to choose again.
 var _clearing: Dictionary = {}
+## A sound to check: where, and for how much longer the bot looks there (seconds).
+var heard_at: Vector3 = Vector3.ZERO
+var heard_left: float = 0.0
+## Seconds a bot looks towards a sound it heard (after its reaction time).
+const HEARD_LOOK: float = 1.8
 var _clear_timer: float = 0.0
 var _search_hold_left: float = 0.0
 ## Jiggle peek: seconds left stepping out, then stepping back; side (+1 right, −1 left).
@@ -401,7 +406,18 @@ func _avoid_flash(delta: float) -> void:
 
 # --- Perception ------------------------------------------------------------------------------
 
+## The bot heard an enemy at [param position] (a footstep, a shot, a reload...). Unless it is
+## already fighting, it turns to check the spot for a moment after its reaction time.
+func hear(position: Vector3) -> void:
+	if health.is_dead or target != null:
+		return
+	if heard_left <= 0.0:
+		heard_left = HEARD_LOOK + skill.reaction_time
+	heard_at = position + Vector3(0, 1.2, 0)
+
+
 func _perceive(delta: float) -> void:
+	heard_left = maxf(heard_left - delta, 0.0)
 	if target != null and (not is_instance_valid(target) or target.is_dead):
 		_lose_target(false)
 	if blind_amount() >= BLIND_SIGHT_LIMIT:
@@ -656,6 +672,8 @@ func _navigate(delta: float) -> Vector3:
 ## ahead or to the side (Vector3.INF when there is none: look where you are going). Looking at it
 ## clears it for the whole team.
 func _angle_to_clear(delta: float, travel: Vector3) -> Vector3:
+	if _checking_sound():
+		return heard_at
 	if knowledge == null:
 		return Vector3.INF
 	_clear_timer -= delta
@@ -760,8 +778,15 @@ func _path_direction(destination: Vector3) -> Vector3:
 	return direction.normalized() if direction.length() > 0.05 else Vector3.ZERO
 
 
+## Checking a heard sound (after the reaction time has passed).
+func _checking_sound() -> bool:
+	return heard_left > 0.0 and heard_left <= HEARD_LOOK
+
+
 func _look_idle(delta: float) -> void:
-	if has_watch_point:
+	if _checking_sound():
+		_turn_toward(AimModel.angles_to(head.global_position, heard_at), delta, CLEAR_TURN)
+	elif has_watch_point:
 		_turn_toward(AimModel.angles_to(head.global_position, watch_point), delta)
 
 

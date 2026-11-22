@@ -53,6 +53,8 @@ var rng := RandomNumberGenerator.new()
 var skills: Dictionary[String, BotSkill] = {}
 
 var _decide_timer: float = 0.0
+## Recent noises: {"position", "kind", "source" (player ID), "time" (match seconds), "heard": {bot ID: true}}.
+var noises: Array[Dictionary] = []
 ## One shared picture per team (index): places cleared and enemies seen ([TeamKnowledge]).
 var knowledge: Array[TeamKnowledge] = []
 ## This round's attack (null on maps without a simulation graph, or when no bot attacks: they
@@ -77,6 +79,13 @@ const LINEUP_TOLERANCE: float = 2.5
 var _site_positions: Dictionary[String, Vector3] = {}
 ## Optional "ai_hold" hint pieces per bombsite letter (authored in the map editor).
 var _hold_points: Dictionary[String, Array] = {}
+## Metres a sound of each kind can be picked up from (before [member BotSkill.hearing]); a
+## wall between the sound and the listener shortens it by [constant WALL_HEARING].
+const HEARING_RANGE: Dictionary[StringName, float] = {&"footstep": 20.0, &"land": 16.0, &"shot": 70.0,
+	&"sniper": 100.0, &"reload": 8.0, &"bounce": 16.0, &"explosion": 80.0}
+const WALL_HEARING: float = 0.55
+## Noises are heard for this long after they happen.
+const NOISE_SECONDS: float = 1.0
 ## A defender takes a site's hold hint within this flat distance of its planned place.
 const HOLD_REACH: float = 14.0
 ## After a regroup, contact does not send the attackers straight back in for this long.
@@ -152,6 +161,7 @@ func spawn_bots() -> void:
 		bot.utility_finished.connect(_on_utility_finished.bind(bot))
 		bot.knowledge = knowledge[player_state.team] if not knowledge[player_state.team].places.is_empty() else null
 		bots[id] = bot
+		_listen_to(bot, id)
 	var level: float = {&"easy": 35.0, &"normal": 55.0, &"hard": 80.0}.get(skill_name, 55.0)
 	for team_index: int in 2:
 		var ids: Array[String] = []
@@ -159,10 +169,69 @@ func spawn_bots() -> void:
 			if director.state.get_player(id).team == team_index:
 				ids.append(id)
 		tactics[team_index] = BotTactics.create(sim_map, ids, director.state.setup.lineup(team_index), level, rng)
+	_listen_to(director.player, director.local_player_id)
+	director.level.utility.grenade_bounced.connect(func(_utility: StringName, at: Vector3, _speed: float) -> void:
+		make_noise(at, &"bounce", ""))
+	director.level.utility.detonated.connect(func(utility: StringName, at: Vector3, thrower: String) -> void:
+		if EquipmentCatalog.utility_kind(utility) == EquipmentCatalog.KIND_FRAG:
+			make_noise(at, &"explosion", thrower))
 	var everyone := healths()
 	everyone.append(director.player.health)
 	for bot: BotController in bots.values():
 		bot.enemies = everyone
+
+
+# --- Hearing -----------------------------------------------------------------------------------
+
+## The noises [param body] (player [param id]) makes: running footsteps, landings, shots, reloads.
+func _listen_to(body: CombatantMovementBody, id: String) -> void:
+	body.stepped.connect(func() -> void: make_noise(body.global_position, &"footstep", id))
+	body.landed.connect(func(speed: float) -> void:
+		if speed >= CombatantSounds.SILENT_LANDING:
+			make_noise(body.global_position, &"land", id))
+	body.weapons.shot_fired.connect(func(origin: Vector3, _end: Vector3, _result: Hitscan.Result) -> void:
+		var state := body.weapons.current()
+		var sniper := state != null and CombatantSounds.SNIPERS.has(state.definition.id)
+		make_noise(origin, &"sniper" if sniper else &"shot", id))
+	body.weapons.reload_started.connect(func(_state: WeaponState) -> void: make_noise(body.global_position, &"reload", id))
+
+
+## A noise of [param kind] at [param position] made by player [param source] ("" = nobody's: it
+## is heard by everyone as an enemy noise only when its maker is unknown to them).
+func make_noise(position: Vector3, kind: StringName, source: String) -> void:
+	noises.append({"position": position, "kind": kind, "source": source, "time": director.state.match_time, "heard": {}})
+
+
+## Each bot picks up the enemy noises it can hear: it turns to check them, and the team knows an
+## enemy is there (heard, not seen).
+func _hear() -> void:
+	var state := director.state
+	noises = noises.filter(func(noise: Dictionary) -> bool: return state.match_time - float(noise["time"]) <= NOISE_SECONDS)
+	for noise: Dictionary in noises:
+		var source := str(noise["source"])
+		var maker := state.get_player(source) if not source.is_empty() else null
+		var at := noise["position"] as Vector3
+		for id: String in bots:
+			var bot := bots[id]
+			var heard: Dictionary = noise["heard"]
+			if heard.has(id) or not bot.is_alive() or id == source:
+				continue
+			if maker == null or maker.team == state.get_player(id).team:
+				continue
+			heard[id] = true
+			var reach := float(HEARING_RANGE.get(noise["kind"], 20.0)) * bot.skill.hearing
+			var distance := bot.global_position.distance_to(at)
+			if distance > reach:
+				continue
+			if distance > reach * WALL_HEARING and _wall_between(bot, at):
+				continue
+			bot.hear(at)
+			knowledge[state.get_player(id).team].report_enemy(at)
+
+
+func _wall_between(bot: BotController, at: Vector3) -> bool:
+	var query := PhysicsRayQueryParameters3D.create(bot.head.global_position, at + Vector3(0, 1.0, 0), Hitscan.LAYER_WORLD)
+	return not bot.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func healths() -> Array[Health]:
@@ -179,6 +248,7 @@ func on_round_started() -> void:
 	defuse_progress.clear()
 	for team_knowledge: TeamKnowledge in knowledge:
 		team_knowledge.reset()
+	noises.clear()
 	for team_index: int in 2:
 		_team_buy(team_index)
 	for team_index: int in 2:
@@ -243,6 +313,7 @@ func physics_update(delta: float) -> void:
 # --- Decisions -------------------------------------------------------------------------------
 
 func _decide() -> void:
+	_hear()
 	_advance_attack()
 	_advance_defence()
 	_defender_delay()

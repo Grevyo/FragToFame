@@ -2,7 +2,8 @@ class_name SoundSuite
 extends TestSuite
 ## Milestone 22: original generated sound effects, the library that plays them (or supplied
 ## replacements), volume settings and buses, and the game's sounds in the FPS runtime: shots,
-## running footsteps (walking is silent), grenades and the bomb.
+## running footsteps (walking is silent), grenades and the bomb. Stage B: bots hear enemies'
+## noises within the distance a player would, and turn to check them.
 
 const FPS_SANDBOX_SCENE: String = "res://scenes/fps_sandbox/fps_sandbox.tscn"
 
@@ -16,6 +17,7 @@ func run() -> void:
 	_test_library()
 	_test_settings()
 	await _test_in_game()
+	await _test_hearing()
 
 
 func _test_generator() -> void:
@@ -153,5 +155,98 @@ func _test_in_game() -> void:
 	button.pressed.emit()
 	button.free()
 	check(int(SoundPlayer.played.get(&"ui_click", 0)) == 1, "interface buttons click")
+	await despawn(sandbox)
+	await wait_frames(2)
+
+
+func _test_hearing() -> void:
+	section("Bots hear")
+	check(BotSkill.preset(&"easy").hearing < BotSkill.preset(&"normal").hearing
+		and BotSkill.preset(&"normal").hearing < BotSkill.preset(&"hard").hearing
+		and BotSkill.from_abilities({"game_sense": 90}).hearing > BotSkill.from_abilities({"game_sense": 20}).hearing,
+		"hearing comes from game sense (presets: easy < normal < hard)")
+	var app := tree.root.get_node("App")
+	var map_id := ""
+	for id: String in OfficialMaps.ids():
+		if SimMap.for_map(id) != null:
+			map_id = id
+			break
+	var setup := MatchSetup.new()
+	setup.fixture_id = "hearing"
+	setup.home_team_id = "team_you"
+	setup.home_team_name = "You"
+	setup.away_team_id = "team_bots"
+	setup.away_team_name = "Bots"
+	setup.max_rounds = 2
+	setup.map_id = map_id
+	var rules := MatchRules.practice(2)
+	rules.team_size = 5
+	rules.freeze_time = 0.5
+	rules.round_time = 900.0
+	app.set("pending_match_setup", setup)
+	app.set("pending_match_rules", rules)
+	app.set("pending_match_map", OfficialMaps.load_map(map_id))
+	app.set("pending_match_options", {"opponents": "bots", "skill": "normal"})
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	await wait_physics_frames(3)
+	var director := sandbox.get("match_director") as MatchDirector
+	var squad := director.squad if director != null else null
+	if squad == null:
+		check(false, "bots mode creates a BotSquad")
+		await despawn(sandbox)
+		return
+	var player := director.player
+	player.input_enabled = false
+	for bot: BotController in squad.bots.values():
+		bot.enemies = []
+	var state := director.state
+	await wait_until(func() -> bool: return state.phase == MatchState.Phase.LIVE, 5.0)
+	var listener: BotController = null
+	var teammate := ""
+	for id: String in squad.bots:
+		if state.get_player(id).team == MatchState.AWAY and listener == null:
+			listener = squad.bots[id]
+		elif state.get_player(id).team == MatchState.AWAY and teammate.is_empty():
+			teammate = id
+	var at := listener.global_position
+	var enemy := director.local_player_id
+	listener.heard_left = 0.0
+	squad.make_noise(at + Vector3(30, 0, 0), &"shot", enemy)
+	await wait_seconds(0.4)
+	check(listener.heard_left > 0.0 and listener.heard_at.distance_to(at + Vector3(30, 1.2, 0)) < 0.1,
+		"a shot 30 m away is heard, and the bot turns to check it")
+	var team_knowledge := squad.knowledge[MatchState.AWAY]
+	check(team_knowledge.enemy_near(at + Vector3(30, 0, 0), 2.0, 2.0), "what one bot hears, its team knows")
+	listener.heard_left = 0.0
+	squad.make_noise(at + Vector3(0, 0, 12), &"reload", enemy)
+	squad.make_noise(at + Vector3(0, 0, -6), &"shot", teammate)
+	await wait_seconds(0.4)
+	check(listener.heard_left == 0.0, "a reload 12 m away is too quiet; a teammate's shot is no enemy")
+
+	# The player runs, then walks, near the listener.
+	var counted := func(kind: StringName) -> int:
+		return squad.noises.filter(func(noise: Dictionary) -> bool:
+			return noise["kind"] == kind and noise["source"] == enemy).size()
+	player.set_spawn(listener.global_position + Vector3(0, 0, 6), 0.0)
+	player.scripted_move = Vector2(1, 0)
+	var running := 0
+	for i: int in 8:
+		await wait_seconds(0.25)
+		running += counted.call(&"footstep")
+		squad.noises.clear()
+	player.scripted_walk = true
+	await wait_seconds(0.5)
+	squad.noises.clear()
+	var walking := 0
+	for i: int in 8:
+		await wait_seconds(0.25)
+		walking += counted.call(&"footstep")
+		squad.noises.clear()
+	player.scripted_move = Vector2.ZERO
+	player.scripted_walk = false
+	check(running >= 2 and walking == 0, "running is heard (%d footsteps in 2 s), walking is not (%d)" % [running, walking])
+	app.set("last_match_result", null)
 	await despawn(sandbox)
 	await wait_frames(2)

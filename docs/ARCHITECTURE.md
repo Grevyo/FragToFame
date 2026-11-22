@@ -1035,6 +1035,7 @@ competition settings arrive with M19.
   | turning from a team flash | `flash_lead` | teamwork, communication |
   | throw spread | `utility_error` | utility |
   | time lining up | `lineup_time` | utility, composure |
+  | hearing (share of a sound's distance picked up) | `hearing` | game sense |
   Human players are never affected by any of these.
 - **Fair by construction.** Perception uses a view cone, view distance, awareness radius and
   world-only line of sight; aiming has a reaction delay, a capped turn rate and an acquisition
@@ -1081,6 +1082,15 @@ competition settings arrive with M19.
   - The bomb beeps as it blinks.
   - `MatchDirector` plays plant, defuse, explosion, round start and end, and buy or denied.
   - `UIFactory.button` clicks.
+
+- **Hearing (stage B).** Hearing is gameplay, so it does not depend on audio playing (it works
+  headless and muted). `BotSquad` connects every combatant's `stepped`, `landed`, `shot_fired`
+  and `reload_started`, and the utility field's bounces and frags, to `make_noise`. Each decision
+  tick `_hear` gives every living enemy bot each recent noise once. A noise counts when it is
+  within `HEARING_RANGE[kind] × BotSkill.hearing`, or within 55% of that when a wall is in
+  between. The bot then calls `BotController.hear`, which makes it pre-aim the spot for 1.8 s
+  after its reaction time unless it is fighting, and the team's `TeamKnowledge.report_enemy`
+  records it. Teammates' noises are ignored.
 
 ### Weapons, Coats and Magnets
 
@@ -1467,6 +1477,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-22 | The Creation Studio bakes a map's simulation graph on save and with a button, through the same `SimGraphBuilder.bake_to` as `tools/bake_sim_maps.gd` | Official content must be creatable with the shipped editors; a map without its graph could not be played by the career engine. One code path keeps the Studio's and the tool's graphs identical |
 | 2026-11-22 | Match bots read the map's places from its simulation graph (`SimMap`) through a pure per-team `TeamKnowledge` | The graph is map data already baked for every official and editor map; the FPS runtime still never touches the career database, and bots share only what a teammate saw |
+| 2026-11-22 | Bots hear through `BotSquad` noises raised from movement and weapon signals, not from the audio players | Hearing must work headless, muted and at any volume, and the same signals drive both, so what bots hear always matches what the player could hear |
 | 2026-11-22 | Sound effects are synthesised by a project tool from code recipes, committed as WAVs and replaceable per slot by supplied files | Owner: original effects, replaceable later. No paid or third-party audio; deterministic, so regenerating changes nothing unless a recipe does; a missing file falls back to rendering the recipe |
 | 2026-11-22 | Match bots buy through the sim's own `SimEconomy`, carried out by `MatchState.buy` / `buy_for` | One economy brain for simulated and played matches; the match shop still enforces prices, sides and carry limits. A drop is a purchase for a teammate (no weapon dropping in the FPS yet) |
 | 2026-11-22 | Mid-round calls go through one `BotSquad.issue_call` for the AI leader and a human IGL | Owner's design: AI teammates respond to a human IGL. One entry point means a human's call and the AI's own are carried out identically and tested once |

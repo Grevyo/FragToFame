@@ -48,6 +48,9 @@ var flash_lead: float = 0.7
 ## ([method throw_timing]): a quicker throw than usual lands wider.
 var utility_error: float = 1.0
 var lineup_time: float = 1.5
+## Hearing: the share of a sound's audible distance at which the bot picks it up and turns to
+## check it (an attentive player notices quieter, further sounds).
+var hearing: float = 0.95
 
 ## How often a throw is snapped off with no settling at all (more often when hurried).
 const SNAP_CHANCE: float = 0.07
@@ -83,6 +86,7 @@ static func from_abilities(abilities: Dictionary, label_text: String = "") -> Bo
 	skill.clearing = clampf(lerpf(easy.clearing, hard.clearing, sense), 0.1, 1.0)
 	skill.search_hold = maxf(lerpf(easy.search_hold, hard.search_hold, sense), 0.3)
 	skill.flash_lead = maxf(lerpf(easy.flash_lead, hard.flash_lead, _blend(abilities, ["teamwork", "communication"])), 0.2)
+	skill.hearing = lerpf(easy.hearing, hard.hearing, game_sense)
 	# Line-ups follow the raw Utility ability on a curve: a novice can take five to eight seconds
 	# and scatter wide, a specialist half a second and lands close.
 	var thrower := clampf((0.75 * float(abilities.get("utility", 50)) + 0.25 * float(abilities.get("composure", 50))) / 100.0, 0.0, 1.0)
@@ -138,6 +142,7 @@ static func preset(name: StringName) -> BotSkill:
 			skill.flash_lead = 0.3
 			skill.utility_error = 2.6
 			skill.lineup_time = 4.5
+			skill.hearing = 0.75
 		&"hard":
 			skill.label = "Hard"
 			skill.reaction_time = 0.22
@@ -158,4 +163,5 @@ static func preset(name: StringName) -> BotSkill:
 			skill.flash_lead = 1.0
 			skill.utility_error = 0.3
 			skill.lineup_time = 0.5
+			skill.hearing = 1.05
 	return skill

@@ -28,6 +28,11 @@ var view_distance: float = 60.0
 var awareness_radius: float = 4.0
 ## Beyond this distance automatic weapons fire in bursts instead of spraying.
 var burst_distance: float = 14.0
+## Movement discipline in a fight, 0..1: how often the bot strafes between bursts and stops dead
+## to shoot (counter-strafe) instead of standing still or shooting on the move.
+var strafe: float = 0.55
+## How readily the bot jiggle-peeks a held angle to look for information, 0..1.
+var peek: float = 0.5
 
 
 ## Bot mechanics from an AI professional's simulated abilities (1–100, see CareerCatalog).
@@ -52,6 +57,8 @@ static func from_abilities(abilities: Dictionary, label_text: String = "") -> Bo
 	skill.view_angle = lerpf(easy.view_angle, hard.view_angle, game_sense)
 	skill.awareness_radius = lerpf(3.0, 6.0, game_sense)
 	skill.burst_distance = lerpf(11.0, 17.0, composure)
+	skill.strafe = clampf(lerpf(easy.strafe, hard.strafe, _blend(abilities, ["movement", "spray_control"])), 0.0, 1.0)
+	skill.peek = clampf(lerpf(easy.peek, hard.peek, _blend(abilities, ["game_sense", "movement"])), 0.0, 1.0)
 	var overall := 0.0
 	for value: Variant in abilities.values():
 		overall += float(value)
@@ -81,6 +88,8 @@ static func preset(name: StringName) -> BotSkill:
 			skill.recoil_control = 0.25
 			skill.fire_tolerance = 2.4
 			skill.view_angle = 95.0
+			skill.strafe = 0.2
+			skill.peek = 0.15
 		&"hard":
 			skill.label = "Hard"
 			skill.reaction_time = 0.22
@@ -92,4 +101,6 @@ static func preset(name: StringName) -> BotSkill:
 			skill.recoil_control = 0.85
 			skill.fire_tolerance = 1.3
 			skill.view_angle = 120.0
+			skill.strafe = 0.9
+			skill.peek = 0.8
 	return skill

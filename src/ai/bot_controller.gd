@@ -5,6 +5,12 @@ extends CombatantMovementBody
 ## fires through the same [WeaponController] the player uses. Takes cover while reloading under
 ## fire and searches the last known position of a lost enemy.
 ##
+## It moves like a player (Milestone 7 A): in a fight it strafes between bursts and stops dead to
+## shoot (counter-strafe); on the move it clears the places in sight that its team has not
+## checked ([TeamKnowledge]) by looking and pre-aiming at them; it walks where the enemy was just
+## seen; when an enemy drops out of sight it holds the angle before following; holding a spot it
+## jiggle-peeks for information.
+##
 ## Objective decisions (where to go, when to plant or defuse) come from its owner — the
 ## MatchDirector today, team tactics and the IGL in Milestone 7.
 
@@ -19,6 +25,30 @@ const SEARCH_TIME: float = 4.0
 const REPATH_INTERVAL: float = 0.5
 ## Idle/navigation turning speed as a fraction of the skill's turn speed.
 const CALM_TURN: float = 0.5
+## Clearing an angle turns faster than idling (a share of the skill's turn speed).
+const CLEAR_TURN: float = 0.8
+## A gun is only fired at this share of full-run accuracy speed or less (a counter-strafe), unless
+## the enemy is close enough for running fire.
+const ACCURATE_SHARE: float = 0.34
+const RUN_AND_GUN_DISTANCE: float = 5.0
+## Seconds of one strafe between bursts (random in this range).
+const STRAFE_TIME: Vector2 = Vector2(0.18, 0.42)
+## Places are re-picked this often while clearing, within this reach (metres).
+const CLEAR_INTERVAL: float = 0.2
+const CLEAR_REACH: float = 40.0
+## Looking within this many degrees of a place clears it.
+const CLEAR_ANGLE: float = 14.0
+## Standing in a place (this close to its centre) clears it.
+const INSIDE_PLACE: float = 4.0
+## An enemy who drops out of sight: hold the angle this long before following.
+const SEARCH_HOLD: float = 1.2
+## A jiggle peek's step out (seconds, random in this range), and the pause between peeks.
+const JIGGLE_TIME: Vector2 = Vector2(0.14, 0.26)
+const JIGGLE_PAUSE: Vector2 = Vector2(1.5, 4.0)
+## Walk (quietly) when a teammate saw an enemy this close in the last few seconds.
+const CAUTION_RADIUS: float = 22.0
+
+enum Strafe { HOLD, MOVE, STOP }
 
 var bot_id: String = ""
 var display_name: String = ""
@@ -43,6 +73,9 @@ var frozen: bool = false
 var interact_held: bool = false
 ## Requests the same slow walk as the player's Shift input.
 var walk_requested: bool = false
+## Shared with the bot's teammates (set by the squad; null: the bot clears nothing and looks along
+## its path).
+var knowledge: TeamKnowledge = null
 var rng := RandomNumberGenerator.new()
 
 var health: Health
@@ -64,6 +97,19 @@ var _cover_point: Vector3 = Vector3.ZERO
 var _has_cover: bool = false
 var _nav_target: Vector3 = Vector3(INF, INF, INF)
 var _repath_left: float = 0.0
+var _strafe_state: Strafe = Strafe.HOLD
+var _strafe_dir: float = 1.0
+var _strafe_left: float = 0.0
+## The place being cleared ({} when none) and when to choose again.
+var _clearing: Dictionary = {}
+var _clear_timer: float = 0.0
+var _search_hold_left: float = 0.0
+## Jiggle peek: seconds left stepping out, then stepping back; side (+1 right, −1 left).
+var _jiggle_out: float = 0.0
+var _jiggle_back: float = 0.0
+var _jiggle_dir: float = 1.0
+var _jiggle_pause: float = 2.0
+var _strafing_now: bool = false
 
 
 ## Configures identity before the bot enters the tree.
@@ -208,7 +254,12 @@ func respawn_at(feet_position: Vector3, yaw: float) -> void:
 	interact_held = false
 	_has_cover = false
 	_search_left = 0.0
+	_search_hold_left = 0.0
 	_nav_target = Vector3(INF, INF, INF)
+	_strafe_state = Strafe.HOLD
+	_clearing = {}
+	_jiggle_out = 0.0
+	_jiggle_back = 0.0
 
 
 func view_angles() -> Vector2:
@@ -237,13 +288,15 @@ func _physics_process(delta: float) -> void:
 		_look_idle(delta)
 	elif target != null:
 		want_fire = _engage(delta)
-		move_dir = _engage_movement()
+		move_dir = _engage_movement(delta, want_fire)
 	else:
+		_strafe_state = Strafe.HOLD
 		move_dir = _navigate(delta)
 	var can_move := not frozen and not interact_held
 	weapons.trigger = want_fire and can_move
 	var direction := Vector2(move_dir.x, move_dir.z) if can_move else Vector2.ZERO
-	var walking := can_move and (walk_requested or target != null)
+	# Strafes and peeks go at full speed; otherwise walk when asked, in a fight, or near the enemy.
+	var walking := can_move and not _strafing_now and (walk_requested or target != null or _cautious())
 	_step_movement(direction, walking, jump_pressed, delta, can_move)
 	_maybe_reload()
 
@@ -284,6 +337,8 @@ func _perceive(delta: float) -> void:
 		if best != target:
 			_acquire(best)
 		_last_known = best.body().global_position
+		if knowledge != null:
+			knowledge.report_enemy(_last_known)
 	elif target != null:
 		_lose_target(true)
 
@@ -304,6 +359,7 @@ func _lose_target(search: bool) -> void:
 	if search:
 		mode = Mode.SEARCH
 		_search_left = SEARCH_TIME
+		_search_hold_left = SEARCH_HOLD
 	else:
 		mode = Mode.MOVE
 
@@ -349,6 +405,11 @@ func _engage(delta: float) -> bool:
 	if reaction_left > 0.0 or state == null or state.is_reloading() or state.ammo <= 0:
 		return false
 	var distance := head.global_position.distance_to(point)
+	# Moving guns miss: wait for the counter-strafe unless the enemy is in your face.
+	if _strafe_state == Strafe.MOVE and distance > RUN_AND_GUN_DISTANCE:
+		return false
+	if accuracy_speed() > ShooterMotion.REFERENCE_SPEED * ACCURATE_SHARE and distance > RUN_AND_GUN_DISTANCE:
+		return false
 	var radius := 0.14 if _aim_head else 0.25
 	var tolerance := rad_to_deg(atan2(radius, distance)) * skill.fire_tolerance
 	var bullet := view_angles() + Vector2(-recoil.x, recoil.y)
@@ -367,14 +428,59 @@ func _engage(delta: float) -> bool:
 	return _semi_toggle
 
 
-func _engage_movement() -> Vector3:
+func _engage_movement(delta: float, firing: bool) -> Vector3:
+	_strafing_now = false
 	var state := weapons.current()
 	if state != null and state.is_reloading():
+		_strafe_state = Strafe.HOLD
 		if not _has_cover:
 			_find_cover()
 		if _has_cover:
 			return _path_direction(_cover_point)
+		return Vector3.ZERO
+	return _strafe_step(delta, state, firing)
+
+
+## Between bursts: strafe a short way, then press the other way until slow enough to shoot
+## accurately (a counter-strafe), shoot, and go again. Disciplined bots strafe more often. Never
+## starts a strafe in a frame it is [param firing] (the shot would leave on the move).
+func _strafe_step(delta: float, state: WeaponState, firing: bool) -> Vector3:
+	var right := global_transform.basis.x
+	right.y = 0.0
+	right = right.normalized()
+	match _strafe_state:
+		Strafe.MOVE:
+			_strafe_left -= delta
+			if _strafe_left <= 0.0:
+				_strafe_state = Strafe.STOP
+			_strafing_now = true
+			return right * _strafe_dir
+		Strafe.STOP:
+			if accuracy_speed() <= ShooterMotion.REFERENCE_SPEED * ACCURATE_SHARE * 0.6:
+				_strafe_state = Strafe.HOLD
+				return Vector3.ZERO
+			return -right * _strafe_dir
+	# Holding still and shooting: a burst over (or the first sight of an enemy) is the time to move.
+	var burst_over := _burst_pause > 0.0 or (state != null and state.recoil_offset.length() > 4.0)
+	if not firing and (burst_over or reaction_left > 0.0) and rng.randf() < skill.strafe * delta * 6.0:
+		var side := _strafe_dir if rng.randf() < 0.35 else -_strafe_dir
+		if not _floor_beside(side):
+			side = -side
+		if _floor_beside(side):
+			_strafe_dir = side
+			_strafe_state = Strafe.MOVE
+			_strafe_left = rng.randf_range(STRAFE_TIME.x, STRAFE_TIME.y)
 	return Vector3.ZERO
+
+
+## True when there is walkable floor a step to the bot's right (+1) or left (−1).
+func _floor_beside(side: float, step: float = 1.0) -> bool:
+	var right := global_transform.basis.x
+	right.y = 0.0
+	var wanted := global_position + right.normalized() * side * step
+	var map := get_world_3d().navigation_map
+	var nearest := NavigationServer3D.map_get_closest_point(map, wanted)
+	return Vector2(nearest.x - wanted.x, nearest.z - wanted.z).length() < 0.35 and absf(nearest.y - wanted.y) < 0.8
 
 
 func _maybe_reload() -> void:
@@ -407,26 +513,131 @@ func _find_cover() -> void:
 # --- Movement --------------------------------------------------------------------------------
 
 func _navigate(delta: float) -> Vector3:
+	_strafing_now = false
 	var destination := Vector3.ZERO
 	var moving := false
 	if mode == Mode.SEARCH and _search_left > 0.0:
+		var lost_at := _last_known + Vector3(0, STAND_EYE, 0)
+		if _search_hold_left > 0.0:
+			# Hold the angle the enemy left by: they often come straight back.
+			_search_hold_left -= delta
+			_turn_toward(AimModel.angles_to(head.global_position, lost_at), delta, CLEAR_TURN)
+			return Vector3.ZERO
 		_search_left -= delta
-		destination = _last_known
 		moving = global_position.distance_to(_last_known) > 1.0
 		if not moving:
 			_search_left = 0.0
+		else:
+			# Follow up slowly, aimed where they were.
+			var follow := _path_direction(_last_known)
+			_turn_toward(AimModel.angles_to(head.global_position, lost_at), delta, CLEAR_TURN)
+			return follow
 	elif has_goal:
 		mode = Mode.MOVE
 		destination = goal_position
 		moving = not at_goal(0.8)
 	if not moving or interact_held:
+		if not interact_held:
+			var peek := _jiggle(delta)
+			if peek != Vector3.ZERO:
+				return peek
 		_look_idle(delta)
 		return Vector3.ZERO
 	var direction := _path_direction(destination)
 	if direction != Vector3.ZERO:
-		var look := AimModel.angles_to(head.global_position, head.global_position + direction)
-		_turn_toward(Vector2(look.x, 0.0), delta)
+		var check := _angle_to_clear(delta, direction)
+		if check != Vector3.INF:
+			_turn_toward(AimModel.angles_to(head.global_position, check), delta, CLEAR_TURN)
+		else:
+			var look := AimModel.angles_to(head.global_position, head.global_position + direction)
+			_turn_toward(Vector2(look.x, 0.0), delta)
 	return direction
+
+
+## The point to pre-aim while moving: the nearest place in sight that the team has not cleared,
+## ahead or to the side (Vector3.INF when there is none: look where you are going). Looking at it
+## clears it for the whole team.
+func _angle_to_clear(delta: float, travel: Vector3) -> Vector3:
+	if knowledge == null:
+		return Vector3.INF
+	_clear_timer -= delta
+	if not _clearing.is_empty():
+		var point := (_clearing["centre"] as Vector3) + Vector3(0, STAND_EYE, 0)
+		if knowledge.is_cleared(str(_clearing["id"])):
+			_clearing = {}
+		elif _angle_off(point) <= CLEAR_ANGLE:
+			knowledge.mark_cleared(str(_clearing["id"]))
+			_clearing = {}
+		elif _clear_timer > 0.0:
+			return point
+	if _clear_timer > 0.0:
+		return Vector3.INF
+	_clear_timer = CLEAR_INTERVAL
+	var heading := Vector2(travel.x, travel.z).normalized()
+	var best: Dictionary = {}
+	var best_score := INF
+	var tried := 0
+	for place: Dictionary in knowledge.uncleared_near(global_position, CLEAR_REACH):
+		var centre := place["centre"] as Vector3
+		var offset := Vector2(centre.x - global_position.x, centre.z - global_position.z)
+		if offset.length() <= INSIDE_PLACE:
+			knowledge.mark_cleared(str(place["id"]))
+			continue
+		# Behind the bot is a teammate's job (or the way it came).
+		var angle := rad_to_deg(absf(heading.angle_to(offset.normalized())))
+		if angle > 110.0:
+			continue
+		tried += 1
+		if tried > 6:
+			break
+		if not has_line_of_sight(centre + Vector3(0, STAND_EYE, 0)):
+			continue
+		var score := offset.length() * (1.0 + angle / 90.0)
+		if score < best_score:
+			best_score = score
+			best = place
+	_clearing = best
+	return (best["centre"] as Vector3) + Vector3(0, STAND_EYE, 0) if not best.is_empty() else Vector3.INF
+
+
+## Holding a spot: now and then step out to one side and straight back to look (a jiggle peek),
+## more readily when the team has just seen the enemy near where the bot is watching.
+func _jiggle(delta: float) -> Vector3:
+	var right := global_transform.basis.x
+	right.y = 0.0
+	right = right.normalized()
+	if _jiggle_out > 0.0:
+		_jiggle_out -= delta
+		if _jiggle_out <= 0.0:
+			_jiggle_back = JIGGLE_TIME.y
+		_strafing_now = true
+		return right * _jiggle_dir
+	if _jiggle_back > 0.0:
+		_jiggle_back -= delta
+		_strafing_now = true
+		return -right * _jiggle_dir
+	if not has_watch_point or skill.peek <= 0.0:
+		return Vector3.ZERO
+	_jiggle_pause -= delta
+	if _jiggle_pause > 0.0:
+		return Vector3.ZERO
+	_jiggle_pause = rng.randf_range(JIGGLE_PAUSE.x, JIGGLE_PAUSE.y)
+	var alerted := knowledge != null and knowledge.enemy_near(watch_point, CLEAR_REACH, 4.0)
+	if rng.randf() >= skill.peek * (1.0 if alerted else 0.3):
+		return Vector3.ZERO
+	var side := 1.0 if rng.randf() < 0.5 else -1.0
+	if not _floor_beside(side):
+		side = -side
+		if not _floor_beside(side):
+			return Vector3.ZERO
+	_jiggle_dir = side
+	_jiggle_out = rng.randf_range(JIGGLE_TIME.x, JIGGLE_TIME.y)
+	return Vector3.ZERO
+
+
+## True when a teammate saw an enemy close by just now: move quietly.
+func _cautious() -> bool:
+	return knowledge != null and target == null and knowledge.enemy_near(global_position, CAUTION_RADIUS, 4.0)
 
 
 func _path_direction(destination: Vector3) -> Vector3:
@@ -452,10 +663,10 @@ func _look_idle(delta: float) -> void:
 		_turn_toward(AimModel.angles_to(head.global_position, watch_point), delta)
 
 
-func _turn_toward(angles: Vector2, delta: float) -> void:
+func _turn_toward(angles: Vector2, delta: float, share: float = CALM_TURN) -> void:
 	var current := view_angles()
 	var diff := Vector2(wrapf(angles.x - current.x, -180.0, 180.0), angles.y - current.y)
-	var max_step := skill.turn_speed * CALM_TURN * delta
+	var max_step := skill.turn_speed * share * delta
 	if diff.length() > max_step:
 		diff = diff.normalized() * max_step
 	set_view(current + diff)

@@ -237,10 +237,12 @@ networked bots.
 Started 2026-11-22 (owner: the bots' interactions do not feel real). Stages, each validated and
 committed on its own:
 
-- [ ] **A. Fighting like a player.** Counter-strafe and strafe between bursts, jiggle and
-      shoulder peeks on a held angle, re-peeks and off-angles, walking (quiet) near enemies,
-      clearing corners and pre-aiming the angles a path opens (from the map's simulation graph:
-      every place in sight that the team has not cleared), and holding angles with small adjusts.
+- [x] **A. Fighting like a player.** Done 2026-11-22: strafing between bursts and
+      counter-strafing before shooting, jiggle peeks on a held angle (more readily after an enemy
+      was seen there), walking quietly near recent sightings, clearing the places in sight that
+      the team has not checked ([TeamKnowledge], from the map's simulation graph) by pre-aiming
+      them, and holding the angle after losing an enemy before following up. Off-angles and
+      shoulder-peek positions come with stage C, where positions are chosen.
 - [ ] **B. Utility.** Bots buy grenades and throw them through the same flight code as the
       player: line-ups solved against the real geometry ([GrenadeFlight] prediction) for smokes
       on a site's entrances and cross-angles, pop flashes over a corner for themselves and for a
@@ -1143,3 +1145,4 @@ Planned scope:
 | 2026-11-22 | Calendar overlay (owner request): Continue and Holiday run a day at a time (`CalendarRun`) behind a tear-off calendar page that flips to each day, the month filling in, the day's top story and a Stop button, instead of the screen freezing until the run ends. Long holidays speed up so a year stays under ten seconds of pacing. |
 | 2026-11-22 | Time of day (owner request: every day its own day, everything spread, time in the day like a management game): series have kick-off times and each round is spread over up to three days, leagues in turn through the week, so matches fall on most days. A day passing plays the previous day's series at their kick-offs, then the world's morning as timed phases (finances, competitions, contracts, market, squads, offers, bookings); the overlay runs a clock through it with each series' score. Dates show their weekday. Save schema v18. |
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
+| 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |

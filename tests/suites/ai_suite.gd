@@ -23,6 +23,8 @@ func run() -> void:
 	_test_roam_planner()
 	await _test_sandbox_bots()
 	await _test_world()
+	_test_team_knowledge()
+	await _test_player_like()
 
 
 func _test_aim_model() -> void:
@@ -347,6 +349,118 @@ func _test_world() -> void:
 	shooter.queue_free()
 	await wait_physics_frames(60)
 	check(mate.target == null and player.health.current == 100, "bots never target teammates")
+	await despawn(sandbox)
+
+
+func _test_team_knowledge() -> void:
+	section("Team knowledge (Milestone 7 A)")
+	var knowledge := TeamKnowledge.new()
+	knowledge.places = [{"id": "near", "centre": Vector3(2, 0, 0), "site": ""},
+		{"id": "far", "centre": Vector3(20, 0, 0), "site": "A"}, {"id": "away", "centre": Vector3(90, 0, 0), "site": ""}]
+	var open := knowledge.uncleared_near(Vector3.ZERO, 40.0)
+	check(open.size() == 2 and str(open[0]["id"]) == "near", "places in reach come nearest first, far ones left out")
+	knowledge.mark_cleared("near")
+	check(knowledge.is_cleared("near") and knowledge.uncleared_near(Vector3.ZERO, 40.0).size() == 1, "a cleared place is skipped")
+	knowledge.advance(TeamKnowledge.CLEARED_SECONDS + 0.5)
+	check(not knowledge.is_cleared("near"), "a cleared place needs checking again after a while")
+	knowledge.report_enemy(Vector3(10, 0, 0))
+	knowledge.report_enemy(Vector3(10.5, 0, 0))
+	check(knowledge.sightings.size() == 1 and knowledge.enemy_near(Vector3(12, 0, 0), 5.0), "sightings merge and are found nearby")
+	knowledge.advance(TeamKnowledge.SIGHTING_SECONDS + 0.5)
+	check(knowledge.sightings.is_empty(), "old sightings are forgotten")
+	knowledge.mark_cleared("far")
+	knowledge.report_enemy(Vector3.ONE)
+	knowledge.reset()
+	check(knowledge.cleared.is_empty() and knowledge.sightings.is_empty() and knowledge.places.size() == 3,
+		"a new round forgets everything but the places")
+	var official := ""
+	for map_id: String in OfficialMaps.ids():
+		if SimMap.for_map(map_id) != null:
+			official = map_id
+			break
+	var from_map := TeamKnowledge.from_sim_map(SimMap.for_map(official))
+	var spawns_left_out := from_map.places.all(func(place: Dictionary) -> bool:
+		return str(SimMap.for_map(official).nodes[place["id"]].get("kind", "")) != SimMap.KIND_SPAWN)
+	check(official != "" and not from_map.places.is_empty() and spawns_left_out
+		and from_map.places.all(func(place: Dictionary) -> bool: return place["centre"] is Vector3),
+		"an official map's places load from its simulation graph, spawns left out (%s: %d)" % [official, from_map.places.size()])
+	check(TeamKnowledge.from_sim_map(null).places.is_empty(), "a map without a graph gives no places")
+	var easy := BotSkill.preset(&"easy")
+	var hard := BotSkill.preset(&"hard")
+	check(easy.strafe < hard.strafe and easy.peek < hard.peek, "harder bots strafe and peek more")
+
+
+func _test_player_like() -> void:
+	section("Bots move like players (Milestone 7 A)")
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	await wait_physics_frames(5)
+	var level := sandbox.get_node("Level") as SandboxLevel
+	var player := sandbox.get_node("Player") as FirstPersonController
+	player.input_enabled = false
+	level.build_navigation()
+	await wait_physics_frames(8)
+	var dummy := level.dummies[0]
+	dummy.respawn_delay = 0.4
+	var bot := BotController.new()
+	bot.setup("bot_strafer", "bot_strafer", &"away", BotSkill.preset(&"hard"), Color("8a3c3c"))
+	level.add_child(bot)
+	bot.respawn_at(Vector3(2, 0, 10), 0.0)
+	bot.rng.seed = 7
+	await wait_physics_frames(2)
+	var shot_speeds: Array[float] = []
+	bot.weapons.shot_fired.connect(func(_o: Vector3, _e: Vector3, _r: Hitscan.Result) -> void:
+		shot_speeds.append(bot.accuracy_speed()))
+	var fastest: Array[float] = [0.0]
+	bot.enemies = [dummy.health]
+	Engine.time_scale = 2.0
+	await wait_until(func() -> bool:
+		if bot.target != null:
+			fastest[0] = maxf(fastest[0], bot.accuracy_speed())
+		return false, 5.0)
+	Engine.time_scale = 1.0
+	var limit := ShooterMotion.REFERENCE_SPEED * BotController.ACCURATE_SHARE + 0.05
+	var slow := shot_speeds.filter(func(speed: float) -> bool: return speed <= limit).size()
+	var distance := bot.global_position.distance_to(dummy.global_position)
+	check(not shot_speeds.is_empty() and fastest[0] > 1.5,
+		"a disciplined bot strafes between shots (top speed %.1f m/s, %d shots)" % [fastest[0], shot_speeds.size()])
+	check(distance <= BotController.RUN_AND_GUN_DISTANCE or slow == shot_speeds.size(),
+		"it counter-strafes: every shot at %d m is fired slow (%d of %d)" % [roundi(distance), slow, shot_speeds.size()])
+
+	section("Holding the angle after losing sight")
+	bot.enemies = []
+	bot.respawn_at(Vector3(2, 0, 10), 0.0)
+	await wait_physics_frames(2)
+	bot.set("_last_known", Vector3(-2, 0, 4))
+	bot.call("_lose_target", true)
+	var held_at := bot.global_position
+	await wait_physics_frames(30)
+	check(bot.mode == BotController.Mode.SEARCH and bot.global_position.distance_to(held_at) < 0.3,
+		"a bot that loses sight holds the angle first")
+	var before := bot.global_position.distance_to(Vector3(-2, 0, 4))
+	await wait_until(func() -> bool: return bot.global_position.distance_to(Vector3(-2, 0, 4)) < before - 1.0, 4.0)
+	check(bot.global_position.distance_to(Vector3(-2, 0, 4)) < before - 1.0, "then follows up to where the enemy was")
+
+	section("Clearing angles as a team")
+	var knowledge := TeamKnowledge.new()
+	var corner := Vector3(-6, 0, 6.5)
+	knowledge.places = [{"id": "west", "centre": corner, "site": ""}]
+	bot.knowledge = knowledge
+	bot.mode = BotController.Mode.MOVE
+	bot.respawn_at(Vector3(2, 0, 10), 0.0)
+	await wait_physics_frames(2)
+	bot.set_goal(Vector3(0, 0, 0))
+	var cleared_from: Array[float] = [-1.0]
+	await wait_until(func() -> bool:
+		knowledge.advance(1.0 / 60.0)
+		if knowledge.is_cleared("west") and cleared_from[0] < 0.0:
+			cleared_from[0] = bot.global_position.distance_to(corner)
+		return bot.at_goal(1.0), 8.0)
+	check(cleared_from[0] > BotController.INSIDE_PLACE,
+		"a bot on the move checks a place in sight and clears it for the team (from %.1f m)" % cleared_from[0])
+	knowledge.report_enemy(Vector3(1, 0, 2))
+	check(bot.target == null and bool(bot.call("_cautious")), "it walks quietly where a teammate just saw the enemy")
 	await despawn(sandbox)
 
 

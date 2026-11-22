@@ -154,3 +154,58 @@ func run() -> void:
 	app.set("last_match_result", null)
 	await despawn(sandbox)
 	await wait_frames(2)
+	await _test_official_map(app)
+
+
+## A bot match on an official map: its simulation graph feeds the bots' team knowledge, and they
+## clear places once the round goes live (regression: the graph's places once failed to load and
+## no bots spawned).
+func _test_official_map(app: Node) -> void:
+	section("Bot match on an official map")
+	var map_id := ""
+	for id: String in OfficialMaps.ids():
+		if SimMap.for_map(id) != null:
+			map_id = id
+			break
+	var map := OfficialMaps.load_map(map_id)
+	check(map != null, "an official map with a simulation graph loads (%s)" % map_id)
+	if map == null:
+		return
+	var setup := MatchSetup.new()
+	setup.fixture_id = "bot_match_official"
+	setup.home_team_id = "team_you"
+	setup.home_team_name = "You"
+	setup.away_team_id = "team_bots"
+	setup.away_team_name = "Bots"
+	setup.max_rounds = 2
+	setup.map_id = map.map_id
+	var rules := MatchRules.practice(2)
+	rules.team_size = 5
+	rules.freeze_time = 0.5
+	rules.buy_time = 1.0
+	app.set("pending_match_setup", setup)
+	app.set("pending_match_rules", rules)
+	app.set("pending_match_map", map)
+	app.set("pending_match_options", {"opponents": "bots", "skill": "normal"})
+	var sandbox := spawn_scene(FPS_SANDBOX_SCENE)
+	if sandbox == null:
+		return
+	await wait_physics_frames(3)
+	var director := sandbox.get("match_director") as MatchDirector
+	var squad := director.squad if director != null else null
+	check(squad != null and squad.bots.size() == 9, "5v5 on %s: nine bots spawn" % map_id)
+	if squad == null or squad.bots.is_empty():
+		await despawn(sandbox)
+		return
+	(sandbox.get_node("Player") as FirstPersonController).input_enabled = false
+	check(squad.bots.values().all(func(bot: BotController) -> bool: return bot.knowledge != null)
+		and squad.knowledge[0] != squad.knowledge[1], "each team shares its own knowledge of the map's places")
+	Engine.time_scale = 4.0
+	var cleared := await wait_until(func() -> bool:
+		return not squad.knowledge[0].cleared.is_empty() and not squad.knowledge[1].cleared.is_empty(), 15.0)
+	Engine.time_scale = 1.0
+	check(cleared, "both teams clear places as they move out (%d and %d)" % [squad.knowledge[0].cleared.size(),
+		squad.knowledge[1].cleared.size()])
+	app.set("last_match_result", null)
+	await despawn(sandbox)
+	await wait_frames(2)

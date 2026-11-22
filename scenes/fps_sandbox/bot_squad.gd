@@ -25,6 +25,8 @@ var rng := RandomNumberGenerator.new()
 var skills: Dictionary[String, BotSkill] = {}
 
 var _decide_timer: float = 0.0
+## One shared picture per team (index): places cleared and enemies seen ([TeamKnowledge]).
+var knowledge: Array[TeamKnowledge] = []
 var _site_positions: Dictionary[String, Vector3] = {}
 ## Optional "ai_hold" hint pieces per bombsite letter (authored in the map editor).
 var _hold_points: Dictionary[String, Array] = {}
@@ -67,6 +69,10 @@ func spawn_bots() -> void:
 		# Raw centre: the navmesh may not be synced yet, goals are snapped when they are set.
 		_site_positions[letter] = site["position"] as Vector3
 		_hold_points[letter] = MapTactical.hints(director.document, "ai_hold", letter)
+	# The map's places come from its simulation graph (map data, not the career database); a map
+	# without one gives empty knowledge and the bots look along their paths.
+	var sim_map := SimMap.for_map(director.document.map_id)
+	knowledge = [TeamKnowledge.from_sim_map(sim_map), TeamKnowledge.from_sim_map(sim_map)]
 	for id: String in director.state.players:
 		var player_state := director.state.get_player(id)
 		if player_state.is_human:
@@ -76,6 +82,7 @@ func spawn_bots() -> void:
 			director.state.setup.team_colour(player_state.team, TEAM_COLORS[player_state.team]))
 		director.level.add_child(bot)
 		bot.health.died.connect(_on_bot_died.bind(bot))
+		bot.knowledge = knowledge[player_state.team] if not knowledge[player_state.team].places.is_empty() else null
 		bots[id] = bot
 	var everyone := healths()
 	everyone.append(director.player.health)
@@ -95,6 +102,8 @@ func on_round_started() -> void:
 	attack_site = _site_positions.keys()[rng.randi() % _site_positions.size()] if not _site_positions.is_empty() else ""
 	plant_progress.clear()
 	defuse_progress.clear()
+	for team_knowledge: TeamKnowledge in knowledge:
+		team_knowledge.reset()
 	for team_index: int in 2:
 		var side := state.teams[team_index].side
 		var spawns := director.level.spawn_points(String(side))
@@ -138,6 +147,8 @@ func physics_update(delta: float) -> void:
 		bot.frozen = frozen
 	if frozen:
 		return
+	for team_knowledge: TeamKnowledge in knowledge:
+		team_knowledge.advance(delta)
 	_decide_timer -= delta
 	if _decide_timer <= 0.0:
 		_decide_timer = DECIDE_INTERVAL

@@ -12,6 +12,12 @@ extends RefCounted
 ## - SUPPORTED_ENTRY: supports throw from the gathering spot while an entry pair goes in off the
 ##   first flash; the supports follow.
 ## - SPLIT: two groups gather at two entrances and push at the same moment.
+## - FAKE: the fakers gather at the other site and throw their utility there; the rest wait for
+##   it, then execute the real site while the fakers rotate in behind.
+##
+## A plan from the team's leader ([BotTactics]) adds the rest: who is entry and trade, a lurker
+## holding the far side, and on a default round the map-control spots the team takes first
+## (the squad calls the hit with [method start_approach], on the site the leader chooses).
 ##
 ## In every style the first two in form an entry pair: the trader walks shoulder to shoulder with
 ## the entry so they peek the entrance together (a double peek). Throws are solved against the map
@@ -19,17 +25,17 @@ extends RefCounted
 ## tried from the doorway. FPS runtime only (bots and physics), no career data; Milestone 7 C's
 ## next part maps the career round plans (default, execute, split, rush) onto these styles.
 
-enum Style { RUSH, DEFAULT, EXECUTE, EXECUTE_TOGETHER, SUPPORTED_ENTRY, SPLIT }
-enum Phase { APPROACH, GATHER, UTILITY, GO }
+enum Style { RUSH, DEFAULT, EXECUTE, EXECUTE_TOGETHER, SUPPORTED_ENTRY, SPLIT, FAKE }
+enum Phase { APPROACH, GATHER, UTILITY, GO, MAP_CONTROL }
 
 const STYLE_NAMES: Dictionary[Style, String] = {
 	Style.RUSH: "rush", Style.DEFAULT: "default", Style.EXECUTE: "execute",
-	Style.EXECUTE_TOGETHER: "execute together", Style.SUPPORTED_ENTRY: "supported entry", Style.SPLIT: "split",
+	Style.EXECUTE_TOGETHER: "execute together", Style.SUPPORTED_ENTRY: "supported entry", Style.SPLIT: "split", Style.FAKE: "fake",
 }
 ## How hurried each style's throws are (1 = the thrower's own pace; lower = faster and wider).
 const HURRY: Dictionary[Style, float] = {
 	Style.RUSH: 0.4, Style.DEFAULT: 0.6, Style.EXECUTE: 1.0, Style.EXECUTE_TOGETHER: 0.5,
-	Style.SUPPORTED_ENTRY: 0.85, Style.SPLIT: 0.9,
+	Style.SUPPORTED_ENTRY: 0.85, Style.SPLIT: 0.9, Style.FAKE: 0.8,
 }
 const GATHERED_RADIUS: float = 6.0
 const GATHER_LIMIT: float = 14.0
@@ -42,11 +48,13 @@ const SMOKE_BLOOM: float = 1.2
 const PEEK_RANGE: float = 9.0
 const FLASHER_RANGE: float = 16.0
 const DEFAULT_PEEK_LIMIT: float = 7.0
-## A doorway thrower gives up walking after this long.
+## A doorway thrower gives up walking after this long, plus a second for every 3 m it has to go.
 const WALK_LIMIT: float = 6.0
 const LINEUP_TOLERANCE: float = 2.5
 ## The trader walks this far to the side of the entry.
 const PAIR_OFFSET: float = 1.3
+## The real lane of a fake waits this long for the fake before executing anyway.
+const FAKE_WAIT: float = 20.0
 
 
 class Lane extends RefCounted:
@@ -62,6 +70,7 @@ class Lane extends RefCounted:
 	var smoked_at: float = -1.0
 	var flashed_at: float = -1.0
 	var flasher_id: String = ""
+	var style: Style = Style.EXECUTE
 	var entry: BotController = null
 	var trader: BotController = null
 	## Bots that have reached this lane's entrance.
@@ -78,6 +87,11 @@ var site: String = ""
 var carrier_id: String = ""
 var space: PhysicsDirectSpaceState3D = null
 var rng: RandomNumberGenerator = null
+## Planned jobs (bot ID -> RoundPlan job), lurkers (bot ID -> [spot, watch]) and default-round
+## map-control spots (bot ID -> position).
+var jobs: Dictionary[String, StringName] = {}
+var lurkers: Dictionary[String, Array] = {}
+var spots: Dictionary[String, Vector3] = {}
 
 
 ## A style for this round, weighed from what the team has: no utility means a rush or a default;
@@ -104,9 +118,15 @@ static func choose_style(dice: RandomNumberGenerator, attackers: int, utility: i
 
 ## The play of [param chosen] on site [param letter] for [param attackers]. Null when the map has
 ## no plan for the site (no simulation graph): the squad then walks straight in.
+## [param details] (all optional) carries the leader's plan: "jobs" (bot ID -> job), "lurkers"
+## (bot ID -> [spot, watch]), "spots" (bot ID -> map-control position), "fake_site" and
+## "fake_holds" for a fake, and "from" (the place the attack starts from; default attack spawn,
+## a retake starts from the defence spawn).
 static func create(chosen: Style, map: SimMap, letter: String, holds: Array, attackers: Array[BotController],
-		world: PhysicsDirectSpaceState3D, dice: RandomNumberGenerator, bomb_carrier: String = "") -> AttackPlay:
-	var main := SiteExecute.plan(map, letter, holds)
+		world: PhysicsDirectSpaceState3D, dice: RandomNumberGenerator, bomb_carrier: String = "",
+		details: Dictionary = {}) -> AttackPlay:
+	var from := str(details.get("from", ""))
+	var main := SiteExecute.plan(map, letter, holds, "", from)
 	if main == null or attackers.is_empty():
 		return null
 	var play := AttackPlay.new()
@@ -115,26 +135,68 @@ static func create(chosen: Style, map: SimMap, letter: String, holds: Array, att
 	play.space = world
 	play.rng = dice
 	play.carrier_id = bomb_carrier
+	play.jobs.assign(details.get("jobs", {}))
+	play.lurkers.assign(details.get("lurkers", {}))
+	play.spots.assign(details.get("spots", {}))
+	# Lurkers play their own game: they are no lane's.
+	var members: Array[BotController] = attackers.filter(func(bot: BotController) -> bool:
+		return not play.lurkers.has(bot.bot_id))
+	if members.is_empty():
+		members = attackers
+		play.lurkers.clear()
 	var second: SiteExecute = null
 	if chosen == Style.SPLIT:
-		for other: String in play._other_entrances(map, letter, main.entrance_id):
-			second = SiteExecute.plan(map, letter, holds, other)
+		for other: String in play._other_entrances(map, letter, main.entrance_id, from):
+			second = SiteExecute.plan(map, letter, holds, other, from)
 			if second != null:
 				break
-		if second == null or attackers.size() < 2:
+		if second == null or members.size() < 2:
 			play.style = Style.EXECUTE
-	if play.style == Style.SPLIT:
-		var half := ceili(attackers.size() / 2.0)
-		play._add_lane(main, attackers.slice(0, half))
-		play._add_lane(second, attackers.slice(half))
-	else:
-		play._add_lane(main, attackers)
+	var fake: SiteExecute = null
+	var fakers: Array[BotController] = []
+	if chosen == Style.FAKE:
+		fake = SiteExecute.plan(map, str(details.get("fake_site", "")), details.get("fake_holds", []) as Array, "", from)
+		fakers = members.filter(func(bot: BotController) -> bool: return play.jobs.get(bot.bot_id, &"") == RoundPlan.FAKER)
+		if fakers.is_empty() and members.size() >= 3:
+			fakers = members.slice(members.size() - 1)
+		if fake == null or fakers.is_empty() or fakers.size() >= members.size():
+			play.style = Style.EXECUTE
+	match play.style:
+		Style.SPLIT:
+			var half := ceili(members.size() / 2.0)
+			play._add_lane(main, members.slice(0, half), Style.SPLIT)
+			play._add_lane(second, members.slice(half), Style.SPLIT)
+		Style.FAKE:
+			play._add_lane(main, members.filter(func(bot: BotController) -> bool: return not fakers.has(bot)), Style.EXECUTE)
+			play._add_lane(fake, fakers, Style.FAKE)
+		_:
+			play._add_lane(main, members, play.style)
 	return play
 
 
-## The site's other ways in, nearest to attack spawn first.
-func _other_entrances(map: SimMap, letter: String, taken: String) -> Array[String]:
-	var spawn := map.spawn("attack")
+## The real lane of a fake waits while the fake lane has not thrown yet.
+func _fake_pending(lane: Lane) -> bool:
+	if style != Style.FAKE or lane.style == Style.FAKE:
+		return false
+	return lanes.any(func(other: Lane) -> bool:
+		return other.style == Style.FAKE and other.phase != Phase.GO and not other.living().is_empty())
+
+
+## A default round: the team leaves its map-control spots and moves up on the site.
+func start_approach() -> void:
+	for lane: Lane in lanes:
+		if lane.phase == Phase.MAP_CONTROL:
+			lane.phase = Phase.APPROACH
+			lane.phase_time = 0.0
+
+
+func in_map_control() -> bool:
+	return lanes.any(func(lane: Lane) -> bool: return lane.phase == Phase.MAP_CONTROL)
+
+
+## The site's other ways in, nearest to the start place first.
+func _other_entrances(map: SimMap, letter: String, taken: String, from: String = "") -> Array[String]:
+	var spawn := map.spawn("attack") if from.is_empty() else from
 	var list: Array[String] = []
 	for id: String in map.entrances("site_" + letter):
 		if id != taken and map.distance(spawn, id) >= 0.0:
@@ -143,15 +205,16 @@ func _other_entrances(map: SimMap, letter: String, taken: String) -> Array[Strin
 	return list
 
 
-func _add_lane(take: SiteExecute, members: Array[BotController]) -> void:
+func _add_lane(take: SiteExecute, members: Array[BotController], lane_style: Style) -> void:
 	var lane := Lane.new()
+	lane.style = lane_style
 	lane.plan = take
 	lane.bots = members
-	match style:
+	match lane.style:
 		Style.RUSH:
 			lane.phase = Phase.GO
 		Style.DEFAULT:
-			lane.phase = Phase.APPROACH
+			lane.phase = Phase.MAP_CONTROL if not spots.is_empty() else Phase.APPROACH
 		_:
 			lane.phase = Phase.GATHER
 	if lane.phase == Phase.GO:
@@ -159,15 +222,15 @@ func _add_lane(take: SiteExecute, members: Array[BotController]) -> void:
 			lane.released[bot.bot_id] = true
 	# What this lane throws. A split lane keeps to its own entrance (the other lane is coming in
 	# through the rotation); a supported entry flashes first for the pair going in.
-	var smokes := take.smokes.slice(0, 1) if style == Style.SPLIT else take.smokes
-	if style == Style.SUPPORTED_ENTRY and take.flash != Vector3.INF:
+	var smokes := take.smokes.slice(0, 1) if lane.style == Style.SPLIT or lane.style == Style.FAKE else take.smokes
+	if lane.style == Style.SUPPORTED_ENTRY and take.flash != Vector3.INF:
 		lane.throws.append({"utility": EquipmentCatalog.FLASH, "target": take.flash})
-	if style != Style.RUSH and style != Style.DEFAULT:
+	if lane.style != Style.RUSH and lane.style != Style.DEFAULT:
 		for point: Vector3 in smokes:
 			lane.throws.append({"utility": EquipmentCatalog.SMOKE, "target": point})
-		if take.fire != Vector3.INF and style != Style.SPLIT:
+		if take.fire != Vector3.INF and lane.style != Style.SPLIT and lane.style != Style.FAKE:
 			lane.throws.append({"utility": EquipmentCatalog.FIRE, "target": take.fire})
-		if take.flash != Vector3.INF and style != Style.SUPPORTED_ENTRY:
+		if take.flash != Vector3.INF and lane.style != Style.SUPPORTED_ENTRY:
 			lane.throws.append({"utility": EquipmentCatalog.FLASH, "target": take.flash})
 	lanes.append(lane)
 
@@ -194,6 +257,8 @@ func update(delta: float, cut_short: bool) -> void:
 func _update_lane(lane: Lane) -> void:
 	match lane.phase:
 		Phase.GATHER:
+			if _fake_pending(lane) and lane.phase_time < FAKE_WAIT:
+				return
 			if _gathered(lane) or lane.phase_time > GATHER_LIMIT:
 				_start_utility(lane)
 		Phase.UTILITY:
@@ -232,7 +297,7 @@ func _gathered(lane: Lane) -> bool:
 func _start_utility(lane: Lane) -> void:
 	lane.phase = Phase.UTILITY
 	lane.phase_time = 0.0
-	if style == Style.EXECUTE_TOGETHER:
+	if lane.style == Style.EXECUTE_TOGETHER:
 		# Everyone not throwing pushes straight away; throwers go as their grenade leaves the hand.
 		var throwers := _plan_throwers(lane)
 		for bot: BotController in lane.living():
@@ -262,12 +327,12 @@ func _update_utility(lane: Lane) -> void:
 func _lane_ready(lane: Lane) -> bool:
 	var pending := not lane.throws.is_empty() or not lane.walkers.is_empty() \
 		or lane.living().any(func(bot: BotController) -> bool: return bot.is_throwing())
-	if style == Style.SUPPORTED_ENTRY:
+	if lane.style == Style.SUPPORTED_ENTRY:
 		if lane.flashed_at >= 0.0 and lane.phase_time - lane.flashed_at >= GO_AFTER_FLASH or (lane.flashed_at < 0.0 and not _flash_pending(lane)):
 			_release_pair(lane)
 		return not pending
 	if lane.flashed_at >= 0.0:
-		return lane.phase_time - lane.flashed_at >= GO_AFTER_FLASH and (style != Style.SPLIT or not pending)
+		return lane.phase_time - lane.flashed_at >= GO_AFTER_FLASH and (lane.style != Style.SPLIT or not pending)
 	return not pending
 
 
@@ -294,11 +359,11 @@ func _hand_out(lane: Lane) -> void:
 	if lane.throws.is_empty():
 		return
 	# A supported entry's flash goes first: the supports hold their grenades until it is out.
-	if style == Style.SUPPORTED_ENTRY and lane.flashed_at < 0.0 and lane.flasher_id != "":
+	if lane.style == Style.SUPPORTED_ENTRY and lane.flashed_at < 0.0 and lane.flasher_id != "":
 		return
 	var next: Dictionary = lane.throws[0]
 	var utility := next["utility"] as StringName
-	if utility == EquipmentCatalog.FLASH and style == Style.EXECUTE:
+	if utility == EquipmentCatalog.FLASH and lane.style == Style.EXECUTE:
 		var smokes_out := not lane.throws.any(func(throw: Dictionary) -> bool: return throw["utility"] == EquipmentCatalog.SMOKE)
 		if not smokes_out or (lane.smoked_at >= 0.0 and lane.phase_time - lane.smoked_at < SMOKE_BLOOM) \
 				or lane.living().any(func(bot: BotController) -> bool: return bot.is_throwing()):
@@ -313,22 +378,26 @@ func _hand_out(lane: Lane) -> void:
 	lane.throws.pop_front()
 	if utility == EquipmentCatalog.FLASH:
 		lane.flasher_id = thrower.bot_id
-	if not throw_now(thrower, utility, next["target"] as Vector3):
+	if not throw_now(thrower, utility, next["target"] as Vector3, HURRY[lane.style]):
 		next["since"] = lane.phase_time
+		next["distance"] = _flat(thrower.global_position, lane.plan.throw_spot)
 		lane.walkers[thrower.bot_id] = next
 
 
+## The free carrier of [param utility] nearest the gathering spot (a straggler is no thrower).
 func _free_carrier(lane: Lane, utility: StringName) -> BotController:
+	var best: BotController = null
 	for bot: BotController in lane.living():
 		if bot.weapons.utility_count(utility) > 0 and not bot.is_throwing() and bot.target == null \
-				and not lane.walkers.has(bot.bot_id) and _may_throw(lane, bot):
-			return bot
-	return null
+				and not lane.walkers.has(bot.bot_id) and _may_throw(lane, bot) \
+				and (best == null or _flat(bot.global_position, lane.plan.staging) < _flat(best.global_position, lane.plan.staging)):
+			best = bot
+	return best
 
 
 ## On a supported entry the pair going in carries its utility in; the supports throw.
 func _may_throw(lane: Lane, bot: BotController) -> bool:
-	return style != Style.SUPPORTED_ENTRY or not _in_pair(lane, bot)
+	return lane.style != Style.SUPPORTED_ENTRY or not _in_pair(lane, bot)
 
 
 func _walk_and_throw(lane: Lane, bot_id: String) -> void:
@@ -339,19 +408,20 @@ func _walk_and_throw(lane: Lane, bot_id: String) -> void:
 			bot = member
 	var alive := bot != null and bot.is_alive()
 	var arrived := alive and _flat(bot.global_position, lane.plan.throw_spot) <= 1.0
-	if alive and not arrived and lane.phase_time - float(throw["since"]) < WALK_LIMIT:
+	var allowed := WALK_LIMIT + float(throw.get("distance", 0.0)) / 3.0
+	if alive and not arrived and lane.phase_time - float(throw["since"]) < allowed:
 		return
 	lane.walkers.erase(bot_id)
-	if not arrived or not throw_now(bot, throw["utility"] as StringName, throw["target"] as Vector3):
+	if not arrived or not throw_now(bot, throw["utility"] as StringName, throw["target"] as Vector3, HURRY[lane.style]):
 		if throw["utility"] == EquipmentCatalog.FLASH:
 			lane.flasher_id = ""
 
 
 ## [param bot] throws [param utility] at [param target] if a line-up exists from where it stands,
-## at this style's pace. Returns true when the throw started.
-func throw_now(bot: BotController, utility: StringName, target: Vector3) -> bool:
+## at this lane.style's pace. Returns true when the throw started.
+func throw_now(bot: BotController, utility: StringName, target: Vector3, hurry: float = -1.0) -> bool:
 	var lineup := UtilityLineup.solve(space, utility, bot.head.global_position, target, LINEUP_TOLERANCE, bot.weapons.exclude)
-	return lineup != null and bot.throw_utility(lineup, HURRY[style])
+	return lineup != null and bot.throw_utility(lineup, HURRY[style] if hurry < 0.0 else hurry)
 
 
 ## Off the cuff: once the lead nears the entrance, a teammate with a flash pops it and the lead
@@ -373,7 +443,7 @@ func _update_default(lane: Lane) -> void:
 			_go(lane)
 			return
 		lane.flasher_id = flasher.bot_id
-		if not throw_now(flasher, EquipmentCatalog.FLASH, lane.plan.flash):
+		if not throw_now(flasher, EquipmentCatalog.FLASH, lane.plan.flash, HURRY[lane.style]):
 			_go(lane)
 		return
 	if (lane.flashed_at >= 0.0 and lane.phase_time - lane.flashed_at >= GO_AFTER_FLASH) or lane.phase_time > DEFAULT_PEEK_LIMIT \
@@ -394,7 +464,7 @@ func on_utility_finished(bot: BotController, utility: StringName, thrown: bool) 
 		if kind == EquipmentCatalog.KIND_FLASH:
 			lane.flasher_id = ""
 		# Throw and go: the thrower pushes the moment its grenade is out.
-		if style == Style.EXECUTE_TOGETHER and lane.phase == Phase.UTILITY:
+		if lane.style == Style.EXECUTE_TOGETHER and lane.phase == Phase.UTILITY:
 			lane.released[bot.bot_id] = true
 
 
@@ -412,12 +482,23 @@ func _release_pair(lane: Lane) -> void:
 		return
 	var living := lane.living()
 	if lane.entry == null:
+		lane.entry = _with_job(living, RoundPlan.ENTRY)
+	if lane.entry == null:
 		lane.entry = _nearest(living, lane.plan.entrance, carrier_id)
 	if lane.entry != null:
 		lane.released[lane.entry.bot_id] = true
-		lane.trader = _nearest(living.filter(func(bot: BotController) -> bool: return bot != lane.entry), lane.entry.global_position, carrier_id)
+		lane.trader = _with_job(living.filter(func(bot: BotController) -> bool: return bot != lane.entry), RoundPlan.TRADE)
+		if lane.trader == null:
+			lane.trader = _nearest(living.filter(func(bot: BotController) -> bool: return bot != lane.entry), lane.entry.global_position, carrier_id)
 		if lane.trader != null:
 			lane.released[lane.trader.bot_id] = true
+
+
+func _with_job(candidates: Array, job: StringName) -> BotController:
+	for bot: BotController in candidates:
+		if jobs.get(bot.bot_id, &"") == job:
+			return bot
+	return null
 
 
 func _in_pair(lane: Lane, bot: BotController) -> bool:
@@ -443,6 +524,9 @@ func _update_pair(lane: Lane) -> void:
 ## Where [param bot] should be: {goal, watch} for its part in the play, or {} for the squad's
 ## default site take (pushing in).
 func order_for(bot: BotController) -> Dictionary:
+	if lurkers.has(bot.bot_id):
+		var lurk: Array = lurkers[bot.bot_id]
+		return {"goal": lurk[0] as Vector3, "watch": lurk[1] as Vector3}
 	for lane: Lane in lanes:
 		if not lane.bots.has(bot):
 			continue
@@ -461,6 +545,11 @@ func order_for(bot: BotController) -> Dictionary:
 			if lanes.size() > 1 and not lane.through.has(bot.bot_id):
 				return {"goal": lane.plan.entrance, "watch": lane.plan.entrance + eye, "spread": true}
 			return {}
+		if lane.phase == Phase.MAP_CONTROL:
+			# Taking the map: each to its spot, watching the way the site is.
+			if spots.has(bot.bot_id):
+				return {"goal": spots[bot.bot_id], "watch": lane.plan.entrance + eye}
+			return {"goal": lane.plan.staging, "watch": lane.plan.entrance + eye, "spread": true}
 		if lane.phase == Phase.APPROACH:
 			# Off the cuff: move up to the entrance together; once the lead is at the corner,
 			# everyone waits for the flash.

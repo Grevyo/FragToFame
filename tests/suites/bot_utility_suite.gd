@@ -231,6 +231,7 @@ func _test_official_execute() -> void:
 		await wait_physics_frames(2)
 		log.clear()
 		squad.forced_style = style
+		squad.attack_site = OS.get_environment("F2F_TEST_SITE") if OS.get_environment("F2F_TEST_SITE") != "" else "A"
 		squad.plan_attack()
 		var play := squad.attack
 		var name := AttackPlay.STYLE_NAMES[style]
@@ -263,8 +264,11 @@ func _test_official_execute() -> void:
 					"default: no gathering; at the entrance one flash at most, off the cuff (%s)" % throws)
 			AttackPlay.Style.SPLIT:
 				var entrances := play.lanes.map(func(lane: AttackPlay.Lane) -> String: return sim.name_of(lane.plan.entrance_id))
-				check(went and play.lanes.size() == 2 and entrances[0] != entrances[1],
-					"split: two groups take two lanes (%s) and push together (%s)" % [" and ".join(entrances), throws])
+				# A site with no second way in (one not reached through the site) is executed instead.
+				var one_way := play.lanes.size() == 1 and play.style == AttackPlay.Style.EXECUTE
+				check(went and (one_way or (play.lanes.size() == 2 and entrances[0] != entrances[1])),
+					"split: two groups take two lanes (%s) and push together, or one lane where there is no other (%s)" % [
+						" and ".join(entrances), throws])
 			AttackPlay.Style.RUSH:
 				check(went and log.is_empty() and first_phase == AttackPlay.Phase.GO, "rush: straight in, no utility")
 		if style != AttackPlay.Style.RUSH:

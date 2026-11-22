@@ -327,6 +327,12 @@ func _statistics(score: Array[int]) -> Dictionary[String, Dictionary]:
 	return lines
 
 
+## Day form and team values (tactics, utility, coordination) for one map, for a planner outside
+## a simulated match: the match bots' leader ([BotTactics]) plans with the same numbers.
+func prepare_team(team: SimTeam) -> void:
+	_prepare(team)
+
+
 ## Day form and derived skills for one map.
 func _prepare(team: SimTeam) -> void:
 	team.map_form = rng.randfn(0.0, MAP_FORM)

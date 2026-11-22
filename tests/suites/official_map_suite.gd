@@ -222,14 +222,30 @@ func _test_bot_round(doc: MapDocument) -> void:
 	Engine.time_scale = 6.0
 	check(await wait_until(func() -> bool: return state.phase == MatchState.Phase.LIVE, 4.0), "the round goes live")
 	await wait_physics_frames(3)
+	# The leader places each defender (anchor, rotator, aggressor); near a hold hint the bot takes
+	# the hint, otherwise it stands around its planned place.
 	var holding := 0
+	var placed := 0
+	var defenders := 0
+	var leader := squad.leader_of(MatchRules.SIDE_DEFENCE)
 	for id: String in squad.bots:
 		var bot := squad.bots[id]
-		if state.side_of(id) == MatchRules.SIDE_DEFENCE and bot.has_goal:
-			for hold: Dictionary in doc.pieces_of_type("ai_hold"):
-				if Vector2(bot.goal_position.x - (hold["position"] as Vector3).x, bot.goal_position.z - (hold["position"] as Vector3).z).length() < 1.0:
-					holding += 1
-	check(holding == 3, "defending bots head for the map's hold hints (%d/3)" % holding)
+		if state.side_of(id) != MatchRules.SIDE_DEFENCE:
+			continue
+		defenders += 1
+		if not bot.has_goal:
+			continue
+		var on_hint := false
+		for hold: Dictionary in doc.pieces_of_type("ai_hold"):
+			if Vector2(bot.goal_position.x - (hold["position"] as Vector3).x, bot.goal_position.z - (hold["position"] as Vector3).z).length() < 1.0:
+				on_hint = true
+		var place := str(leader.plan.spots.get(id, "")) if leader != null and leader.plan != null else ""
+		var near_place := not place.is_empty() and Vector2(bot.goal_position.x - leader.centre(place).x,
+			bot.goal_position.z - leader.centre(place).z).length() < 4.0
+		holding += 1 if on_hint else 0
+		placed += 1 if on_hint or near_place else 0
+	check(defenders > 0 and placed == defenders,
+		"defending bots take the leader's spots, on the map's hold hints where near (%d/%d placed, %d on hints)" % [placed, defenders, holding])
 	player.health.kill()
 	var round_over := func() -> bool: return state.round_number >= 2 or state.phase != MatchState.Phase.LIVE
 	await wait_until(func() -> bool: return state.is_bomb_planted or round_over.call(), 30.0)

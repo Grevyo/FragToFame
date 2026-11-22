@@ -13,6 +13,9 @@ const FLASH_DEPTH: float = 5.0
 const FLASH_HEIGHT: float = 2.4
 ## Fire only goes on a hold this close to the entrance (further ones are out of the fight).
 const FIRE_REACH: float = 18.0
+## Attackers gather at most this far back from the entrance (a long corridor's far end is too far
+## to throw from or to push together from).
+const STAGING_REACH: float = 12.0
 ## The spot just outside the entrance to throw from when the staging place has no line-up.
 const THROW_SPOT_BACK: float = 2.5
 
@@ -30,14 +33,16 @@ var flash: Vector3 = Vector3.INF
 
 ## The take of site [param letter] on [param map] with the hold hints of [param holds] (the map
 ## document's "ai_hold" pieces for that site), through [param via] (an entrance place; default:
-## the one on the walked route from attack spawn). Null when the map has no such walk.
-static func plan(map: SimMap, letter: String, holds: Array = [], via: String = "") -> SiteExecute:
+## the one on the walked route), starting from [param from] (a place; default the attack spawn,
+## a retake starts from the defence spawn). Null when the map has no such walk.
+static func plan(map: SimMap, letter: String, holds: Array = [], via: String = "", from: String = "") -> SiteExecute:
 	if map == null:
 		return null
 	var site_id := "site_" + letter
-	var route := map.route(map.spawn("attack"), site_id)
+	var start := map.spawn("attack") if from.is_empty() else from
+	var route := map.route(start, site_id)
 	if not via.is_empty():
-		route = map.route(map.spawn("attack"), via)
+		route = map.route(start, via)
 		if route.is_empty() or not map.entrances(site_id).has(via):
 			return null
 		# A way in that is only reached through the site itself is no other way in.
@@ -59,12 +64,15 @@ static func plan(map: SimMap, letter: String, holds: Array = [], via: String = "
 	take.staging_id = route[first - 2] if first >= 2 else take.entrance_id
 	take.entrance = _centre(map, take.entrance_id)
 	take.staging = _centre(map, take.staging_id)
+	var back_out := take.staging - take.entrance
+	if back_out.length() > STAGING_REACH:
+		take.staging = take.entrance + back_out.normalized() * STAGING_REACH
 	var site_centre := _centre(map, site_id)
 	var by_distance: Array[Vector3] = []
 	for hold: Variant in holds:
 		by_distance.append((hold as Dictionary)["position"] as Vector3)
-	var from := take.entrance
-	by_distance.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_to(from) < b.distance_to(from))
+	var door := take.entrance
+	by_distance.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_to(door) < b.distance_to(door))
 	if not by_distance.is_empty():
 		take.smokes.append(by_distance[0])
 	# The other way into the site nearest the defenders' spawn: their rotation.

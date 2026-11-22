@@ -41,6 +41,14 @@ func transaction(work: Callable) -> bool:
 	return db.transaction(work)
 
 
+func begin_transaction() -> bool:
+	return db.begin_transaction()
+
+
+func end_transaction(ok: bool) -> bool:
+	return db.end_transaction(ok)
+
+
 # --- World metadata ---------------------------------------------------------------------------
 
 func meta_value(key: String, fallback: String = "") -> String:
@@ -408,8 +416,8 @@ func fixtures(player_id: String, limit: int = 30) -> Array[CareerFixture]:
 
 
 func insert_fixture(fixture: CareerFixture) -> bool:
-	return db.execute("""INSERT INTO career_fixture(id, player_id, scheduled_day, setup_json)
-		VALUES (?, ?, ?, ?);""", [fixture.setup.fixture_id, fixture.player_id, fixture.scheduled_day,
+	return db.execute("""INSERT INTO career_fixture(id, player_id, scheduled_day, kick_off, setup_json)
+		VALUES (?, ?, ?, ?, ?);""", [fixture.setup.fixture_id, fixture.player_id, fixture.scheduled_day, fixture.kick_off,
 		JSON.stringify(fixture.setup.to_dict())])
 
 
@@ -526,10 +534,10 @@ func insert_league_season(competition_id: String, year: int, start_day: int, bes
 			return false
 	for fixture: Dictionary in fixtures:
 		if not db.execute("""INSERT INTO league_fixture
-				(competition_id, season_year, round_number, scheduled_day, home_id, away_id)
-				VALUES (?, ?, ?, ?, ?, ?);""", [
+				(competition_id, season_year, round_number, scheduled_day, kick_off, home_id, away_id)
+				VALUES (?, ?, ?, ?, ?, ?, ?);""", [
 				competition_id, year, fixture["round_number"], fixture["scheduled_day"],
-				fixture["home_id"], fixture["away_id"]]):
+				int(fixture.get("kick_off", MatchTimes.DEFAULT_KICK_OFF)), fixture["home_id"], fixture["away_id"]]):
 			return false
 	return true
 
@@ -557,11 +565,14 @@ func league_fixture(fixture_id: int) -> Dictionary:
 
 ## Unscored series scheduled before [param before_day], oldest first, with their best-of and
 ## competition tier.
+## Unplayed series dated before [param before_day], in kick-off order, with names for the calendar.
 func unresolved_league_fixtures(before_day: int) -> Array[Dictionary]:
-	return db.rows("""SELECT f.id, f.home_id, f.away_id, f.scheduled_day, s.best_of, c.tier FROM league_fixture f
+	return db.rows("""SELECT f.id, f.home_id, f.away_id, f.scheduled_day, f.kick_off, s.best_of, c.tier,
+		c.name AS competition_name, h.name AS home_name, a.name AS away_name FROM league_fixture f
 		JOIN league_season s ON s.competition_id = f.competition_id AND s.season_year = f.season_year
 		JOIN competition c ON c.id = f.competition_id
-		WHERE f.home_maps IS NULL AND f.scheduled_day < ? ORDER BY f.scheduled_day, f.id;""", [before_day])
+		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id
+		WHERE f.home_maps IS NULL AND f.scheduled_day < ? ORDER BY f.scheduled_day, f.kick_off, f.id;""", [before_day])
 
 
 ## Series on days [param from_day]..[param to_day], with competition and team names.
@@ -569,7 +580,7 @@ func league_fixtures_between(from_day: int, to_day: int, limit: int = 40) -> Arr
 	return db.rows("""SELECT f.*, c.name AS competition_name, h.short_name AS home_name, a.short_name AS away_name
 		FROM league_fixture f JOIN competition c ON c.id = f.competition_id
 		JOIN organisation h ON h.id = f.home_id JOIN organisation a ON a.id = f.away_id
-		WHERE f.scheduled_day BETWEEN ? AND ? ORDER BY f.scheduled_day, c.tier, f.id LIMIT ?;""",
+		WHERE f.scheduled_day BETWEEN ? AND ? ORDER BY f.scheduled_day, f.kick_off, c.tier, f.id LIMIT ?;""",
 		[from_day, to_day, limit])
 
 
@@ -1048,9 +1059,10 @@ func open_cup_seasons() -> Array[Dictionary]:
 		ORDER BY s.start_day, s.competition_id;""")
 
 
-func insert_league_fixture(competition_id: String, year: int, round_number: int, day: int, home_id: String, away_id: String) -> bool:
-	return db.execute("""INSERT INTO league_fixture (competition_id, season_year, round_number, scheduled_day, home_id, away_id)
-		VALUES (?, ?, ?, ?, ?, ?);""", [competition_id, year, round_number, day, home_id, away_id])
+func insert_league_fixture(competition_id: String, year: int, round_number: int, day: int, home_id: String, away_id: String,
+		kick_off: int = MatchTimes.DEFAULT_KICK_OFF) -> bool:
+	return db.execute("""INSERT INTO league_fixture (competition_id, season_year, round_number, scheduled_day, kick_off, home_id, away_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?);""", [competition_id, year, round_number, day, kick_off, home_id, away_id])
 
 
 ## Moves an organisation to another tier and records why.

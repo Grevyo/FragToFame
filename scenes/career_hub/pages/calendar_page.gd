@@ -118,7 +118,7 @@ func _series_card(title: String, fixtures: Array[Dictionary]) -> void:
 	for fixture: Dictionary in fixtures:
 		var score := "Preview" if fixture["home_maps"] == null else "%d – %d" % [
 			int(fixture["home_maps"]), int(fixture["away_maps"])]
-		rows.append([GameDate.format(int(fixture["scheduled_day"])), str(fixture["competition_name"]),
+		rows.append([GameDate.format_at(int(fixture["scheduled_day"]), int(fixture["kick_off"])), str(fixture["competition_name"]),
 			cell_team(str(fixture["home_id"]), str(fixture["home_name"])), cell_team(str(fixture["away_id"]), str(fixture["away_name"])),
 			cell_link(score, &"series", {"series_id": int(fixture["id"])}), map_summary(int(fixture["id"]))])
 	link_table(card, PackedStringArray(["Date", "Competition", "Home", "Away", "Maps", "Map scores · MVP"]), rows)
@@ -148,7 +148,7 @@ func _own_fixtures(session: CareerSession) -> void:
 	for fixture: CareerFixture in session.repo.fixtures(session.human_player_id):
 		var setup := fixture.setup
 		var result := fixture.result
-		rows.append(PackedStringArray([GameDate.format(fixture.scheduled_day), setup.competition,
+		rows.append(PackedStringArray([GameDate.format_at(fixture.scheduled_day, fixture.kick_off), setup.competition,
 			"%s vs %s" % [setup.home_team_name, setup.away_team_name], "MR%d" % setup.max_rounds,
 			"Scheduled" if result == null else "%d – %d" % [result.home_score, result.away_score]]))
 	if rows.is_empty():

@@ -1,10 +1,12 @@
 class_name CalendarRun
 extends RefCounted
-## A Continue or a holiday played one day at a time, so the hub can show each day passing
-## ([CareerCalendarOverlay]) instead of freezing until it is over. [method step] does one day (or,
-## on a holiday that simulates the player's matches, one match); [method run_all] runs to the end
-## in one go, which is what [method CareerCalendar.continue_until_event] and
-## [method CareerCalendar.holiday] do. The rules for when a run stops live here.
+## A Continue or a holiday played one event at a time, so the hub can show the days and the
+## hours passing ([CareerCalendarOverlay]) instead of freezing until it is over. Each day is a
+## [CalendarDay] (series at their kick-offs, then the world's morning); [method step] runs one of
+## its events (or, on a holiday that simulates the player's matches, one match); [method run_all]
+## runs to the end in one go, which is what [method CareerCalendar.continue_until_event] and
+## [method CareerCalendar.holiday] do. The rules for when a run stops live here, and are only
+## checked between days.
 
 enum Kind { CONTINUE, HOLIDAY }
 
@@ -22,12 +24,18 @@ var requested_days: int = 0
 var simulate_matches: bool = false
 ## Maps of the player's own matches simulated on a holiday.
 var simulated: int = 0
-## Days run so far (Continue).
+## Days run so far.
 var days: int = 0
-## Set by the player to end the run after the current day.
+## Series simulated so far.
+var series_played: int = 0
+## Set by the player to end the run before the next day starts.
 var stop_requested: bool = false
 ## The finished run's outcome ({days, reason, ok}, plus "simulated" on a holiday); empty while running.
 var outcome: Dictionary = {}
+## The day being played, or null between days.
+var _day: CalendarDay = null
+## What happened last: {day, minute, label, detail, kind} ({} before anything has).
+var _now: Dictionary = {}
 
 
 static func continue_run(career_repo: CareerRepository, human_id: String, rng: RandomNumberGenerator = null) -> CalendarRun:
@@ -86,14 +94,22 @@ func planned_days() -> int:
 	return target_day - start_day if requested_days != 0 else 0
 
 
-## Runs one day (or one simulated match). Returns true while the run goes on.
+## What happened last: {day, minute, label, detail, kind ("series", "world", "match")}; {}
+## before the first event.
+func now() -> Dictionary:
+	return _now
+
+
+## Runs one event. Returns true while the run goes on.
 func step() -> bool:
 	if is_finished():
 		return false
-	if kind == Kind.CONTINUE:
-		_continue_step()
+	if _day != null:
+		_step_day()
+	elif kind == Kind.CONTINUE:
+		_start_continue_day()
 	else:
-		_holiday_step()
+		_start_holiday_day()
 	return not is_finished()
 
 
@@ -104,15 +120,60 @@ func run_all() -> Dictionary:
 	return outcome
 
 
-func _continue_step() -> void:
+## Opens the next day (the first event runs on the next step). Returns false when it could not.
+func _open_day() -> bool:
+	_day = CalendarDay.start(repo, repo.current_day() + 1, dice)
+	return _day != null
+
+
+func _step_day() -> void:
+	var before := _day.series_played
+	var going := _day.step()
+	series_played += _day.series_played - before
+	var event := _day.last()
+	if not event.is_empty():
+		_now = {"day": int(event["day"]), "minute": int(event["minute"]), "label": str(event["label"]),
+			"detail": str(event["detail"]), "kind": str(event["kind"])}
+		if event.has("score"):
+			var score: Vector2i = event["score"]
+			_now["score"] = [score.x, score.y]
+	if going:
+		return
+	var finished_ok := _day.succeeded()
+	_day = null
+	if not finished_ok:
+		_fail("Could not advance the calendar: %s" % repo.db.last_error)
+		return
+	days += 1
+	_now = {"day": repo.current_day(), "minute": 13 * 60, "label": "", "detail": "", "kind": "world"}
+	if kind == Kind.CONTINUE:
+		_end_of_continue_day()
+	else:
+		_end_of_holiday_day()
+
+
+func _fail(reason: String) -> void:
+	if kind == Kind.CONTINUE:
+		outcome = {"days": days, "reason": reason, "ok": days > 0}
+	else:
+		_holiday_end(reason)
+
+
+func _start_continue_day() -> void:
 	if stop_requested:
 		outcome = {"days": days, "reason": STOPPED, "ok": days > 0}
 		return
-	var problem := CareerCalendar.advance_day(repo, player_id, dice)
-	if not problem.is_empty():
-		outcome = {"days": days, "reason": problem, "ok": days > 0}
+	var pending := repo.pending_fixture(player_id)
+	if pending != null and pending.scheduled_day <= repo.current_day():
+		outcome = {"days": days, "reason": CareerCalendar.BLOCKED_BY_FIXTURE, "ok": days > 0}
 		return
-	days += 1
+	if not _open_day():
+		_fail("Could not advance the calendar: %s" % repo.db.last_error)
+		return
+	_step_day()
+
+
+func _end_of_continue_day() -> void:
 	var today := repo.current_day()
 	var pending := repo.pending_fixture(player_id)
 	if pending != null and pending.scheduled_day <= today:
@@ -125,7 +186,7 @@ func _continue_step() -> void:
 		outcome = {"days": days, "reason": CareerCalendar.QUIET_MONTH, "ok": true}
 
 
-func _holiday_step() -> void:
+func _start_holiday_day() -> void:
 	if stop_requested:
 		_holiday_end(STOPPED)
 		return
@@ -142,11 +203,16 @@ func _holiday_step() -> void:
 			_holiday_end(str(played["message"]))
 			return
 		simulated += int(played["maps"])
+		_now = {"day": repo.current_day(), "minute": pending.kick_off, "label": "%s vs %s" % [pending.setup.home_team_name,
+			pending.setup.away_team_name], "detail": "Your match (simulated)", "kind": "match"}
 		return
-	var problem := CareerCalendar.advance_day(repo, player_id, dice)
-	if not problem.is_empty():
-		_holiday_end(problem)
+	if not _open_day():
+		_holiday_end("Could not advance the calendar: %s" % repo.db.last_error)
 		return
+	_step_day()
+
+
+func _end_of_holiday_day() -> void:
 	if requested_days == 0:
 		var headlines := repo.news_on(repo.current_day(), WorldSimulation.HEADLINE)
 		if not headlines.is_empty():

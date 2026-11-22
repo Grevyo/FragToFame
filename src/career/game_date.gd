@@ -7,6 +7,9 @@ const DAYS_PER_YEAR: int = 365
 const MONTH_LENGTHS: Array[int] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 const MONTH_NAMES: Array[String] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
 	"Oct", "Nov", "Dec"]
+## Day 0 (1 Jan Y1) is a Monday.
+const WEEKDAY_NAMES: Array[String] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const MINUTES_PER_DAY: int = 1440
 
 
 ## Year number (1-based; days before day 0 belong to Year 0, −1, …).
@@ -39,6 +42,28 @@ static func make(year: int, month: int, day_of_month: int) -> int:
 static func format(day: int) -> String:
 	var md := month_and_day(day)
 	return "%02d %s Y%d" % [md.y, MONTH_NAMES[md.x], year_of(day)]
+
+
+## 0 = Monday … 6 = Sunday.
+static func weekday(day: int) -> int:
+	return posmod(day, 7)
+
+
+## "Tue 05 Jan Y1"
+static func format_long(day: int) -> String:
+	return "%s %s" % [WEEKDAY_NAMES[weekday(day)], format(day)]
+
+
+## "18:30" for [param minute] minutes after midnight.
+static func clock(minute: int) -> String:
+	var wrapped := posmod(minute, MINUTES_PER_DAY)
+	@warning_ignore("integer_division")
+	return "%02d:%02d" % [wrapped / 60, wrapped % 60]
+
+
+## "05 Jan Y1 · 18:30"
+static func format_at(day: int, minute: int) -> String:
+	return "%s · %s" % [format(day), clock(minute)]
 
 
 ## "Year 3", or "2 years before Year 1" for dates before the career started.

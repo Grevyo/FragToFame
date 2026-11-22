@@ -4,6 +4,8 @@ extends RefCounted
 
 var player_id: String
 var scheduled_day: int
+## Minutes after midnight ([MatchTimes]).
+var kick_off: int = MatchTimes.DEFAULT_KICK_OFF
 var setup: MatchSetup
 var result: MatchResult
 
@@ -21,6 +23,7 @@ static func from_row(row: Dictionary) -> CareerFixture:
 	var fixture := CareerFixture.new()
 	fixture.player_id = str(row["player_id"])
 	fixture.scheduled_day = int(row["scheduled_day"])
+	fixture.kick_off = int(row.get("kick_off", MatchTimes.DEFAULT_KICK_OFF))
 	fixture.setup = decoded
 	if row["submission_id"] != null:
 		var result_data: Variant = JSON.parse_string(str(row["result_json"]))

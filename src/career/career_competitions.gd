@@ -15,14 +15,20 @@ static func ensure_league_seasons(repo: CareerRepository, year: int) -> bool:
 	if year < 1:
 		return false
 	return repo.transaction(func() -> bool:
+		# Leagues opening in the same month take turns through the week.
+		var order_in_month: Dictionary[int, int] = {}
 		for competition: CareerRecords.CompetitionRecord in repo.competitions():
-			if competition.kind != "league" or not repo.league_season(competition.id, year).is_empty():
+			if competition.kind != "league":
+				continue
+			var order: int = order_in_month.get(competition.start_month, 0)
+			order_in_month[competition.start_month] = order + 1
+			if not repo.league_season(competition.id, year).is_empty():
 				continue
 			var start_day := GameDate.make(year, competition.start_month, 1)
 			var entrants := league_field(repo, competition, start_day)
 			if entrants.size() < MIN_LEAGUE_TEAMS:
 				continue
-			var fixtures := round_robin(entrants, start_day)
+			var fixtures := round_robin(entrants, start_day, order)
 			if not repo.insert_league_season(competition.id, year, start_day, LEAGUE_BEST_OF, entrants, fixtures):
 				return false
 		return CareerCups.ensure_cup_seasons(repo, year))
@@ -38,8 +44,10 @@ static func league_field(repo: CareerRepository, competition: CareerRecords.Comp
 
 
 ## The circle method gives every pair one meeting and every team at most one match per round.
-## Odd fields have a rotating bye. Long calendars fit within one year of their start date.
-static func round_robin(entrants: Array[String], start_day: int) -> Array[Dictionary]:
+## Odd fields have a rotating bye. Long calendars fit within one year of their start date. Each
+## round is spread over a few days with kick-off times ([MatchTimes]); [param order] (the
+## league's position among the leagues) moves its match days along the week.
+static func round_robin(entrants: Array[String], start_day: int, order: int = 0) -> Array[Dictionary]:
 	var fixtures: Array[Dictionary] = []
 	var rotation: Array[String] = entrants.duplicate()
 	if rotation.size() % 2 != 0:
@@ -48,18 +56,25 @@ static func round_robin(entrants: Array[String], start_day: int) -> Array[Dictio
 	var spacing := mini(DAYS_BETWEEN_ROUNDS, floori(float(GameDate.DAYS_PER_YEAR - 1) / maxi(rounds - 1, 1)))
 	@warning_ignore("integer_division")
 	var pairs_per_round := rotation.size() / 2
+	var span := mini(spacing, MatchTimes.ROUND_DAYS)
+	var offset := MatchTimes.league_offset(order, spacing, GameDate.DAYS_PER_YEAR - 1 - (rounds - 1) * spacing - (span - 1))
 	for round_index: int in rounds:
+		var pairs: Array[Array] = []
 		for pair: int in pairs_per_round:
 			var first := rotation[pair]
 			var second := rotation[rotation.size() - 1 - pair]
-			if first.is_empty() or second.is_empty():
-				continue
+			if not first.is_empty() and not second.is_empty():
+				pairs.append([pair, first, second])
+		var slots := MatchTimes.spread(pairs.size(), span)
+		for index: int in pairs.size():
+			var pair := int(pairs[index][0])
 			var swap_sides := (round_index + pair) % 2 != 0
 			fixtures.append({
 				"round_number": round_index + 1,
-				"scheduled_day": start_day + round_index * spacing,
-				"home_id": second if swap_sides else first,
-				"away_id": first if swap_sides else second,
+				"scheduled_day": start_day + offset + round_index * spacing + slots[index].x,
+				"kick_off": slots[index].y,
+				"home_id": str(pairs[index][2]) if swap_sides else str(pairs[index][1]),
+				"away_id": str(pairs[index][1]) if swap_sides else str(pairs[index][2]),
 			})
 		rotation.insert(1, rotation.pop_back())
 	return fixtures

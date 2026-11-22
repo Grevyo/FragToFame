@@ -414,7 +414,7 @@ func _refresh_date() -> void:
 	if _date_label == null or not App.has_career():
 		return
 	var repo := App.career.repo
-	_date_label.text = "%s  ·  %s" % [repo.meta_value("save_name", "Career"), GameDate.format(repo.current_day())]
+	_date_label.text = "%s  ·  %s" % [repo.meta_value("save_name", "Career"), GameDate.format_long(repo.current_day())]
 
 
 func _on_main_menu_pressed() -> void:

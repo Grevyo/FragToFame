@@ -24,7 +24,7 @@ extends RefCounted
 ##   relationship       how two players get on (-100..100)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 17
+const CURRENT_VERSION: int = 18
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -510,6 +510,12 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			timeline_json TEXT NOT NULL
 		) WITHOUT ROWID;""",
 		"CREATE INDEX sim_timeline_by_day ON sim_timeline(day);",
+	],
+	# v18 — time of day: every series and career match has a kick-off (minutes after midnight).
+	# Older saves keep their days and play at 18:00.
+	[
+		"ALTER TABLE league_fixture ADD COLUMN kick_off INTEGER NOT NULL DEFAULT 1080 CHECK (kick_off BETWEEN 0 AND 1439);",
+		"ALTER TABLE career_fixture ADD COLUMN kick_off INTEGER NOT NULL DEFAULT 1080 CHECK (kick_off BETWEEN 0 AND 1439);",
 	],
 ]
 

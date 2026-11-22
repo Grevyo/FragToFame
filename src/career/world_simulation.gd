@@ -67,22 +67,44 @@ const NOTABLE_REPUTATION: int = 60
 ## Runs everything that happens on [param day] apart from resolving series (the calendar does
 ## that first so today's world sees yesterday's results).
 static func simulate_day(repo: CareerRepository, day: int, rng: RandomNumberGenerator) -> bool:
-	if not WorldFinance.ensure(repo, day):
-		return false
+	for phase: Dictionary in day_phases(day):
+		if not (phase["work"] as Callable).call(repo, day, rng):
+			return false
+	return true
+
+
+## The world's morning on [param day], in order, as timed phases ({minute, label, work}) the
+## calendar runs one at a time ([CalendarDay]); work is func(repo, day, rng) -> bool. Phases that
+## do not apply that day (the new year, the monthly review) are left out. Series are played in
+## the afternoon and evening, after these.
+static func day_phases(day: int) -> Array[Dictionary]:
+	var phases: Array[Dictionary] = [_phase(6 * 60, "Club finances", func(repo: CareerRepository, today: int, _rng: RandomNumberGenerator) -> bool:
+		return WorldFinance.ensure(repo, today))]
 	if GameDate.day_of_year(day) == 0:
-		if not _new_year(repo, day, rng) or not CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(day)):
-			return false
-	if not _season_openings(repo, day) or not WorldSeasons.close_finished(repo, day, rng) \
-			or not CareerCups.progress(repo, day):
-		return false
+		phases.append(_phase(6 * 60 + 30, "New year: new seasons", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+			return _new_year(repo, today, rng) and CareerCompetitions.ensure_league_seasons(repo, GameDate.year_of(today))))
+	phases.append(_phase(7 * 60, "Competitions", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+		return _season_openings(repo, today) and WorldSeasons.close_finished(repo, today, rng) and CareerCups.progress(repo, today)))
 	if GameDate.month_and_day(day).y == 1 and day > 0:
-		if not WorldDevelopment.monthly(repo, day, rng) or not _reputation_drift(repo, day, rng) \
-				or not WorldFinance.monthly(repo, day) or not CareerHumanContracts.monthly(repo, day, rng) \
-				or not CareerSeriesEngine.monthly(repo, day) or not CareerPeople.monthly(repo, day, rng):
-			return false
-	return WorldMarket.process_contracts(repo, day, rng) and WorldMarket.transfers(repo, day, rng) \
-		and WorldMarket.fill_rosters(repo, day, rng) \
-		and CareerOffers.daily(repo, day, rng) and CareerLeagueMatches.schedule_due(repo, day)
+		phases.append(_phase(8 * 60, "Monthly review", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+			return WorldDevelopment.monthly(repo, today, rng) and _reputation_drift(repo, today, rng) \
+				and WorldFinance.monthly(repo, today) and CareerHumanContracts.monthly(repo, today, rng) \
+				and CareerSeriesEngine.monthly(repo, today) and CareerPeople.monthly(repo, today, rng)))
+	phases.append(_phase(9 * 60, "Contracts", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+		return WorldMarket.process_contracts(repo, today, rng)))
+	phases.append(_phase(10 * 60 + 30, "Transfer market", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+		return WorldMarket.transfers(repo, today, rng)))
+	phases.append(_phase(11 * 60 + 30, "Squads", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+		return WorldMarket.fill_rosters(repo, today, rng)))
+	phases.append(_phase(12 * 60, "Offers and invitations", func(repo: CareerRepository, today: int, rng: RandomNumberGenerator) -> bool:
+		return CareerOffers.daily(repo, today, rng)))
+	phases.append(_phase(12 * 60 + 30, "Match bookings", func(repo: CareerRepository, today: int, _rng: RandomNumberGenerator) -> bool:
+		return CareerLeagueMatches.schedule_due(repo, today)))
+	return phases
+
+
+static func _phase(minute: int, label: String, work: Callable) -> Dictionary:
+	return {"minute": minute, "label": label, "work": work}
 
 
 ## Simulated strength bonus from an organisation's form.

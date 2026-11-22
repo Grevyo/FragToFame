@@ -122,7 +122,7 @@ func _refresh_fixture_card() -> void:
 		_fixture_card.add_child(UIFactory.label("%s vs %s" % [setup.home_team_name, setup.away_team_name],
 			&"CardTitleLabel", true))
 		_fixture_card.add_child(UIFactory.label("%s · %s · MR%d · %s" % [setup.competition,
-			GameDate.format(fixture.scheduled_day), setup.max_rounds, _map_name(setup.map_id)], &"MutedLabel", true))
+			GameDate.format_at(fixture.scheduled_day, fixture.kick_off), setup.max_rounds, _map_name(setup.map_id)], &"MutedLabel", true))
 		var buttons := UIFactory.hbox(8)
 		var play := UIFactory.button("Play fixture", &"AccentButton")
 		play.pressed.connect(func() -> void: _fixture_status.text = App.start_career_fixture(setup.fixture_id))

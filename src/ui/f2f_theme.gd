@@ -149,6 +149,7 @@ static func _build_labels(theme: Theme) -> void:
 	_label_variation(theme, &"CalendarDayLabel", 88, BG)
 	_label_variation(theme, &"CalendarYearLabel", 14, TEXT_DISABLED)
 	_label_variation(theme, &"CalendarCellLabel", 12, TEXT)
+	_label_variation(theme, &"CalendarClockLabel", 34, ACCENT_ALT)
 
 
 static func _panel_variation(theme: Theme, name: StringName, style: StyleBoxFlat) -> void:

@@ -530,8 +530,10 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
     top right. Holiday runs until the next inbox message (a headline), for 1 week to 6 months,
     or to the end of the year. Your own match still stops it; a development checkbox simulates
     it instead. While days pass (Continue or Holiday), a calendar overlay flips a tear-off page
-    to each day, fills in the month, shows the day's top story and offers Stop (owner,
-    2026-11-22: the screen must not freeze while the world simulates).
+    to each day, runs a clock through it (the world's morning, then each series at its kick-off
+    with the score), fills in the month, shows the day's top story and offers Stop (owner,
+    2026-11-22: the screen must not freeze while the world simulates, and every day is its own
+    day with time in it). Series are spread through the week with kick-off times.
   - **Sidebar headings:** Career (Home, Inbox, Calendar), Me (Profile, My Team), World
     (Competitions, Teams, Players, News), Data (Statistics, Co-op).
   - **Linked pages** with a history: Teams → a team (Overview, Squad, Matches, Finances,
@@ -1093,3 +1095,4 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage F: people over a match. Tilt, nerves in big rounds, fatigue over a series, map familiarity for teams and map comfort for players, from traits and the career's history (simulated lines now record their map, save schema v16). Confidence moved to Milestone 20 (owner: it comes from play time, team training and the manager's tactics). |
 | 2026-11-22 | Milestone 21 stage G: round-by-round match view. Every simulated map keeps a timeline (both leaders' plans and buys, the kill feed with weapon, headshot and flasher, bomb plants and defuses, each player's money and kit, the scoreboard), shown on the hub's "Round by round" page from series and fixture views. Save schema v17; world timelines are pruned after 90 days. |
 | 2026-11-22 | Calendar overlay (owner request): Continue and Holiday run a day at a time (`CalendarRun`) behind a tear-off calendar page that flips to each day, the month filling in, the day's top story and a Stop button, instead of the screen freezing until the run ends. Long holidays speed up so a year stays under ten seconds of pacing. |
+| 2026-11-22 | Time of day (owner request: every day its own day, everything spread, time in the day like a management game): series have kick-off times and each round is spread over up to three days, leagues in turn through the week, so matches fall on most days. A day passing plays the previous day's series at their kick-offs, then the world's morning as timed phases (finances, competitions, contracts, market, squads, offers, bookings); the overlay runs a clock through it with each series' score. Dates show their weekday. Save schema v18. |

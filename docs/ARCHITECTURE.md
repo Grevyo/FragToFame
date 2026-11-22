@@ -130,6 +130,20 @@ Pages render a "no career open" card when no career is loaded.
   per frame step, a tear-off page that flips to each day, the month, the day's top story, Stop
   sets `stop_requested`), then hand it to `App.finish_calendar_run`, which announces the new
   date. Each day still commits in its own transaction, so stopping leaves a consistent save.
+- **Time of day.** Day 0 is a Monday (`GameDate.weekday`, `format_long`, `clock`, `format_at`).
+  Every series and career match has a `kick_off` (minutes after midnight; save schema v18, older
+  rows play at 18:00). `MatchTimes.spread` shares a round's series over up to three days at
+  afternoon and evening kick-offs; `round_robin` and the cups use it, and leagues opening in the
+  same month start on different days of the week (`MatchTimes.league_offset`). A day passing is
+  a `CalendarDay`: the series due before it in kick-off order (the afternoon and evening of the
+  day being left), then the new day's morning as `WorldSimulation.day_phases` (finances,
+  competitions, monthly review, contracts, transfer market, squads, offers, match bookings; the
+  same order as before, `simulate_day` runs them all). The day's transaction opens in
+  `CalendarDay.start` and spans frames (`CareerDatabase.begin_transaction` /
+  `end_transaction`, which `transaction()` now wraps); it commits with the new date after the
+  last event. `CalendarRun.step` runs one event and reports it through `now()`; the overlay shows
+  the clock, the event and each series' score, and finishes a run synchronously if it leaves the
+  tree mid-day so no transaction is left open.
 
 ### Networking (Milestone 2 proof)
 

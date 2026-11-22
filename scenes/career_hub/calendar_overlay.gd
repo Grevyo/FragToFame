@@ -1,9 +1,10 @@
 class_name CareerCalendarOverlay
 extends CanvasLayer
 ## Shown while a Continue or a holiday runs ([CalendarRun]): a tear-off calendar page that flips
-## to each day as the world simulates it, the month with the days passed so far, the day's top
-## story and a Stop button. Days run between frames so the screen keeps moving; a day stays on
-## screen long enough to follow it (see [method _day_seconds]), and long runs go faster.
+## to each day, a clock that runs through it with what is happening (the morning's market and
+## news, each series at its kick-off with the score), the month with the days passed so far, the
+## day's top story and a Stop button. Events run between frames so the screen keeps moving; each
+## stays on screen long enough to follow (see [method _day_seconds]), and long runs go faster.
 
 ## Shortest time a day stays on screen in a short run (a Continue or a week away).
 const DAY_SECONDS: float = 0.16
@@ -12,6 +13,9 @@ const RUN_SECONDS: float = 6.0
 ## The page flip (each half); skipped when a day has less time than [constant FLIP_MIN_DAY].
 const FLIP_SECONDS: float = 0.03
 const FLIP_MIN_DAY: float = 0.1
+## Shortest time a series and a morning event stay on screen in a short run.
+const SERIES_SECONDS: float = 0.05
+const WORLD_SECONDS: float = 0.015
 const LAYER: int = 50
 
 var run: CalendarRun
@@ -19,6 +23,10 @@ var _page: PanelContainer
 var _month_label: Label
 var _day_label: Label
 var _year_label: Label
+var _clock_label: Label
+var _event_label: Label
+var _detail_label: Label
+var _shown_day: int = -1
 var _grid: GridContainer
 var _grid_month: int = -1
 var _cells: Dictionary[int, PanelContainer] = {}
@@ -48,22 +56,41 @@ func _ready() -> void:
 
 func _play() -> Dictionary:
 	_show_day(run.repo.current_day())
+	_show_event({})
 	await get_tree().process_frame
 	var pace := _day_seconds()
+	var scale := pace / DAY_SECONDS
+	var day_started := Time.get_ticks_msec()
 	while not run.is_finished():
 		var started := Time.get_ticks_msec()
-		# Let the current page reach the screen before the next day blocks the frame.
+		# Let the current state reach the screen before the next event blocks the frame.
 		await get_tree().process_frame
 		run.step()
-		var today := run.repo.current_day()
-		if pace >= FLIP_MIN_DAY:
-			await _flip_to(today)
-		else:
-			_show_day(today)
-		var left := pace - (Time.get_ticks_msec() - started) / 1000.0
+		var now := run.now()
+		var day := int(now.get("day", run.repo.current_day()))
+		if day != _shown_day:
+			# Hold the finished day for its share of the run before turning the page.
+			var day_left := pace - (Time.get_ticks_msec() - day_started) / 1000.0
+			if day_left > 0.0:
+				await get_tree().create_timer(day_left).timeout
+			day_started = Time.get_ticks_msec()
+			if pace >= FLIP_MIN_DAY:
+				await _flip_to(day)
+			else:
+				_show_day(day)
+		_show_event(now)
+		var hold := (SERIES_SECONDS if str(now.get("kind", "")) != "world" else WORLD_SECONDS) * scale
+		var left := hold - (Time.get_ticks_msec() - started) / 1000.0
 		if left > 0.0 and not run.is_finished():
 			await get_tree().create_timer(left).timeout
 	return run.outcome
+
+
+## If the overlay leaves the tree mid-run (the scene changed), the run finishes without it so the
+## day's transaction is never left open.
+func _exit_tree() -> void:
+	if run != null and not run.is_finished():
+		run.run_all()
 
 
 func _build() -> void:
@@ -103,6 +130,18 @@ func _build() -> void:
 	_year_label = UIFactory.label("", &"CalendarYearLabel")
 	_year_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	page_box.add_child(_year_label)
+
+	_clock_label = UIFactory.label("", &"CalendarClockLabel")
+	_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(_clock_label)
+	_event_label = UIFactory.label("", &"CardTitleLabel")
+	_event_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_event_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_event_label.custom_minimum_size = Vector2(420, 0)
+	box.add_child(_event_label)
+	_detail_label = UIFactory.label("", &"MutedLabel")
+	_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(_detail_label)
 
 	_grid = GridContainer.new()
 	_grid.columns = 7
@@ -157,11 +196,38 @@ func _flip_to(day: int) -> void:
 	await drop.finished
 
 
+## The clock and what is happening at it.
+func _show_event(now: Dictionary) -> void:
+	if now.is_empty() or str(now.get("label", "")).is_empty():
+		_clock_label.text = GameDate.clock(int(now.get("minute", 9 * 60)))
+		_event_label.text = "Getting going…" if now.is_empty() else "Between events"
+		_detail_label.text = ""
+		return
+	_clock_label.text = GameDate.clock(int(now["minute"]))
+	var kind := str(now["kind"])
+	if kind == "world":
+		_event_label.text = str(now["label"])
+		_detail_label.text = "The world's morning"
+		return
+	var label := str(now["label"])
+	if now.has("score"):
+		var score := now["score"] as Array
+		var teams := label.split(" vs ")
+		if teams.size() == 2:
+			label = "%s  %d – %d  %s" % [teams[0], int(score[0]), int(score[1]), teams[1]]
+	_event_label.text = label
+	var parts: PackedStringArray = [str(now["detail"])] if not str(now["detail"]).is_empty() else []
+	if run.series_played > 0:
+		parts.append("%d series played" % run.series_played)
+	_detail_label.text = " · ".join(parts)
+
+
 func _show_day(day: int) -> void:
+	_shown_day = day
 	var date := GameDate.month_and_day(day)
 	_month_label.text = GameDate.MONTH_NAMES[date.x].to_upper()
 	_day_label.text = str(date.y)
-	_year_label.text = GameDate.format_year(day)
+	_year_label.text = "%s · %s" % [_weekday_name(day), GameDate.format_year(day)]
 	_fill_month(day)
 	var today: PanelContainer = _cells.get(day)
 	if today != null:
@@ -174,6 +240,10 @@ func _show_day(day: int) -> void:
 	var stories := run.repo.news_on(day)
 	if not stories.is_empty():
 		_story_label.text = str(stories[0]["headline"])
+
+
+static func _weekday_name(day: int) -> String:
+	return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][GameDate.weekday(day)]
 
 
 ## Draws the month of [param day] (once per month), marking the days this run has passed.

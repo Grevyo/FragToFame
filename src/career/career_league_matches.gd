@@ -56,7 +56,7 @@ static func record_map(repo: CareerRepository, fixture: CareerFixture, series_ma
 		finished.append(false)
 		var human := repo.get_player(fixture.player_id)
 		var org_id := fixture.setup.home_team_id
-		return _schedule_map(repo, human, org_id, _named(repo, series), own + other + 1, fixture.scheduled_day)
+		return _schedule_map(repo, human, org_id, _named(repo, series), own + other + 1, fixture.scheduled_day, fixture.kick_off)
 	finished.append(true)
 	var score := Vector2i(own, other) if human_home else Vector2i(other, own)
 	if not CareerCompetitions.record_league_result(repo, int(series["id"]), score.x, score.y):
@@ -69,7 +69,7 @@ static func record_map(repo: CareerRepository, fixture: CareerFixture, series_ma
 
 
 static func _schedule_map(repo: CareerRepository, human: CareerRecords.PlayerRecord, org_id: String,
-		series: Dictionary, map_number: int, day: int) -> bool:
+		series: Dictionary, map_number: int, day: int, kick_off: int = -1) -> bool:
 	var human_home := str(series["home_id"]) == org_id
 	var opponent_id := str(series["away_id"]) if human_home else str(series["home_id"])
 	var setup := MatchSetup.new()
@@ -92,6 +92,7 @@ static func _schedule_map(repo: CareerRepository, human: CareerRecords.PlayerRec
 	var fixture := CareerFixture.new()
 	fixture.player_id = human.id
 	fixture.scheduled_day = day
+	fixture.kick_off = kick_off if kick_off >= 0 else int(series.get("kick_off", MatchTimes.DEFAULT_KICK_OFF))
 	fixture.setup = setup
 	return repo.insert_fixture(fixture) and repo.insert_series_map(int(series["id"]), map_number, setup.fixture_id, human_home)
 

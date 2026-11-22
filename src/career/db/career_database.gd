@@ -128,20 +128,38 @@ func last_insert_rowid() -> int:
 ## Runs [param work] (a Callable returning bool) atomically. Commits when it returns true and no
 ## statement failed; otherwise rolls back every change. Nested calls join the outer transaction.
 func transaction(work: Callable) -> bool:
+	if not begin_transaction():
+		return false
+	var ok: bool = work.call()
+	return end_transaction(ok)
+
+
+## Opens a transaction (or joins the open one) that [method end_transaction] closes. For work that
+## spans frames, such as a day of the calendar played event by event; [method transaction] wraps
+## the pair around a callable.
+func begin_transaction() -> bool:
 	if _db == null:
 		return false
 	if _transaction_depth > 0:
 		_transaction_depth += 1
-		var nested_ok: bool = work.call()
-		_transaction_depth -= 1
-		if not nested_ok:
-			_transaction_failed = true
-		return nested_ok and not _transaction_failed
+		return true
 	if not execute("BEGIN IMMEDIATE TRANSACTION;"):
 		return false
 	_transaction_depth = 1
 	_transaction_failed = false
-	var ok: bool = work.call()
+	return true
+
+
+## Closes what [method begin_transaction] opened: the outermost one commits when every part went
+## well ([param ok]) and rolls back otherwise. Returns whether the work stands.
+func end_transaction(ok: bool) -> bool:
+	if _transaction_depth > 1:
+		_transaction_depth -= 1
+		if not ok:
+			_transaction_failed = true
+		return ok and not _transaction_failed
+	if _transaction_depth == 0:
+		return false
 	_transaction_depth = 0
 	if ok and not _transaction_failed:
 		if execute("COMMIT;"):
@@ -150,6 +168,10 @@ func transaction(work: Callable) -> bool:
 	execute("ROLLBACK;")
 	last_error = error
 	return false
+
+
+func in_transaction() -> bool:
+	return _transaction_depth > 0
 
 
 ## Schema version stored in the database header (PRAGMA user_version).

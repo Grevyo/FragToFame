@@ -12,11 +12,13 @@ func suite_name() -> String:
 
 func run() -> void:
 	_test_simulator()
+	_test_time_of_day()
 	var app := tree.root.get_node("App")
 	var original := app.get("career_saves") as CareerSaves
 	_clean(ProjectSettings.globalize_path(TEST_ROOT))
 	app.set("career_saves", CareerSaves.new(TEST_ROOT))
 	await _test_calendar(app)
+	_test_timed_day(app)
 	app.call("close_career")
 	app.set("career_saves", original)
 	app.call("go_to", &"main_menu")
@@ -105,11 +107,17 @@ func _test_calendar(app: Node) -> void:
 	repo.db.execute("DELETE FROM league_series_map;")
 	repo.db.execute("DELETE FROM career_fixture WHERE player_id = ? AND submission_id IS NULL;", [player_id])
 
+	# Block a simulated series a week or so in (series are spread through the week, so pick one).
+	var blocked := repo.league_fixtures_between(5, 29, 5000).filter(func(f: Dictionary) -> bool:
+		return str(f["home_id"]) != human_org and str(f["away_id"]) != human_org)
+	check(not blocked.is_empty(), "there is a simulated series to block")
+	var blocked_day := int(blocked[0]["scheduled_day"]) if not blocked.is_empty() else 7
 	check(repo.db.execute("""CREATE TRIGGER block_calendar_score BEFORE UPDATE OF home_maps ON league_fixture
-		WHEN NEW.scheduled_day = 7 BEGIN SELECT RAISE(ABORT, 'blocked series'); END;"""), "installs a failing series write")
-	var before := repo.league_fixtures_between(1, 6, 5000).filter(func(f: Dictionary) -> bool: return f["home_maps"] != null).size()
+		WHEN NEW.id = %d BEGIN SELECT RAISE(ABORT, 'blocked series'); END;""" % (int(blocked[0]["id"]) if not blocked.is_empty() else -1)),
+		"installs a failing series write")
+	var before := repo.league_fixtures_between(1, blocked_day - 1, 5000).filter(func(f: Dictionary) -> bool: return f["home_maps"] != null).size()
 	check(not CareerCalendar.advance_to(repo, 30, dice) and repo.current_day() == 1
-		and repo.league_fixtures_between(1, 6, 5000).filter(func(f: Dictionary) -> bool: return f["home_maps"] != null).size() == before,
+		and repo.league_fixtures_between(1, blocked_day - 1, 5000).filter(func(f: Dictionary) -> bool: return f["home_maps"] != null).size() == before,
 		"a failed series write rolls back the whole jump, date included")
 	repo.db.execute("DROP TRIGGER block_calendar_score;")
 	check(CareerCalendar.advance_to(repo, 30, dice) and repo.current_day() == 30, "a multi-day jump succeeds once unblocked")
@@ -138,6 +146,78 @@ func _test_calendar(app: Node) -> void:
 	await wait_frames(1)
 	var labels := hub.find_children("*", "Label", true, false).map(func(n: Node) -> String: return (n as Label).text)
 	check(labels.any(func(t: String) -> bool: return t.contains(GameDate.format(31))), "the hub shows the new date")
+
+
+func _test_time_of_day() -> void:
+	section("Time of day")
+	check(GameDate.weekday(0) == 0 and GameDate.weekday(8) == 1 and GameDate.format_long(0) == "Mon 01 Jan Y1",
+		"day one is a Monday and dates read with their weekday")
+	check(GameDate.clock(18 * 60 + 30) == "18:30" and GameDate.clock(5) == "00:05", "kick-offs read as a clock")
+	var four := MatchTimes.spread(4, 3)
+	var days: Dictionary[int, int] = {}
+	for slot: Vector2i in four:
+		days[slot.x] = days.get(slot.x, 0) + 1
+	check(days.size() == 3 and four.all(func(v: Vector2i) -> bool: return v.y >= 12 * 60 and v.y <= 22 * 60),
+		"a round's series are spread over three days in the afternoon and evening (%s)" % [four])
+	var nine := MatchTimes.spread(9, 3)
+	var same_day: Dictionary[int, bool] = {}
+	for slot: Vector2i in nine:
+		if slot.x == 0:
+			same_day[slot.y] = true
+	check(same_day.size() == 3, "series on the same day kick off at different times")
+	check(MatchTimes.spread(0, 3).is_empty() and MatchTimes.spread(1, 3) == [Vector2i(0, MatchTimes.DEFAULT_KICK_OFF)],
+		"an empty round has no slots; a lone series plays in the evening")
+
+
+## A day as timed events: the previous day's series at their kick-offs, then the morning's world.
+func _test_timed_day(app: Node) -> void:
+	section("A day hour by hour")
+	var session := app.get("career") as CareerSession
+	if session == null:
+		check(false, "the calendar test career is still open")
+		return
+	var repo := session.repo
+	var start := repo.current_day()
+	var week := repo.league_fixtures_between(start, start + 6, 5000)
+	var match_days: Dictionary[int, bool] = {}
+	for fixture: Dictionary in week:
+		match_days[int(fixture["scheduled_day"])] = true
+	check(match_days.size() >= 4, "the world's series fall on most days of the week (%d of 7)" % match_days.size())
+	var dice := RandomNumberGenerator.new()
+	dice.seed = 77
+	# Move to a day after a match day so the day being entered has series to play.
+	var match_day := start
+	for day: int in match_days:
+		if day > match_day:
+			match_day = day
+			break
+	check(CareerCalendar.advance_to(repo, match_day, dice), "moves to a match day")
+	var calendar_day := CalendarDay.start(repo, match_day + 1, dice)
+	check(calendar_day != null, "a day opens")
+	if calendar_day == null:
+		return
+	var in_order := true
+	var series := 0
+	var previous := Vector2i(-1, -1)
+	for event: Dictionary in calendar_day.events:
+		var at := Vector2i(int(event["day"]), int(event["minute"]))
+		if at.x < previous.x or (at.x == previous.x and at.y < previous.y):
+			in_order = false
+		previous = at
+		if str(event["kind"]) == "series":
+			series += 1
+	check(series > 0 and in_order, "its events run in time order: %d series, then the morning (%d events)" % [series,
+		calendar_day.events.size()])
+	var steps := 0
+	while calendar_day.step():
+		steps += 1
+	check(calendar_day.succeeded() and steps == calendar_day.events.size() - 1 and repo.current_day() == match_day + 1
+		and calendar_day.series_played == series, "it plays one event per step and lands on the new day")
+	var run := CalendarRun.holiday_run(repo, session.human_player_id, 2, false, dice)
+	check(run.step() and not run.now().is_empty() and int(run.now()["day"]) >= match_day + 1,
+		"a run reports what is happening and when")
+	run.run_all()
+	check(run.is_finished(), "and finishes the same days when run in one go (%s)" % run.outcome.get("reason", ""))
 
 
 func _clean(folder: String) -> void:

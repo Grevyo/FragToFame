@@ -1,12 +1,9 @@
 class_name CareerCalendar
 extends RefCounted
-## Moves a career's date forward one day at a time. Each day that passes first plays the
-## organisation series that were due before it, round by round ([CareerSeriesEngine]),
-## then runs the living world for that day ([WorldSimulation]: market, development, retirements,
-## rookies, new seasons and news), all in one transaction with the date change.
-##
-## Series involving an organisation with a human in its starting five are never simulated: those
-## are the player's own matches. A benched human's organisation is simulated without them.
+## Moves a career's date forward one day at a time. Each day that passes is a [CalendarDay]:
+## the series that were due before it at their kick-offs, round by round ([CareerSeriesEngine]),
+## then the living world's morning ([WorldSimulation]: market, development, retirements, rookies,
+## new seasons and news), all in one transaction with the date change.
 
 const BLOCKED_BY_FIXTURE: String = "You have a match scheduled. Play it before moving to the next day."
 ## Continue never runs further than this without stopping.
@@ -40,9 +37,10 @@ static func advance_to(repo: CareerRepository, day: int, rng: RandomNumberGenera
 		dice.randomize()
 	return repo.transaction(func() -> bool:
 		for today: int in range(previous + 1, day + 1):
-			if not _simulate_due_series(repo, today, dice) or not WorldSimulation.simulate_day(repo, today, dice):
+			var calendar_day := CalendarDay.start(repo, today, dice)
+			if calendar_day == null or not calendar_day.run_all():
 				return false
-		return repo.set_current_day(day))
+		return true)
 
 
 ## FM-style Continue: advances day by day until something needs the player — their match is
@@ -78,24 +76,3 @@ static func organisation_strength(repo: CareerRepository, org_id: String) -> flo
 			total += float(value)
 			count += 1
 	return total / count + WorldSimulation.form_bonus(repo, org_id) if count > 0 else 0.0
-
-
-## Plays every due series nobody plays through the round-by-round match engine
-## ([CareerSeriesEngine]). Form and morale move after each series, so later series see them.
-static func _simulate_due_series(repo: CareerRepository, before_day: int, rng: RandomNumberGenerator) -> bool:
-	var human_org: Dictionary[String, bool] = {}
-	for fixture: Dictionary in repo.unresolved_league_fixtures(before_day):
-		var home := str(fixture["home_id"])
-		var away := str(fixture["away_id"])
-		for org_id: String in [home, away]:
-			if not human_org.has(org_id):
-				human_org[org_id] = repo.organisation_has_human_starter(org_id)
-		if human_org[home] or human_org[away]:
-			continue
-		var best_of := int(fixture["best_of"])
-		var score := CareerSeriesEngine.play_series(repo, fixture, int(fixture["scheduled_day"]), rng)
-		if score.x < 0 or not repo.store_league_score(int(fixture["id"]), score.x, score.y):
-			return false
-		if not WorldSimulation.apply_series(repo, home, away, score, best_of, int(fixture["tier"]), before_day, rng):
-			return false
-	return true

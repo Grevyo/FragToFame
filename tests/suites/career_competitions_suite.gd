@@ -34,10 +34,22 @@ func _test_schedule() -> void:
 		used[home] = true
 		used[away] = true
 		pairs[pair] = true
-		if fixture["scheduled_day"] != 31 + (round_number - 1) * 7:
+		var into_round := int(fixture["scheduled_day"]) - (31 + (round_number - 1) * 7)
+		if into_round < 0 or into_round >= MatchTimes.ROUND_DAYS or int(fixture["kick_off"]) < 12 * 60 or int(fixture["kick_off"]) > 22 * 60:
 			valid = false
 	check(valid and fixtures.size() == 10 and teams_by_round.size() == 5 and entrants.size() == 5,
 		"five entrants have one meeting per pair, a rotating bye and published dates")
+	var round_days: Dictionary[int, bool] = {}
+	var kick_offs: Dictionary[int, bool] = {}
+	var bigger: Array[String] = entrants.duplicate()
+	bigger.append_array(["foxtrot", "golf", "hotel"])
+	var later_league := CareerCompetitions.round_robin(bigger, 31, 1)
+	for fixture: Dictionary in later_league:
+		if int(fixture["round_number"]) == 1:
+			round_days[int(fixture["scheduled_day"])] = true
+			kick_offs[int(fixture["kick_off"])] = true
+	check(round_days.size() == MatchTimes.ROUND_DAYS and kick_offs.size() >= 2 and not round_days.has(31),
+		"a round is spread over several days at different kick-offs, and the next league plays on other days")
 	var maximum: Array[String] = []
 	for idx: int in 64:
 		maximum.append("org_%d" % idx)

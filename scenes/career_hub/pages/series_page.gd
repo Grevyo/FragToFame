@@ -22,7 +22,7 @@ func build_page() -> void:
 		missing.add_child(UIFactory.label("Open a series from a team's matches, a player's maps or the Calendar.", &"MutedLabel", true))
 		return
 	var played := series["home_maps"] != null
-	var head := UIFactory.card(self, "%s · %s" % [series["competition_name"], GameDate.format(int(series["scheduled_day"]))])
+	var head := UIFactory.card(self, "%s · %s" % [series["competition_name"], GameDate.format_at(int(series["scheduled_day"]), int(series["kick_off"]))])
 	var row := UIFactory.hbox(16)
 	head.add_child(row)
 	row.add_child(team_link(str(series["home_id"]), str(series["home_name"])))

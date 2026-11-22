@@ -60,12 +60,17 @@ static func slots(seeded: Array[String]) -> Array[String]:
 	return list
 
 
+## The first round's series, spread over the round's first days with kick-off times ([MatchTimes]).
 static func first_round(seeded: Array[String], start_day: int) -> Array[Dictionary]:
 	var fixtures: Array[Dictionary] = []
 	var list := slots(seeded)
 	for pair: int in range(0, list.size(), 2):
 		if not list[pair].is_empty() and not list[pair + 1].is_empty():
 			fixtures.append({"round_number": 1, "scheduled_day": start_day, "home_id": list[pair], "away_id": list[pair + 1]})
+	var times := MatchTimes.spread(fixtures.size(), MatchTimes.ROUND_DAYS)
+	for index: int in fixtures.size():
+		fixtures[index]["scheduled_day"] = start_day + times[index].x
+		fixtures[index]["kick_off"] = times[index].y
 	return fixtures
 
 
@@ -174,14 +179,18 @@ static func _schedule_next(repo: CareerRepository, season: Dictionary, state: Di
 	var existing: Dictionary[String, bool] = {}
 	for fixture: Dictionary in fixtures:
 		existing[_pair_key(int(fixture["round_number"]), str(fixture["home_id"]), str(fixture["away_id"]))] = true
-	var planned := int(season["start_day"]) + (round_number - 1) * DAYS_BETWEEN_ROUNDS
+	var planned := maxi(int(season["start_day"]) + (round_number - 1) * DAYS_BETWEEN_ROUNDS, day + 1)
+	var pairs: Array[Array] = []
 	for pair: int in range(0, alive.size(), 2):
 		var home := alive[pair]
 		var away := alive[pair + 1]
-		if home.is_empty() or away.is_empty() or existing.has(_pair_key(round_number, home, away)):
-			continue
+		if not home.is_empty() and not away.is_empty() and not existing.has(_pair_key(round_number, home, away)):
+			pairs.append([home, away])
+	# A round's series are spread over its first days; a final is one series at its own time.
+	var times := MatchTimes.spread(pairs.size(), MatchTimes.ROUND_DAYS)
+	for index: int in pairs.size():
 		if not repo.insert_league_fixture(str(season["competition_id"]), int(season["season_year"]), round_number,
-				maxi(planned, day + 1), home, away):
+				planned + times[index].x, str(pairs[index][0]), str(pairs[index][1]), times[index].y):
 			return false
 	return true
 

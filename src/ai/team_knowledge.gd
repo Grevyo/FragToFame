@@ -18,6 +18,9 @@ var places: Array[Dictionary] = []
 var cleared: Dictionary[String, float] = {}
 ## Recent enemy sightings: {position: Vector3, time: float}.
 var sightings: Array[Dictionary] = []
+## Teammates' flashes in the air: {position: Vector3, time: float (when it goes off)}. Bots who
+## would see one turn away until it has gone off.
+var flashes: Array[Dictionary] = []
 
 
 ## The places of [param map] (spawns left out: there is nothing to clear in your own spawn and
@@ -41,11 +44,13 @@ func reset() -> void:
 	now = 0.0
 	cleared.clear()
 	sightings.clear()
+	flashes.clear()
 
 
 func advance(delta: float) -> void:
 	now += delta
 	sightings = sightings.filter(func(s: Dictionary) -> bool: return now - float(s["time"]) <= SIGHTING_SECONDS)
+	flashes = flashes.filter(func(f: Dictionary) -> bool: return float(f["time"]) + 0.2 >= now)
 
 
 func mark_cleared(place_id: String) -> void:
@@ -83,3 +88,21 @@ func uncleared_near(position: Vector3, reach: float) -> Array[Dictionary]:
 	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return (a["centre"] as Vector3).distance_to(position) < (b["centre"] as Vector3).distance_to(position))
 	return list
+
+
+## A teammate threw a flash that goes off at [param position] in [param seconds].
+func warn_flash(position: Vector3, seconds: float) -> void:
+	flashes.append({"position": position, "time": now + seconds})
+
+
+## The nearest teammate flash within [param radius] of [param position] about to go off (within
+## [param lead] seconds) or just going off, or Vector3.INF.
+func flash_to_avoid(position: Vector3, radius: float, lead: float = 1.0) -> Vector3:
+	var best := Vector3.INF
+	for flash: Dictionary in flashes:
+		var at := flash["position"] as Vector3
+		var left := float(flash["time"]) - now
+		if left <= lead and left >= -0.2 and at.distance_to(position) <= radius \
+				and (best == Vector3.INF or at.distance_to(position) < best.distance_to(position)):
+			best = at
+	return best

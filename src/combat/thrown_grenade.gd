@@ -39,6 +39,12 @@ func sync(delta: float) -> void:
 
 ## True once the grenade should go off (see "detonate" in [EquipmentCatalog]).
 func should_detonate() -> bool:
+	return goes_off(params, flight)
+
+
+## True once a grenade with [param params] in [param flight] goes off (shared by the live grenade
+## and line-up prediction, so a predicted throw goes off exactly where the real one would).
+static func goes_off(params: Dictionary, flight: GrenadeFlight) -> bool:
 	var fuse := float(params.get("fuse", 2.0))
 	match str(params.get("detonate", "fuse")):
 		"rest":

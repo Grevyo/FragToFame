@@ -27,9 +27,8 @@ const REPATH_INTERVAL: float = 0.5
 const CALM_TURN: float = 0.5
 ## Clearing an angle turns faster than idling (a share of the skill's turn speed).
 const CLEAR_TURN: float = 0.8
-## A gun is only fired at this share of full-run accuracy speed or less (a counter-strafe), unless
-## the enemy is close enough for running fire.
-const ACCURATE_SHARE: float = 0.34
+## A gun is only fired at the skill's share of full-run speed or less (a counter-strafe,
+## [member BotSkill.accurate_share]), unless the enemy is close enough for running fire.
 const RUN_AND_GUN_DISTANCE: float = 5.0
 ## Seconds of one strafe between bursts (random in this range).
 const STRAFE_TIME: Vector2 = Vector2(0.18, 0.42)
@@ -40,8 +39,6 @@ const CLEAR_REACH: float = 40.0
 const CLEAR_ANGLE: float = 14.0
 ## Standing in a place (this close to its centre) clears it.
 const INSIDE_PLACE: float = 4.0
-## An enemy who drops out of sight: hold the angle this long before following.
-const SEARCH_HOLD: float = 1.2
 ## A jiggle peek's step out (seconds, random in this range), and the pause between peeks.
 const JIGGLE_TIME: Vector2 = Vector2(0.14, 0.26)
 const JIGGLE_PAUSE: Vector2 = Vector2(1.5, 4.0)
@@ -49,6 +46,17 @@ const JIGGLE_PAUSE: Vector2 = Vector2(1.5, 4.0)
 const CAUTION_RADIUS: float = 22.0
 
 enum Strafe { HOLD, MOVE, STOP }
+
+## A line-up is thrown once the view is this close to it (degrees) and the bot nearly still.
+const THROW_ANGLE: float = 0.4
+const THROW_STILL_SPEED: float = 0.4
+## A throw not made within this many seconds is given up.
+const THROW_GIVE_UP: float = 4.0
+## Teammates' flashes within this range are looked away from.
+const FLASH_AVOID_RANGE: float = 26.0
+
+## A grenade left the hand along a line-up (or the throw was given up: thrown false).
+signal utility_finished(utility_id: StringName, thrown: bool)
 
 var bot_id: String = ""
 var display_name: String = ""
@@ -110,6 +118,11 @@ var _jiggle_back: float = 0.0
 var _jiggle_dir: float = 1.0
 var _jiggle_pause: float = 2.0
 var _strafing_now: bool = false
+## The line-up being thrown (null when none) and how long is left to throw it.
+var _throw: UtilityLineup = null
+var _throw_left: float = 0.0
+## Seconds still to spend lined up before letting go (from [member BotSkill.lineup_time]).
+var _throw_settle: float = 0.0
 
 
 ## Configures identity before the bot enters the tree.
@@ -260,6 +273,7 @@ func respawn_at(feet_position: Vector3, yaw: float) -> void:
 	_clearing = {}
 	_jiggle_out = 0.0
 	_jiggle_back = 0.0
+	_throw = null
 
 
 func view_angles() -> Vector2:
@@ -287,11 +301,17 @@ func _physics_process(delta: float) -> void:
 	if frozen:
 		_look_idle(delta)
 	elif target != null:
+		if _throw != null or weapons.current().definition.is_utility():
+			_cancel_throw()
 		want_fire = _engage(delta)
 		move_dir = _engage_movement(delta, want_fire)
+	elif _throw != null:
+		_strafe_state = Strafe.HOLD
+		_throw_step(delta)
 	else:
 		_strafe_state = Strafe.HOLD
 		move_dir = _navigate(delta)
+		_avoid_flash(delta)
 	var can_move := not frozen and not interact_held
 	weapons.trigger = want_fire and can_move
 	var direction := Vector2(move_dir.x, move_dir.z) if can_move else Vector2.ZERO
@@ -299,6 +319,79 @@ func _physics_process(delta: float) -> void:
 	var walking := can_move and not _strafing_now and (walk_requested or target != null or _cautious())
 	_step_movement(direction, walking, jump_pressed, delta, can_move)
 	_maybe_reload()
+
+
+# --- Utility -------------------------------------------------------------------------------
+
+## Throws [param lineup] (stand still, take the utility out, line up and throw). False when the
+## bot carries none of it.
+func throw_utility(lineup: UtilityLineup) -> bool:
+	if lineup == null or weapons.utility_count(lineup.utility_id) <= 0:
+		return false
+	for index: int in weapons.weapons.size():
+		if weapons.weapons[index].definition.id == lineup.utility_id:
+			weapons.select_index(index)
+			break
+	_throw = lineup
+	_throw_settle = skill.lineup_time * rng.randf_range(0.8, 1.3)
+	_throw_left = THROW_GIVE_UP + _throw_settle
+	return true
+
+
+func is_throwing() -> bool:
+	return _throw != null
+
+
+func _throw_step(delta: float) -> void:
+	_throw_left -= delta
+	var wanted := Vector2(_throw.yaw, _throw.pitch)
+	_turn_toward(wanted, delta, 1.0)
+	if _throw_left <= 0.0:
+		_cancel_throw()
+		return
+	var flat_speed := Vector2(velocity.x, velocity.z).length()
+	if AimModel.angle_between(view_angles(), wanted) > THROW_ANGLE or flat_speed > THROW_STILL_SPEED \
+			or weapons.draw_remaining > 0.0 or frozen or not is_on_floor():
+		return
+	# Lining up takes the thrower's time, then the release is only as exact as the thrower.
+	_throw_settle -= delta
+	if _throw_settle > 0.0:
+		return
+	set_view(wanted + Vector2(rng.randfn(0.0, skill.utility_error), rng.randfn(0.0, skill.utility_error)))
+	var lineup := _throw
+	_throw = null
+	var thrown := weapons.throw_current(lineup.speed)
+	if thrown and knowledge != null and EquipmentCatalog.utility_kind(lineup.utility_id) == EquipmentCatalog.KIND_FLASH:
+		knowledge.warn_flash(lineup.burst, lineup.seconds)
+	_back_to_gun()
+	utility_finished.emit(lineup.utility_id, thrown)
+
+
+func _cancel_throw() -> void:
+	var id := _throw.utility_id if _throw != null else &""
+	_throw = null
+	_back_to_gun()
+	if id != &"":
+		utility_finished.emit(id, false)
+
+
+## Out with the best gun carried (primary, else secondary).
+func _back_to_gun() -> void:
+	if weapons.current() != null and not weapons.current().definition.is_utility():
+		return
+	if not weapons.select_slot(1):
+		weapons.select_slot(2)
+
+
+## Turns away from a teammate's flash about to go off nearby (overrides the walking look).
+func _avoid_flash(delta: float) -> void:
+	if knowledge == null:
+		return
+	var flash := knowledge.flash_to_avoid(head.global_position, FLASH_AVOID_RANGE, skill.flash_lead)
+	if flash == Vector3.INF:
+		return
+	var toward := AimModel.angles_to(head.global_position, flash)
+	_turn_toward(Vector2(toward.x + 180.0, 0.0), delta, 1.0)
 
 
 # --- Perception ------------------------------------------------------------------------------
@@ -359,7 +452,7 @@ func _lose_target(search: bool) -> void:
 	if search:
 		mode = Mode.SEARCH
 		_search_left = SEARCH_TIME
-		_search_hold_left = SEARCH_HOLD
+		_search_hold_left = skill.search_hold * rng.randf_range(0.8, 1.2)
 	else:
 		mode = Mode.MOVE
 
@@ -408,7 +501,7 @@ func _engage(delta: float) -> bool:
 	# Moving guns miss: wait for the counter-strafe unless the enemy is in your face.
 	if _strafe_state == Strafe.MOVE and distance > RUN_AND_GUN_DISTANCE:
 		return false
-	if accuracy_speed() > ShooterMotion.REFERENCE_SPEED * ACCURATE_SHARE and distance > RUN_AND_GUN_DISTANCE:
+	if accuracy_speed() > ShooterMotion.REFERENCE_SPEED * skill.accurate_share and distance > RUN_AND_GUN_DISTANCE:
 		return false
 	var radius := 0.14 if _aim_head else 0.25
 	var tolerance := rad_to_deg(atan2(radius, distance)) * skill.fire_tolerance
@@ -456,7 +549,7 @@ func _strafe_step(delta: float, state: WeaponState, firing: bool) -> Vector3:
 			_strafing_now = true
 			return right * _strafe_dir
 		Strafe.STOP:
-			if accuracy_speed() <= ShooterMotion.REFERENCE_SPEED * ACCURATE_SHARE * 0.6:
+			if accuracy_speed() <= ShooterMotion.REFERENCE_SPEED * skill.accurate_share * 0.6:
 				_strafe_state = Strafe.HOLD
 				return Vector3.ZERO
 			return -right * _strafe_dir
@@ -596,6 +689,10 @@ func _angle_to_clear(delta: float, travel: Vector3) -> Vector3:
 		if score < best_score:
 			best_score = score
 			best = place
+	# A careless player skips some angles (and moves on as if they were clear).
+	if not best.is_empty() and rng.randf() > skill.clearing:
+		knowledge.mark_cleared(str(best["id"]))
+		best = {}
 	_clearing = best
 	return (best["centre"] as Vector3) + Vector3(0, STAND_EYE, 0) if not best.is_empty() else Vector3.INF
 

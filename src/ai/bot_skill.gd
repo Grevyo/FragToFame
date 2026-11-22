@@ -2,8 +2,9 @@ class_name BotSkill
 extends RefCounted
 ## How well a bot plays the FPS layer: perception, reaction, aim and discipline.
 ##
-## These are bot-only mechanics. Later milestones derive them from AI players' career attributes;
-## human players are never affected by any of these values.
+## These are bot-only mechanics. A career match derives every one of them from the AI player's
+## abilities ([method from_abilities]); the sandbox uses the presets. Human players are never
+## affected by any of these values.
 
 var label: String = "Normal"
 ## Seconds between first seeing an enemy and being allowed to fire (randomised ±).
@@ -33,6 +34,19 @@ var burst_distance: float = 14.0
 var strafe: float = 0.55
 ## How readily the bot jiggle-peeks a held angle to look for information, 0..1.
 var peek: float = 0.5
+## Shoots only at this share of full-run speed or slower: disciplined players stop dead first.
+var accurate_share: float = 0.38
+## Chance of actually checking each angle on the way (a careless player skips some).
+var clearing: float = 0.75
+## Seconds an angle is held after the enemy drops out of sight, before following up.
+var search_hold: float = 1.0
+## How far ahead (seconds) the bot sees a teammate's flash coming and turns away; slow readers
+## of the team's calls turn late and catch some of it.
+var flash_lead: float = 0.7
+## Throwing: spread of the release around the line-up (degrees; a clumsy throw lands off the
+## spot) and the seconds taken lining up before letting go (never instant).
+var utility_error: float = 1.1
+var lineup_time: float = 0.85
 
 
 ## Bot mechanics from an AI professional's simulated abilities (1–100, see CareerCatalog).
@@ -59,6 +73,15 @@ static func from_abilities(abilities: Dictionary, label_text: String = "") -> Bo
 	skill.burst_distance = lerpf(11.0, 17.0, composure)
 	skill.strafe = clampf(lerpf(easy.strafe, hard.strafe, _blend(abilities, ["movement", "spray_control"])), 0.0, 1.0)
 	skill.peek = clampf(lerpf(easy.peek, hard.peek, _blend(abilities, ["game_sense", "movement"])), 0.0, 1.0)
+	var sense := _blend(abilities, ["game_sense", "positioning"])
+	var utility := _blend(abilities, ["utility"])
+	skill.view_distance = lerpf(easy.view_distance, hard.view_distance, game_sense)
+	skill.accurate_share = maxf(lerpf(easy.accurate_share, hard.accurate_share, _blend(abilities, ["movement", "composure"])), 0.22)
+	skill.clearing = clampf(lerpf(easy.clearing, hard.clearing, sense), 0.1, 1.0)
+	skill.search_hold = maxf(lerpf(easy.search_hold, hard.search_hold, sense), 0.3)
+	skill.flash_lead = maxf(lerpf(easy.flash_lead, hard.flash_lead, _blend(abilities, ["teamwork", "communication"])), 0.2)
+	skill.utility_error = maxf(lerpf(easy.utility_error, hard.utility_error, utility), 0.15)
+	skill.lineup_time = maxf(lerpf(easy.lineup_time, hard.lineup_time, _blend(abilities, ["utility", "composure"])), 0.35)
 	var overall := 0.0
 	for value: Variant in abilities.values():
 		overall += float(value)
@@ -90,6 +113,13 @@ static func preset(name: StringName) -> BotSkill:
 			skill.view_angle = 95.0
 			skill.strafe = 0.2
 			skill.peek = 0.15
+			skill.view_distance = 45.0
+			skill.accurate_share = 0.6
+			skill.clearing = 0.35
+			skill.search_hold = 0.5
+			skill.flash_lead = 0.3
+			skill.utility_error = 2.6
+			skill.lineup_time = 1.5
 		&"hard":
 			skill.label = "Hard"
 			skill.reaction_time = 0.22
@@ -103,4 +133,11 @@ static func preset(name: StringName) -> BotSkill:
 			skill.view_angle = 120.0
 			skill.strafe = 0.9
 			skill.peek = 0.8
+			skill.view_distance = 70.0
+			skill.accurate_share = 0.28
+			skill.clearing = 0.95
+			skill.search_hold = 1.5
+			skill.flash_lead = 1.0
+			skill.utility_error = 0.35
+			skill.lineup_time = 0.5
 	return skill

@@ -388,6 +388,16 @@ func _test_team_knowledge() -> void:
 	var easy := BotSkill.preset(&"easy")
 	var hard := BotSkill.preset(&"hard")
 	check(easy.strafe < hard.strafe and easy.peek < hard.peek, "harder bots strafe and peek more")
+	var rookie := BotSkill.from_abilities({"utility": 30, "composure": 35, "game_sense": 35, "positioning": 35,
+		"movement": 35, "teamwork": 35, "communication": 35})
+	var veteran := BotSkill.from_abilities({"utility": 92, "composure": 90, "game_sense": 92, "positioning": 90,
+		"movement": 90, "teamwork": 90, "communication": 90})
+	check(rookie.utility_error > veteran.utility_error and rookie.lineup_time > veteran.lineup_time and veteran.lineup_time > 0.3,
+		"utility usage: worse players throw wider and line up slower; nobody throws instantly")
+	check(rookie.accurate_share > veteran.accurate_share and rookie.clearing < veteran.clearing
+		and rookie.search_hold < veteran.search_hold and rookie.flash_lead < veteran.flash_lead
+		and rookie.view_distance < veteran.view_distance,
+		"discipline, angle clearing, patience, flash awareness and spotting range all come from abilities")
 
 
 func _test_player_like() -> void:
@@ -420,7 +430,7 @@ func _test_player_like() -> void:
 			fastest[0] = maxf(fastest[0], bot.accuracy_speed())
 		return false, 5.0)
 	Engine.time_scale = 1.0
-	var limit := ShooterMotion.REFERENCE_SPEED * BotController.ACCURATE_SHARE + 0.05
+	var limit := ShooterMotion.REFERENCE_SPEED * bot.skill.accurate_share + 0.05
 	var slow := shot_speeds.filter(func(speed: float) -> bool: return speed <= limit).size()
 	var distance := bot.global_position.distance_to(dummy.global_position)
 	check(not shot_speeds.is_empty() and fastest[0] > 1.5,
@@ -447,6 +457,7 @@ func _test_player_like() -> void:
 	var corner := Vector3(-6, 0, 6.5)
 	knowledge.places = [{"id": "west", "centre": corner, "site": ""}]
 	bot.knowledge = knowledge
+	bot.skill.clearing = 1.0
 	bot.mode = BotController.Mode.MOVE
 	bot.respawn_at(Vector3(2, 0, 10), 0.0)
 	await wait_physics_frames(2)

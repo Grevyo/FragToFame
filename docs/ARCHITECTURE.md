@@ -938,6 +938,51 @@ competition settings arrive with M19.
   enemies (forgotten after 10 s). It holds only what a teammate saw. `BotSquad` resets it each
   round and advances it each physics frame. On a map without a graph, bots get none and look
   along their paths.
+- **Utility (M7 B).** `UtilityLineup` (src/ai) solves a throw: the view angles and one of the
+  player's three throw speeds that make a grenade go off within a tolerance of a target. It runs
+  `GrenadeFlight` from the same origin `WeaponController.throw_current` uses, and the same
+  detonation rule as a live grenade (`ThrownGrenade.goes_off`), so a solved throw lands where it
+  says and the geometry rules out impossible ones. The search is coarse (speeds × pitches × small
+  yaw banks, straight throws first, stopping early on a good answer) and then fine. It takes
+  about 30 ms when a throw exists and longer when none does, so at most one solve runs per squad
+  decision. `BotController.throw_utility` takes the grenade out, stands still, turns onto the
+  line-up and throws it through `WeaponController`, which records it like a player's throw. It
+  then goes back to a gun, and an enemy in sight cancels the throw. A thrown flash goes into
+  `TeamKnowledge.flashes`, and teammates within 26 m turn their backs until it pops.
+  `SiteExecute` (pure) plans a site take from the map's own data:
+  - the place before the entrance on the walked route is the staging point;
+  - the "ai_hold" hint nearest the entrance gets a smoke, and so does the site's other entrance
+    nearest the defence spawn;
+  - the next hold within 18 m gets fire;
+  - the flash pops 2.4 m up and 5 m past the entrance.
+  `BotSquad` runs it as gather → utility → go. Contact, a drop or plant, or under 30 s left
+  skips straight to go. A throw with no line-up from the staging point is retried from the
+  doorway. Going in waits until the flash has actually left the hand.
+- **Everything from stats.** Every number that makes one bot play better than another lives in
+  `BotSkill`. In a career match it is derived from that AI player's abilities
+  (`BotSkill.from_abilities`); the sandbox uses the easy/normal/hard presets. Nothing a bot does
+  is instant:
+  | Behaviour | `BotSkill` field | From abilities |
+  | --- | --- | --- |
+  | reaction before firing | `reaction_time` | reaction |
+  | turning | `turn_speed` | movement, reaction |
+  | aim settle | `aim_gain`, `error_decay` | aim |
+  | first-shot error | `initial_error` | crosshair placement, aim |
+  | headshot choice | `headshot_bias` | crosshair placement, aim |
+  | recoil pull | `recoil_control` | spray control |
+  | fire threshold | `fire_tolerance` | composure, consistency |
+  | spotting | `view_angle`, `view_distance` | game sense |
+  | close awareness | `awareness_radius` | game sense |
+  | bursts | `burst_distance` | composure, consistency |
+  | strafing | `strafe` | movement, spray control |
+  | peeking | `peek` | game sense, movement |
+  | counter-strafe discipline (how slow before shooting) | `accurate_share` | movement, composure |
+  | angle checking | `clearing` | game sense, positioning |
+  | holding a lost angle | `search_hold` | game sense, positioning |
+  | turning from a team flash | `flash_lead` | teamwork, communication |
+  | throw spread | `utility_error` | utility |
+  | time lining up | `lineup_time` | utility, composure |
+  Human players are never affected by any of these.
 - **Fair by construction.** Perception uses a view cone, view distance, awareness radius and
   world-only line of sight; aiming has a reaction delay, a capped turn rate and an acquisition
   error that decays. Skill presets change these numbers, never the rules.
@@ -1334,6 +1379,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-22 | The Creation Studio bakes a map's simulation graph on save and with a button, through the same `SimGraphBuilder.bake_to` as `tools/bake_sim_maps.gd` | Official content must be creatable with the shipped editors; a map without its graph could not be played by the career engine. One code path keeps the Studio's and the tool's graphs identical |
 | 2026-11-22 | Match bots read the map's places from its simulation graph (`SimMap`) through a pure per-team `TeamKnowledge` | The graph is map data already baked for every official and editor map; the FPS runtime still never touches the career database, and bots share only what a teammate saw |
+| 2026-11-22 | Bot line-ups are solved at runtime against the map's geometry, not authored | Every editor map gets bot utility with no extra authoring, and a line-up is proven by the same flight code as a real throw; authored line-ups (Tactical Play Creator) can be added on top later |
 | 2026-11-21 | Knife models are cosmetic looks of the one knife, stored in `WeaponModels` and chosen in `CosmeticProfile` | Every player's knife plays the same; the look reuses the gun customisation path (Coats, kits, Armoury, inspection) without new gameplay IDs |
 | 2026-11-21 | Knife Coat zones generated by a Python tool (numpy, Pillow) from the pack's geometry and metallic map | No Blender here; the rules are small, re-runnable and reviewed through the generated kit previews. Developer-only dependency, never shipped |
 | 2026-11-21 | Character packs retargeted at runtime by a custom `SkeletonModifier3D` onto humanoid-profile bone names; items stay on their own pack's skeleton | The packs share neither skeleton, rest pose nor proportions, and `RetargetModifier3D` mangled limbs across them. One clip set drives every body; clothing is never stretched onto a body it was not made for (only checked head items are adapted) |

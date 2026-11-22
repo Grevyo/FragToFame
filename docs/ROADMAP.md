@@ -243,10 +243,18 @@ committed on its own:
       the team has not checked ([TeamKnowledge], from the map's simulation graph) by pre-aiming
       them, and holding the angle after losing an enemy before following up. Off-angles and
       shoulder-peek positions come with stage C, where positions are chosen.
-- [ ] **B. Utility.** Bots buy grenades and throw them through the same flight code as the
-      player: line-ups solved against the real geometry ([GrenadeFlight] prediction) for smokes
-      on a site's entrances and cross-angles, pop flashes over a corner for themselves and for a
-      teammate's entry, fire on a held spot, defenders' delay utility on a push.
+- [x] **B. Utility.** Done 2026-11-22. Bots buy grenades on rifle rounds and throw them through
+      the player's own throw code, along line-ups solved against the real geometry
+      ([UtilityLineup], the live grenade's flight and fuse rule). Attackers gather before their
+      entrance ([SiteExecute]), smoke the hold nearest it and the defenders' rotation, burn a
+      near hold, then flash in over the entrance (from the doorway when the gathering spot has no
+      line-up) and go in once it has left the hand. Teammates turn away from their own flashes.
+      Defenders throw fire, a frag or a smoke at a push a teammate has just seen. Owner: every bot
+      behaviour comes from stats and nothing is instant. Throw spread and line-up time come from
+      the Utility ability (low-rated players miss more and line up slower), as do counter-strafe
+      discipline, angle checking, patience on a lost angle, flash awareness and spotting range
+      (see ARCHITECTURE "Everything from stats"). Self pop-flashes for a lone peek come with
+      stage C's roles.
 - [ ] **C. Team executes.** The career sim's round plans ([RoundPlanner]) drive the match bots:
       default and map control, gather at the staging place, utility on the call, the entry goes
       first with a trader a step behind, the planter covered; defenders anchor, rotate on
@@ -1146,3 +1154,4 @@ Planned scope:
 | 2026-11-22 | Time of day (owner request: every day its own day, everything spread, time in the day like a management game): series have kick-off times and each round is spread over up to three days, leagues in turn through the week, so matches fall on most days. A day passing plays the previous day's series at their kick-offs, then the world's morning as timed phases (finances, competitions, contracts, market, squads, offers, bookings); the overlay runs a clock through it with each series' score. Dates show their weekday. Save schema v18. |
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
 | 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |
+| 2026-11-22 | Milestone 7 stage B: bot utility. Bots buy grenades and throw solved line-ups (the same flight and fuse as a live grenade, so no throws through walls): attackers gather before an entrance, smoke the nearest hold and the rotation, burn a near hold, flash in from the doorway and go in together, turning away from their own flashes; defenders throw delay utility at a push. Every bot behaviour is now stat-driven: throw spread and line-up time from Utility usage, plus discipline, angle checking, patience, flash awareness and spotting range from the matching abilities. |

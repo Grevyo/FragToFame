@@ -30,6 +30,7 @@ func load_map(doc: MapDocument, spawn_training: bool = true) -> void:
 	utility.name = "Utility"
 	utility.model_factory = UtilityModels.build
 	add_child(utility)
+	UtilitySounds.attach(utility)
 	targets_root = Node3D.new()
 	targets_root.name = "Targets"
 	add_child(targets_root)

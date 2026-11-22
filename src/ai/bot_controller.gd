@@ -178,6 +178,7 @@ func _ready() -> void:
 	for hitbox: Hitbox in hitboxes:
 		own.append(hitbox.get_rid())
 	weapons.exclude = own
+	CombatantSounds.attach(self, health, false)
 	if wears_character:
 		avatar = CharacterAvatar.new()
 		add_child(avatar)

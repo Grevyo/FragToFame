@@ -67,6 +67,7 @@ func _ready() -> void:
 		own.append(hitbox.get_rid())
 	weapons.exclude = own
 	health.died.connect(_on_died)
+	CombatantSounds.attach(self, health, true)
 
 
 func _unhandled_input(event: InputEvent) -> void:

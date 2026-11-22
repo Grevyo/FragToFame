@@ -20,6 +20,10 @@ var listening_action: StringName = &""
 var listening_slot: int = -1
 
 var _status: Label
+## Bus -> its volume slider (0..100).
+var volume_sliders: Dictionary[StringName, HSlider] = {}
+const VOLUME_LABELS: Dictionary[StringName, String] = {&"Master": "Master volume", &"Effects": "Game sounds",
+	&"UI": "Interface", &"Voice": "Voice"}
 
 
 func _ready() -> void:
@@ -154,7 +158,7 @@ func _build() -> void:
 	var column := UIFactory.vbox(12)
 	column.custom_minimum_size.x = 900
 	center.add_child(column)
-	column.add_child(UIFactory.label("CONTROLS", &"HeaderLabel"))
+	column.add_child(UIFactory.label("CONTROLS & AUDIO", &"HeaderLabel"))
 	column.add_child(UIFactory.label(
 		"Each action can have up to four keys or mouse buttons. Click a slot, then press the input. "
 		+ "Binding an input that another action in the same mode uses moves it here.", &"MutedLabel", true))
@@ -165,6 +169,9 @@ func _build() -> void:
 	var list := UIFactory.vbox(4)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
+	list.add_child(UIFactory.label("AUDIO", &"SectionLabel"))
+	for bus: StringName in AudioSettings.BUSES:
+		list.add_child(_build_volume_row(bus))
 	for group: String in InputActions.GROUP_ORDER:
 		list.add_child(UIFactory.label(group.to_upper(), &"SectionLabel"))
 		for action: StringName in InputActions.actions_in_group(group):
@@ -180,6 +187,28 @@ func _build() -> void:
 	reset_button.pressed.connect(reset_all)
 	footer.add_child(reset_button)
 	column.add_child(footer)
+
+
+func _build_volume_row(bus: StringName) -> Control:
+	var row := UIFactory.hbox(6)
+	var caption := UIFactory.label(VOLUME_LABELS.get(bus, String(bus)))
+	caption.custom_minimum_size.x = 250
+	row.add_child(caption)
+	var slider := HSlider.new()
+	slider.min_value = 0.0
+	slider.max_value = 100.0
+	slider.step = 1.0
+	slider.value = roundf(AudioSettings.volume(bus) * 100.0)
+	slider.custom_minimum_size.x = 320
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(slider)
+	var amount := UIFactory.label("%d%%" % int(slider.value), &"MutedLabel")
+	row.add_child(amount)
+	slider.value_changed.connect(func(value: float) -> void:
+		amount.text = "%d%%" % int(value)
+		AudioSettings.set_volume(bus, value / 100.0))
+	volume_sliders[bus] = slider
+	return row
 
 
 func _build_row(action: StringName) -> Control:

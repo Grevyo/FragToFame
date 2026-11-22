@@ -10,6 +10,8 @@ extends Node3D
 
 signal utility_thrown(thrower_id: String, utility_id: StringName)
 signal detonated(utility_id: StringName, position: Vector3, thrower_id: String)
+## A grenade in flight bounced off something at [param speed] m/s (sound listens).
+signal grenade_bounced(utility_id: StringName, position: Vector3, speed: float)
 ## A flash reached [param victim_id] for [param seconds] of blindness (teammates included).
 signal combatant_flashed(thrower_id: String, victim_id: String, seconds: float)
 
@@ -151,8 +153,11 @@ func step(delta: float) -> void:
 	time += delta
 	var space := get_world_3d().direct_space_state
 	for grenade: ThrownGrenade in grenades.duplicate():
+		var bounces := grenade.flight.bounces
 		grenade.flight.advance(space, delta)
 		grenade.sync(delta)
+		if grenade.flight.bounces > bounces:
+			grenade_bounced.emit(grenade.utility_id, grenade.flight.position, grenade.flight.velocity.length())
 		if grenade.should_detonate():
 			grenades.erase(grenade)
 			_detonate(grenade)

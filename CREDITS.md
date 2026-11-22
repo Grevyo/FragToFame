@@ -1,6 +1,9 @@
 # Credits and third-party assets
 
-Frag to Fame's code, maps, UI, Magnet artwork and balance data are original to the project.
+Frag to Fame's code, maps, UI, Magnet artwork, sound effects and balance data are original to the
+project. Every sound effect is synthesised by the project's own generator
+(`tools/generate_sounds.gd`, recipes in `src/audio/sound_catalog.gd`); no recorded or third-party
+audio is used.
 The weapon and knife models below are third-party work used under their licences. Creative Commons
 Attribution (CC BY 4.0) allows commercial use provided the author is credited, which this file
 and the in-game credits (to be added before release) do.

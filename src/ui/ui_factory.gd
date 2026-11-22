@@ -18,6 +18,7 @@ static func button(text: String, variation: StringName = &"") -> Button:
 	b.text = text
 	if variation != &"":
 		b.theme_type_variation = variation
+	b.pressed.connect(SoundPlayer.play_ui.bind(&"ui_click"))
 	return b
 
 

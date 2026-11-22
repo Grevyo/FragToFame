@@ -40,8 +40,10 @@ Godot 4.7.2 game. These rules persist across sessions.
 
 ```
 addons/godot-sqlite/  SQLite GDExtension (vendor; trimmed to Windows/Linux x86_64; only src/career uses it)
-assets/        runtime weapon models, Coat zone masks, Magnet artwork (copied by tools/import_weapon_assets.py)
+assets/        runtime weapon models, Coat zone masks, Magnet artwork (copied by tools/import_weapon_assets.py),
+               generated sound effects (tools/generate_sounds.gd) and supplied replacements (assets/audio/supplied/)
 authoring/     Coat kits and templates for artists (.gdignore; never in builds)
+src/audio/     sound slots, the effect synthesiser, the library, buses and players (presentation only)
 src/cosmetics/ weapon models, Coats, Magnets and the player's customisation (presentation only)
 src/characters/ character catalog, appearances, presets, retargeted character rig (presentation only)
 src/core/      app-wide services (App autoload, input actions)

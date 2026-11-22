@@ -10,6 +10,7 @@ var total_time: float = 1.0
 var _light: OmniLight3D
 var _lamp_material := StandardMaterial3D.new()
 var _blink_clock: float = 0.0
+var _was_on: bool = false
 
 
 func _ready() -> void:
@@ -55,5 +56,8 @@ func _process(delta: float) -> void:
 	var interval := lerpf(0.1, 1.0, clampf(time_left / total_time, 0.0, 1.0))
 	_blink_clock += delta
 	var on := fmod(_blink_clock, interval) < interval * 0.4
+	if on and not _was_on:
+		SoundPlayer.play_at(self, &"bomb_beep", global_position + Vector3(0, 0.2, 0), &"bomb")
+	_was_on = on
 	_lamp_material.albedo_color = Color("ff3b30") if on else Color("5a1a18")
 	_light.light_energy = 1.5 if on else 0.0

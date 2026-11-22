@@ -13,6 +13,15 @@ const CROUCH_EYE: float = 1.04
 const FLOOR_SNAP: float = 0.3
 
 const BODY_RADIUS: float = 0.35
+## A running footstep every this many metres. Walking (shift) and crouching are silent.
+const STRIDE: float = 2.1
+## Faster than this share of the run speed counts as running (walking is 0.52 of it).
+const RUNNING_SHARE: float = 0.6
+
+## A running footstep landed (walking and crouching make none).
+signal stepped
+## The body touched down after a fall or jump, at [param fall_speed] m/s.
+signal landed(fall_speed: float)
 
 ## 0 = standing, 1 = fully crouched (linear progress; the eye height eases along it).
 var crouch_amount: float = 0.0
@@ -32,6 +41,7 @@ var _walking: bool = false
 var _airborne: bool = false
 ## Vertical speed at the end of the last airborne tick (the landing impact speed).
 var _fall_speed: float = 0.0
+var _stride: float = 0.0
 var _jump_in_progress: bool = false
 var _landing_momentum: Vector2 = Vector2.ZERO
 var _landing_age: float = INF
@@ -141,6 +151,7 @@ func _move(wish_dir: Vector2, jump_pressed: bool, delta: float) -> void:
 	_air_jump_press_age += delta
 	_landing_age += delta
 	if is_on_floor():
+		_count_stride(delta)
 		if _airborne:
 			_land()
 		elif is_on_wall() or wish_dir.dot(_landing_momentum) < 0.0:
@@ -154,8 +165,21 @@ func _move(wish_dir: Vector2, jump_pressed: bool, delta: float) -> void:
 		_airborne = true
 
 
+## Running footsteps: one every [constant STRIDE] metres while running on the floor.
+func _count_stride(delta: float) -> void:
+	var speed := horizontal_speed()
+	if _walking or is_crouched() or speed < movement.run_speed * RUNNING_SHARE:
+		_stride = 0.0
+		return
+	_stride += speed * delta
+	if _stride >= STRIDE:
+		_stride -= STRIDE
+		stepped.emit()
+
+
 ## Save collision-resolved momentum for a timed hop and apply the normal landing slowdown.
 func _land() -> void:
+	landed.emit(_fall_speed)
 	movement.land(_fall_speed)
 	var horizontal := Vector2(velocity.x, velocity.z)
 	var limit := current_max_speed()

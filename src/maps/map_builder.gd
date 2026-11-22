@@ -93,6 +93,8 @@ static func build_piece(piece: Dictionary, mode: Mode) -> Node3D:
 		holder.name = str(piece["id"])
 	holder.set_meta(&"piece_id", piece["id"])
 	holder.set_meta(&"piece_type", type)
+	var material_id := str(piece.get("material", ""))
+	holder.set_meta(&"material_id", material_id if MapMaterials.has_material(material_id) else PieceCatalog.default_material(type))
 	holder.position = piece["position"]
 	holder.rotation_degrees.y = float(piece["rotation_y"])
 	return holder

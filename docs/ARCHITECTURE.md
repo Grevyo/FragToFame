@@ -407,7 +407,8 @@ reported per slot. The same route data can be consumed by future M7 play executi
   outcomes.
 - **Runtime entities from map markers.** `SandboxLevel` spawns `TargetDummy` nodes from
   `target_dummy` pieces; the maps module stays unaware of combat.
-- **Not yet:** armour, penetration, networked/authoritative damage, player hitboxes, audio.
+- **Not yet:** armour, penetration, networked/authoritative damage, player hitboxes. (Audio:
+  see "Sound", Milestone 22.)
 
 ### Utility and the knife (2026-11-20)
 
@@ -469,8 +470,8 @@ reported per slot. The same route data can be consumed by future M7 play executi
   the support hand go) and `toss` (the span when the item is in the air). A knife's turns are in
   its fist's own axes (forearm twist, wrist bend toward thumb or little finger, wrist bend up or
   down), so the choreography says what the hand does rather than which way the screen turns.
-- **Not yet:** bots buying and throwing utility (Milestone 7), sounds (no audio assets),
-  networked utility.
+- **Not yet:** networked utility. (Bots buy and throw utility since Milestone 7; utility sounds
+  since Milestone 22.)
 
 ### Simulation maps (Milestone 21, stage A)
 
@@ -1047,6 +1048,40 @@ competition settings arrive with M19.
 - **No career coupling.** Bots receive a `BotSkill`; later the career will map professionals'
   simulated abilities to skills when building a `MatchSetup` — the FPS runtime never reads them.
 
+### Sound (Milestone 22)
+
+`src/audio/` is presentation only. It listens to signals and never changes an outcome.
+
+- **Slots and recipes.** `SoundCatalog` names every sound by a stable slot ID (`shot_ak47`,
+  `step_wood_2`, `bomb_beep`, ...) and gives its recipe. `SoundSynth` (pure) renders a recipe:
+  layers of filtered noise and pitched tones, each with a delay, attack and exponential decay,
+  mixed and normalised. Rendering is deterministic from a fixed per-slot seed.
+- **Files.** `tools/generate_sounds.gd` writes every slot to `assets/audio/<slot>.wav`.
+  `SoundLibrary.stream(slot)` plays, in order:
+  1. `assets/audio/supplied/<slot>.ogg|wav|mp3` (a supplied replacement);
+  2. the generated file;
+  3. the recipe rendered on the spot.
+  A slot is never silent.
+- **Buses and settings.** `AudioSettings` creates Master, Effects, UI and Voice and applies the
+  saved volumes (`user://profile/audio_settings.json`, `f2f.audio_settings` v1). `App` applies
+  them at start-up, and the Controls screen has the sliders.
+- **Playing.** `SoundPlayer.play_at` makes a self-freeing `AudioStreamPlayer3D` whose range comes
+  from its kind (`SoundCatalog.RANGE`: shots 90 m, snipers 140 m, footsteps 26 m, ...). When a
+  ray from the camera to the sound hits world geometry, it plays 9 dB quieter and muffled
+  (1.4 kHz cut-off). `play_flat` plays unspatialised: the player's own sounds and the interface.
+- **Sources.**
+  - `CombatantSounds` is attached to the player and every bot. It plays weapon signals (shot by
+    weapon, reload, draw, knife, throw), damage (hit, headshot) and the movement body's `stepped`
+    and `landed` signals. Footstep surface: a ray down finds the map piece, whose holder
+    carries `material_id` meta from `MapBuilder`, and `SoundCatalog.surface_of` maps it to
+    stone, sand, wood or metal.
+  - `CombatantMovementBody` emits `stepped` every 2.1 m only while running (over 60% of run
+    speed, not walking or crouched), so walking is silent by construction.
+  - `UtilitySounds` plays `UtilityField.grenade_bounced` and `detonated`.
+  - The bomb beeps as it blinks.
+  - `MatchDirector` plays plant, defuse, explosion, round start and end, and buy or denied.
+  - `UIFactory.button` clicks.
+
 ### Weapons, Coats and Magnets
 
 Terminology used everywhere, including the UI: a **Coat** is a weapon finish (camo/skin); a
@@ -1432,6 +1467,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-22 | The Creation Studio bakes a map's simulation graph on save and with a button, through the same `SimGraphBuilder.bake_to` as `tools/bake_sim_maps.gd` | Official content must be creatable with the shipped editors; a map without its graph could not be played by the career engine. One code path keeps the Studio's and the tool's graphs identical |
 | 2026-11-22 | Match bots read the map's places from its simulation graph (`SimMap`) through a pure per-team `TeamKnowledge` | The graph is map data already baked for every official and editor map; the FPS runtime still never touches the career database, and bots share only what a teammate saw |
+| 2026-11-22 | Sound effects are synthesised by a project tool from code recipes, committed as WAVs and replaceable per slot by supplied files | Owner: original effects, replaceable later. No paid or third-party audio; deterministic, so regenerating changes nothing unless a recipe does; a missing file falls back to rendering the recipe |
 | 2026-11-22 | Match bots buy through the sim's own `SimEconomy`, carried out by `MatchState.buy` / `buy_for` | One economy brain for simulated and played matches; the match shop still enforces prices, sides and carry limits. A drop is a purchase for a teammate (no weapon dropping in the FPS yet) |
 | 2026-11-22 | Mid-round calls go through one `BotSquad.issue_call` for the AI leader and a human IGL | Owner's design: AI teammates respond to a human IGL. One entry point means a human's call and the AI's own are carried out identically and tested once |
 | 2026-11-22 | Match bots are led by the career sim's own `RoundPlanner` (`BotTactics`) | One tactical brain for simulated and played matches: a team calls the same rounds whichever way its match is resolved, and tuning one tunes both. Only pure sim classes cross over; the FPS runtime still never reads the career database |

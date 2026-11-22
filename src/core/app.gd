@@ -72,6 +72,7 @@ var _unsaved_fixture_results: Dictionary[String, MatchResult] = {}
 func _ready() -> void:
 	InputActions.register_defaults()
 	InputBindings.load_file()  # The player's saved key bindings replace the defaults.
+	AudioSettings.apply()  # The audio buses and the player's saved volumes.
 	var theme := F2FTheme.build()
 	get_tree().root.theme = theme
 	# Controls under a CanvasLayer do not inherit the Window theme; they fall back to the default

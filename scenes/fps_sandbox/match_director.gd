@@ -272,8 +272,10 @@ func try_buy(item_id: StringName) -> String:
 	if error.is_empty():
 		_apply_purchase(item_id)
 		last_buy_message = "Bought %s" % ShopCatalog.display_name(item_id)
+		SoundPlayer.play_ui(&"ui_buy")
 	else:
 		last_buy_message = "Cannot buy %s: %s" % [ShopCatalog.display_name(item_id), error]
+		SoundPlayer.play_ui(&"ui_denied")
 	if is_buy_menu_open():
 		_refresh_buy_menu()
 	return error
@@ -374,6 +376,7 @@ func _clear_bomb() -> void:
 func _on_bomb_planted(player_id: String) -> void:
 	_spawn_bomb(state.bomb_position)
 	bomb.set_planted(state.bomb_time_left, state.rules.bomb_timer)
+	SoundPlayer.play_at(level, &"bomb_planted", state.bomb_position + Vector3(0, 0.3, 0), &"bomb")
 	var who := "You" if player_id == local_player_id else state.get_player(player_id).display_name
 	hud.show_banner("BOMB PLANTED · %s" % who, 3.0)
 
@@ -391,6 +394,7 @@ func _on_bomb_picked_up(player_id: String) -> void:
 # --- Rounds ----------------------------------------------------------------------------------
 
 func _on_round_started(round_number: int) -> void:
+	SoundPlayer.play_flat(self, &"round_start", &"UI")
 	_clear_bomb()
 	level.utility.clear()
 	plant_progress = 0.0
@@ -485,6 +489,11 @@ func _on_round_ended(winner: int, reason: StringName) -> void:
 			state.set_player_armour(id, dummy.health.armour, dummy.health.has_helmet)
 	if squad != null:
 		squad.on_round_ended()
+	if reason == MatchRules.REASON_DETONATED:
+		SoundPlayer.play_at(level, &"bomb_explode", state.bomb_position + Vector3(0, 0.5, 0), &"explosion", 4.0)
+	elif reason == MatchRules.REASON_DEFUSED:
+		SoundPlayer.play_at(level, &"bomb_defused", state.bomb_position + Vector3(0, 0.3, 0), &"bomb")
+	SoundPlayer.play_flat(self, &"round_end", &"UI")
 	var side := state.teams[winner].side
 	var reason_text: String = {
 		MatchRules.REASON_ELIMINATION: "Enemy team eliminated",

@@ -38,8 +38,9 @@ func build_page() -> void:
 		return
 	var maps := repo.sim_maps(int(series["id"]))
 	if maps.is_empty():
-		head.add_child(UIFactory.label("This series was played before round-by-round reports were kept, or in the FPS.",
-			&"MutedLabel", true))
+		if not _own_maps(repo, head):
+			head.add_child(UIFactory.label("This series was played before round-by-round reports were kept, or in the FPS.",
+				&"MutedLabel", true))
 		return
 	var lines := repo.series_lines(int(series["id"]))
 	for map: Dictionary in maps:
@@ -50,6 +51,9 @@ func _map_card(map: Dictionary, lines: Array[Dictionary]) -> void:
 	var number := int(map["map_number"])
 	var card := UIFactory.card(self, "Map %d · %s · %d – %d" % [number, map_name(str(map["map_id"])),
 		int(map["home_rounds"]), int(map["away_rounds"])])
+	var key := CareerRepository.league_timeline_key(int(series["id"]), number)
+	if career().repo.has_sim_timeline(key):
+		card.add_child(link("Round by round", &"match_view", {"key": key}))
 	if map["mvp_id"] != null:
 		var mvp := UIFactory.hbox(6)
 		mvp.add_child(UIFactory.label("MVP", &"SectionLabel"))
@@ -71,6 +75,18 @@ func _map_card(map: Dictionary, lines: Array[Dictionary]) -> void:
 		card.add_child(UIFactory.label("MOMENTS", &"SectionLabel"))
 		for moment: String in moments.split("\n"):
 			card.add_child(UIFactory.label("· " + moment, &"", true))
+
+
+## The human's series: a link to the round-by-round story of each map that was simulated.
+## Returns false when none was.
+func _own_maps(repo: CareerRepository, parent: Control) -> bool:
+	var found := false
+	for booked: Dictionary in repo.series_maps(int(series["id"])):
+		var key := CareerRepository.career_timeline_key(str(booked["career_fixture_id"]))
+		if repo.has_sim_timeline(key):
+			parent.add_child(link("Map %d · round by round" % int(booked["map_number"]), &"match_view", {"key": key}))
+			found = true
+	return found
 
 
 ## An upcoming series: both line-ups as the world sees them.

@@ -24,7 +24,7 @@ extends RefCounted
 ##   relationship       how two players get on (-100..100)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 16
+const CURRENT_VERSION: int = 17
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -500,6 +500,16 @@ const MIGRATIONS: Array[PackedStringArray] = [
 			WHERE s.league_fixture_id = sim_player_map.league_fixture_id AND s.map_number = sim_player_map.map_number), '')
 			WHERE league_fixture_id IS NOT NULL;""",
 		"CREATE INDEX sim_player_map_by_team_map ON sim_player_map(organisation_id, map_id, day);",
+	],
+	# v17 — the round-by-round story of each simulated map for the match view (Milestone 21 G).
+	# Keys: "L<league fixture>:<map number>" for world series, "C<career fixture>" for the human's.
+	[
+		"""CREATE TABLE sim_timeline (
+			key TEXT PRIMARY KEY,
+			day INTEGER NOT NULL,
+			timeline_json TEXT NOT NULL
+		) WITHOUT ROWID;""",
+		"CREATE INDEX sim_timeline_by_day ON sim_timeline(day);",
 	],
 ]
 

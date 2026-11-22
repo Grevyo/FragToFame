@@ -209,6 +209,9 @@ var _plans: Array[RoundPlan] = []
 var _score: Array[int] = [0, 0]
 ## What the last planned round's [RoundSim] reported.
 var _outcome: Dictionary = {}
+## This round's buy calls and (planned maps) each player's kit after buying, for the round log.
+var _buys: Array[String] = []
+var _eco: Array[Array] = []
 
 
 func _init(dice: RandomNumberGenerator, rounds_per_half: int = 8) -> void:
@@ -217,7 +220,8 @@ func _init(dice: RandomNumberGenerator, rounds_per_half: int = 8) -> void:
 
 
 ## Plays one map. Team 0 starts on attack. Returns {score: Vector2i, players: {id: counts with
-## "rating"}, mvp: id, rounds: Array, highlights: PackedStringArray, events: Array}.
+## "rating"}, mvp: id, rounds: Array, highlights: PackedStringArray, events: Array, timeline:
+## [MatchTimeline] data}.
 func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 	var teams: Array[SimTeam] = [home, away]
 	rounds_log.clear()
@@ -284,8 +288,10 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 			if rating > best:
 				best = rating
 				mvp = player.id
+	var map_id := sim_map.map_id if sim_map != null else ""
 	return {"score": Vector2i(score[0], score[1]), "players": stats, "mvp": mvp, "rounds": rounds_log.duplicate(),
-		"highlights": highlights.duplicate(), "events": events}
+		"highlights": highlights.duplicate(), "events": events,
+		"timeline": MatchTimeline.build(map_id, teams, events, rounds_log, stats)}
 
 
 ## What a round leaves on each player: a round more in their legs, and tilt for dying without a kill.
@@ -375,6 +381,13 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 			player.alive = true
 			player.round_kills = 0
 			player.round_kill_weapons.clear()
+	_buys = [str(teams[0].buy), str(teams[1].buy)]
+	_eco.clear()
+	if not _planners.is_empty():
+		for team: SimTeam in teams:
+			for player: SimPlayer in team.players:
+				_eco.append([player.money, str(player.primary if not player.primary.is_empty() else player.secondary),
+					(2 if player.helmet else 1) if player.armour > 0 else 0, player.grenades.size()])
 	_plan_round(teams, attackers)
 	if not _plans.is_empty():
 		return _play_planned(teams, attackers, decisive)
@@ -603,7 +616,9 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 		var survivors := team.alive().size()
 		var kept := roundi(spent * 0.7 * survivors / maxf(team.players.size(), 1.0))
 		team.money = clampi(team.money - spent + kept + income, 0, MAX_MONEY)
-	var entry := {"winner": winner, "how": how, "attackers": attackers}
+	var entry := {"winner": winner, "how": how, "attackers": attackers, "buys": _buys.duplicate()}
+	if not _eco.is_empty():
+		entry["eco"] = _eco.duplicate(true)
 	if not _outcome.is_empty() and not _plans.is_empty():
 		entry["seconds"] = _outcome["seconds"]
 		if bool(_outcome["planted"]):

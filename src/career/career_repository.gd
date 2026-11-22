@@ -1131,6 +1131,42 @@ func insert_sim_line(day: int, league_fixture_id: int, career_fixture_id: String
 		int(line["kast_rounds"]), int(line["opening_kills"]), int(line["clutch_wins"]), float(line["rating"]), 1 if won else 0, map_id])
 
 
+## Key of a world series map's timeline.
+static func league_timeline_key(league_fixture_id: int, map_number: int) -> String:
+	return "L%d:%d" % [league_fixture_id, map_number]
+
+
+## Key of the human's simulated fixture's timeline.
+static func career_timeline_key(career_fixture_id: String) -> String:
+	return "C" + career_fixture_id
+
+
+## Stores a simulated map's [MatchTimeline] under [param key].
+func insert_sim_timeline(key: String, day: int, timeline: Dictionary) -> bool:
+	return db.execute("INSERT OR REPLACE INTO sim_timeline (key, day, timeline_json) VALUES (?, ?, ?);",
+		[key, day, JSON.stringify(timeline)])
+
+
+## The timeline stored under [param key], or {} (none kept, or from a format this build does not read).
+func sim_timeline(key: String) -> Dictionary:
+	var text := str(db.scalar("SELECT timeline_json FROM sim_timeline WHERE key = ?;", [key], ""))
+	if text.is_empty():
+		return {}
+	var parsed: Variant = JSON.parse_string(text)
+	if not parsed is Dictionary or int((parsed as Dictionary).get("format_version", 0)) != MatchTimeline.FORMAT_VERSION:
+		return {}
+	return parsed
+
+
+func has_sim_timeline(key: String) -> bool:
+	return int(db.scalar("SELECT COUNT(*) FROM sim_timeline WHERE key = ?;", [key], 0)) > 0
+
+
+## Drops world series timelines from before [param day] (the human's own are kept).
+func prune_sim_timelines(day: int) -> bool:
+	return db.execute("DELETE FROM sim_timeline WHERE day < ? AND key LIKE 'L%';", [day])
+
+
 ## How much [param org_id] has played [param map_id] since [param since_day]: {"on_map": maps
 ## there, "maps": all maps} (simulated maps; a map counts once however many players it lined up).
 func team_map_history(org_id: String, map_id: String, since_day: int) -> Dictionary:

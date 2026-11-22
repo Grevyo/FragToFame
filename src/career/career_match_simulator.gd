@@ -79,6 +79,9 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 			return {"ok": false, "message": problem, "maps": lines.size()}
 		if not _store_lines(repo, fixture, setup, played, score, this_series):
 			return {"ok": false, "message": "Could not store the simulated lines.", "maps": lines.size()}
+		if played.has("timeline") and played["score"] == score and not repo.insert_sim_timeline(
+				CareerRepository.career_timeline_key(setup.fixture_id), fixture.scheduled_day, played["timeline"]):
+			return {"ok": false, "message": "Could not store the round-by-round timeline.", "maps": lines.size()}
 		lines.append("%s %d–%d %s" % [setup.home_team_name, score.x, score.y, setup.away_team_name])
 	if lines.is_empty():
 		return {"ok": false, "message": "There is no match to simulate.", "maps": 0}

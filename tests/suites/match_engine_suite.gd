@@ -181,6 +181,17 @@ func _test_career(app: Node) -> void:
 	var ids: Array[String] = [someone]
 	var history := repo.player_map_history(ids, map_id, 0)
 	check(history.has(someone) and int(history[someone]["maps"]) >= 1, "a player's history on a map is read back")
+	var key := CareerRepository.league_timeline_key(int(series["id"]), 1)
+	check(repo.has_sim_timeline(key), "each map of a world series keeps its round-by-round story")
+	var hub := spawn_scene("res://scenes/career_hub/career_hub.tscn")
+	if hub != null:
+		await wait_frames(2)
+		var opened: bool = hub.call("navigate", &"match_view", {"key": key})
+		await wait_frames(1)
+		var page := hub.get("current_page") as CareerPage
+		check(opened and page != null and page.get_page_title() != "Round by round" and page.get_child_count() > 2,
+			"the match view shows the map round by round (%d cards)" % (page.get_child_count() if page != null else 0))
+		await despawn(hub)
 
 	section("A month of the engine")
 	var month_end := first_day + 40

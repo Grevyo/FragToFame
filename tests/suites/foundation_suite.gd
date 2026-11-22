@@ -108,6 +108,7 @@ func _test_career_hub() -> void:
 		&"competitions": "Competitions", &"calendar": "Calendar", &"statistics": "Statistics",
 		&"coop": "Co-op (Dev)", &"inbox": "Inbox", &"my_team": "My Team", &"news": "News", &"team": "Team",
 		&"player": "Player", &"compare": "Compare players", &"series": "Match report", &"training": "Training Ground",
+		&"match_view": "Round by round",
 	}
 	for page_id: StringName in expected_titles:
 		var ok: bool = hub.call("show_page", page_id)

@@ -512,8 +512,16 @@ reported per slot. The same route data can be consumed by future M7 play executi
   `MatchStatistics` at the end of the map, the reducer a played match goes through, so openings,
   trades, assists, flash assists, clutches, KAST and first-shot accuracy follow one set of rules
   for both. The duel chain logs each kill with the damage behind it (an occasional softening
-  assist, the victim's return fire and the finishing damage). `play_map` returns the stream for
-  the match view (stage G); the career does not store simulated streams.
+  assist, the victim's return fire and the finishing damage). The career does not store
+  simulated streams.
+- **Match view.** `MatchTimeline.build` (pure, `format_version` 1) turns the stream and the
+  round log into the map's story: teams, players by index, scoreboard, and per round the plans,
+  buys, kill feed (time, killer, victim, weapon, headshot, flasher), bomb events and each
+  player's money, weapon, armour and grenades (planned maps only). `play_map` returns it and the
+  career stores it as JSON in `sim_timeline` (save schema v17), keyed `L<fixture>:<map>` for world
+  series (`CareerSeriesEngine`, pruned monthly after `TIMELINE_DAYS`) and `C<fixture>` for the
+  human's simulated matches (`CareerMatchSimulator`, kept). The hub page `match_view`
+  (`CareerMatchViewPage`, args `{key}`) reads it through `CareerRepository.sim_timeline`.
 
 ### Competitive rules (Milestone 5)
 

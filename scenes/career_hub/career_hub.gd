@@ -27,6 +27,7 @@ const PAGES: Array[Dictionary] = [
 	{"id": &"player", "label": "Player", "group": "", "script": preload("res://scenes/career_hub/pages/player_page.gd")},
 	{"id": &"compare", "label": "Compare players", "group": "", "script": preload("res://scenes/career_hub/pages/compare_page.gd")},
 	{"id": &"series", "label": "Match report", "group": "", "script": preload("res://scenes/career_hub/pages/series_page.gd")},
+	{"id": &"match_view", "label": "Round by round", "group": "", "script": preload("res://scenes/career_hub/pages/match_view_page.gd")},
 ]
 
 const DEFAULT_PAGE: StringName = &"home"

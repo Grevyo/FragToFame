@@ -42,6 +42,8 @@ const COMFORT_PER_RATING: float = 8.0
 const COMFORT_CAP: float = 3.0
 ## Maps played (ever) for full big-match experience.
 const EXPERIENCED_MAPS: float = 150.0
+## Days a world series map's round-by-round timeline is kept (the human's own are kept for good).
+const TIMELINE_DAYS: int = 90
 
 
 ## A team for the engine: the organisation's starting five with their skills (true for AI,
@@ -155,6 +157,8 @@ static func play_series(repo: CareerRepository, fixture: Dictionary, day: int, r
 		score += Vector2i(1, 0) if home_won else Vector2i(0, 1)
 		if not repo.insert_sim_map(int(fixture["id"]), map_number, map_id, map_score, str(played["mvp"]), played["highlights"]):
 			return Vector2i(-1, -1)
+		if not repo.insert_sim_timeline(CareerRepository.league_timeline_key(int(fixture["id"]), map_number), day, played["timeline"]):
+			return Vector2i(-1, -1)
 		notes.append_array(played["highlights"])
 		for team: MatchEngine.SimTeam in [home, away]:
 			var won := home_won == (team == home)
@@ -180,9 +184,10 @@ static func next_morale(morale: float, rating: float, won: bool, traits: Diction
 	return clampf(morale + swing, -20.0, 20.0)
 
 
-## Monthly: morale fades and the world's opinion follows AI players' recent simulated form.
+## Monthly: morale fades, the world's opinion follows AI players' recent simulated form, and
+## world series timelines older than [constant TIMELINE_DAYS] are dropped.
 static func monthly(repo: CareerRepository, day: int) -> bool:
-	if not repo.fade_morale(MORALE_KEEP, day):
+	if not repo.fade_morale(MORALE_KEEP, day) or not repo.prune_sim_timelines(day - TIMELINE_DAYS):
 		return false
 	for found: Dictionary in repo.sim_ratings_since(day - 31, OPINION_MAPS):
 		var rating := float(found["rating"])

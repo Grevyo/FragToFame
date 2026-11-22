@@ -298,8 +298,12 @@ Stages (each validated and committed on its own):
       trusted by how many maps it rests on. Simulated lines now record their map (save schema
       v16). Test suite "People over a match". Confidence is not here (owner, 2026-11-22): it
       comes from play time, team training and the manager's tactics, built in Milestone 20.
-- [ ] **G. Match view.** A round-by-round timeline with each round's plan, kill feed (weapon,
+- [x] **G. Match view.** A round-by-round timeline with each round's plan, kill feed (weapon,
       headshot, utility), economy per player and the scoreboard, for any simulated match.
+      `MatchTimeline` builds it from the event stream and the round log; it is stored with the
+      map (`sim_timeline`, save schema v17) and shown on the hub's "Round by round" page, linked
+      from each series map card and from the human's own simulated maps. World series keep
+      theirs for 90 days; the human's are kept for good. Test suite "Match view timelines".
 - [ ] **H. Balance harness.** Thousands of headless matches checked against targets: side
       balance, round and score distributions, rating spread, upset rate, stat ranges by role.
 
@@ -1085,3 +1089,4 @@ Planned scope:
 | 2026-11-22 | Barnwell revision 3 (owner request: rework it from the map and the real location): rebuilt as a trace of the owner's drawing over the street map, with the lane loop, Edinburgh Avenue, footpaths to the garage court (B) and the Green (A), the attackers' garden paths from their house on Barnwell Road, Street View-style semis, a fenland summer sky (`fen_summer`) and broadleaf and poplar trees (new `form` option on the Tree piece). The map analysis no longer reports ground beside an angled drawn surface as unreachable floor. Clipping pass (owner: cars in walls, walls covering houses, paths bleeding onto roads): paths stop at the kerb, houses and drives stand clear of hedges, and street furniture and cars follow the roads and fit on them; front gardens are open to the street, closed at the sides, with garden gates. |
 | 2026-11-22 | Milestone 21 stage E: simulated maps log the FPS runtime's event stream (shots, damage, grenades, flashes, kills, plants, defuses) and every simulated statistic is built from it by `MatchStatistics`, the reducer played matches use, so both follow the same rules for openings, trades, assists, flash assists, clutches and KAST. Grenade damage now counts after its thrower dies, in played matches too. |
 | 2026-11-22 | Milestone 21 stage F: people over a match. Tilt, nerves in big rounds, fatigue over a series, map familiarity for teams and map comfort for players, from traits and the career's history (simulated lines now record their map, save schema v16). Confidence moved to Milestone 20 (owner: it comes from play time, team training and the manager's tactics). |
+| 2026-11-22 | Milestone 21 stage G: round-by-round match view. Every simulated map keeps a timeline (both leaders' plans and buys, the kill feed with weapon, headshot and flasher, bomb plants and defuses, each player's money and kit, the scoreboard), shown on the hub's "Round by round" page from series and fixture views. Save schema v17; world timelines are pruned after 90 days. |

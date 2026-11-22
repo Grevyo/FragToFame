@@ -535,6 +535,12 @@ reported per slot. The same route data can be consumed by future M7 play executi
   for both. The duel chain logs each kill with the damage behind it (an occasional softening
   assist, the victim's return fire and the finishing damage). The career does not store
   simulated streams.
+- **Balance harness.** `MatchBalance.run(maps, count, seed)` plays maps between sample teams
+  (five match roles, abilities around a drawn level, a drawn level gap) and reports the metrics
+  in `MatchBalance.TARGETS` plus each map's attack share and round endings and per-role stats;
+  `misses()` lists what is off target. `tools/balance_harness.gd` runs thousands (exit 1 when
+  off target); the test suite runs a small sample for shape and repeatability only. Tuning
+  constants it informed live in `RoundSim` (`HOLD_ADVANTAGE`, `FLASH_DODGE`, fire burning once).
 - **Match view.** `MatchTimeline.build` (pure, `format_version` 1) turns the stream and the
   round log into the map's story: teams, players by index, scoreboard, and per round the plans,
   buys, kill feed (time, killer, victim, weapon, headshot, flasher), bomb events and each

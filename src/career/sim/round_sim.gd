@@ -41,6 +41,11 @@ const MAX_BURSTS: int = 3
 const REACTION_PER_POINT: float = 0.002
 ## A peeker moving into an angle sees a holder a little before the holder can react.
 const PEEKER_ADVANTAGE: float = 0.04
+## A holder already aiming at the angle the fight comes from (balance harness: without it attackers
+## won about 63% of opening duels; real matches sit near half).
+const HOLD_ADVANTAGE: float = 0.06
+## Chance a player caught by a flash sees it coming and turns away completely (plus game sense).
+const FLASH_DODGE: float = 0.3
 ## Where a hit lands when it is not the head (the rest of the body, by how much of it shows).
 const BODY_ZONES: Array[Array] = [[DamageModel.ZONE_CHEST, 0.45], [DamageModel.ZONE_STOMACH, 0.25],
 	[DamageModel.ZONE_ARMS, 0.15], [DamageModel.ZONE_LEGS, 0.15]]
@@ -530,6 +535,7 @@ func _ready_time(body: Body, other: Body, place: String) -> float:
 		value -= (p.skill(&"positioning") - 50.0) * REACTION_PER_POINT * 0.5
 		# A holder who knows the attack is coming (game sense) is already looking at it.
 		value -= (p.skill(&"game_sense") - 50.0) * REACTION_PER_POINT * 0.5
+		value -= HOLD_ADVANTAGE
 	else:
 		value -= PEEKER_ADVANTAGE + (p.skill(&"movement") - 50.0) * REACTION_PER_POINT * 0.75
 	# Blind players wait for their eyes; smoke hides the first sight of each other.
@@ -769,7 +775,9 @@ func _throw(body: Body, id: StringName) -> float:
 
 
 ## A flash blinds each enemy caught by it for up to the flashbang's full blindness: less for a poor
-## throw, and less for those who turn away in time (game sense).
+## throw, and less for those who turn away in time (game sense). Some see it coming and dodge it
+## altogether (balance harness: when every entry flash landed, attackers won about 62% of opening
+## duels).
 func _flash(thrower: Body, enemies: Array[Body]) -> void:
 	var quality := _throw(thrower, EquipmentCatalog.FLASH)
 	if quality < POOR_THROW:
@@ -777,6 +785,8 @@ func _flash(thrower: Body, enemies: Array[Body]) -> void:
 	var flash := EquipmentCatalog.params(EquipmentCatalog.FLASH)
 	var full := float(flash.get("max_blind", 4.8))
 	for enemy: Body in enemies:
+		if rng.randf() < FLASH_DODGE + enemy.player.skill(&"game_sense") / 400.0:
+			continue
 		var turned := clampf(enemy.player.skill(&"game_sense") / 200.0 + rng.randf() * 0.4, 0.0, 1.0 - float(flash.get("behind_share", 0.22)))
 		var seconds := full * quality * (1.0 - turned)
 		if seconds >= 0.8:
@@ -796,7 +806,9 @@ func _frag(thrower: Body, enemies: Array[Body]) -> void:
 			_hurt(thrower, enemy, amount, penetration, DamageModel.ZONE_CHEST, EquipmentCatalog.FRAG)
 
 
-## Fire burns whoever stands in it (they get out as fast as they can: about half a step in it).
+## Fire burns whoever stands in it once: a fire covers part of a place, and they get out of it as
+## fast as they can (about half a step in it). It still holds up a push into the place while it
+## burns, and a holder steps off it to another spot on the site when there is one.
 func _burn() -> void:
 	var fire := EquipmentCatalog.params(EquipmentCatalog.FIRE)
 	var dps := float(fire.get("dps", 38.0))
@@ -806,8 +818,11 @@ func _burn() -> void:
 			fires.erase(place)
 			continue
 		var thrower: Body = burning["by"]
+		var caught: Array = burning.get("caught", [])
 		for body: Body in bodies:
-			if body.alive() and not body.hidden and body.place == place and body.team != thrower.team:
+			if body.alive() and not body.hidden and body.place == place and body.team != thrower.team and not caught.has(body):
+				caught.append(body)
+				burning["caught"] = caught
 				_hurt(thrower, body, roundi(dps * STEP * 0.5), 1.0, DamageModel.ZONE_LEGS, EquipmentCatalog.FIRE)
 				# A holder steps off the fire to another spot on the site.
 				if body.alive() and not body.moving() and body.team != attackers:

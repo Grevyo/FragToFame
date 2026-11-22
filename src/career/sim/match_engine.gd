@@ -23,6 +23,19 @@ extends RefCounted
 ## every round's plan: the attack's strategy and target site, the defence's setup, each player's
 ## job and place. Plans are logged with the round and the leaders learn from what worked.
 ##
+## People over a match (all in [method form_points], so both the planned rounds and the duel chain
+## feel them; each comes from what happened and who the player is, never a flat bonus):
+## - tilt: rounds in a row dying without a kill wear on a player, more for a hot head and for low
+##   composure, hardly at all for a calm one; a kill clears it (the team's losing streak tilts hot
+##   heads on top);
+## - nerves: big rounds (match point, overtime, a map that decides the series) cost players with
+##   low composure, less the more maps they have played ([member SimPlayer.experience]);
+## - fatigue: rounds played across a series wear players down, less for consistent ones;
+## - map familiarity: a team that has played the map a lot lately knows its positions and timings
+##   ([member SimTeam.familiarity]); a player who has played well (or badly) on it before carries
+##   that in ([member SimPlayer.map_comfort]). [CareerSeriesEngine] reads both from the history.
+## Confidence comes from play time, training and the manager's tactics (Milestone 20).
+##
 ## Every map logs the FPS runtime's event stream ([member events]: match_started, round_started,
 ## shot, damage, utility_thrown, flashed, kill, bomb_planted, bomb_defused, round_ended,
 ## match_ended) and every player's statistics are built from it by [MatchStatistics], the same
@@ -70,6 +83,22 @@ const PLANT_PER_EDGE: float = 0.12
 const DEFUSE_CHANCE: float = 0.9
 const ASSIST_CHANCE: float = 0.3
 const TRADE_CHANCE: float = 0.35
+## Tilt: ability points per round in a row dying without a kill (after the first), at composure 50,
+## and the most it can cost.
+const TILT_PER_ROUND: float = 1.2
+const TILT_CAP: float = 6.0
+## Nerves: ability points per point of composure below [constant NERVE_COMPOSURE], per unit of
+## pressure; experience takes off up to [constant EXPERIENCE_CALM] of it.
+const NERVE_COMPOSURE: float = 65.0
+const NERVE_PER_POINT: float = 0.12
+const EXPERIENCE_CALM: float = 0.7
+## Fatigue: ability points per [constant FATIGUE_ROUNDS] rounds played in a series, for a player of
+## no consistency (a consistent one tires less).
+const FATIGUE_ROUNDS: float = 24.0
+const FATIGUE_POINTS: float = 1.6
+## Map familiarity: ability points between a team that has never played the map lately and one
+## that plays it all the time.
+const FAMILIARITY_POINTS: float = 3.0
 ## The fixture ID simulated maps log under (the career stores results by its own fixture IDs).
 const SIM_FIXTURE: String = "simulated"
 ## Seconds between one round's end and the next one's start (end of round and freeze time).
@@ -109,6 +138,14 @@ class SimPlayer extends RefCounted:
 	var grenades: Array[StringName] = []
 	## The weapon of each kill this round (for kill rewards).
 	var round_kill_weapons: Array[StringName] = []
+	## Big-match experience, 0..1 (from the maps they have played; set by the career).
+	var experience: float = 0.0
+	## Ability points this player brings to this map from their history on it (set by the career).
+	var map_comfort: float = 0.0
+	## Rounds played so far in the series (fatigue); carried from map to map.
+	var series_rounds: int = 0
+	## Rounds in a row this player has died without a kill (tilt).
+	var bad_rounds: int = 0
 
 	func skill(key: StringName) -> float:
 		return float(skills.get(key, 50))
@@ -134,6 +171,8 @@ class SimTeam extends RefCounted:
 	var buy: StringName = &"pistol"
 	var execution: float = 0.0
 	var map_form: float = 0.0
+	## How much the team has played this map lately, 0..1 (set by the career; 0.5 when unknown).
+	var familiarity: float = 0.5
 
 	func alive() -> Array[SimPlayer]:
 		var list: Array[SimPlayer] = []
@@ -154,6 +193,10 @@ var rounds_log: Array[Dictionary] = []
 var highlights: PackedStringArray = []
 ## The map's event stream in the FPS runtime's format (see [MatchState]); a new array per map.
 var events: Array[Dictionary] = []
+## True when this map decides the series (set by the caller): every round of it weighs more.
+var series_decider: bool = false
+## True while the map is in overtime.
+var _overtime: bool = false
 ## Match time when the current round started, and its number (from 1).
 var _clock: float = 0.0
 var _round_number: int = 0
@@ -182,6 +225,7 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 	events = []
 	_clock = 0.0
 	_round_number = 0
+	_overtime = false
 	for team: SimTeam in teams:
 		_prepare(team)
 	if home.players.is_empty() or away.players.is_empty():
@@ -216,10 +260,12 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 			if round_number > 0:
 				attackers = 1 - attackers
 		_round_number = round_number + 1
+		_overtime = round_number >= max_rounds * 2
 		record("round_started", 0.0, {"attack_team": attackers})
 		var winner := _play_round(teams, attackers, _decisive(score))
 		var seconds := float(_outcome["seconds"]) if not _plans.is_empty() else _fight_time
 		record("round_ended", seconds, {"winner_team": winner, "reason": str(rounds_log.back()["how"])})
+		_after_round(teams)
 		_clock += snappedf(seconds, 0.01) + ROUND_GAP
 		score[winner] += 1
 		round_number += 1
@@ -240,6 +286,17 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 				mvp = player.id
 	return {"score": Vector2i(score[0], score[1]), "players": stats, "mvp": mvp, "rounds": rounds_log.duplicate(),
 		"highlights": highlights.duplicate(), "events": events}
+
+
+## What a round leaves on each player: a round more in their legs, and tilt for dying without a kill.
+func _after_round(teams: Array[SimTeam]) -> void:
+	for team: SimTeam in teams:
+		for player: SimPlayer in team.players:
+			player.series_rounds += 1
+			if player.round_kills > 0:
+				player.bad_rounds = 0
+			elif not player.alive:
+				player.bad_rounds += 1
 
 
 ## Logs an event [param round_time] seconds into the current round, in the FPS runtime's format.
@@ -276,6 +333,7 @@ func _prepare(team: SimTeam) -> void:
 	var coordination := 0.0
 	for player: SimPlayer in team.players:
 		player.counts = MatchStatistics.empty_counts()
+		player.bad_rounds = 0
 		var swing := clampf(8.0 + (60.0 - player.skill(&"consistency")) / 5.0, 3.0, 16.0)
 		swing *= maxf(0.3, 1.0 + 0.35 * player.trait_strength(&"tr_streaky") - 0.2 * player.trait_strength(&"tr_steady"))
 		player.day_form = rng.randfn(player.morale * MORALE_FORM, swing)
@@ -448,7 +506,31 @@ func _duel_skill(player: SimPlayer, team: SimTeam, own: int, other: int, decisiv
 	if team.loss_streak >= TILT_STREAK:
 		value -= TILT_PENALTY * player.trait_strength(&"tr_hot_headed")
 		value += 1.5 * player.trait_strength(&"tr_calm")
+	value -= tilt(player) + nerves(player, decisive) + fatigue(player)
+	value += player.map_comfort + (team.familiarity - 0.5) * FAMILIARITY_POINTS
 	return value
+
+
+## Ability points [param player] has lost to rounds in a row dying without a kill.
+static func tilt(player: SimPlayer) -> float:
+	if player.bad_rounds < 2:
+		return 0.0
+	var temper := maxf(0.0, 1.0 + 0.8 * player.trait_strength(&"tr_hot_headed") - 0.6 * player.trait_strength(&"tr_calm"))
+	var steadiness := clampf((100.0 - player.skill(&"composure")) / 50.0, 0.2, 2.0)
+	return minf(TILT_CAP, (player.bad_rounds - 1) * TILT_PER_ROUND * temper * steadiness)
+
+
+## Ability points [param player] loses to nerves this round: how big it is (a decisive round,
+## overtime, a deciding map) against their composure, softened by experience.
+func nerves(player: SimPlayer, decisive: bool) -> float:
+	var pressure := (1.0 if decisive else 0.0) + (0.5 if _overtime else 0.0) + (0.5 if series_decider else 0.0)
+	var shaky := maxf(0.0, NERVE_COMPOSURE - player.skill(&"composure")) * NERVE_PER_POINT
+	return pressure * shaky * (1.0 - EXPERIENCE_CALM * clampf(player.experience, 0.0, 1.0))
+
+
+## Ability points [param player] has lost to the rounds played so far in the series.
+static func fatigue(player: SimPlayer) -> float:
+	return player.series_rounds / FATIGUE_ROUNDS * FATIGUE_POINTS * clampf(1.2 - player.skill(&"consistency") / 100.0, 0.2, 1.2)
 
 
 ## A duel-chain kill, logged with the damage behind it: now and then a teammate softened the

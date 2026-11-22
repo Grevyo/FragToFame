@@ -24,7 +24,7 @@ extends RefCounted
 ##   relationship       how two players get on (-100..100)
 
 const FORMAT: String = "f2f.career_db"
-const CURRENT_VERSION: int = 15
+const CURRENT_VERSION: int = 16
 
 const MIGRATIONS: Array[PackedStringArray] = [
 	# v1 — world, organisations, players, abilities, perception, reputation, traits, contracts.
@@ -492,6 +492,14 @@ const MIGRATIONS: Array[PackedStringArray] = [
 	# v15 — the bootcamp is a real programme: sessions played during one are marked.
 	[
 		"ALTER TABLE training_session ADD COLUMN bootcamp INTEGER NOT NULL DEFAULT 0 CHECK (bootcamp IN (0, 1));",
+	],
+	# v16 — each simulated line records its map, for map familiarity and comfort (Milestone 21 F).
+	[
+		"ALTER TABLE sim_player_map ADD COLUMN map_id TEXT NOT NULL DEFAULT '';",
+		"""UPDATE sim_player_map SET map_id = COALESCE((SELECT s.map_id FROM sim_map s
+			WHERE s.league_fixture_id = sim_player_map.league_fixture_id AND s.map_number = sim_player_map.map_number), '')
+			WHERE league_fixture_id IS NOT NULL;""",
+		"CREATE INDEX sim_player_map_by_team_map ON sim_player_map(organisation_id, map_id, day);",
 	],
 ]
 

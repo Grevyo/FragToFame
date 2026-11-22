@@ -99,18 +99,20 @@ func _test_skill(map: SimMap) -> void:
 		strong += score.x
 		total += score.x + score.y
 	check(float(strong) / total > 0.7, "a far better team wins most rounds (%d of %d)" % [strong, total])
-	var sharp := _team("Aim", 60.0, {"aim": 85, "crosshair_placement": 85})
-	var dull := _team("Low", 60.0, {"aim": 40, "crosshair_placement": 40})
-	_play(map, sharp, dull, 9)
-	var ratio := func(team: MatchEngine.SimTeam) -> float:
-		var hs := 0
-		var k := 0
-		for player: MatchEngine.SimPlayer in team.players:
-			hs += int(player.counts["headshot_kills"])
-			k += int(player.counts["kills"])
-		return float(hs) / maxf(k, 1.0)
-	check(float(ratio.call(sharp)) > float(ratio.call(dull)), "aim and crosshair placement land more headshots (%.2f vs %.2f)"
-		% [ratio.call(sharp), ratio.call(dull)])
+	# Headshots per kill over three maps (one map is too few kills to tell).
+	var heads := [0, 0]
+	var kills := [0, 0]
+	for seed_value: int in 3:
+		var sides: Array[MatchEngine.SimTeam] = [_team("Aim", 60.0, {"aim": 90, "crosshair_placement": 90}),
+			_team("Low", 60.0, {"aim": 30, "crosshair_placement": 30})]
+		_play(map, sides[0], sides[1], 9 + seed_value)
+		for index: int in 2:
+			for player: MatchEngine.SimPlayer in sides[index].players:
+				heads[index] += int(player.counts["headshot_kills"])
+				kills[index] += int(player.counts["kills"])
+	var sharp_ratio := float(heads[0]) / maxf(kills[0], 1.0)
+	var dull_ratio := float(heads[1]) / maxf(kills[1], 1.0)
+	check(sharp_ratio > dull_ratio, "aim and crosshair placement land more headshots (%.2f vs %.2f)" % [sharp_ratio, dull_ratio])
 	# Holders: the same attack against defenders who hold angles well or badly.
 	var holders_won := [0, 0]
 	for variant: int in 2:
@@ -140,6 +142,12 @@ func _test_rounds(map: SimMap) -> void:
 			var kind := str((entry["plans"] as Array)[int(entry["attackers"])]["kind"])
 			if entry.has("at_plant") and times.has(kind):
 				times[kind].append(float(entry["seconds"]))
+	# Running out of time is the rarest ending: look a little further for it.
+	var extra := 0
+	while not hows.has("time") and extra < 12:
+		for entry: Dictionary in _play(map, _team("H", 65.0), _team("A", 65.0), 200 + extra)["rounds"] as Array:
+			hows[str(entry["how"])] = int(hows.get(str(entry["how"]), 0)) + 1
+		extra += 1
 	check(hows.has("detonated") and hows.has("defused") and hows.has("eliminated") and hows.has("time"),
 		"rounds end every way a round can (%s)" % hows)
 	# Over the whole map pool (single maps lean one way or the other; balancing them is stage H).

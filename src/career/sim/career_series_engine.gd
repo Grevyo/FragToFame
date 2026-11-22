@@ -32,6 +32,16 @@ const HYPE_RATING: float = 1.15
 const DOUBT_RATING: float = 0.85
 const OPINION_LIMIT: int = 8
 const OPINION_SKILLS: Array[StringName] = [&"aim", &"reaction", &"crosshair_placement"]
+## History behind map familiarity and comfort: how far back it looks, the share of a team's maps
+## on one map that counts as knowing it inside out, the maps a player needs on a map before their
+## record there is trusted, and ability points per rating point above (or below) their usual.
+const HISTORY_DAYS: int = 120
+const FAMILIAR_SHARE: float = 0.35
+const COMFORT_MAPS: float = 5.0
+const COMFORT_PER_RATING: float = 8.0
+const COMFORT_CAP: float = 3.0
+## Maps played (ever) for full big-match experience.
+const EXPERIENCED_MAPS: float = 150.0
 
 
 ## A team for the engine: the organisation's starting five with their skills (true for AI,
@@ -81,6 +91,33 @@ static func sim_player(repo: CareerRepository, member: Dictionary) -> MatchEngin
 	return player
 
 
+## What [param team] brings to [param map_id] from the history before [param day]: how much the
+## organisation has played it lately (familiarity), and for each player their experience and how
+## they have done there against their usual (comfort).
+static func apply_history(repo: CareerRepository, team: MatchEngine.SimTeam, map_id: String, day: int) -> void:
+	var since := day - HISTORY_DAYS
+	var played := repo.team_map_history(team.id, map_id, since)
+	team.familiarity = clampf(float(played["on_map"]) / maxf(float(played["maps"]) * FAMILIAR_SHARE, 1.0), 0.0, 1.0) \
+		if int(played["maps"]) > 0 else 0.5
+	var ids: Array[String] = []
+	for player: MatchEngine.SimPlayer in team.players:
+		ids.append(player.id)
+	var history := repo.player_map_history(ids, map_id, since)
+	for player: MatchEngine.SimPlayer in team.players:
+		var own: Dictionary = history.get(player.id, {})
+		player.experience = clampf(float(own.get("maps", 0)) / EXPERIENCED_MAPS, 0.0, 1.0)
+		player.map_comfort = comfort(int(own.get("on_map", 0)), float(own.get("map_rating", 0.0)), float(own.get("rating", 0.0)))
+
+
+## Ability points from a player's record on a map: how far their rating there sits from their
+## usual, trusted in proportion to how many maps it rests on.
+static func comfort(on_map: int, map_rating: float, usual: float) -> float:
+	if on_map <= 0 or usual <= 0.0:
+		return 0.0
+	var trust := minf(on_map / COMFORT_MAPS, 1.0)
+	return clampf((map_rating - usual) * COMFORT_PER_RATING, -COMFORT_CAP, COMFORT_CAP) * trust
+
+
 ## Expected map-win chance from the two lineups before a ball is kicked (used for upsets).
 static func expected_chance(home: MatchEngine.SimTeam, away: MatchEngine.SimTeam) -> float:
 	return SeriesSimulator.map_win_chance(_mean(home), _mean(away))
@@ -107,6 +144,9 @@ static func play_series(repo: CareerRepository, fixture: Dictionary, day: int, r
 		# The away side starts on attack on even maps.
 		var flipped := map_number % 2 == 0
 		engine.sim_map = SimMap.for_map(map_id)
+		engine.series_decider = score.x == target - 1 and score.y == target - 1
+		for team: MatchEngine.SimTeam in [home, away]:
+			apply_history(repo, team, map_id, day)
 		var played := engine.play_map(away, home) if flipped else engine.play_map(home, away)
 		var map_score: Vector2i = played["score"]
 		if flipped:
@@ -122,7 +162,7 @@ static func play_series(repo: CareerRepository, fixture: Dictionary, day: int, r
 				var line: Dictionary = played["players"].get(player.id, {})
 				if line.is_empty():
 					continue
-				if not repo.insert_sim_line(day, int(fixture["id"]), "", map_number, player.id, team.id, line, won):
+				if not repo.insert_sim_line(day, int(fixture["id"]), "", map_number, player.id, team.id, line, won, map_id):
 					return Vector2i(-1, -1)
 				if not lines.has(player.id):
 					lines[player.id] = []

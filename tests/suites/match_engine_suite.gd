@@ -173,6 +173,14 @@ func _test_career(app: Node) -> void:
 	var someone := str(repo.db.scalar("SELECT player_id FROM sim_player_map WHERE league_fixture_id = ? LIMIT 1;", [int(series["id"])], ""))
 	var form := repo.sim_form(someone, 0)
 	check(int(form["maps"]) >= 1 and float(form["rating"]) > 0.0, "a player's simulated form adds up their lines")
+	var unmapped := int(repo.db.scalar("SELECT COUNT(*) FROM sim_player_map WHERE map_id = '';", [], -1))
+	check(unmapped == 0, "every simulated line records its map")
+	var map_id := str(maps[0]["map_id"])
+	var known := repo.team_map_history(str(series["home_id"]), map_id, 0)
+	check(int(known["on_map"]) >= 1 and int(known["maps"]) >= int(known["on_map"]), "a team's history counts the maps it played (%s)" % known)
+	var ids: Array[String] = [someone]
+	var history := repo.player_map_history(ids, map_id, 0)
+	check(history.has(someone) and int(history[someone]["maps"]) >= 1, "a player's history on a map is read back")
 
 	section("A month of the engine")
 	var month_end := first_day + 40

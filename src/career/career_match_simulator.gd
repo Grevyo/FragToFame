@@ -49,6 +49,8 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 		dice.randomize()
 	var lines: PackedStringArray = []
 	var series_id := -1
+	# Rounds each player has played so far in this series (fatigue carries from map to map).
+	var legs: Dictionary = {}
 	for i: int in MAX_MAPS:
 		var fixture := repo.pending_fixture(player_id)
 		if fixture == null:
@@ -66,7 +68,7 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 					ratings[str(member["player_id"])] = repo.perceived_rating(str(member["player_id"]))
 		var home := lineup_strength(setup.home_lineup, ratings) + WorldSimulation.form_bonus(repo, setup.home_team_id)
 		var away := lineup_strength(setup.away_lineup, ratings) + WorldSimulation.form_bonus(repo, setup.away_team_id)
-		var played := engine_map(repo, setup, dice)
+		var played := engine_map(repo, setup, dice, legs, fixture.scheduled_day)
 		var score: Vector2i = played["score"]
 		if home <= 0.0 and away <= 0.0:
 			score = map_score(dice, home, away, setup.max_rounds)
@@ -83,8 +85,11 @@ static func simulate_pending(repo: CareerRepository, player_id: String, rng: Ran
 	return {"ok": true, "message": "Simulated (dev): " + "; ".join(lines) + ".", "maps": lines.size()}
 
 
-## One map of a career fixture through the match engine (home side starts on attack).
-static func engine_map(repo: CareerRepository, setup: MatchSetup, dice: RandomNumberGenerator) -> Dictionary:
+## One map of a career fixture through the match engine (home side starts on attack), with each
+## side's history on the map from before [param day] and the rounds in [param legs] (player id ->
+## rounds played earlier in the series, updated).
+static func engine_map(repo: CareerRepository, setup: MatchSetup, dice: RandomNumberGenerator, legs: Dictionary = {},
+		day: int = -1) -> Dictionary:
 	var engine := MatchEngine.new(dice, setup.max_rounds)
 	engine.sim_map = SimMap.for_map(setup.map_id)
 	var home := MatchEngine.SimTeam.new()
@@ -99,7 +104,16 @@ static func engine_map(repo: CareerRepository, setup: MatchSetup, dice: RandomNu
 		home.players.append(CareerSeriesEngine.sim_player(repo, member))
 	for member: Dictionary in setup.away_lineup:
 		away.players.append(CareerSeriesEngine.sim_player(repo, member))
-	return engine.play_map(home, away)
+	for team: MatchEngine.SimTeam in [home, away]:
+		if day >= 0:
+			CareerSeriesEngine.apply_history(repo, team, setup.map_id, day)
+		for player: MatchEngine.SimPlayer in team.players:
+			player.series_rounds = int(legs.get(player.id, 0))
+	var played := engine.play_map(home, away)
+	for team: MatchEngine.SimTeam in [home, away]:
+		for player: MatchEngine.SimPlayer in team.players:
+			legs[player.id] = player.series_rounds
+	return played
 
 
 static func _store_lines(repo: CareerRepository, fixture: CareerFixture, setup: MatchSetup, played: Dictionary, score: Vector2i,
@@ -111,6 +125,6 @@ static func _store_lines(repo: CareerRepository, fixture: CareerFixture, setup: 
 			if line.is_empty():
 				continue
 			if not repo.insert_sim_line(fixture.scheduled_day, series_id, setup.fixture_id, 1, str(member["player_id"]),
-					str(side[1]), line, bool(side[2])):
+					str(side[1]), line, bool(side[2]), setup.map_id):
 				return false
 	return true

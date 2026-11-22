@@ -288,9 +288,16 @@ Stages (each validated and committed on its own):
       logs every bullet, damage after armour, grenades, flashes, kills, plants and defuses; the
       duel chain logs each kill with the damage behind it. Neither keeps counters of its own.
       Test suite "Simulated match events".
-- [ ] **F. People over a match.** Confidence that grows with good rounds, tilt, nerves in big
-      rounds, fatigue over a Bo3/Bo5, map familiarity for teams and map comfort for players,
-      all from traits and history.
+- [x] **F. People over a match.** Tilt, nerves in big rounds, fatigue over a Bo3/Bo5, map
+      familiarity for teams and map comfort for players, all from traits and history, all through
+      `MatchEngine.form_points`: tilt from rounds in a row dying without a kill (hot heads and low
+      composure more, calm players hardly); nerves from match point, overtime and a deciding map
+      against composure, softened by experience (maps played); fatigue from rounds played across
+      the series, less for consistent players; familiarity from how much of an organisation's
+      recent maps were on this one; comfort from a player's rating on the map against their usual,
+      trusted by how many maps it rests on. Simulated lines now record their map (save schema
+      v16). Test suite "People over a match". Confidence is not here (owner, 2026-11-22): it
+      comes from play time, team training and the manager's tactics, built in Milestone 20.
 - [ ] **G. Match view.** A round-by-round timeline with each round's plan, kill feed (weapon,
       headshot, utility), economy per player and the scoreboard, for any simulated match.
 - [ ] **H. Balance harness.** Thousands of headless matches checked against targets: side
@@ -990,6 +997,9 @@ Planned scope:
       releases, using the existing finances.
 - [ ] Team tactics as real match-engine inputs (style, aggression, utility, economy discipline,
       per-map approach); the derived player-based tactics rating stays and combines with them.
+- [ ] Player confidence (owner, 2026-11-22): built from play time over time, team training and
+      the manager's tactics. In the Player Career the team's manager sets training and tactics;
+      in the Manager Career the human does. It feeds the match engine's form.
 - [ ] Staff: coaches, analysts and scouts as persistent people with traits, hired and paid by
       organisations (also used by AI organisations and the Player Career).
 - [ ] Match day: the manager's fixtures resolve through the match engine with a round-by-round
@@ -1074,3 +1084,4 @@ Planned scope:
 | 2026-11-22 | Rooftops (owner request): the eighth official map, a two-floor skyscraper top at dusk, rebuilt from scratch in place of an unfinished draft: A on the roof's Plant Deck, B in the Sky Lounge on the storey below, joined by four stairs. |
 | 2026-11-22 | Barnwell revision 3 (owner request: rework it from the map and the real location): rebuilt as a trace of the owner's drawing over the street map, with the lane loop, Edinburgh Avenue, footpaths to the garage court (B) and the Green (A), the attackers' garden paths from their house on Barnwell Road, Street View-style semis, a fenland summer sky (`fen_summer`) and broadleaf and poplar trees (new `form` option on the Tree piece). The map analysis no longer reports ground beside an angled drawn surface as unreachable floor. Clipping pass (owner: cars in walls, walls covering houses, paths bleeding onto roads): paths stop at the kerb, houses and drives stand clear of hedges, and street furniture and cars follow the roads and fit on them; front gardens are open to the street, closed at the sides, with garden gates. |
 | 2026-11-22 | Milestone 21 stage E: simulated maps log the FPS runtime's event stream (shots, damage, grenades, flashes, kills, plants, defuses) and every simulated statistic is built from it by `MatchStatistics`, the reducer played matches use, so both follow the same rules for openings, trades, assists, flash assists, clutches and KAST. Grenade damage now counts after its thrower dies, in played matches too. |
+| 2026-11-22 | Milestone 21 stage F: people over a match. Tilt, nerves in big rounds, fatigue over a series, map familiarity for teams and map comfort for players, from traits and the career's history (simulated lines now record their map, save schema v16). Confidence moved to Milestone 20 (owner: it comes from play time, team training and the manager's tactics). |

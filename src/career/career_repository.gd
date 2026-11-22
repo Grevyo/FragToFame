@@ -1122,13 +1122,42 @@ func sim_maps(league_fixture_id: int) -> Array[Dictionary]:
 
 ## One player's line from a simulated map ([param line] holds the engine's counts and rating).
 func insert_sim_line(day: int, league_fixture_id: int, career_fixture_id: String, map_number: int, player_id: String,
-		org_id: String, line: Dictionary, won: bool) -> bool:
+		org_id: String, line: Dictionary, won: bool, map_id: String = "") -> bool:
 	return db.execute("""INSERT INTO sim_player_map (day, league_fixture_id, career_fixture_id, map_number, player_id,
-			organisation_id, rounds, kills, deaths, assists, damage, kast_rounds, opening_kills, clutch_wins, rating, won)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", [day, null if league_fixture_id < 0 else league_fixture_id,
+			organisation_id, rounds, kills, deaths, assists, damage, kast_rounds, opening_kills, clutch_wins, rating, won, map_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", [day, null if league_fixture_id < 0 else league_fixture_id,
 		null if career_fixture_id.is_empty() else career_fixture_id, map_number, player_id, null if org_id.is_empty() else org_id,
 		int(line["rounds"]), int(line["kills"]), int(line["deaths"]), int(line["assists"]), int(line["damage"]),
-		int(line["kast_rounds"]), int(line["opening_kills"]), int(line["clutch_wins"]), float(line["rating"]), 1 if won else 0])
+		int(line["kast_rounds"]), int(line["opening_kills"]), int(line["clutch_wins"]), float(line["rating"]), 1 if won else 0, map_id])
+
+
+## How much [param org_id] has played [param map_id] since [param since_day]: {"on_map": maps
+## there, "maps": all maps} (simulated maps; a map counts once however many players it lined up).
+func team_map_history(org_id: String, map_id: String, since_day: int) -> Dictionary:
+	var row := db.row("""SELECT COUNT(DISTINCT CASE WHEN map_id = ? THEN key END) AS on_map, COUNT(DISTINCT key) AS maps
+		FROM (SELECT map_id, COALESCE(league_fixture_id, '') || ':' || COALESCE(career_fixture_id, '') || ':' || map_number AS key
+			FROM sim_player_map WHERE organisation_id = ? AND day >= ?);""", [map_id, org_id, since_day])
+	return {"on_map": int(row.get("on_map", 0)), "maps": int(row.get("maps", 0))}
+
+
+## Each player's simulated history for [param map_id]: {player_id: {"maps": all maps ever,
+## "recent": maps since [param since_day], "rating": their average rating since then, "on_map": maps
+## on this map since then, "map_rating": average rating there (0 when none)}}.
+func player_map_history(player_ids: Array[String], map_id: String, since_day: int) -> Dictionary:
+	var result: Dictionary = {}
+	if player_ids.is_empty():
+		return result
+	var marks := ", ".join(player_ids.map(func(_id: String) -> String: return "?"))
+	var bindings: Array = [since_day, since_day, map_id, since_day, map_id, since_day]
+	bindings.append_array(player_ids)
+	for row: Dictionary in db.rows("""SELECT player_id, COUNT(*) AS maps, SUM(day >= ?) AS recent,
+			AVG(CASE WHEN day >= ? THEN rating END) AS rating,
+			SUM(map_id = ? AND day >= ?) AS on_map, AVG(CASE WHEN map_id = ? AND day >= ? THEN rating END) AS map_rating
+			FROM sim_player_map WHERE player_id IN (%s) GROUP BY player_id;""" % marks, bindings):
+		result[str(row["player_id"])] = {"maps": int(row["maps"]), "recent": int(row["recent"]),
+			"rating": float(row["rating"]) if row["rating"] != null else 0.0, "on_map": int(row["on_map"]),
+			"map_rating": float(row["map_rating"]) if row["map_rating"] != null else 0.0}
+	return result
 
 
 ## A player's simulated maps since [param since_day]: totals and the average rating.

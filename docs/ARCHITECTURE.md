@@ -496,6 +496,14 @@ reported per slot. The same route data can be consumed by future M7 play executi
   `DamageModel`, and grenades are thrown on each player's utility skill: flashes blind named
   players (flash assists), smokes block sight, fire burns and holds pushes, frags damage.
   Personal saves: a last defender against three or more may hide to keep their rifle.
+- **People over a match.** `MatchEngine.form_points` (used by `RoundSim` and the duel chain)
+  takes off tilt (rounds in a row dying without a kill, scaled by temperament and composure),
+  nerves (match point, overtime and a deciding map against composure, less with experience) and
+  fatigue (rounds played across the series, less with consistency), and adds the team's map
+  familiarity and the player's map comfort. `CareerSeriesEngine.apply_history` sets those two and
+  experience from `sim_player_map` before each map (`team_map_history`, `player_map_history`;
+  lines record their `map_id` since save schema v16); `CareerMatchSimulator` does the same and
+  carries each player's rounds across the maps of a series.
 - **One event stream, one reducer.** A simulated map logs the FPS runtime's event stream
   (`MatchEngine.events`, the `MatchState` format: match_started with the lineup, round_started,
   every bullet as a shot, damage after armour with the weapon and headshot flag, utility_thrown,

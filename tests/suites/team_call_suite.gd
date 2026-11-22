@@ -3,17 +3,20 @@ extends TestSuite
 ## Milestone 7 D: mid-round calls. The AI leader reads the round (save, take the other site,
 ## regroup; defence regroups outside a fallen site), a human makes the same calls from the call
 ## menu, and the bots obey a call the same way whoever made it.
+## Milestone 7 E: the team buys on its leader's call, with drops for teammates.
 
 const FPS_SANDBOX_SCENE: String = "res://scenes/fps_sandbox/fps_sandbox.tscn"
 
 
 func suite_name() -> String:
-	return "Team calls (Milestone 7 D)"
+	return "Team calls and economy (Milestone 7 D, E)"
 
 
 func run() -> void:
 	_test_menu()
 	_test_leader_reads()
+	_test_team_buy()
+	_test_drops()
 	await _test_calls_in_match()
 
 
@@ -91,6 +94,84 @@ func _test_leader_reads() -> void:
 		"a last defender does not call a regroup; nothing fallen, nothing called")
 
 
+## Bot ID -> carried gear for [method BotTactics.team_buy], everyone with [param money].
+static func _carried(moneys: Array[int]) -> Dictionary[String, Dictionary]:
+	var carried: Dictionary[String, Dictionary] = {}
+	for index: int in moneys.size():
+		carried["p%d" % (index + 1)] = {"money": moneys[index], "primary": "", "secondary": String(WeaponCatalog.DEFAULT_SECONDARY),
+			"armour": 0, "helmet": false, "kit": false, "utility": []}
+	return carried
+
+
+static func _is_primary(item: StringName) -> bool:
+	if ShopCatalog.kind(item) != ShopCatalog.KIND_WEAPON:
+		return false
+	return WeaponCatalog.get_definition(item).category == WeaponDefinition.CATEGORY_PRIMARY
+
+
+static func _items(orders: Array[Dictionary], id: String) -> Array[StringName]:
+	var items: Array[StringName] = []
+	for order: Dictionary in orders:
+		if str(order["for"]) == id:
+			items.append(order["item"] as StringName)
+	return items
+
+
+func _test_team_buy() -> void:
+	section("The team buys on the leader's call")
+	var map := SimMap.for_map(_official_with_graph())
+	if map == null:
+		return
+	var leader := _leader(map, MatchRules.SIDE_ATTACK)
+	var roles := leader.team.players.map(func(player: MatchEngine.SimPlayer) -> String: return String(player.role))
+	check(roles == ["igl", "entry", "support", "rifler", "lurker"], "sandbox bots get a leader, an entry and support (%s)" % ", ".join(roles))
+	var pistol := leader.team_buy(_carried([800, 800, 800, 800, 800]), MatchRules.SIDE_ATTACK, true, 800.0, 0)
+	check(leader.buy_call == &"pistol" and not pistol.any(func(order: Dictionary) -> bool: return _is_primary(order["item"] as StringName)),
+		"pistol round: a pistol-round buy, no rifles")
+	var full := leader.team_buy(_carried([6000, 6000, 6000, 6000, 6000]), MatchRules.SIDE_ATTACK, false, 6000.0, 0)
+	check(leader.buy_call == &"full" and range(1, 6).all(func(n: int) -> bool:
+		return _items(full, "p%d" % n).has(WeaponCatalog.AK47) and _items(full, "p%d" % n).has(ShopCatalog.ARMOUR_VEST_HELMET)),
+		"full buy: everyone a rifle, vest and helmet")
+	var support := _items(full, "p3")
+	var entry := _items(full, "p2")
+	check(support.has(EquipmentCatalog.SMOKE) and entry.has(EquipmentCatalog.FLASH),
+		"each buys utility for their role (support: %s; entry: %s)" % [", ".join(support), ", ".join(entry)])
+	leader.team_buy(_carried([1800, 1800, 1800, 1800, 1800]), MatchRules.SIDE_ATTACK, false, 5000.0, 0)
+	check(leader.buy_call == &"eco", "short of money against a full buy: eco")
+	leader.team_buy(_carried([2400, 2400, 2400, 2400, 2400]), MatchRules.SIDE_ATTACK, false, 5000.0, 3)
+	check(leader.buy_call == &"force", "after a losing run with some money: force")
+	var defence := _leader(map, MatchRules.SIDE_DEFENCE)
+	var kits := defence.team_buy(_carried([7000, 7000, 7000, 7000, 7000]), MatchRules.SIDE_DEFENCE, false, 6000.0, 0)
+	var kit_count := kits.filter(func(order: Dictionary) -> bool: return order["item"] == ShopCatalog.DEFUSE_KIT).size()
+	check(kit_count >= 1 and kit_count <= 2 and _items(kits, "p1").has(WeaponCatalog.M4A1), "defenders: rifles and one or two kits")
+
+
+func _test_drops() -> void:
+	section("Drops")
+	var map := SimMap.for_map(_official_with_graph())
+	if map == null:
+		return
+	var leader := _leader(map, MatchRules.SIDE_ATTACK)
+	var orders := leader.team_buy(_carried([9000, 9000, 9000, 9000, 400]), MatchRules.SIDE_ATTACK, false, 6000.0, 0)
+	var drop := orders.filter(func(order: Dictionary) -> bool: return str(order["buyer"]) != str(order["for"]))
+	check(leader.buy_call == &"full" and drop.size() == 1 and str(drop[0]["for"]) == "p5" and drop[0]["item"] == WeaponCatalog.AK47,
+		"four rich, one broke: a teammate drops the broke player a rifle")
+	var setup := MatchSetup.new()
+	setup.fixture_id = "drops"
+	var state := MatchState.new(setup, MatchRules.practice(2))
+	state.add_player("a", "A", MatchState.HOME)
+	state.add_player("b", "B", MatchState.HOME)
+	state.add_player("c", "C", MatchState.AWAY)
+	state.start()
+	state.get_player("a").money = 4000
+	state.get_player("b").money = 0
+	check(state.buy_for("a", "b", WeaponCatalog.AK47) == "" and state.get_player("b").primary == WeaponCatalog.AK47
+		and state.get_player("a").money == 4000 - ShopCatalog.price(WeaponCatalog.AK47) and state.get_player("a").primary == &"",
+		"buy_for: the buyer pays, the teammate gets the rifle")
+	check(state.buy_for("a", "c", WeaponCatalog.AK47) != "" and state.buy_for("a", "b", ShopCatalog.ARMOUR_VEST) != ""
+		and state.buy_for("b", "a", WeaponCatalog.AK47) != "", "no drops for opponents, of armour, or without the money")
+
+
 func _test_calls_in_match() -> void:
 	section("Calls in a match")
 	var app := tree.root.get_node("App")
@@ -130,6 +211,8 @@ func _test_calls_in_match() -> void:
 	Engine.time_scale = 4.0
 	await wait_until(func() -> bool: return state.phase == MatchState.Phase.LIVE, 5.0)
 	check(director.human_side() == MatchRules.SIDE_ATTACK and director.can_call(), "the player attacks and can call")
+	check(squad.tactics[MatchState.AWAY].buy_call == &"pistol" and squad.tactics[MatchState.HOME].buy_call == &"pistol",
+		"both bot teams buy on their leader's pistol-round call")
 
 	# The menu: Z opens it, a number makes the call.
 	var open := InputEventAction.new()

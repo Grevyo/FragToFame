@@ -29,6 +29,11 @@ const UTILITY_BY_ROLE: Dictionary[StringName, Array] = {
 }
 
 
+## What the last [method buy] paid for, in order: {"buyer", "for" (the player who gets it; a
+## drop when it is not the buyer), "item"}. A played match carries these out in its own shop.
+static var receipts: Array[Dictionary] = []
+
+
 static func rules() -> MatchRules:
 	return MatchRules.competitive()
 
@@ -76,6 +81,7 @@ static func call_buy(team: MatchEngine.SimTeam, side: String, pistol: bool, thei
 
 ## Every player buys for the call; then drops. Returns the money spent.
 static func buy(team: MatchEngine.SimTeam, side: String, call: StringName) -> int:
+	receipts.clear()
 	var spent := 0
 	var order := team.players.duplicate()
 	# Snipers and entries choose first; supports last (they drop and buy utility).
@@ -153,11 +159,12 @@ static func _rifle_for(player: MatchEngine.SimPlayer, side: String, money: int) 
 	return ATTACK_RIFLE if side == "attack" else DEFENCE_RIFLE
 
 
-static func _spend(player: MatchEngine.SimPlayer, item: StringName) -> int:
+static func _spend(player: MatchEngine.SimPlayer, item: StringName, receiver: MatchEngine.SimPlayer = null) -> int:
 	var price := ShopCatalog.price(item)
 	if price > player.money:
 		return 0
 	player.money -= price
+	receipts.append({"buyer": player.id, "for": (receiver if receiver != null else player).id, "item": item})
 	return price
 
 
@@ -211,6 +218,7 @@ static func _armour(player: MatchEngine.SimPlayer, helmet: bool) -> int:
 	if helmet and player.armour >= ShopCatalog.FULL_ARMOUR and not player.helmet and player.money >= ShopCatalog.HELMET_UPGRADE_PRICE:
 		player.money -= ShopCatalog.HELMET_UPGRADE_PRICE
 		player.helmet = true
+		receipts.append({"buyer": player.id, "for": player.id, "item": ShopCatalog.ARMOUR_VEST_HELMET})
 		return ShopCatalog.HELMET_UPGRADE_PRICE
 	var item := ShopCatalog.ARMOUR_VEST_HELMET if helmet and player.money >= ShopCatalog.price(ShopCatalog.ARMOUR_VEST_HELMET) \
 		else ShopCatalog.ARMOUR_VEST
@@ -250,7 +258,7 @@ static func _drops(team: MatchEngine.SimTeam, side: String) -> int:
 				continue
 			var rifle := ATTACK_RIFLE if side == "attack" else DEFENCE_RIFLE
 			if giver.money >= ShopCatalog.price(rifle) + 200:
-				spent += _spend(giver, rifle)
+				spent += _spend(giver, rifle, needy)
 				needy.primary = rifle
 				break
 	return spent

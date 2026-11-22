@@ -15,7 +15,7 @@ Legend: ✅ done · 🔶 in progress / awaiting acceptance · ⬜ not started ·
 | 4 | Basic FPS mechanics | 1 | 🔶 awaiting manual test |
 | 5 | Competitive match rules | 4 | 🔶 awaiting manual test |
 | 6 | Individual combat and navigation AI | 3, 4 | 🔶 awaiting manual test |
-| 7 | Tactical team AI and IGL | 5, 6, 8, 9, representative maps and gameplay-relevant player traits | ⏸ deferred |
+| 7 | Tactical team AI and IGL | 5, 6, 8, 9, representative maps and gameplay-relevant player traits | ✅ |
 | 8 | Tactical Play Creator | 3, 6 | 🔶 awaiting manual test |
 | 9 | Persistent player/team database | 1 | 🔶 awaiting manual test |
 | 10 | Career fixtures and playable match integration | 5, 9 | 🔶 awaiting manual test |
@@ -232,7 +232,7 @@ Out of scope (later): coordinated team play, roles, IGL calls and team economy (
 utility/grenades, sound-based perception (no audio yet), bot skill from career attributes (M12),
 networked bots.
 
-## Milestone 7 — Tactical team AI and IGL 🔶
+## Milestone 7 — Tactical team AI and IGL ✅
 
 Started 2026-11-22 (owner: the bots' interactions do not feel real). Stages, each validated and
 committed on its own:
@@ -289,8 +289,13 @@ committed on its own:
       Defenders regroup outside a fallen site to retake it together. The player calls from a
       menu (Z, then a number; rebindable). Calls show on the HUD for the player's team, and once
       the player has called, the AI leader stops calling for that team that round.
-- [ ] **E. Team economy.** The leader's buy call shared by the team (full / force / eco /
-      save, the sim's own `SimEconomy`), each bot buying for its role, and drops for teammates.
+- [x] **E. Team economy.** Done 2026-11-22. The leader calls the team's buy from the money
+      the bots hold between them, through the sim's own `SimEconomy`: pistol, eco, force or
+      full, with a force after a losing run or against an eco. Each bot buys for its role:
+      entries take flashes, supports smokes and fire, a sniper the rifle. Players with money to
+      spare drop a rifle for a broke teammate (`MatchState.buy_for`: the buyer pays, the
+      teammate gets it), and one or two defenders buy kits. Sandbox bots get roles (IGL, entry,
+      support, rifler, lurker), so their team has a leader and a mix of utility.
 
 **Goal:** Teams of bots play rounds as a team, driven by one team-tactics layer that an AI IGL —
 and later a human IGL — uses to make calls.
@@ -1185,6 +1190,7 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
 | 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |
 | 2026-11-22 | Milestone 7 stage B: bot utility. Bots buy grenades and throw solved line-ups (the same flight and fuse as a live grenade, so no throws through walls): attackers gather before an entrance, smoke the nearest hold and the rotation, burn a near hold, flash in from the doorway and go in together, turning away from their own flashes; defenders throw delay utility at a push. Every bot behaviour is now stat-driven: throw spread and line-up time from Utility usage, plus discipline, angle checking, patience, flash awareness and spotting range from the matching abilities. |
+| 2026-11-22 | Milestone 7 stage E: team economy; Milestone 7 complete. Bot teams buy on their leader's call (the sim's own economy), by role, with drops for broke teammates. Next: Milestone 22 (sound). |
 | 2026-11-22 | Milestone 7 stage D: IGL calls. Attackers save when outnumbered or out of time, switch site on a stack and regroup after losing the entry; defenders regroup outside a fallen site. The player makes the same calls from a team-call menu (Z) and the bots obey them. Stage E (team economy) added from the milestone's planned scope. |
 | 2026-11-22 | Milestone 7 stage C part 2: the career sim's round planner leads each bot team. It picks the site, the style and every bot's job, hits a default where defenders were not seen, places and rotates defenders on information, retakes or saves after a plant, covers the planter, and learns from each round. |
 | 2026-11-22 | Milestone 7 stage C part 1: attack styles (owner request). Each round the attacking bots rush, play a default with an off-the-cuff flash and peek, execute, throw-and-go together, send an entry pair in off a support's flash, or split two lanes, with an entry pair double-peeking the entrance. Throw pace varies throw to throw (snapped throws go wide); novices take five to eight seconds to line up. |

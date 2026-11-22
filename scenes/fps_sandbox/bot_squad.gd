@@ -180,6 +180,8 @@ func on_round_started() -> void:
 	for team_knowledge: TeamKnowledge in knowledge:
 		team_knowledge.reset()
 	for team_index: int in 2:
+		_team_buy(team_index)
+	for team_index: int in 2:
 		var side := state.teams[team_index].side
 		var spawns := director.level.spawn_points(String(side))
 		var is_home := team_index == MatchState.HOME
@@ -188,7 +190,8 @@ func on_round_started() -> void:
 		for id: String in state.teams[team_index].player_ids:
 			if not bots.has(id):
 				continue
-			_buy(id)
+			if tactics[team_index] == null:
+				_buy(id)
 			var spawn := spawns[(first_spawn + slot) % spawns.size()]
 			var offset := Vector3(0.9 * floorf(float(slot) / spawns.size()), 0, 0)
 			slot += 1
@@ -342,7 +345,39 @@ func _update_bomb_actions(delta: float) -> void:
 			state.defuse_bomb(id)
 
 
-## Simple economy: AK-47 when affordable with armour, SKS as a cheaper option, then armour,
+## The team's buy, called by its leader ([method BotTactics.team_buy], the simulation's own
+## economy): every bot buys for the call and its role, rifles are dropped for teammates who
+## cannot afford one. The purchases go through the match's own shop.
+func _team_buy(team_index: int) -> void:
+	var leader := tactics[team_index]
+	if leader == null:
+		return
+	var state := director.state
+	var carried: Dictionary[String, Dictionary] = {}
+	for id: String in state.teams[team_index].player_ids:
+		if not bots.has(id):
+			continue
+		var me := state.get_player(id)
+		carried[id] = {"money": me.money, "primary": me.primary, "secondary": me.secondary, "armour": me.armour,
+			"helmet": me.helmet, "kit": me.has_kit, "utility": me.utility.duplicate()}
+	var their_money := 0.0
+	var opponents := state.teams[1 - team_index].player_ids
+	for id: String in opponents:
+		their_money += state.get_player(id).money / maxf(opponents.size(), 1.0)
+	var played := state.rounds_played()
+	var pistol := played == 0 or played == state.rules.max_rounds
+	for order: Dictionary in leader.team_buy(carried, state.teams[team_index].side, pistol, their_money,
+			state.teams[team_index].loss_streak):
+		var buyer := str(order["buyer"])
+		var receiver := str(order["for"])
+		var item := order["item"] as StringName
+		if buyer == receiver:
+			state.buy(buyer, item)
+		else:
+			state.buy_for(buyer, receiver, item)
+
+
+## Simple economy (maps without a simulation graph): AK-47 when affordable with armour, SKS as a cheaper option, then armour,
 ## then a kit for defenders with money to spare.
 func _buy(id: String) -> void:
 	var state := director.state
@@ -511,7 +546,8 @@ func _situation(team_index: int) -> RoundPlanner.Situation:
 	situation.own_score = state.teams[team_index].score
 	situation.their_score = state.teams[1 - team_index].score
 	situation.to_win = state.setup.rounds_to_win()
-	situation.buy = _buy_kind(team_index)
+	situation.buy = tactics[team_index].buy_call if tactics[team_index] != null and tactics[team_index].buy_call != &"" \
+		else _buy_kind(team_index)
 	# A team that lost the last two rounds is expected to be saving.
 	situation.their_buy = &"eco" if state.teams[1 - team_index].loss_streak >= 2 and state.rounds_played() > 0 else &"full"
 	situation.round_time = state.rules.round_time

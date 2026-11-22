@@ -275,6 +275,37 @@ func buy(player_id: String, item_id: StringName) -> String:
 	return ""
 
 
+## Buys the weapon [param item_id] with [param buyer_id]'s money for the teammate
+## [param receiver_id] (a drop: the receiver must be able to buy and not already own it).
+## Returns "" on success or a reason it failed.
+func buy_for(buyer_id: String, receiver_id: String, item_id: StringName) -> String:
+	var buyer := get_player(buyer_id)
+	var receiver := get_player(receiver_id)
+	if buyer == null or receiver == null or buyer.team != receiver.team:
+		return "not a teammate"
+	if ShopCatalog.kind(item_id) != ShopCatalog.KIND_WEAPON:
+		return "only weapons can be dropped"
+	if not can_buy(buyer_id) or not can_buy(receiver_id):
+		return "buying is closed"
+	var cost := ShopCatalog.price(item_id)
+	if buyer.money < cost:
+		return "not enough money"
+	var restriction := ShopCatalog.side_restriction(item_id)
+	if restriction != &"" and restriction != side_of(receiver_id):
+		return "not available to that side"
+	var weapon := WeaponCatalog.get_definition(item_id)
+	var primary := weapon.category == WeaponDefinition.CATEGORY_PRIMARY
+	if (receiver.primary if primary else receiver.secondary) == item_id:
+		return "already owned"
+	buyer.money -= cost
+	if primary:
+		receiver.primary = item_id
+	else:
+		receiver.secondary = item_id
+	_log("purchase", {"player": buyer_id, "for": receiver_id, "item": String(item_id), "cost": cost})
+	return ""
+
+
 ## Captures a live shot before resolving damage, including misses.
 func record_shot(weapon_id: StringName, shooter_id: String) -> void:
 	var shooter := get_player(shooter_id)

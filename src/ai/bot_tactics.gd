@@ -13,6 +13,11 @@ extends RefCounted
 ## simulation's own [method RoundPlanner.attack_should_save]), take the other site when they find
 ## a stack before committing, and regroup when the entry pair falls at the door; defenders
 ## regroup outside a site that has fallen, to retake it together instead of one by one.
+##
+## Buying (Milestone 7 E) is the team's call too, as in the simulation ([SimEconomy]): from the
+## money the bots hold between them the leader calls pistol, eco, force or full; each bot buys
+## for its role (entries' flashes, supports' smokes and fire, a sniper's rifle), players with
+## money to spare drop a rifle for a teammate who cannot afford one, and some defenders buy kits.
 
 ## Attackers who lose this many as their push starts, still outside the site, regroup.
 const REGROUP_LOSSES: int = 2
@@ -31,6 +36,11 @@ var plan: RoundPlan = null
 ## Attack: the most opponents seen at once around each site this round (what the leader learns).
 var found: Dictionary[String, int] = {}
 var rng: RandomNumberGenerator
+## This round's buy call: "pistol", "eco", "force" or "full" ("" before the first buy).
+var buy_call: StringName = &""
+## Roles for bots with no lineup entry (the sandbox's), in order, so a team has a leader,
+## entries and support.
+const FALLBACK_ROLES: Array[StringName] = [&"igl", &"entry", &"support", &"rifler", &"lurker"]
 ## Kinds of [TeamCall] already made this round.
 var called: Dictionary[TeamCall.Kind, bool] = {}
 
@@ -53,7 +63,7 @@ static func create(sim_map: SimMap, ids: Array[String], lineup: Array[Dictionary
 		var player := MatchEngine.SimPlayer.new()
 		player.id = id
 		var entry: Dictionary = by_id.get(id, {})
-		player.role = StringName(str(entry.get("role", "rifler")))
+		player.role = StringName(str(entry.get("role", FALLBACK_ROLES[tactics.team.players.size() % FALLBACK_ROLES.size()])))
 		var abilities: Dictionary = entry.get("abilities", {})
 		if abilities.is_empty():
 			for key: StringName in CareerCatalog.ABILITIES:
@@ -108,6 +118,37 @@ func style_for(attack: RoundPlan) -> AttackPlay.Style:
 		if roll <= 0.0:
 			return key
 	return AttackPlay.Style.EXECUTE
+
+
+## The team's buy for the round. [param carried] is bot ID → what it holds now ({"money",
+## "primary", "secondary", "armour", "helmet", "kit", "utility": Array[StringName]});
+## [param their_money] the opponents' average. Returns the purchases to make, in order, each
+## {"buyer", "for", "item"} ("for" another bot is a drop); [member buy_call] holds the call.
+func team_buy(carried: Dictionary[String, Dictionary], side: StringName, pistol: bool, their_money: float,
+		loss_streak: int) -> Array[Dictionary]:
+	var buyers: Array[MatchEngine.SimPlayer] = []
+	for id: String in carried:
+		if not players.has(id):
+			continue
+		var player := players[id]
+		var held: Dictionary = carried[id]
+		player.money = int(held.get("money", 0))
+		player.primary = StringName(str(held.get("primary", "")))
+		player.secondary = StringName(str(held.get("secondary", WeaponCatalog.DEFAULT_SECONDARY)))
+		player.armour = int(held.get("armour", 0))
+		player.helmet = bool(held.get("helmet", false))
+		player.kit = bool(held.get("kit", false))
+		player.grenades.assign(held.get("utility", []))
+		buyers.append(player)
+	var buying := MatchEngine.SimTeam.new()
+	buying.players = buyers
+	buying.loss_streak = loss_streak
+	var economy_side := "attack" if side == MatchRules.SIDE_ATTACK else "defence"
+	buy_call = SimEconomy.call_buy(buying, economy_side, pistol, their_money)
+	SimEconomy.buy(buying, economy_side, buy_call)
+	var orders: Array[Dictionary] = []
+	orders.assign(SimEconomy.receipts.duplicate(true))
+	return orders
 
 
 ## The ID of the player who leads the team's calls.

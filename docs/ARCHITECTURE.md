@@ -1004,6 +1004,12 @@ competition settings arrive with M19.
     clock, distances, sightings and losses in the push. They are tested without a scene and
     make each kind of call at most once a round. A human's call stops the AI calls for that
     team that round.
+- **Team economy (M7 E).** At round start `BotSquad._team_buy` hands each leader what its bots
+  carry. `BotTactics.team_buy` copies that onto the leader's `SimPlayer`s and runs
+  `SimEconomy.call_buy` and `SimEconomy.buy`, exactly as in a simulated match. The purchases
+  that come out (`SimEconomy.receipts`: buyer, receiver, item) are made in the match's own shop,
+  `MatchState.buy`, or `buy_for` for a drop. Simulated and played rounds therefore buy the same
+  way. A map without a simulation graph keeps the simple per-bot buy.
 - **Everything from stats.** Every number that makes one bot play better than another lives in
   `BotSkill`. In a career match it is derived from that AI player's abilities
   (`BotSkill.from_abilities`); the sandbox uses the easy/normal/hard presets. Nothing a bot does
@@ -1034,7 +1040,8 @@ competition settings arrive with M19.
   error that decays. Skill presets change these numbers, never the rules.
 - **Objective layer (`BotSquad`).** Buys, places bots and turns the leader's calls
   (`BotTactics`) and the attack play (`AttackPlay`) into goals; the carrier plants and a defender
-  defuses, and carries out mid-round calls (`TeamCall`). Stage E moves buying to the team's call; `BotController`'s API stays.
+  defuses, carries out mid-round calls (`TeamCall`) and buys on the leader's call. `BotController`'s
+  API stays.
 - **Navigation.** Baked at runtime from static colliders on the world layer, so any editor map
   works. Paths are re-requested when a query came back empty (e.g. before the map synced).
 - **No career coupling.** Bots receive a `BotSkill`; later the career will map professionals'
@@ -1425,6 +1432,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-22 | The Creation Studio bakes a map's simulation graph on save and with a button, through the same `SimGraphBuilder.bake_to` as `tools/bake_sim_maps.gd` | Official content must be creatable with the shipped editors; a map without its graph could not be played by the career engine. One code path keeps the Studio's and the tool's graphs identical |
 | 2026-11-22 | Match bots read the map's places from its simulation graph (`SimMap`) through a pure per-team `TeamKnowledge` | The graph is map data already baked for every official and editor map; the FPS runtime still never touches the career database, and bots share only what a teammate saw |
+| 2026-11-22 | Match bots buy through the sim's own `SimEconomy`, carried out by `MatchState.buy` / `buy_for` | One economy brain for simulated and played matches; the match shop still enforces prices, sides and carry limits. A drop is a purchase for a teammate (no weapon dropping in the FPS yet) |
 | 2026-11-22 | Mid-round calls go through one `BotSquad.issue_call` for the AI leader and a human IGL | Owner's design: AI teammates respond to a human IGL. One entry point means a human's call and the AI's own are carried out identically and tested once |
 | 2026-11-22 | Match bots are led by the career sim's own `RoundPlanner` (`BotTactics`) | One tactical brain for simulated and played matches: a team calls the same rounds whichever way its match is resolved, and tuning one tunes both. Only pure sim classes cross over; the FPS runtime still never reads the career database |
 | 2026-11-22 | Bot line-ups are solved at runtime against the map's geometry, not authored | Every editor map gets bot utility with no extra authoring, and a line-up is proven by the same flight code as a real throw; authored line-ups (Tactical Play Creator) can be added on top later |

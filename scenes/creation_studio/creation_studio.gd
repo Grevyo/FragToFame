@@ -210,6 +210,8 @@ func _on_action(action: StringName, value: Variant) -> void:
 			refresh_navmesh()
 		&"timings":
 			show_timings()
+		&"bake_sim":
+			bake_sim_graph()
 		&"playtest_team":
 			playtest_team = str(value)
 			playtest_spawn = 0
@@ -300,7 +302,8 @@ func save_map() -> Error:
 	current_path = storage.path_for(doc.map_id)
 	controller.mark_saved()
 	_autosaved_version = controller.version
-	flash("Saved \"%s\" (revision %d, content v%d) to %s" % [doc.name, doc.revision, doc.content_version, current_path])
+	flash("Saved \"%s\" (revision %d, content v%d) to %s%s" % [doc.name, doc.revision, doc.content_version, current_path,
+		_bake_after_save()])
 	_refresh_inspector()
 	if not made_copy and doc.content_version != content_before:
 		_report_tactic_issues()
@@ -335,9 +338,58 @@ func save_as(new_name: String) -> Error:
 	current_path = storage.path_for(doc.map_id)
 	controller.mark_saved()
 	_autosaved_version = controller.version
-	flash("Saved a copy as \"%s\" to %s; \"%s\" is unchanged." % [doc.name, current_path, before["name"]])
+	flash("Saved a copy as \"%s\" to %s; \"%s\" is unchanged.%s" % [doc.name, current_path, before["name"], _bake_after_save()])
 	_refresh_inspector()
 	return OK
+
+
+# --- career simulation graph ---------------------------------------------------------------------
+
+## Folder the open map's simulation graph goes to: an official map's in the project
+## (res://data/maps/sim), any other map's beside the saved maps (user://maps/sim by default).
+func sim_graph_dir() -> String:
+	return SimGraphBuilder.output_dir(controller.document, storage.directory.path_join("sim"))
+
+
+## True when the map has what the career match engine plays on: both spawns and a bombsite.
+func _has_sim_places() -> bool:
+	var doc := controller.document
+	return not doc.pieces_of_type("spawn_attack").is_empty() and not doc.pieces_of_type("spawn_defence").is_empty() 		and not doc.pieces_of_type("bombsite").is_empty()
+
+
+## Bakes the saved map's simulation graph (places, connections, walking distances) so the career
+## match engine can play it; the same bake as tools/bake_sim_maps.gd. The graph records the saved
+## content, so unsaved edits must be saved first. Reports the result unless [param report] is
+## false. Returns [method SimGraphBuilder.bake_to]'s result.
+func bake_sim_graph(report: bool = true) -> Dictionary:
+	var doc := controller.document
+	var result: Dictionary
+	if controller.is_dirty() or doc.content_hash.is_empty():
+		result = {"ok": false, "path": "", "places": 0, "connections": 0,
+			"error": "Save the map first: the graph is baked from the saved map."}
+	elif not _has_sim_places():
+		result = {"ok": false, "path": "", "places": 0, "connections": 0,
+			"error": "The map needs an attack spawn, a defence spawn and at least one bombsite."}
+	else:
+		result = SimGraphBuilder.bake_to(doc, self, sim_graph_dir())
+	if report:
+		if bool(result["ok"]):
+			flash("Simulation graph: %d places, %d connections, saved to %s" % [int(result["places"]),
+				int(result["connections"]), result["path"]])
+		else:
+			ui.show_message("Simulation graph not baked", str(result["error"]))
+	return result
+
+
+## After a save: re-bakes the graph when the saved content changed (or none exists yet) and
+## returns a note for the save message ("" when nothing was baked).
+func _bake_after_save() -> String:
+	if not _has_sim_places() or SimGraphBuilder.is_current(controller.document, sim_graph_dir()):
+		return ""
+	var result := bake_sim_graph(false)
+	if bool(result["ok"]):
+		return " · simulation graph: %d places, %d connections" % [int(result["places"]), int(result["connections"])]
+	return " · simulation graph not baked: %s" % result["error"]
 
 
 func _ask_save_as() -> void:

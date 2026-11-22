@@ -24,6 +24,49 @@ const SAMPLE_STEP: float = 0.75
 const GAP_LIMIT: float = 6.0
 
 
+## Where [param doc]'s graph is written: official maps' in the project ([constant SimMap.OFFICIAL_DIR]),
+## every other map's in [param local_dir] (the player's maps: [constant SimMap.LOCAL_DIR]).
+static func output_dir(doc: MapDocument, local_dir: String = SimMap.LOCAL_DIR) -> String:
+	return SimMap.OFFICIAL_DIR if OfficialMaps.is_official(doc.map_id) else local_dir
+
+
+## True when [param dir] already holds a graph of [param doc]'s current content.
+static func is_current(doc: MapDocument, dir: String) -> bool:
+	var path := dir.path_join(doc.map_id + ".json")
+	if doc.content_hash.is_empty() or not FileAccess.file_exists(path):
+		return false
+	var stored := SimMap.from_json(FileAccess.get_file_as_string(path))
+	return stored != null and stored.map_id == doc.map_id and stored.content_hash == doc.content_hash
+
+
+## Builds [param doc]'s graph and writes it to [param dir]/<map_id>.json. The one bake both the
+## Creation Studio and tools/bake_sim_maps.gd use. Returns {"ok", "path", "places", "connections",
+## "error"} ("error" is player-facing text, empty on success).
+static func bake_to(doc: MapDocument, host: Node, dir: String) -> Dictionary:
+	var result := {"ok": false, "path": "", "places": 0, "connections": 0, "error": ""}
+	if not Ids.is_file_id(doc.map_id):
+		result["error"] = "The map has no valid ID."
+		return result
+	var graph := build(doc, host)
+	if graph.is_empty():
+		result["error"] = "The map has no walkable floor (no navmesh), so it has no places to connect."
+		return result
+	var err := DirAccess.make_dir_recursive_absolute(dir)
+	var path := dir.path_join(doc.map_id + ".json")
+	var file := FileAccess.open(path, FileAccess.WRITE) if err == OK or DirAccess.dir_exists_absolute(dir) else null
+	if file == null:
+		result["error"] = "Could not write %s (error %d)." % [path, FileAccess.get_open_error() if err == OK else err]
+		return result
+	file.store_string(JSON.stringify(graph, "\t", false))
+	file.close()
+	SimMap.clear_cache()
+	result["ok"] = true
+	result["path"] = path
+	result["places"] = (graph["nodes"] as Array).size()
+	result["connections"] = (graph["edges"] as Array).size()
+	return result
+
+
 ## Builds the graph for [param doc] (the map is built under [param host] while baking).
 ## Returns {} when the map has no navmesh.
 static func build(doc: MapDocument, host: Node) -> Dictionary:

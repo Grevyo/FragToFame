@@ -264,7 +264,8 @@ Stages (each validated and committed on its own):
 - [x] **A. Map model.** A simulation graph per official map, baked from its navmesh: areas
       (callouts, bombsites, spawns), which areas connect and the travel time between them, each
       site's entrances. Pure data in `data/maps/sim/` (`format_version`), read by the career
-      layer; `tools/bake_sim_maps.gd` rebuilds it. Every editor map can be baked the same way.
+      layer; `tools/bake_sim_maps.gd` rebuilds it. Every editor map can be baked the same way:
+      the Creation Studio bakes it on save and with its "Bake sim graph" button (same code path).
 - [x] **B. Round plans and positions.** Defence setups (who holds which area, stacks, rotators)
       and attack strategies (default, execute, split, rush, fake, lurk) chosen by the IGL from
       economy, score, map, team style and what has worked; mid-round calls on information
@@ -1015,3 +1016,4 @@ Planned scope:
 | 2026-11-21 | Saffra (owner request): the seventh official map, a desert old town in the style of classic competitive defuse maps with an original layout: a long sniper lane and a balcony to A, a covered souk and a lantern-lit passage to B, mid doors, arches, covered passages, cornices, shuttered windows, beam ends and date palms. |
 | 2026-11-21 | Saffra revision 2 (owner feedback): the defenders' half is a 3 m plateau with stairs up from the low town, A on the plateau favours defenders and B in the low town favours attackers, and mid bends twice so no sightline runs from spawn to spawn. |
 | 2026-11-21 | Saffra revision 3 (owner request): a night map, lit by lanterns at every door and along the walls, lit windows, strings of bulbs over the streets and sites, braziers, street lamps and hanging lamps under the arches and covered passages. |
+| 2026-11-22 | Creation Studio bakes the career simulation graph: on save when the content changed, and with a "Bake sim graph" button, through the same `SimGraphBuilder.bake_to` as the command-line tool, so an editor-made map is complete without developer tools. New "Simulation graph bake" test suite. |

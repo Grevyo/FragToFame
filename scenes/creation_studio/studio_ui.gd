@@ -347,6 +347,8 @@ func _build_top_bar() -> Control:
 	redo_button = _toolbar_button(file, "Redo", redo_requested.emit, "Redo (Ctrl+Y / Ctrl+Shift+Z)")
 	_toolbar_button(flow, "Validate", validate_requested.emit, "Check structure, reachability and route timings")
 	_toolbar_button(flow, "Timings", func() -> void: action_requested.emit(&"timings", null), "Route timing readout from the baked navmesh")
+	_toolbar_button(flow, "Bake sim graph", func() -> void: action_requested.emit(&"bake_sim", null),
+		"Bake the saved map's career simulation graph (places, connections, walking distances); saving re-bakes it")
 	var play := _toolbar_group(flow)
 	team_option = _option(play, ["Attack", "Defence"], 0, "Team to playtest as",
 		func(index: int) -> void: action_requested.emit(&"playtest_team", TEAMS[index]))

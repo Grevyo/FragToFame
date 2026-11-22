@@ -23,6 +23,11 @@ extends RefCounted
 ## every round's plan: the attack's strategy and target site, the defence's setup, each player's
 ## job and place. Plans are logged with the round and the leaders learn from what worked.
 ##
+## Every map logs the FPS runtime's event stream ([member events]: match_started, round_started,
+## shot, damage, utility_thrown, flashed, kill, bomb_planted, bomb_defused, round_ended,
+## match_ended) and every player's statistics are built from it by [MatchStatistics], the same
+## reducer a played match goes through, so simulated and played statistics agree by construction.
+##
 ## Career attributes are used here only, on the career layer; they never reach the FPS runtime.
 
 const OVERTIME_ROUNDS: int = 3
@@ -65,6 +70,15 @@ const PLANT_PER_EDGE: float = 0.12
 const DEFUSE_CHANCE: float = 0.9
 const ASSIST_CHANCE: float = 0.3
 const TRADE_CHANCE: float = 0.35
+## The fixture ID simulated maps log under (the career stores results by its own fixture IDs).
+const SIM_FIXTURE: String = "simulated"
+## Seconds between one round's end and the next one's start (end of round and freeze time).
+const ROUND_GAP: float = 20.0
+## Seconds into a round of the duel chain (maps without a [SimMap]): the first fight, the gap to
+## the next one and to a trade.
+const FIRST_FIGHT: float = 25.0
+const FIGHT_GAP: float = 8.0
+const TRADE_GAP: float = 3.0
 
 
 ## A player as the engine sees them. [member skills] holds the 13 career attributes (true values
@@ -81,11 +95,10 @@ class SimPlayer extends RefCounted:
 	var duel: float = 50.0
 	var day_form: float = 0.0
 	var aggression: float = 1.0
+	## The player's statistics for the map, built from [member MatchEngine.events].
 	var counts: Dictionary = {}
 	var round_kills: int = 0
 	var alive: bool = true
-	var contributed: bool = false
-	var traded: bool = false
 	# Own money and equipment ([SimEconomy]; maps played on a [SimMap] only).
 	var money: int = 0
 	var primary: StringName = &""
@@ -139,6 +152,13 @@ var sim_map: SimMap = null
 var rounds_log: Array[Dictionary] = []
 ## Short notable moments ("Vex wins a 1v3 clutch", "Rook aces the round").
 var highlights: PackedStringArray = []
+## The map's event stream in the FPS runtime's format (see [MatchState]); a new array per map.
+var events: Array[Dictionary] = []
+## Match time when the current round started, and its number (from 1).
+var _clock: float = 0.0
+var _round_number: int = 0
+## Seconds into the current round of the duel chain.
+var _fight_time: float = 0.0
 ## +1 when the next fight is an attacker trading a teammate, −1 for a defender, 0 otherwise.
 var _trading: int = 0
 var _planners: Array[RoundPlanner] = []
@@ -154,11 +174,14 @@ func _init(dice: RandomNumberGenerator, rounds_per_half: int = 8) -> void:
 
 
 ## Plays one map. Team 0 starts on attack. Returns {score: Vector2i, players: {id: counts with
-## "rating"}, mvp: id, rounds: Array, highlights: PackedStringArray}.
+## "rating"}, mvp: id, rounds: Array, highlights: PackedStringArray, events: Array}.
 func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 	var teams: Array[SimTeam] = [home, away]
 	rounds_log.clear()
 	highlights.clear()
+	events = []
+	_clock = 0.0
+	_round_number = 0
 	for team: SimTeam in teams:
 		_prepare(team)
 	if home.players.is_empty() or away.players.is_empty():
@@ -173,6 +196,11 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 			_planners.append(RoundPlanner.new(sim_map, teams[index], dice))
 	var score: Array[int] = [0, 0]
 	_score = score
+	var lineup: Dictionary = {}
+	for index: int in 2:
+		for player: SimPlayer in teams[index].players:
+			lineup[player.id] = index
+	record("match_started", 0.0, {"fixture_id": SIM_FIXTURE, "lineup": lineup})
 	var round_number := 0
 	var attackers := 0
 	while not _decided(score):
@@ -187,24 +215,53 @@ func play_map(home: SimTeam, away: SimTeam) -> Dictionary:
 						SimEconomy.start_half(player, team.money)
 			if round_number > 0:
 				attackers = 1 - attackers
+		_round_number = round_number + 1
+		record("round_started", 0.0, {"attack_team": attackers})
 		var winner := _play_round(teams, attackers, _decisive(score))
+		var seconds := float(_outcome["seconds"]) if not _plans.is_empty() else _fight_time
+		record("round_ended", seconds, {"winner_team": winner, "reason": str(rounds_log.back()["how"])})
+		_clock += snappedf(seconds, 0.01) + ROUND_GAP
 		score[winner] += 1
 		round_number += 1
+	record("match_ended", 0.0, {"score": [score[0], score[1]]})
+	var lines := _statistics(score)
 	var stats: Dictionary = {}
 	var mvp := ""
 	var best := -1.0
 	for team: SimTeam in teams:
 		for player: SimPlayer in team.players:
-			player.counts["rounds"] = round_number
+			player.counts = lines.get(player.id, MatchStatistics.empty_counts())
 			var rating := MatchStatistics.rating(player.counts)
-			var line: Dictionary = player.counts.duplicate()
+			var line: Dictionary = player.counts.duplicate(true)
 			line["rating"] = rating
 			stats[player.id] = line
 			if rating > best:
 				best = rating
 				mvp = player.id
 	return {"score": Vector2i(score[0], score[1]), "players": stats, "mvp": mvp, "rounds": rounds_log.duplicate(),
-		"highlights": highlights.duplicate()}
+		"highlights": highlights.duplicate(), "events": events}
+
+
+## Logs an event [param round_time] seconds into the current round, in the FPS runtime's format.
+func record(type: String, round_time: float, data: Dictionary) -> void:
+	var entry := {"type": type, "t": snappedf(_clock + round_time, 0.01), "round": _round_number}
+	entry.merge(data)
+	events.append(entry)
+
+
+## Every player's counters from the map's events, through the played-match reducer.
+func _statistics(score: Array[int]) -> Dictionary[String, Dictionary]:
+	var result := MatchResult.new()
+	result.fixture_id = SIM_FIXTURE
+	result.source = MatchResult.SOURCE_SIMULATION
+	result.home_score = score[0]
+	result.away_score = score[1]
+	result.rounds_played = score[0] + score[1]
+	result.events = events
+	var lines := MatchStatistics.calculate(result)
+	if lines.is_empty():
+		push_error("MatchEngine: the simulated event stream did not reduce to statistics.")
+	return lines
 
 
 ## Day form and derived skills for one map.
@@ -258,8 +315,6 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 		team.execution = rng.randfn(0.0, ROUND_EXECUTION)
 		for player: SimPlayer in team.players:
 			player.alive = true
-			player.contributed = false
-			player.traded = false
 			player.round_kills = 0
 			player.round_kill_weapons.clear()
 	_plan_round(teams, attackers)
@@ -270,9 +325,9 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 	var how := ""
 	var last_death: SimPlayer = null
 	var last_killer: SimPlayer = null
-	var opening := true
 	var saved: Array[SimPlayer] = []
 	var clutch: Dictionary = {}
+	_fight_time = FIRST_FIGHT
 	while true:
 		var attack_alive := teams[attackers].alive().filter(func(p: SimPlayer) -> bool: return not saved.has(p))
 		var defence_alive := teams[defenders].alive()
@@ -288,8 +343,7 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 		if not planted and rng.randf() < clampf(PLANT_BASE + PLANT_PER_EDGE * (attack_alive.size() - defence_alive.size()), 0.04, 0.6):
 			planted = true
 			var planter: SimPlayer = attack_alive[rng.randi() % attack_alive.size()]
-			planter.counts["plants"] += 1
-			planter.contributed = true
+			record("bomb_planted", _fight_time, {"player": planter.id})
 		# A lone attacker facing three or more without a plant may save their weapon.
 		if not planted and attack_alive.size() == 1 and defence_alive.size() >= 3:
 			var lone: SimPlayer = attack_alive[0]
@@ -304,23 +358,17 @@ func _play_round(teams: Array[SimTeam], attackers: int, decisive: bool) -> int:
 		var attacker_wins := rng.randf() < 1.0 / (1.0 + exp(-edge / DUEL_SCALE))
 		var killer := a if attacker_wins else d
 		var victim := d if attacker_wins else a
-		var trade := last_killer == victim and last_death != null
-		_kill(killer, victim, teams[attackers if attacker_wins else defenders], opening, trade, last_death)
-		opening = false
+		_fight_time += TRADE_GAP if _trading != 0 else FIGHT_GAP + rng.randf() * 4.0
+		_kill(killer, victim, teams[attackers if attacker_wins else defenders])
 		last_death = victim
 		last_killer = killer
 	var winner := attackers if how == "detonated" or (how == "eliminated" and teams[defenders].alive().is_empty()) else defenders
+	_fight_time += FIGHT_GAP
 	if how == "defused":
 		var defuser: Array[SimPlayer] = teams[defenders].alive()
 		if not defuser.is_empty():
-			defuser[rng.randi() % defuser.size()].counts["defuses"] += 1
+			record("bomb_defused", _fight_time, {"player": defuser[rng.randi() % defuser.size()].id})
 	_finish_round(teams, winner, attackers, planted, how, clutch)
-	for player: SimPlayer in saved:
-		player.contributed = true
-	for team: SimTeam in teams:
-		for player: SimPlayer in team.players:
-			if player.alive or player.contributed or player.traded:
-				player.counts["kast_rounds"] += 1
 	return winner
 
 
@@ -403,31 +451,28 @@ func _duel_skill(player: SimPlayer, team: SimTeam, own: int, other: int, decisiv
 	return value
 
 
-func _kill(killer: SimPlayer, victim: SimPlayer, killer_team: SimTeam, opening: bool, trade: bool, last_death: SimPlayer) -> void:
+## A duel-chain kill, logged with the damage behind it: now and then a teammate softened the
+## victim up first (an assist), the victim hit back, and the killer finished them.
+func _kill(killer: SimPlayer, victim: SimPlayer, killer_team: SimTeam) -> void:
 	victim.alive = false
-	victim.counts["deaths"] += 1
-	killer.counts["kills"] += 1
 	killer.round_kills += 1
-	killer.contributed = true
-	victim.counts["damage"] += rng.randi_range(0, 45)
-	killer.counts["damage"] += rng.randi_range(65, 95)
-	if opening:
-		killer.counts["opening_kills"] += 1
-		victim.counts["opening_deaths"] += 1
-	if trade and last_death != null:
-		killer.counts["trade_kills"] += 1
-		last_death.traded = true
-		last_death.counts["traded_deaths"] += 1
+	var weapon := String(killer.primary if not killer.primary.is_empty() else killer.secondary)
+	var left := 100
 	if rng.randf() < ASSIST_CHANCE + killer_team.utility / 400.0:
 		var helpers: Array[SimPlayer] = []
 		for player: SimPlayer in killer_team.players:
-			if player != killer and (player.alive or player.round_kills > 0):
+			if player != killer and player.alive:
 				helpers.append(player)
 		if not helpers.is_empty():
 			var helper: SimPlayer = helpers[rng.randi() % helpers.size()]
-			helper.counts["assists"] += 1
-			helper.counts["damage"] += rng.randi_range(40, 80)
-			helper.contributed = true
+			var softened := rng.randi_range(40, 80)
+			record("damage", _fight_time - 1.0, {"player": helper.id, "victim": victim.id, "hp": softened, "weapon": weapon})
+			left -= softened
+	var back := rng.randi_range(0, 45)
+	if back > 0:
+		record("damage", _fight_time - 0.5, {"player": victim.id, "victim": killer.id, "hp": back, "weapon": weapon})
+	record("damage", _fight_time, {"player": killer.id, "victim": victim.id, "hp": left, "weapon": weapon})
+	record("kill", _fight_time, {"victim": victim.id, "killer": killer.id, "weapon": weapon, "headshot": false})
 	if killer.round_kills == 5:
 		highlights.append("%s aces round %d" % [killer.name, rounds_log.size() + 1])
 
@@ -440,7 +485,6 @@ func _note_clutch(attack_alive: Array, defence_alive: Array, attackers: int, clu
 		var other: Array = side[1]
 		if own.size() == 1 and other.size() >= 2:
 			var player: SimPlayer = own[0]
-			player.counts["clutch_attempts"] += 1
 			clutch["player"] = player
 			clutch["team"] = int(side[2])
 			clutch["against"] = other.size()
@@ -451,7 +495,6 @@ func _finish_round(teams: Array[SimTeam], winner: int, attackers: int, planted: 
 	# A clutch is won only by a player still standing (not by a bomb after they died).
 	if not clutch.is_empty() and int(clutch["team"]) == winner and (clutch["player"] as SimPlayer).alive:
 		var hero: SimPlayer = clutch["player"]
-		hero.counts["clutch_wins"] += 1
 		if int(clutch["against"]) >= 3:
 			highlights.append("%s wins a 1v%d clutch in round %d" % [hero.name, int(clutch["against"]), rounds_log.size() + 1])
 	for index: int in 2:
@@ -541,8 +584,6 @@ func _play_planned(teams: Array[SimTeam], attackers: int, decisive: bool) -> int
 	_finish_round(teams, winner, attackers, bool(_outcome["planted"]), str(_outcome["how"]), _outcome["clutch"] as Dictionary)
 	for team: SimTeam in teams:
 		for player: SimPlayer in team.players:
-			if player.alive or player.contributed or player.traded:
-				player.counts["kast_rounds"] += 1
 			if player.round_kills == 5:
 				highlights.append("%s aces round %d" % [player.name, rounds_log.size()])
 	return winner

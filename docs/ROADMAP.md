@@ -282,9 +282,12 @@ Stages (each validated and committed on its own):
       flashes blind named players, smokes cover executes, fire delays pushes, frags damage.
       `SimEconomy` with the game's own prices, rewards, weapons and damage rules. Map balance
       still varies a lot between maps (attack 32–61% on the official ones): stage H.
-- [ ] **E. Same events as a played match.** The engine emits the FPS runtime's event stream and
+- [x] **E. Same events as a played match.** The engine emits the FPS runtime's event stream and
       `MatchStatistics` builds every line from it, so simulated and played statistics agree by
-      construction (headshots, utility, flash assists, entries, clutches, trades).
+      construction (headshots, utility, flash assists, entries, clutches, trades). `RoundSim`
+      logs every bullet, damage after armour, grenades, flashes, kills, plants and defuses; the
+      duel chain logs each kill with the damage behind it. Neither keeps counters of its own.
+      Test suite "Simulated match events".
 - [ ] **F. People over a match.** Confidence that grows with good rounds, tilt, nerves in big
       rounds, fatigue over a Bo3/Bo5, map familiarity for teams and map comfort for players,
       all from traits and history.
@@ -1070,3 +1073,4 @@ Planned scope:
 | 2026-11-22 | Skies and character (owner request): painted panorama skies (`MapSkies`, `tools/generate_skies.py`), one per official map, chosen in the Creation Studio's lighting panel; each map's own light and a dressing pass (facades with plinths, cornices, windows, doors and lamps, plus each map's own extras): Kilnmarket r4, Switchyard r5, Cluts r20, Kestrel Keep r3, Saffra's starry sky. |
 | 2026-11-22 | Rooftops (owner request): the eighth official map, a two-floor skyscraper top at dusk, rebuilt from scratch in place of an unfinished draft: A on the roof's Plant Deck, B in the Sky Lounge on the storey below, joined by four stairs. |
 | 2026-11-22 | Barnwell revision 3 (owner request: rework it from the map and the real location): rebuilt as a trace of the owner's drawing over the street map, with the lane loop, Edinburgh Avenue, footpaths to the garage court (B) and the Green (A), the attackers' garden paths from their house on Barnwell Road, Street View-style semis, a fenland summer sky (`fen_summer`) and broadleaf and poplar trees (new `form` option on the Tree piece). The map analysis no longer reports ground beside an angled drawn surface as unreachable floor. Clipping pass (owner: cars in walls, walls covering houses, paths bleeding onto roads): paths stop at the kerb, houses and drives stand clear of hedges, and street furniture and cars follow the roads and fit on them; front gardens are open to the street, closed at the sides, with garden gates. |
+| 2026-11-22 | Milestone 21 stage E: simulated maps log the FPS runtime's event stream (shots, damage, grenades, flashes, kills, plants, defuses) and every simulated statistic is built from it by `MatchStatistics`, the reducer played matches use, so both follow the same rules for openings, trades, assists, flash assists, clutches and KAST. Grenade damage now counts after its thrower dies, in played matches too. |

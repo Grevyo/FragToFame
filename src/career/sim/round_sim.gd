@@ -24,6 +24,10 @@ extends RefCounted
 ##   in them, fire burns whoever stands in it and holds up a push, frags damage everyone in reach.
 ## - The bomb: the carrier plants on the site when no defender is there; if they die, the nearest
 ##   attacker picks it up. A defender on the site alone defuses (faster with a kit).
+## - Events: everything that happens is logged through [method MatchEngine.record] in the FPS
+##   runtime's event format (shot, damage, utility_thrown, flashed, kill, bomb_planted,
+##   bomb_defused), and [MatchStatistics] builds every statistic from that stream, as it does for a
+##   played match. The round keeps no counters of its own.
 
 const STEP: float = 1.0
 const ROUND_TIME: float = 105.0
@@ -64,10 +68,8 @@ class Body extends RefCounted:
 	var kit: bool = false
 	var weapon: StringName = WeaponCatalog.DEFAULT_SECONDARY
 	var grenades: Array[StringName] = []
-	## Blind until this time into the round, by the thrower of the flash.
+	## Blind until this time into the round.
 	var blind_until: float = -INF
-	## Player id of who flashed them (an id, not the body: bodies must not hold each other).
-	var flashed_by: String = ""
 	## Reasons this player has already thrown for this round ("hit", "delay").
 	var threw: Dictionary[String, bool] = {}
 	var has_bomb: bool = false
@@ -77,7 +79,6 @@ class Body extends RefCounted:
 	var busy: bool = false
 	var rotated: bool = false
 	var last_kill_time: float = -INF
-	var damage_from: Dictionary[String, int] = {}
 
 	func alive() -> bool:
 		return hp > 0
@@ -111,10 +112,6 @@ var hit_called: bool = false
 ## Site -> defenders the attackers have seen there (what map control found).
 var spotted: Dictionary[String, int] = {}
 var clutch: Dictionary = {}
-var _opening: bool = true
-var _by_id: Dictionary[String, Body] = {}
-## Victim id -> killer id this round.
-var _killed_by: Dictionary[String, String] = {}
 ## Place -> time its smoke clears.
 var smokes: Dictionary[String, float] = {}
 ## Place -> {"until": time the fire burns out, "by": Body who threw it}.
@@ -123,6 +120,8 @@ var fires: Dictionary[String, Dictionary] = {}
 var _cleared: Dictionary[String, float] = {}
 var _defuser_kit: bool = false
 var _form_cache: Dictionary[String, float] = {}
+## Whether the last killing bullet [method _shoot] fired was a headshot.
+var _headshot_kill: bool = false
 ## Per-map answers (kept on the map: they do not change between rounds).
 var _near_cache: Dictionary
 var _open_cache: Dictionary
@@ -199,7 +198,6 @@ func _place_players() -> void:
 			body.kit = player.kit
 			body.grenades = player.grenades.duplicate()
 			bodies.append(body)
-			_by_id[player.id] = body
 	# The bomb goes to a support or trade player, never the lurker or the entry.
 	var carrier: Body = null
 	for body: Body in _alive(attackers):
@@ -494,22 +492,20 @@ func _duel(attacker: Body, defender: Body, place: String) -> void:
 	var order: Array[Body] = [attacker, defender]
 	if d_ready < a_ready:
 		order.reverse()
-	var first := order[0]
-	first.player.counts["first_shots"] += 1
 	for burst: int in MAX_BURSTS * 2:
 		var shooter := order[burst % 2]
 		var target := order[(burst + 1) % 2]
 		if not shooter.alive() or not target.alive():
 			break
-		var killer: Body = shooter if _shoot(shooter, target, distance, burst == 0) else null
+		var killer: Body = shooter if _shoot(shooter, target, distance) else null
 		# A teammate holding the same place gets a shot in too (crossfire).
 		if killer == null:
 			for helper: Body in _helpers(shooter, place):
-				if rng.randf() < 0.35 + (teams[helper.team].coordination - 50.0) / 200.0 and _shoot(helper, target, distance, false):
+				if rng.randf() < 0.35 + (teams[helper.team].coordination - 50.0) / 200.0 and _shoot(helper, target, distance):
 					killer = helper
 					break
 		if killer != null:
-			_kill(killer, target, killer.weapon)
+			_kill(killer, target, killer.weapon, _headshot_kill)
 			break
 
 
@@ -547,8 +543,9 @@ func _ready_time(body: Body, other: Body, place: String) -> float:
 	return value + rng.randfn(0.0, 0.07)
 
 
-## One burst from [param shooter] at [param target]; true when it kills.
-func _shoot(shooter: Body, target: Body, distance: float, opening_burst: bool) -> bool:
+## One burst from [param shooter] at [param target], every bullet logged; true when it kills
+## ([member _headshot_kill] then says whether the last bullet was a headshot).
+func _shoot(shooter: Body, target: Body, distance: float) -> bool:
 	var weapon := gun(shooter.weapon)
 	var p := shooter.player
 	var form := _form(shooter)
@@ -566,17 +563,13 @@ func _shoot(shooter: Body, target: Body, distance: float, opening_burst: bool) -
 		hit_chance *= 0.5
 	var head_chance := 0.06 + 0.2 * (0.5 * p.skill(&"aim") + 0.5 * p.skill(&"crosshair_placement") + form) / 100.0
 	for bullet: int in int(weapon["burst"]):
-		p.counts["shots"] += 1
+		_log("shot", {"player": p.id, "weapon": String(shooter.weapon)})
 		if rng.randf() >= clampf(hit_chance, 0.03, 0.92):
 			continue
-		p.counts["hits"] += 1
-		if opening_burst and bullet == 0:
-			p.counts["first_hits"] += 1
 		var zone := DamageModel.ZONE_HEAD if rng.randf() < head_chance else _body_zone()
 		var amount := roundi(float(weapon["damage"]) * DamageModel.zone_multiplier(zone) * pow(float(weapon["falloff"]), distance / 10.0))
 		if _hurt(shooter, target, amount, float(weapon["penetration"]), zone, shooter.weapon):
-			if zone == DamageModel.ZONE_HEAD:
-				p.counts["headshot_kills"] += 1
+			_headshot_kill = zone == DamageModel.ZONE_HEAD
 			return true
 	return false
 
@@ -599,12 +592,12 @@ func _hurt(attacker: Body, target: Body, amount: int, penetration: float, zone: 
 	target.armour = maxi(target.armour - split[1], 0)
 	var dealt := mini(split[0], target.hp)
 	target.hp -= dealt
-	var p := attacker.player
-	if attacker.team != target.team:
-		p.counts["damage"] += dealt
-		target.damage_from[p.id] = int(target.damage_from.get(p.id, 0)) + dealt
+	if attacker.team != target.team and dealt > 0:
+		var data := {"player": attacker.player.id, "victim": target.player.id, "hp": dealt, "weapon": String(weapon),
+			"headshot": zone == DamageModel.ZONE_HEAD}
 		if EquipmentCatalog.is_utility(weapon):
-			p.counts["utility_damage"] += dealt
+			data["utility"] = true
+		_log("damage", data)
 	if target.alive():
 		return false
 	if EquipmentCatalog.is_utility(weapon):
@@ -628,42 +621,26 @@ func _form(body: Body) -> float:
 	return _form_cache[key]
 
 
-func _kill(killer: Body, victim: Body, weapon: StringName) -> void:
+## A kill, logged as the runtime logs one; [MatchStatistics] works out openings, trades, assists
+## and flash assists from the stream.
+func _kill(killer: Body, victim: Body, weapon: StringName, headshot: bool = false) -> void:
 	var k := killer.player
 	var v := victim.player
 	v.alive = false
 	k.round_kill_weapons.append(weapon)
-	# A kill on someone a teammate blinded is that teammate's flash assist.
-	var flasher: Body = _by_id.get(victim.flashed_by, null)
-	if victim.blind_until > time and flasher != null and flasher != killer and flasher.team == killer.team:
-		flasher.player.counts["flash_assists"] += 1
-		flasher.player.contributed = true
-	v.counts["deaths"] += 1
-	k.counts["kills"] += 1
 	k.round_kills += 1
-	k.contributed = true
-	if _opening:
-		_opening = false
-		k.counts["opening_kills"] += 1
-		v.counts["opening_deaths"] += 1
-	# A trade: the victim had just killed one of the killer's teammates.
-	if victim.last_kill_time >= time - MatchStatistics.TRADE_SECONDS:
-		k.counts["trade_kills"] += 1
-		for body: Body in bodies:
-			if body.team == killer.team and not body.alive() and not body.player.traded and _killed_by.get(body.player.id, "") == v.id:
-				body.player.traded = true
-				body.player.counts["traded_deaths"] += 1
-	_killed_by[v.id] = k.id
+	_log("kill", {"victim": v.id, "killer": k.id, "weapon": String(weapon), "headshot": headshot})
 	killer.last_kill_time = time
-	for id: String in victim.damage_from:
-		if id != k.id and victim.damage_from[id] >= MatchStatistics.ASSIST_DAMAGE and _by_id.has(id):
-			_by_id[id].player.counts["assists"] += 1
-			_by_id[id].player.contributed = true
 	if victim.has_bomb:
 		victim.has_bomb = false
 		bomb_place = victim.place
 	victim.path.clear()
 	_note_clutch()
+
+
+## Logs [param type] at this moment of the round.
+func _log(type: String, data: Dictionary) -> void:
+	engine.record(type, time, data)
 
 
 func _note_clutch() -> void:
@@ -674,7 +651,6 @@ func _note_clutch() -> void:
 		var other := _alive(1 - index)
 		if own.size() == 1 and other.size() >= 2:
 			var player := (own[0] as Body).player
-			player.counts["clutch_attempts"] += 1
 			clutch = {"player": player, "team": index, "against": other.size()}
 			return
 
@@ -787,7 +763,7 @@ func _delay_utility() -> void:
 ## utility skill (and being a utility expert), with the usual spread of a throw under pressure.
 func _throw(body: Body, id: StringName) -> float:
 	body.grenades.erase(id)
-	body.player.counts["utility_thrown"] += 1
+	_log("utility_thrown", {"player": body.player.id, "item": String(id)})
 	var skill := body.player.skill(&"utility") / 100.0 + 0.08 * body.player.trait_strength(&"tr_utility_expert")
 	return clampf(rng.randfn(skill, 0.18), 0.0, 1.0)
 
@@ -800,15 +776,12 @@ func _flash(thrower: Body, enemies: Array[Body]) -> void:
 		return
 	var flash := EquipmentCatalog.params(EquipmentCatalog.FLASH)
 	var full := float(flash.get("max_blind", 4.8))
-	var caught := 0
 	for enemy: Body in enemies:
 		var turned := clampf(enemy.player.skill(&"game_sense") / 200.0 + rng.randf() * 0.4, 0.0, 1.0 - float(flash.get("behind_share", 0.22)))
 		var seconds := full * quality * (1.0 - turned)
 		if seconds >= 0.8:
 			enemy.blind_until = maxf(enemy.blind_until, time + seconds)
-			enemy.flashed_by = thrower.player.id
-			caught += 1
-	thrower.player.counts["enemies_flashed"] += caught
+			_log("flashed", {"player": thrower.player.id, "victim": enemy.player.id, "seconds": snappedf(seconds, 0.01), "enemy": true})
 
 
 func _frag(thrower: Body, enemies: Array[Body]) -> void:
@@ -907,8 +880,7 @@ func _bomb() -> void:
 					alive_at_plant = Vector2i(_alive(attackers).size(), _alive(1 - attackers).size())
 					bomb_place = body.place
 					body.has_bomb = false
-					body.player.counts["plants"] += 1
-					body.player.contributed = true
+					_log("bomb_planted", {"player": body.player.id})
 					# Post-plant: the others spread over the site's places to hold the bomb.
 					var holds := planners[attackers].holds(site)
 					var spot := 0
@@ -928,8 +900,7 @@ func _bomb() -> void:
 			defuse_progress += STEP
 			_defuser_kit = body.kit
 			if defuse_progress >= _defuse_needed():
-				body.player.counts["defuses"] += 1
-				body.player.contributed = true
+				_log("bomb_defused", {"player": body.player.id})
 			return
 	defuse_progress = 0.0
 

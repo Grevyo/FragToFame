@@ -156,11 +156,13 @@ func _apply_event(type: String, event: Dictionary) -> void:
 func _record_damage(actor: String, event: Dictionary) -> void:
 	var victim := str(event.get("victim", ""))
 	var hp := int(event.get("hp", 0))
-	if not _alive.get(victim, false) or not _alive.get(actor, false) \
+	var utility := bool(event.get("utility", false))
+	# A grenade keeps hurting after its thrower dies (fire burning on); a bullet needs a live shooter.
+	if not _alive.get(victim, false) or not _teams.has(actor) or not (_alive.get(actor, false) or utility) \
 			or _teams[actor] == _teams[victim] or hp <= 0:
 		return
 	_add(actor, "damage", hp)
-	if bool(event.get("utility", false)):
+	if utility:
 		_add(actor, "utility_damage", hp)
 	elif _round_shots.get(actor, 0) > 0:
 		_add(actor, "hits")

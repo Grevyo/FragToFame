@@ -496,6 +496,16 @@ reported per slot. The same route data can be consumed by future M7 play executi
   `DamageModel`, and grenades are thrown on each player's utility skill: flashes blind named
   players (flash assists), smokes block sight, fire burns and holds pushes, frags damage.
   Personal saves: a last defender against three or more may hide to keep their rifle.
+- **One event stream, one reducer.** A simulated map logs the FPS runtime's event stream
+  (`MatchEngine.events`, the `MatchState` format: match_started with the lineup, round_started,
+  every bullet as a shot, damage after armour with the weapon and headshot flag, utility_thrown,
+  flashed with its seconds, kill, bomb_planted, bomb_defused, round_ended, match_ended). Neither
+  `RoundSim` nor the duel chain keeps counters: `MatchEngine` reduces the stream with
+  `MatchStatistics` at the end of the map, the reducer a played match goes through, so openings,
+  trades, assists, flash assists, clutches, KAST and first-shot accuracy follow one set of rules
+  for both. The duel chain logs each kill with the damage behind it (an occasional softening
+  assist, the victim's return fire and the finishing damage). `play_map` returns the stream for
+  the match view (stage G); the career does not store simulated streams.
 
 ### Competitive rules (Milestone 5)
 
@@ -595,8 +605,10 @@ with the dev co-op proof.
 `MatchStatistics` derives per-player counts from live rounds. A damage assist credits the
 teammate who dealt the most damage above a 40 HP threshold. A trade credits a kill of the player
 who killed a teammate within five seconds. KAST includes kills, assists, survival and traded
-deaths. ADR uses applied HP after armour and overkill. First-shot accuracy measures each
-player's first shot of a round. A clutch attempt starts when a side is down to one player.
+deaths. ADR uses applied HP after armour and overkill; a grenade's damage still counts after its
+thrower has died (fire burning on), a bullet's needs a live shooter. First-shot accuracy measures
+each player's first shot of a round. A clutch attempt starts when a side is down to one player.
+The same reducer builds simulated matches' statistics from their event streams (Milestone 21).
 
 The repository stores one versioned raw event stream per fixture, per-player counts, and
 per-player ratings calculated with an independently versioned formula. F2F rating v1 combines
@@ -756,8 +768,8 @@ sit beside small appliers, so the maths is tested without a database:
   - a human's finish is a headline.
 - **Match engine (`src/career/sim/`):**
   - `MatchEngine` is pure. It takes two `SimTeam`s of `SimPlayer`s and plays a map round by
-    round, returning the score, every player's counts and rating (`MatchStatistics.rating`),
-    the MVP, a round log and highlights.
+    round, returning the score, every player's counts (reduced from its event stream by
+    `MatchStatistics`) and rating, the MVP, a round log, highlights and the event stream.
   - `CareerSeriesEngine` builds teams from the career (AI players' true abilities, humans'
     perceived values, traits, morale). It plays the series and writes `sim_map`,
     `sim_player_map` and `player_morale`, plus reputation and news. Monthly it fades morale

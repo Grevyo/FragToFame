@@ -989,6 +989,21 @@ competition settings arrive with M19.
     their own side, or saves;
   - attackers cover the site's entrances while the carrier plants and after the plant;
   - at round end the leader learns (`learn_attack` / `learn_defence`).
+- **Mid-round calls (`TeamCall`, M7 D).** A call is pure data: kind (execute, hold, rotate,
+  save, regroup), site, caller. `BotSquad.issue_call(team, call)` is the only way in, for the
+  AI leader and for a human (`MatchDirector.make_call`, from the HUD's call menu), so bots obey
+  a human IGL exactly as their own leader.
+  - Attack: an execute builds a new `AttackPlay` from the place nearest the team (falling back
+    to the usual way in). A regroup rebuilds the play from the usual way in, so the team falls
+    back to its gathering spot; for 6 s, contact does not send them straight back in. Hold
+    pins each bot to where it stood; save sends them towards their spawn.
+  - Defence: a rotate sets every defender's rotation (after a plant, onto the bomb's site: a
+    forced retake); hold stops rotations; a regroup gathers them at the staging point of the
+    site's way in from the defence spawn; save is the same as after a plant.
+  - `BotTactics.adapt_attack` / `adapt_defence` are pure reads of the round, from numbers,
+    clock, distances, sightings and losses in the push. They are tested without a scene and
+    make each kind of call at most once a round. A human's call stops the AI calls for that
+    team that round.
 - **Everything from stats.** Every number that makes one bot play better than another lives in
   `BotSkill`. In a career match it is derived from that AI player's abilities
   (`BotSkill.from_abilities`); the sandbox uses the easy/normal/hard presets. Nothing a bot does
@@ -1019,7 +1034,7 @@ competition settings arrive with M19.
   error that decays. Skill presets change these numbers, never the rules.
 - **Objective layer (`BotSquad`).** Buys, places bots and turns the leader's calls
   (`BotTactics`) and the attack play (`AttackPlay`) into goals; the carrier plants and a defender
-  defuses. Stage D adds mid-round IGL calls; `BotController`'s API stays.
+  defuses, and carries out mid-round calls (`TeamCall`). Stage E moves buying to the team's call; `BotController`'s API stays.
 - **Navigation.** Baked at runtime from static colliders on the world layer, so any editor map
   works. Paths are re-requested when a query came back empty (e.g. before the map synced).
 - **No career coupling.** Bots receive a `BotSkill`; later the career will map professionals'
@@ -1410,6 +1425,7 @@ keycodes so WASD works on non-QWERTY layouts.
 | 2026-11-21 | The career match engine plays on a baked graph of each map (`SimMap`, `data/maps/sim`), made from the navmesh by `SimGraphBuilder` | The career layer stays free of nodes and the navmesh; the same graph serves the world simulation and, later, the team AI's plans. Neighbours are places stepped between directly; walked routes are stored so holes in callout coverage cannot bend a route |
 | 2026-11-22 | The Creation Studio bakes a map's simulation graph on save and with a button, through the same `SimGraphBuilder.bake_to` as `tools/bake_sim_maps.gd` | Official content must be creatable with the shipped editors; a map without its graph could not be played by the career engine. One code path keeps the Studio's and the tool's graphs identical |
 | 2026-11-22 | Match bots read the map's places from its simulation graph (`SimMap`) through a pure per-team `TeamKnowledge` | The graph is map data already baked for every official and editor map; the FPS runtime still never touches the career database, and bots share only what a teammate saw |
+| 2026-11-22 | Mid-round calls go through one `BotSquad.issue_call` for the AI leader and a human IGL | Owner's design: AI teammates respond to a human IGL. One entry point means a human's call and the AI's own are carried out identically and tested once |
 | 2026-11-22 | Match bots are led by the career sim's own `RoundPlanner` (`BotTactics`) | One tactical brain for simulated and played matches: a team calls the same rounds whichever way its match is resolved, and tuning one tunes both. Only pure sim classes cross over; the FPS runtime still never reads the career database |
 | 2026-11-22 | Bot line-ups are solved at runtime against the map's geometry, not authored | Every editor map gets bot utility with no extra authoring, and a line-up is proven by the same flight code as a real throw; authored line-ups (Tactical Play Creator) can be added on top later |
 | 2026-11-21 | Knife models are cosmetic looks of the one knife, stored in `WeaponModels` and chosen in `CosmeticProfile` | Every player's knife plays the same; the look reuses the gun customisation path (Coats, kits, Armoury, inspection) without new gameplay IDs |

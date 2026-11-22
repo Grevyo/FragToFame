@@ -82,6 +82,7 @@ func begin(setup: MatchSetup, rules: MatchRules, doc: MapDocument, player_node: 
 		player.set_team(BotSquad.TEAM_KEYS[MatchState.HOME])
 		level.build_navigation()
 		squad.spawn_bots()
+		squad.call_made.connect(_on_call_made)
 		for bot: BotController in squad.bots.values():
 			bot.weapons.shot_attempted.connect(state.record_shot.bind(bot.bot_id))
 			var thrower := bot.bot_id
@@ -148,8 +149,32 @@ func _physics_process(delta: float) -> void:
 	_update_hud()
 
 
+## The team-call menu takes the number keys before anything else sees them (they also pick
+## weapons).
+func _input(event: InputEvent) -> void:
+	if state == null or paused or not hud.is_call_menu_open():
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	var code := key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
+	if code >= KEY_1 and code <= KEY_9:
+		make_call(int(code - KEY_1))
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(InputActions.TEAM_CALL):
+		hud.hide_call_menu()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if state == null or paused or state.phase == MatchState.Phase.MATCH_END:
+		return
+	if event.is_action_pressed(InputActions.TEAM_CALL) and can_call():
+		var lines: Array[String] = []
+		for call: TeamCall in call_options():
+			lines.append(call.label())
+		hud.show_call_menu(lines)
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(InputActions.BUY_MENU):
 		if is_buy_menu_open():
@@ -159,8 +184,52 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+# --- Team calls (IGL) -------------------------------------------------------------------------
+
+## Whether the player can make team calls now: bots on their team and a round being played.
+func can_call() -> bool:
+	if squad == null or state == null:
+		return false
+	if state.phase != MatchState.Phase.LIVE and state.phase != MatchState.Phase.FREEZE:
+		return false
+	return state.teams[MatchState.HOME].player_ids.any(func(id: String) -> bool: return squad.bots.has(id))
+
+
+## The calls the player can make on their current side, in menu order.
+func call_options() -> Array[TeamCall]:
+	var options: Array[TeamCall] = []
+	if squad != null:
+		options = TeamCall.menu(human_side(), squad.site_letters())
+	return options
+
+
+## Makes the call at [param index] of [method call_options] for the player's team; the menu closes.
+func make_call(index: int) -> bool:
+	hud.hide_call_menu()
+	var options := call_options()
+	if index < 0 or index >= options.size() or not can_call():
+		return false
+	var call := options[index]
+	call.caller = local_player_id
+	return squad.issue_call(MatchState.HOME, call)
+
+
+func _on_call_made(team_index: int, call: TeamCall) -> void:
+	if team_index != MatchState.HOME:
+		return
+	var who := "IGL"
+	if call.caller == local_player_id:
+		who = "You"
+	elif squad.tactics[team_index] != null:
+		who = "%s (IGL)" % _feed_name(squad.tactics[team_index].leader_id())
+	hud.show_call("%s: %s%s" % [who, call.label(), "  ·  " + call.reason if not call.reason.is_empty() else ""])
+
+
 ## Called by the runtime on Esc. Returns true if the director consumed it (closing the buy menu).
 func handle_escape() -> bool:
+	if hud.is_call_menu_open():
+		hud.hide_call_menu()
+		return true
 	if is_buy_menu_open():
 		close_buy_menu()
 		return true

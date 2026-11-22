@@ -18,6 +18,15 @@ extends Node
 ## spots, rotations on what the team has seen, and retake or save after a plant. Attackers
 ## cover the planter and hold the site's entrances after a plant. The leaders learn round to
 ## round. A sandbox map without a simulation graph keeps the simple placement.
+##
+## Mid-round calls (Milestone 7 D): a team's leader — the AI leader, or a human player through
+## [method issue_call] — makes [TeamCall]s: execute a site from where the team is, hold, regroup
+## and go again, save; on defence rotate everyone (after a plant: retake), hold the set-up,
+## regroup outside a fallen site. The bots obey a call the same way whoever made it. Once a human
+## has called, the AI leader makes no more calls for that team this round.
+
+## A call was made for the team [param team_index] (by its AI leader or a human).
+signal call_made(team_index: int, call: TeamCall)
 
 const CALLSIGNS: Array[String] = ["Ardent", "Basalt", "Cipher", "Drift", "Ember", "Flint", "Grit",
 	"Halcyon", "Ion", "Jolt"]
@@ -70,6 +79,23 @@ var _site_positions: Dictionary[String, Vector3] = {}
 var _hold_points: Dictionary[String, Array] = {}
 ## A defender takes a site's hold hint within this flat distance of its planned place.
 const HOLD_REACH: float = 14.0
+## After a regroup, contact does not send the attackers straight back in for this long.
+const REGROUP_GRACE: float = 6.0
+
+## This round's calls, oldest first: {"team", "call": TeamCall, "time"}.
+var calls: Array[Dictionary] = []
+## Attack: hold where they stand (bot ID -> spot), or give the round up and keep the guns.
+var attack_hold: Dictionary[String, Vector3] = {}
+var attack_saving: bool = false
+## Defence: hold the set-up (no rotations), or gather outside this site's letter to retake.
+var defence_hold: bool = false
+var regroup_site: String = ""
+## Teams (by index) a human has made a call for this round.
+var _human_led: Array[bool] = [false, false]
+var _regroup_grace: float = 0.0
+## The push: attackers alive when it started and when it started (live seconds; -1 before).
+var _alive_at_push: int = 0
+var _push_started: float = -1.0
 
 
 func _init(owner_director: MatchDirector, skill: StringName) -> void:
@@ -240,6 +266,13 @@ func _decide() -> void:
 				_cover_order(bot, attack_index, carrier.global_position)
 			elif id == dropped_runner:
 				bot.set_goal(_on_navmesh(state.bomb_position))
+			elif attack_saving:
+				# A save: back towards the spawn, away from the defenders, guns kept.
+				bot.set_goal(_on_navmesh(attack_spawn + spread))
+				bot.set_watch_point(_nearest_site_centre(bot.global_position) + Vector3(0, 1.5, 0))
+			elif attack_hold.has(id):
+				bot.set_goal(_on_navmesh(attack_hold[id]))
+				bot.set_watch_point(_nearest_site_centre(bot.global_position) + Vector3(0, 1.5, 0))
 			elif not _follow_order(bot, spread) and _site_positions.has(attack_site):
 				bot.set_goal(_on_navmesh(_site_positions[attack_site] + (Vector3.ZERO if id == state.bomb_carrier_id else spread)))
 				bot.set_watch_point(defence_spawn + Vector3(0, 1.5, 0))
@@ -247,10 +280,11 @@ func _decide() -> void:
 				and not MapZones.bombsite_at(director.document, bot.global_position).is_empty() \
 				and bot.is_on_floor() and not bot.sees_enemy()
 		else:
-			if state.is_bomb_planted and saving:
-				# A save: keep the gun for the next round, away from the bomb.
+			if saving:
+				# A save: keep the gun for the next round, away from the attack.
 				bot.set_goal(_on_navmesh(defence_spawn + spread))
-				bot.set_watch_point(state.bomb_position + Vector3(0, 1.5, 0))
+				bot.set_watch_point((state.bomb_position if state.is_bomb_planted else _nearest_site_centre(bot.global_position))
+					+ Vector3(0, 1.5, 0))
 				bot.interact_held = false
 			elif state.is_bomb_planted and retake != null and not retake.is_going() and _follow_play(retake, bot, spread):
 				bot.interact_held = false
@@ -258,6 +292,8 @@ func _decide() -> void:
 				bot.set_goal(_on_navmesh(state.bomb_position))
 				bot.interact_held = _flat_distance(bot.global_position, state.bomb_position) <= MatchDirector.DEFUSE_RADIUS - 0.2 \
 					and not bot.sees_enemy()
+			elif not regroup_site.is_empty() and _regroup_order(bot, spread):
+				bot.interact_held = false
 			elif _defence_order(bot, spread):
 				bot.interact_held = false
 			else:
@@ -369,16 +405,51 @@ func _advance_attack() -> void:
 	if attack == null or state.phase != MatchState.Phase.LIVE:
 		return
 	var attackers := _living_attackers()
-	var contact := attackers.any(func(bot: BotController) -> bool: return bot.target != null)
+	_regroup_grace = maxf(_regroup_grace - DECIDE_INTERVAL, 0.0)
+	var contact := _regroup_grace <= 0.0 and attackers.any(func(bot: BotController) -> bool: return bot.target != null)
 	var cut_short := attackers.is_empty() or state.is_bomb_planted or state.is_bomb_dropped or state.phase_time_left < 30.0 or contact
 	var leader := leader_of(MatchRules.SIDE_ATTACK)
+	var team_index := state.team_on_side(MatchRules.SIDE_ATTACK)
+	if attack.is_going() and _push_started < 0.0:
+		_push_started = state.live_elapsed
+		_alive_at_push = attackers.size()
 	if leader != null:
-		var team_knowledge := knowledge[state.team_on_side(MatchRules.SIDE_ATTACK)]
+		var team_knowledge := knowledge[team_index]
 		leader.note_seen(team_knowledge)
-		if attack.in_map_control() and (state.live_elapsed >= leader.plan.hit_at or cut_short):
+		if not _human_led[team_index] and not state.is_bomb_planted and not attack_saving:
+			var call := _attack_read(leader, team_knowledge, attackers)
+			if call != null:
+				issue_call(team_index, call)
+				if attack == null:
+					return
+		if attack.in_map_control() and attack_hold.is_empty() and (state.live_elapsed >= leader.plan.hit_at or cut_short):
 			_call_hit(leader, team_knowledge)
+	if attack_saving or not attack_hold.is_empty():
+		return
 	attack.carrier_id = state.bomb_carrier_id
 	attack.update(DECIDE_INTERVAL, cut_short)
+
+
+## The AI leader's read of the attack (null: carry on).
+func _attack_read(leader: BotTactics, team_knowledge: TeamKnowledge, attackers: Array[BotController]) -> TeamCall:
+	var state := director.state
+	if attackers.is_empty():
+		return null
+	var middle := Vector3.ZERO
+	for bot: BotController in attackers:
+		middle += bot.global_position / attackers.size()
+	var from := leader.place_near(middle)
+	var metres: Dictionary[String, float] = {}
+	for site: String in _sim_map.sites():
+		metres[site] = _sim_map.distance(from, site)
+	var outside := attackers.all(func(bot: BotController) -> bool:
+		return MapZones.bombsite_at(director.document, bot.global_position).is_empty())
+	var lost := 0
+	if _push_started >= 0.0 and state.live_elapsed - _push_started <= BotTactics.PUSH_WINDOW:
+		lost = _alive_at_push - attackers.size()
+	var committed := state.live_elapsed > 10.0 and not attack.in_map_control()
+	return leader.adapt_attack(attack_site, committed, attack.is_going(), leader.seen_at(team_knowledge), attackers.size(),
+		state.alive_count(state.team_on_side(MatchRules.SIDE_DEFENCE)), state.phase_time_left, metres, lost, outside)
 
 
 ## The leader's call on a default round: hit the site with the fewest defenders seen.
@@ -401,6 +472,14 @@ func _call_round() -> void:
 	rotations.clear()
 	retake = null
 	saving = false
+	calls.clear()
+	attack_hold.clear()
+	attack_saving = false
+	defence_hold = false
+	regroup_site = ""
+	_human_led = [false, false]
+	_regroup_grace = 0.0
+	_push_started = -1.0
 	_retake_called = false
 	_attacked_site = ""
 	var state := director.state
@@ -510,23 +589,44 @@ func _advance_defence() -> void:
 	if state.is_bomb_planted:
 		planted_at = "site_" + _site_letter_at(state.bomb_position)
 		_attacked_site = planted_at
+	var led := _human_led[team_index]
 	for id: String in bots:
+		if led or defence_hold or not regroup_site.is_empty():
+			break
 		if not bots[id].is_alive() or state.side_of(id) != MatchRules.SIDE_DEFENCE or not leader.players.has(id):
 			continue
 		var called := leader.planner.rotation_for(leader.plan, leader.players[id], seen, planted_at)
 		if not called.is_empty():
 			rotations[id] = called
+	if not led and not state.is_bomb_planted and not saving:
+		var call := leader.adapt_defence(_fallen_site(seen), _living_defenders().size())
+		if call != null:
+			issue_call(team_index, call)
 	if state.is_bomb_planted and not _retake_called:
 		_retake_called = true
-		_call_retake(leader, team_index)
+		if not saving:
+			_call_retake(leader, team_index)
 	if retake != null:
 		var defenders := _living_defenders()
 		var contact := defenders.any(func(bot: BotController) -> bool: return bot.target != null)
 		retake.update(DECIDE_INTERVAL, contact or state.bomb_time_left < 16.0)
 
 
-## Retake together, or save the guns, as the leader judges the numbers, time and money.
-func _call_retake(leader: BotTactics, team_index: int) -> void:
+## A site the attackers have been seen on with no defender left on it ("" when none).
+func _fallen_site(seen: Dictionary[String, int]) -> String:
+	for site: String in seen:
+		if seen[site] < 2:
+			continue
+		var centre := _sim_map.nodes.get(site, {}).get("centre", Vector3.ZERO) as Vector3
+		if not _living_defenders().any(func(bot: BotController) -> bool:
+				return _flat_distance(bot.global_position, centre) <= BotTactics.SEEN_RADIUS):
+			return site
+	return ""
+
+
+## Retake together, or save the guns, as the leader judges the numbers, time and money
+## ([param forced]: a human called the retake).
+func _call_retake(leader: BotTactics, team_index: int, forced: bool = false) -> void:
 	var state := director.state
 	var defenders := _living_defenders()
 	if defenders.is_empty():
@@ -540,13 +640,181 @@ func _call_retake(leader: BotTactics, team_index: int) -> void:
 		money = mini(money, state.get_player(bot.bot_id).money)
 	var call := leader.planner.retake_or_save(defenders.size(), state.alive_count(1 - team_index), state.bomb_time_left,
 		furthest, kit, money)
-	if call != &"retake":
+	if call != &"retake" and not forced:
 		saving = true
 		return
 	var letter := _site_letter_at(state.bomb_position)
 	var style := AttackPlay.Style.EXECUTE_TOGETHER if leader.team.coordination < 55.0 else AttackPlay.Style.EXECUTE
 	retake = AttackPlay.create(style, _sim_map, letter, _hold_points.get(letter, []), defenders,
 		director.level.get_world_3d().direct_space_state, rng, "", {"from": _sim_map.spawn("defence")})
+
+
+# --- Mid-round calls ---------------------------------------------------------------------------
+
+## The bombsite letters of the map, in order.
+func site_letters() -> Array[String]:
+	var letters: Array[String] = []
+	letters.assign(_site_positions.keys())
+	letters.sort()
+	return letters
+
+
+## Makes [param call] for the team [param team_index] during a live round (or the freeze); the
+## team's bots obey it at once. A call with a caller (a human) puts that player in charge of the
+## team's calls for the rest of the round. Returns false when the call does not apply.
+func issue_call(team_index: int, call: TeamCall) -> bool:
+	var state := director.state
+	if call == null or (state.phase != MatchState.Phase.LIVE and state.phase != MatchState.Phase.FREEZE):
+		return false
+	var applied := _apply_attack_call(call) if state.teams[team_index].side == MatchRules.SIDE_ATTACK \
+		else _apply_defence_call(call)
+	if not applied:
+		return false
+	if not call.caller.is_empty():
+		_human_led[team_index] = true
+	calls.append({"team": team_index, "call": call, "time": state.live_elapsed})
+	call_made.emit(team_index, call)
+	return true
+
+
+func _apply_attack_call(call: TeamCall) -> bool:
+	var attackers := _living_attackers()
+	match call.kind:
+		TeamCall.Kind.SAVE:
+			attack_saving = true
+			attack_hold.clear()
+		TeamCall.Kind.HOLD:
+			attack_saving = false
+			attack_hold.clear()
+			for bot: BotController in attackers:
+				attack_hold[bot.bot_id] = bot.global_position
+		TeamCall.Kind.EXECUTE:
+			if not _site_positions.has(call.site):
+				return false
+			attack_saving = false
+			attack_hold.clear()
+			if attack != null and attack.site == call.site and (attack.in_map_control() or attack.is_going()):
+				attack.start_approach()
+			else:
+				attack_site = call.site
+				_replan_attack(_hurried_style(attackers), true)
+		TeamCall.Kind.REGROUP:
+			if attack_site.is_empty():
+				return false
+			attack_saving = false
+			attack_hold.clear()
+			# Back to the gathering spot of the way in, then the utility that is left and in together.
+			_replan_attack(_hurried_style(attackers), false)
+			_regroup_grace = REGROUP_GRACE
+			_push_started = -1.0
+		_:
+			return false
+	return true
+
+
+## An execute's style for the time and utility left: a full execute, or throw and go together.
+func _hurried_style(attackers: Array[BotController]) -> AttackPlay.Style:
+	var utility := 0
+	for bot: BotController in attackers:
+		for item: StringName in EquipmentCatalog.UTILITY:
+			utility += bot.weapons.utility_count(item)
+	return AttackPlay.Style.EXECUTE if utility >= 2 and director.state.phase_time_left > 50.0 else AttackPlay.Style.EXECUTE_TOGETHER
+
+
+## A new play on [member attack_site] for the living attackers, from where they are
+## ([param from_here]) or from their usual way in.
+func _replan_attack(style: AttackPlay.Style, from_here: bool) -> void:
+	var attackers := _living_attackers()
+	var leader := leader_of(MatchRules.SIDE_ATTACK)
+	if _sim_map == null or attackers.is_empty():
+		attack = null
+		return
+	var details: Dictionary = _attack_details(leader, false) if leader != null else {}
+	if from_here and leader != null:
+		var middle := Vector3.ZERO
+		for bot: BotController in attackers:
+			middle += bot.global_position / attackers.size()
+		details["from"] = leader.place_near(middle)
+	details.erase("fake_site")
+	attack = AttackPlay.create(style, _sim_map, attack_site, _hold_points.get(attack_site, []), attackers,
+		director.level.get_world_3d().direct_space_state, rng, director.state.bomb_carrier_id, details)
+	if attack == null and from_here:
+		# Already at (or past) the way in from here: the usual way in.
+		_replan_attack(style, false)
+
+
+func _apply_defence_call(call: TeamCall) -> bool:
+	var state := director.state
+	var leader := leader_of(MatchRules.SIDE_DEFENCE)
+	match call.kind:
+		TeamCall.Kind.SAVE:
+			saving = true
+			retake = null
+		TeamCall.Kind.HOLD:
+			if state.is_bomb_planted:
+				return false
+			defence_hold = true
+			saving = false
+			rotations.clear()
+			regroup_site = ""
+		TeamCall.Kind.ROTATE:
+			if not _site_positions.has(call.site) or leader == null:
+				return false
+			if state.is_bomb_planted:
+				# After a plant a rotation onto the bomb's site is the retake.
+				if call.site != _site_letter_at(state.bomb_position):
+					return false
+				return _force_retake(leader)
+			defence_hold = false
+			saving = false
+			regroup_site = ""
+			for bot: BotController in _living_defenders():
+				rotations[bot.bot_id] = "site_" + call.site
+		TeamCall.Kind.REGROUP:
+			if leader == null:
+				return false
+			if state.is_bomb_planted:
+				return _force_retake(leader)
+			var letter := call.site
+			if letter.is_empty():
+				letter = leader.letter_of(_attacked_site) if not _attacked_site.is_empty() \
+					else _site_letter_at(_defenders_middle())
+			if not _site_positions.has(letter):
+				return false
+			call.site = letter
+			defence_hold = false
+			saving = false
+			rotations.clear()
+			regroup_site = letter
+		_:
+			return false
+	return true
+
+
+func _force_retake(leader: BotTactics) -> bool:
+	saving = false
+	regroup_site = ""
+	_retake_called = true
+	_call_retake(leader, director.state.team_on_side(MatchRules.SIDE_DEFENCE), true)
+	return retake != null
+
+
+func _defenders_middle() -> Vector3:
+	var defenders := _living_defenders()
+	var middle := Vector3.ZERO
+	for bot: BotController in defenders:
+		middle += bot.global_position / maxf(defenders.size(), 1.0)
+	return middle
+
+
+## A regrouping defender: just outside the fallen site on the defenders' way in, facing it.
+func _regroup_order(bot: BotController, spread: Vector3) -> bool:
+	var take := SiteExecute.plan(_sim_map, regroup_site, [], "", _sim_map.spawn("defence")) if _sim_map != null else null
+	if take == null:
+		return false
+	bot.set_goal(_on_navmesh(take.staging + spread * 0.6))
+	bot.set_watch_point(take.entrance + Vector3(0, 1.5, 0))
+	return true
 
 
 func _living_defenders() -> Array[BotController]:

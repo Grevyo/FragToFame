@@ -276,8 +276,21 @@ committed on its own:
         has seen, then retake together through the nearest entrance or save;
       - attackers cover the site's entrances while the carrier plants and after the plant;
       - the leader learns from each round as in the simulation.
-- [ ] **D. IGL calls.** Mid-round adaptations (rotate, save, regroup) and human IGL commands
-      issuing the same calls.
+- [x] **D. IGL calls.** Done 2026-11-22. Mid-round calls ([TeamCall]) made by a team's leader,
+      the same whoever makes them:
+      - attack: execute a site from where the team is, hold, regroup (back to the gathering
+        spot, then in together), save;
+      - defence: rotate everyone (after a plant, onto the bomb's site: retake), hold the set-up,
+        regroup outside a site, save.
+      The AI leader ([BotTactics]) reads the round and calls at most one of each a round. It saves
+      when the numbers or the clock are against it (the sim's own `attack_should_save`), turns
+      to the other site when it finds a stack before committing (a careful leader at two
+      defenders, a bold one at three), and regroups when the entry pair falls at the door.
+      Defenders regroup outside a fallen site to retake it together. The player calls from a
+      menu (Z, then a number; rebindable). Calls show on the HUD for the player's team, and once
+      the player has called, the AI leader stops calling for that team that round.
+- [ ] **E. Team economy.** The leader's buy call shared by the team (full / force / eco /
+      save, the sim's own `SimEconomy`), each bot buying for its role, and drops for teammates.
 
 **Goal:** Teams of bots play rounds as a team, driven by one team-tactics layer that an AI IGL —
 and later a human IGL — uses to make calls.
@@ -1172,5 +1185,6 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage H (part 1): balance harness (`MatchBalance`, `tools/balance_harness.gd`) and a first tuning pass of the round simulation from its findings: fire burns once, holders' angle edge, dodgeable flashes. Attack round share 55% (maps 43–62%); round endings and per-map sides still to tune. |
 | 2026-11-22 | Milestone 7 stage A: bots move like players. They strafe between bursts and counter-strafe before shooting, pre-aim and clear the places in sight that their team has not checked (shared `TeamKnowledge` built from the map's simulation graph), hold the angle after losing an enemy, jiggle-peek held angles and walk quietly near recent sightings. |
 | 2026-11-22 | Milestone 7 stage B: bot utility. Bots buy grenades and throw solved line-ups (the same flight and fuse as a live grenade, so no throws through walls): attackers gather before an entrance, smoke the nearest hold and the rotation, burn a near hold, flash in from the doorway and go in together, turning away from their own flashes; defenders throw delay utility at a push. Every bot behaviour is now stat-driven: throw spread and line-up time from Utility usage, plus discipline, angle checking, patience, flash awareness and spotting range from the matching abilities. |
+| 2026-11-22 | Milestone 7 stage D: IGL calls. Attackers save when outnumbered or out of time, switch site on a stack and regroup after losing the entry; defenders regroup outside a fallen site. The player makes the same calls from a team-call menu (Z) and the bots obey them. Stage E (team economy) added from the milestone's planned scope. |
 | 2026-11-22 | Milestone 7 stage C part 2: the career sim's round planner leads each bot team. It picks the site, the style and every bot's job, hits a default where defenders were not seen, places and rotates defenders on information, retakes or saves after a plant, covers the planter, and learns from each round. |
 | 2026-11-22 | Milestone 7 stage C part 1: attack styles (owner request). Each round the attacking bots rush, play a default with an off-the-cuff flash and peek, execute, throw-and-go together, send an entry pair in off a support's flash, or split two lanes, with an entry pair double-peeking the entrance. Throw pace varies throw to throw (snapped throws go wide); novices take five to eight seconds to line up. |

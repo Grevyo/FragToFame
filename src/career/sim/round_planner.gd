@@ -502,6 +502,16 @@ func _average_aggression() -> float:
 
 
 ## How careful the leader is (−1 .. 1): cautious leaders save sooner, risk-takers play on.
+## The team's in-game leader: its IGL, else the player with the most leadership.
+func in_game_leader() -> MatchEngine.SimPlayer:
+	return _leader()
+
+
+## How careful the leader is, -1 (a risk taker) to 1 (cautious).
+func caution() -> float:
+	return _caution()
+
+
 func _caution() -> float:
 	var leader := _leader()
 	if leader == null:

@@ -35,6 +35,11 @@ var _buy_message: Label
 var _knife_list: VBoxContainer
 var _end_title: Label
 var _end_detail: Label
+## The team-call menu (IGL) and the last call made for the player's team.
+var _call_menu: PanelContainer
+var _call_list: Label
+var _call_label: Label
+var _call_left: float = 0.0
 
 
 func _ready() -> void:
@@ -45,6 +50,7 @@ func _ready() -> void:
 	_build_scoreboard()
 	_build_money()
 	_build_center()
+	_build_calls()
 	_build_buy_panel()
 	_build_end_panel()
 
@@ -53,6 +59,41 @@ func _process(delta: float) -> void:
 	if _banner_left > 0.0:
 		_banner_left -= delta
 		_banner.visible = _banner_left > 0.0
+	if _call_left > 0.0:
+		_call_left -= delta
+		_call_label.visible = _call_left > 0.0
+
+
+## Opens the team-call menu with one line per call (numbered from 1).
+func show_call_menu(lines: Array[String]) -> void:
+	var numbered: Array[String] = []
+	for index: int in lines.size():
+		numbered.append("%d  %s" % [index + 1, lines[index]])
+	_call_list.text = "\n".join(numbered)
+	_call_menu.visible = true
+
+
+func hide_call_menu() -> void:
+	_call_menu.visible = false
+
+
+func is_call_menu_open() -> bool:
+	return _call_menu != null and _call_menu.visible
+
+
+func call_menu_text() -> String:
+	return _call_list.text if is_call_menu_open() else ""
+
+
+## Shows a call made for the player's team for a few seconds.
+func show_call(text: String, seconds: float = 4.0) -> void:
+	_call_label.text = text
+	_call_label.visible = true
+	_call_left = seconds
+
+
+func call_text() -> String:
+	return _call_label.text if _call_label.visible else ""
 
 
 func set_scoreboard(home: String, home_score: int, home_side: StringName, away: String,
@@ -278,6 +319,32 @@ func _build_center() -> void:
 	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hint_label.visible = false
 	add_child(_hint_label)
+
+
+func _build_calls() -> void:
+	_call_label = UIFactory.label("", &"AccentLabel")
+	_call_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	_call_label.offset_left = 24
+	_call_label.offset_right = 520
+	_call_label.offset_top = -120
+	_call_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_call_label.visible = false
+	add_child(_call_label)
+	_call_menu = PanelContainer.new()
+	_call_menu.theme_type_variation = &"OverlayPanel"
+	_call_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	_call_menu.offset_left = 24
+	_call_menu.offset_top = -80
+	_call_menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var column := UIFactory.vbox(6)
+	column.custom_minimum_size.x = 220
+	_call_menu.add_child(column)
+	column.add_child(UIFactory.label("TEAM CALL", &"CardTitleLabel"))
+	_call_list = UIFactory.label("", &"")
+	column.add_child(_call_list)
+	column.add_child(UIFactory.label("Number to call · Z or Esc to close", &"MutedLabel"))
+	_call_menu.visible = false
+	add_child(_call_menu)
 
 
 func _build_buy_panel() -> void:

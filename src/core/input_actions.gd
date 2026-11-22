@@ -31,6 +31,7 @@ const WEAPON_NEXT: StringName = &"weapon_next"
 const WEAPON_PREVIOUS: StringName = &"weapon_previous"
 const INTERACT: StringName = &"interact"
 const BUY_MENU: StringName = &"buy_menu"
+const TEAM_CALL: StringName = &"team_call"
 const NOCLIP: StringName = &"noclip"
 const INSPECT: StringName = &"inspect_weapon"
 
@@ -59,6 +60,7 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"id": INSPECT, "label": "Inspect weapon", "group": "Combat", "context": "game", "defaults": ["key:70"]},
 	{"id": INTERACT, "label": "Plant / defuse / use", "group": "Match", "context": "game", "defaults": ["key:69"]},
 	{"id": BUY_MENU, "label": "Buy menu", "group": "Match", "context": "game", "defaults": ["key:66"]},
+	{"id": TEAM_CALL, "label": "Team calls (IGL)", "group": "Match", "context": "game", "defaults": ["key:90"]},
 	{"id": NOCLIP, "label": "Noclip (sandbox only)", "group": "Sandbox", "context": "game", "defaults": ["key:86"]},
 	{"id": EDITOR_LOOK, "label": "Look / fly (hold)", "group": "Editor camera", "context": "editor", "defaults": ["mouse:2"]},
 	{"id": EDITOR_UP, "label": "Fly up", "group": "Editor camera", "context": "editor", "defaults": ["key:69"]},

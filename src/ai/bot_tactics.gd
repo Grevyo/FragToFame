@@ -7,7 +7,17 @@ extends RefCounted
 ## job (entry, trade, support, lurk, faker; anchor, rotator, aggressor), when a default round hits
 ## and where (on what the team has seen), when defenders rotate, and whether to retake or save.
 ## It learns from each round as in the simulation. The squad turns the calls into bot orders.
+##
+## Mid-round (Milestone 7 D) it reads how the round is going and makes [TeamCall]s, at most one
+## of each kind a round: attackers save when the numbers or the clock are against them (the
+## simulation's own [method RoundPlanner.attack_should_save]), take the other site when they find
+## a stack before committing, and regroup when the entry pair falls at the door; defenders
+## regroup outside a site that has fallen, to retake it together instead of one by one.
 
+## Attackers who lose this many as their push starts, still outside the site, regroup.
+const REGROUP_LOSSES: int = 2
+## The push's first seconds, where losses count towards a regroup.
+const PUSH_WINDOW: float = 10.0
 ## Sightings within this distance of a site's places count as players seen at that site.
 const SEEN_RADIUS: float = 14.0
 const SEEN_WITHIN: float = 4.0
@@ -21,6 +31,8 @@ var plan: RoundPlan = null
 ## Attack: the most opponents seen at once around each site this round (what the leader learns).
 var found: Dictionary[String, int] = {}
 var rng: RandomNumberGenerator
+## Kinds of [TeamCall] already made this round.
+var called: Dictionary[TeamCall.Kind, bool] = {}
 
 
 ## A leader for the bots [param ids] from their [param lineup] entries ({player_id, role,
@@ -61,6 +73,7 @@ func plan_round(side: StringName, situation: RoundPlanner.Situation, ids: Array[
 		if players.has(id):
 			living.append(players[id])
 	found.clear()
+	called.clear()
 	plan = planner.plan_attack(situation, living) if side == MatchRules.SIDE_ATTACK else planner.plan_defence(situation, living)
 	return plan
 
@@ -95,6 +108,68 @@ func style_for(attack: RoundPlan) -> AttackPlay.Style:
 		if roll <= 0.0:
 			return key
 	return AttackPlay.Style.EXECUTE
+
+
+## The ID of the player who leads the team's calls.
+func leader_id() -> String:
+	var leader := planner.in_game_leader()
+	return leader.id if leader != null else ""
+
+
+## Attack, mid-round: the leader's read of the round (null: carry on).
+## [param site_letter] is the site the play goes for, [param committed] whether the hit is on
+## (not still taking map control early), [param going] whether the push has started.
+## [param seen] is site ID → defenders seen there; [param metres] site ID → how far the team is.
+## [param lost_in_push] counts attackers lost in the push's first seconds while
+## [param outside_site] says nobody has got onto the site yet.
+func adapt_attack(site_letter: String, committed: bool, going: bool, seen: Dictionary[String, int], alive: int,
+		defenders_alive: int, seconds_left: float, metres: Dictionary[String, float], lost_in_push: int,
+		outside_site: bool) -> TeamCall:
+	var site_id := "site_" + site_letter
+	var to_site := float(metres.get(site_id, 0.0))
+	if committed and not called.has(TeamCall.Kind.SAVE) \
+			and planner.attack_should_save(alive, defenders_alive, seconds_left, to_site):
+		return _made(TeamCall.make(TeamCall.Kind.SAVE, "", "",
+			"%d against %d with %d s left" % [alive, defenders_alive, roundi(seconds_left)]))
+	if not going and not called.has(TeamCall.Kind.EXECUTE) and plan != null \
+			and plan.kind != RoundPlan.RUSH and plan.kind != RoundPlan.FAKE:
+		var other := planner.call_hit(plan, seen)
+		# A careful leader turns away from two defenders, a bold one from three.
+		var stack := 2 if planner.caution() >= 0.0 else 3
+		var here := int(seen.get(site_id, 0))
+		if other != site_id and here >= stack and here - int(seen.get(other, 0)) >= 2 \
+				and seconds_left > float(metres.get(other, 0.0)) / RoundPlanner.RUN_SPEED + 30.0:
+			return _made(TeamCall.make(TeamCall.Kind.EXECUTE, letter_of(other), "", "%d on %s" % [here, site_letter]))
+	if going and outside_site and lost_in_push >= REGROUP_LOSSES and alive >= 3 \
+			and not called.has(TeamCall.Kind.REGROUP) and seconds_left > to_site / RoundPlanner.RUN_SPEED + 35.0:
+		return _made(TeamCall.make(TeamCall.Kind.REGROUP, site_letter, "", "lost %d at the door" % lost_in_push))
+	return null
+
+
+## Defence, mid-round: [param fallen] is a site ID the attackers hold with none of the team left
+## on it ("" when none), before any plant. With two or more alive the leader gathers them
+## outside it to retake together (null: carry on).
+func adapt_defence(fallen: String, alive: int) -> TeamCall:
+	if fallen.is_empty() or alive < 2 or called.has(TeamCall.Kind.REGROUP):
+		return null
+	return _made(TeamCall.make(TeamCall.Kind.REGROUP, letter_of(fallen), "", "%s has fallen" % letter_of(fallen)))
+
+
+func _made(call: TeamCall) -> TeamCall:
+	called[call.kind] = true
+	return call
+
+
+## The place nearest [param position] (for a play that starts from where the team is).
+func place_near(position: Vector3) -> String:
+	var best := ""
+	var best_distance := INF
+	for id: String in map.nodes:
+		var distance := centre(id).distance_to(position)
+		if distance < best_distance:
+			best = id
+			best_distance = distance
+	return best
 
 
 ## The bombsite letter of a site place ID ("site_A" → "A").

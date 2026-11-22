@@ -35,7 +35,7 @@ func build_page() -> void:
 	advance_button.pressed.connect(advance_day)
 	buttons.add_child(advance_button)
 	continue_button = UIFactory.button("Continue")
-	continue_button.pressed.connect(continue_on)
+	continue_button.pressed.connect(continue_shown)
 	buttons.add_child(continue_button)
 	if OS.is_debug_build() and session.repo.pending_fixture(session.human_player_id) != null:
 		simulate_button = UIFactory.button("Simulate match (dev)")
@@ -68,7 +68,20 @@ func advance_day() -> String:
 ## Continue: advances until an event and rebuilds the page with why it stopped. Returns the
 ## outcome ({days, reason, ok}).
 func continue_on() -> Dictionary:
-	var outcome := App.continue_career()
+	var run := App.begin_continue()
+	run.run_all()
+	return _continued(run)
+
+
+## Continue with each day shown on the calendar overlay ([CareerCalendarOverlay]).
+func continue_shown() -> void:
+	var run := App.begin_continue()
+	await CareerCalendarOverlay.play(self, run)
+	_continued(run)
+
+
+func _continued(run: CalendarRun) -> Dictionary:
+	var outcome := App.finish_calendar_run(run)
 	var days := int(outcome["days"])
 	if days == 0:
 		status_label.text = str(outcome["reason"])

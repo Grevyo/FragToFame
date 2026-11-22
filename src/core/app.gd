@@ -230,27 +230,49 @@ func advance_career_day() -> String:
 ## FM-style Continue: runs days until something needs the player (see
 ## [method CareerCalendar.continue_until_event]). Returns {days, reason, ok}.
 func continue_career() -> Dictionary:
-	if not has_career():
-		return {"days": 0, "reason": "Open a career first.", "ok": false}
-	if has_unsaved_fixture_result():
-		return {"days": 0, "reason": "Save the completed match result before moving on.", "ok": false}
-	var outcome := CareerCalendar.continue_until_event(career.repo, career.human_player_id)
-	if int(outcome["days"]) > 0:
-		career_day_changed.emit()
-	return outcome
+	var run := begin_continue()
+	run.run_all()
+	return finish_calendar_run(run)
 
 
 ## Holiday ([method CareerCalendar.holiday]): a set number of days, 0 = until the next inbox
 ## message, -1 = to the end of the year. Returns {days, reason, ok, simulated}.
 func holiday_career(days: int, simulate_matches: bool = false) -> Dictionary:
-	if not has_career():
-		return {"days": 0, "reason": "Open a career first.", "ok": false, "simulated": 0}
-	if has_unsaved_fixture_result():
-		return {"days": 0, "reason": "Save the completed match result before moving on.", "ok": false, "simulated": 0}
-	var outcome := CareerCalendar.holiday(career.repo, career.human_player_id, days, simulate_matches and OS.is_debug_build())
-	if bool(outcome["ok"]):
+	var run := begin_holiday(days, simulate_matches)
+	run.run_all()
+	return finish_calendar_run(run)
+
+
+## A Continue to run a day at a time ([CalendarRun]); finished already when it cannot start.
+## Pass it to [method finish_calendar_run] once it is over.
+func begin_continue() -> CalendarRun:
+	var problem := _calendar_blocker()
+	if not problem.is_empty():
+		return CalendarRun.refused(problem, false)
+	return CalendarRun.continue_run(career.repo, career.human_player_id)
+
+
+## A holiday to run a day at a time (see [method holiday_career]).
+func begin_holiday(days: int, simulate_matches: bool = false) -> CalendarRun:
+	var problem := _calendar_blocker()
+	if not problem.is_empty():
+		return CalendarRun.refused(problem, true)
+	return CalendarRun.holiday_run(career.repo, career.human_player_id, days, simulate_matches and OS.is_debug_build())
+
+
+## Announces the new date after a finished run and returns its outcome.
+func finish_calendar_run(run: CalendarRun) -> Dictionary:
+	if bool(run.outcome.get("ok", false)):
 		career_day_changed.emit()
-	return outcome
+	return run.outcome
+
+
+func _calendar_blocker() -> String:
+	if not has_career():
+		return "Open a career first."
+	if has_unsaved_fixture_result():
+		return "Save the completed match result before moving on."
+	return ""
 
 
 ## Accepts a trial invitation (books the trial match) or a contract offer (signs). "" or why not.

@@ -49,25 +49,9 @@ static func advance_to(repo: CareerRepository, day: int, rng: RandomNumberGenera
 ## due, a headline story breaks (contract news, a new year, their league starting) — or
 ## [constant CONTINUE_LIMIT] days pass. Returns {days: int, reason: String, ok: bool}; ok is
 ## false when not even one day could pass (reason says why).
+## The hub runs the same [CalendarRun] a day at a time to show the days passing.
 static func continue_until_event(repo: CareerRepository, player_id: String, rng: RandomNumberGenerator = null) -> Dictionary:
-	var dice := rng
-	if dice == null:
-		dice = RandomNumberGenerator.new()
-		dice.randomize()
-	var days := 0
-	while days < CONTINUE_LIMIT:
-		var problem := advance_day(repo, player_id, dice)
-		if not problem.is_empty():
-			return {"days": days, "reason": problem, "ok": days > 0}
-		days += 1
-		var today := repo.current_day()
-		var pending := repo.pending_fixture(player_id)
-		if pending != null and pending.scheduled_day <= today:
-			return {"days": days, "reason": MATCH_DAY, "ok": true}
-		var headlines := repo.news_on(today, WorldSimulation.HEADLINE)
-		if not headlines.is_empty():
-			return {"days": days, "reason": str(headlines[0]["headline"]), "ok": true}
-	return {"days": days, "reason": QUIET_MONTH, "ok": true}
+	return CalendarRun.continue_run(repo, player_id, rng).run_all()
 
 
 ## Holiday: runs days on its own. [param days] > 0 runs that many days; 0 runs until the next
@@ -76,43 +60,7 @@ static func continue_until_event(repo: CareerRepository, player_id: String, rng:
 ## {days, reason, ok, simulated}.
 static func holiday(repo: CareerRepository, player_id: String, days: int, simulate_matches: bool,
 		rng: RandomNumberGenerator = null) -> Dictionary:
-	var dice := rng
-	if dice == null:
-		dice = RandomNumberGenerator.new()
-		dice.randomize()
-	var start := repo.current_day()
-	var target := start + days
-	if days == 0:
-		target = start + HOLIDAY_INBOX_LIMIT
-	elif days < 0:
-		target = GameDate.make(GameDate.year_of(start) + 1, 1, 1) - 1
-	var simulated := 0
-	while repo.current_day() < target:
-		var pending := repo.pending_fixture(player_id)
-		if pending != null and pending.scheduled_day <= repo.current_day():
-			if not simulate_matches:
-				return _holiday_end(repo, start, MATCH_DAY, simulated)
-			var outcome := CareerMatchSimulator.simulate_pending(repo, player_id, dice)
-			if not bool(outcome["ok"]):
-				return _holiday_end(repo, start, str(outcome["message"]), simulated)
-			simulated += int(outcome["maps"])
-			continue
-		var problem := advance_day(repo, player_id, dice)
-		if not problem.is_empty():
-			return _holiday_end(repo, start, problem, simulated)
-		if days == 0:
-			var headlines := repo.news_on(repo.current_day(), WorldSimulation.HEADLINE)
-			if not headlines.is_empty():
-				return _holiday_end(repo, start, str(headlines[0]["headline"]), simulated)
-	return _holiday_end(repo, start, "Back from holiday.", simulated)
-
-
-static func _holiday_end(repo: CareerRepository, start: int, reason: String, simulated: int) -> Dictionary:
-	var days := repo.current_day() - start
-	var text := "%d day%s · %s" % [days, "" if days == 1 else "s", reason]
-	if simulated > 0:
-		text += " (%d of your maps simulated)" % simulated
-	return {"days": days, "reason": text, "ok": days > 0 or simulated > 0, "simulated": simulated}
+	return CalendarRun.holiday_run(repo, player_id, days, simulate_matches, rng).run_all()
 
 
 ## Mean simulated ability of an organisation's five starters (perceived values for humans,

@@ -153,7 +153,20 @@ func refresh() -> void:
 
 ## Top-bar Continue: runs days until something needs the player, then refreshes the page.
 func continue_on() -> Dictionary:
-	var outcome := App.continue_career()
+	var run := App.begin_continue()
+	run.run_all()
+	return _continued(run)
+
+
+## Continue with each day shown on the calendar overlay ([CareerCalendarOverlay]).
+func continue_shown() -> void:
+	var run := App.begin_continue()
+	await CareerCalendarOverlay.play(self, run)
+	_continued(run)
+
+
+func _continued(run: CalendarRun) -> Dictionary:
+	var outcome := App.finish_calendar_run(run)
 	status_label.text = str(outcome["reason"]) if not bool(outcome["ok"]) else "%d day%s · %s" % [
 		int(outcome["days"]), "" if int(outcome["days"]) == 1 else "s", outcome["reason"]]
 	refresh()
@@ -164,7 +177,22 @@ func continue_on() -> Dictionary:
 ## end of the year. [param simulate_matches] (development) simulates your matches instead of
 ## stopping for them.
 func go_on_holiday(days: int, simulate_matches: bool) -> Dictionary:
-	var outcome := App.holiday_career(days, simulate_matches)
+	var run := App.begin_holiday(days, simulate_matches)
+	run.run_all()
+	return _back_from_holiday(run)
+
+
+## A holiday with each day shown on the calendar overlay.
+func holiday_shown(days: int, simulate_matches: bool) -> void:
+	if holiday_panel != null:
+		holiday_panel.hide()
+	var run := App.begin_holiday(days, simulate_matches)
+	await CareerCalendarOverlay.play(self, run)
+	_back_from_holiday(run)
+
+
+func _back_from_holiday(run: CalendarRun) -> Dictionary:
+	var outcome := App.finish_calendar_run(run)
 	status_label.text = "Holiday: %s" % outcome["reason"]
 	if holiday_panel != null:
 		holiday_panel.hide()
@@ -344,7 +372,7 @@ func _build_top_bar() -> Control:
 		row.add_child(holiday_button)
 		continue_button = UIFactory.button("Continue  ▸", &"AccentButton")
 		continue_button.tooltip_text = "Run days until something needs you."
-		continue_button.pressed.connect(func() -> void: continue_on())
+		continue_button.pressed.connect(continue_shown)
 		row.add_child(continue_button)
 	else:
 		var badge := PanelContainer.new()
@@ -373,7 +401,7 @@ func _build_holiday_panel() -> void:
 	box.add_child(holiday_simulate)
 	var go_button := UIFactory.button("Go on holiday", &"AccentButton")
 	go_button.pressed.connect(func() -> void:
-		go_on_holiday(int(HOLIDAY_OPTIONS[holiday_choice.selected][1]), holiday_simulate.button_pressed))
+		holiday_shown(int(HOLIDAY_OPTIONS[holiday_choice.selected][1]), holiday_simulate.button_pressed))
 	box.add_child(go_button)
 	add_child(holiday_panel)
 

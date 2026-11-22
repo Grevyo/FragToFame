@@ -122,7 +122,14 @@ Pages render a "no career open" card when no career is loaded.
   `LinkButton`s) that call `go(page, args)`. The page finds the hub through the
   `career_hub` group. Tabs (`add_tabs`) re-open the same page with `tab` merged into its args.
 - **Continue and Holiday** live in the top bar. Holiday is `CareerCalendar.holiday` via
-  `App.holiday_career`; like Continue it never plays the human's match.
+  `App.holiday_career`; like Continue it never plays the human's match. Both are a
+  `CalendarRun` (career layer, no Nodes): `step()` runs one day (or one simulated match of the
+  human's on a development holiday) and holds the stop rules; `run_all()` is what the
+  synchronous calls use. The hub's buttons take a run from `App.begin_continue` /
+  `App.begin_holiday`, play it on `CareerCalendarOverlay` (a CanvasLayer over the hub: one day
+  per frame step, a tear-off page that flips to each day, the month, the day's top story, Stop
+  sets `stop_requested`), then hand it to `App.finish_calendar_run`, which announces the new
+  date. Each day still commits in its own transaction, so stopping leaves a consistent save.
 
 ### Networking (Milestone 2 proof)
 

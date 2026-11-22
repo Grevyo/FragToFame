@@ -144,6 +144,11 @@ static func _build_labels(theme: Theme) -> void:
 	_label_variation(theme, &"AccentLabel", 16, ACCENT)
 	_label_variation(theme, &"WarningLabel", 14, WARNING)
 	_label_variation(theme, &"LogoLabel", 26, ACCENT)
+	# The tear-off calendar page shown while days pass (career hub).
+	_label_variation(theme, &"CalendarMonthLabel", 18, BG)
+	_label_variation(theme, &"CalendarDayLabel", 88, BG)
+	_label_variation(theme, &"CalendarYearLabel", 14, TEXT_DISABLED)
+	_label_variation(theme, &"CalendarCellLabel", 12, TEXT)
 
 
 static func _panel_variation(theme: Theme, name: StringName, style: StyleBoxFlat) -> void:
@@ -165,6 +170,17 @@ static func _build_panels(theme: Theme) -> void:
 	_panel_variation(theme, &"HudPanel", box(Color(BG, 0.72), Color.TRANSPARENT, 0, 4, 12, 8))
 	_panel_variation(theme, &"TableHeaderPanel", box(PANEL, Color.TRANSPARENT, 0, 0, 10, 6))
 	_panel_variation(theme, &"TableRowPanel", box(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0, 10, 6))
+	_panel_variation(theme, &"DimPanel", box(Color(BG, 0.78), Color.TRANSPARENT, 0, 0, 0, 0))
+	var page := box(TEXT, BORDER, 1, 6, 0, 0)
+	page.content_margin_bottom = 12
+	_panel_variation(theme, &"CalendarPagePanel", page)
+	var strip := box(ACCENT, Color.TRANSPARENT, 0, 6, 12, 6)
+	strip.corner_radius_bottom_left = 0
+	strip.corner_radius_bottom_right = 0
+	_panel_variation(theme, &"CalendarStripPanel", strip)
+	_panel_variation(theme, &"CalendarCell", box(PANEL, BORDER, 1, 3, 2, 2))
+	_panel_variation(theme, &"CalendarPassedCell", box(ACCENT_DIM, ACCENT_DIM.lightened(0.2), 1, 3, 2, 2))
+	_panel_variation(theme, &"CalendarTodayCell", box(ACCENT, ACCENT, 1, 3, 2, 2))
 
 
 static func _build_misc(theme: Theme) -> void:

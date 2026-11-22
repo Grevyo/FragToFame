@@ -389,6 +389,33 @@ func _test_world(app: Node) -> void:
 	check(repo.current_day() == year_end or str(to_year_end["reason"]).contains(CareerCalendar.MATCH_DAY),
 		"a holiday to the end of the year lands on 31 December (%s)" % GameDate.format(repo.current_day()))
 
+	section("Days shown on the calendar overlay")
+	var overlays: Array[Node] = []
+	var spot := func(node: Node) -> void:
+		if node is CareerCalendarOverlay:
+			overlays.append(node)
+	hub.child_entered_tree.connect(spot)
+	var shown_start := repo.current_day()
+	var run := app.call("begin_holiday", 3, false) as CalendarRun
+	var shown: Dictionary = await CareerCalendarOverlay.play(hub, run)
+	hub.child_entered_tree.disconnect(spot)
+	check(overlays.size() == 1, "a holiday plays its days on the calendar overlay")
+	check(int(shown["days"]) == repo.current_day() - shown_start and (int(shown["days"]) == 3 or repo.pending_fixture(human_id) != null),
+		"and runs the same days as without it (%s)" % shown["reason"])
+	await wait_frames(2)
+	check(overlays.size() == 1 and not is_instance_valid(overlays[0]),
+		"the overlay goes away when the days are done")
+	var stop_start := repo.current_day()
+	var stopping := app.call("begin_holiday", 30, false) as CalendarRun
+	stopping.step()
+	stopping.stop_requested = true
+	stopping.run_all()
+	check(int(stopping.outcome["days"]) == repo.current_day() - stop_start and repo.current_day() - stop_start <= 1
+		and str(stopping.outcome["reason"]).contains(CalendarRun.STOPPED), "Stop ends a run after the day being played")
+	app.call("finish_calendar_run", stopping)
+	var refused := CalendarRun.refused("why not", false)
+	check(refused.is_finished() and not refused.step() and not bool(refused.outcome["ok"]), "a run that cannot start is over before it begins")
+
 
 func _clean(folder: String) -> void:
 	var dir := DirAccess.open(folder)

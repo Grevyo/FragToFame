@@ -529,7 +529,9 @@ Second slice — the human path to pro (`CareerOffers`, `CareerLeagueMatches`):
   - **Top bar:** Back and Forward, the page title, the date, **Holiday** and **Continue** at the
     top right. Holiday runs until the next inbox message (a headline), for 1 week to 6 months,
     or to the end of the year. Your own match still stops it; a development checkbox simulates
-    it instead.
+    it instead. While days pass (Continue or Holiday), a calendar overlay flips a tear-off page
+    to each day, fills in the month, shows the day's top story and offers Stop (owner,
+    2026-11-22: the screen must not freeze while the world simulates).
   - **Sidebar headings:** Career (Home, Inbox, Calendar), Me (Profile, My Team), World
     (Competitions, Teams, Players, News), Data (Statistics, Co-op).
   - **Linked pages** with a history: Teams → a team (Overview, Squad, Matches, Finances,
@@ -1090,3 +1092,4 @@ Planned scope:
 | 2026-11-22 | Milestone 21 stage E: simulated maps log the FPS runtime's event stream (shots, damage, grenades, flashes, kills, plants, defuses) and every simulated statistic is built from it by `MatchStatistics`, the reducer played matches use, so both follow the same rules for openings, trades, assists, flash assists, clutches and KAST. Grenade damage now counts after its thrower dies, in played matches too. |
 | 2026-11-22 | Milestone 21 stage F: people over a match. Tilt, nerves in big rounds, fatigue over a series, map familiarity for teams and map comfort for players, from traits and the career's history (simulated lines now record their map, save schema v16). Confidence moved to Milestone 20 (owner: it comes from play time, team training and the manager's tactics). |
 | 2026-11-22 | Milestone 21 stage G: round-by-round match view. Every simulated map keeps a timeline (both leaders' plans and buys, the kill feed with weapon, headshot and flasher, bomb plants and defuses, each player's money and kit, the scoreboard), shown on the hub's "Round by round" page from series and fixture views. Save schema v17; world timelines are pruned after 90 days. |
+| 2026-11-22 | Calendar overlay (owner request): Continue and Holiday run a day at a time (`CalendarRun`) behind a tear-off calendar page that flips to each day, the month filling in, the day's top story and a Stop button, instead of the screen freezing until the run ends. Long holidays speed up so a year stays under ten seconds of pacing. |
